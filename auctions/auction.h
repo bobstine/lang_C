@@ -7,7 +7,7 @@
    2 Jan 08 ... Generic version over model class
   13 Dec 07 ... GSL model as statistical engine, merging ols/wls/logistic code base
    1 Aug 03 ... Created
-*/
+*/  
 
 #include "my_features.h"
 #include "experts.h"
