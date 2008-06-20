@@ -1,0 +1,648 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C4B6C9C60937712700956DDA /* librandom.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C4B6C8E209365FE200956DDA /* librandom.a */; };
+		C4B6C9DD0937728E00956DDA /* splsm.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8902E08C6453B000E7EEE /* splsm.cc */; };
+		C4B6C9E10937729F00956DDA /* smoothing_spline.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8902B08C6453B000E7EEE /* smoothing_spline.cc */; };
+		C4B6C9E2093772A300956DDA /* linpack.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8903008C6453B000E7EEE /* linpack.cc */; };
+		C4C8903D08C64582000E7EEE /* linpack.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8903008C6453B000E7EEE /* linpack.cc */; };
+		C4C8903E08C64582000E7EEE /* linpack.test.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8903208C6453B000E7EEE /* linpack.test.cc */; };
+		C4C8905C08C64749000E7EEE /* smoothing_spline.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8902B08C6453B000E7EEE /* smoothing_spline.cc */; };
+		C4C8905D08C6474B000E7EEE /* smoothing_spline.test.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */; };
+		C4C8906408C6479D000E7EEE /* linpack.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8903008C6453B000E7EEE /* linpack.cc */; };
+		C4C8911E08C6526D000E7EEE /* linpack.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8903008C6453B000E7EEE /* linpack.cc */; };
+		C4C8912108C65272000E7EEE /* smoothing_spline.cc in Sources */ = {isa = PBXBuildFile; fileRef = C4C8902B08C6453B000E7EEE /* smoothing_spline.cc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C4B6C8E109365FE200956DDA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C4B6C8DA09365FE200956DDA /* random.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C4C88EEC08C636CB000E7EEE;
+			remoteInfo = random;
+		};
+		C4B6C8E309365FE200956DDA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C4B6C8DA09365FE200956DDA /* random.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C4C88DD608C62368000E7EEE;
+			remoteInfo = "test random";
+		};
+		C4B6C8F00936603700956DDA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C4B6C8DA09365FE200956DDA /* random.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = C4C88EEB08C636CB000E7EEE;
+			remoteInfo = random;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		C4B6C8DA09365FE200956DDA /* random.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = random.xcodeproj; path = ../random/random.xcodeproj; sourceTree = SOURCE_ROOT; };
+		C4B6C9DB0937727B00956DDA /* splsm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = splsm; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4C8902B08C6453B000E7EEE /* smoothing_spline.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = smoothing_spline.cc; sourceTree = "<group>"; };
+		C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = smoothing_spline.test.cc; sourceTree = "<group>"; };
+		C4C8902D08C6453B000E7EEE /* linpack.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = linpack.h; sourceTree = "<group>"; };
+		C4C8902E08C6453B000E7EEE /* splsm.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = splsm.cc; sourceTree = "<group>"; };
+		C4C8902F08C6453B000E7EEE /* smoothing_spline.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = smoothing_spline.h; sourceTree = "<group>"; };
+		C4C8903008C6453B000E7EEE /* linpack.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = linpack.cc; sourceTree = "<group>"; };
+		C4C8903108C6453B000E7EEE /* smoothing_spline.Fortran.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = smoothing_spline.Fortran.cc; sourceTree = "<group>"; };
+		C4C8903208C6453B000E7EEE /* linpack.test.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = linpack.test.cc; sourceTree = "<group>"; };
+		C4C8903708C64570000E7EEE /* test linpack */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test linpack"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4C8904408C645A0000E7EEE /* test smoothing_spline */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "test smoothing_spline"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4C8911D08C6525D000E7EEE /* libspline.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libspline.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C4B6C9D90937727B00956DDA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8903508C64570000E7EEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8904208C645A0000E7EEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4B6C9C60937712700956DDA /* librandom.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8911B08C6525D000E7EEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* xcode */ = {
+			isa = PBXGroup;
+			children = (
+				C4B6C8DA09365FE200956DDA /* random.xcodeproj */,
+				08FB7795FE84155DC02AAC07 /* Source */,
+				C6859E8C029090F304C91782 /* Documentation */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = xcode;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				C4C8902B08C6453B000E7EEE /* smoothing_spline.cc */,
+				C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */,
+				C4C8902E08C6453B000E7EEE /* splsm.cc */,
+				C4C8902F08C6453B000E7EEE /* smoothing_spline.h */,
+				C4C8903108C6453B000E7EEE /* smoothing_spline.Fortran.cc */,
+				C4C8902D08C6453B000E7EEE /* linpack.h */,
+				C4C8903008C6453B000E7EEE /* linpack.cc */,
+				C4C8903208C6453B000E7EEE /* linpack.test.cc */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C4C8903708C64570000E7EEE /* test linpack */,
+				C4C8904408C645A0000E7EEE /* test smoothing_spline */,
+				C4C8911D08C6525D000E7EEE /* libspline.a */,
+				C4B6C9DB0937727B00956DDA /* splsm */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C4B6C8DB09365FE200956DDA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C4B6C8E209365FE200956DDA /* librandom.a */,
+				C4B6C8E409365FE200956DDA /* test random */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C6859E8C029090F304C91782 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		C4C8911908C6525D000E7EEE /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		C4B6C9DA0937727B00956DDA /* splsm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C4B6C9E4093772C100956DDA /* Build configuration list for PBXNativeTarget "splsm" */;
+			buildPhases = (
+				C4B6C9D80937727B00956DDA /* Sources */,
+				C4B6C9D90937727B00956DDA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = splsm;
+			productName = splsm;
+			productReference = C4B6C9DB0937727B00956DDA /* splsm */;
+			productType = "com.apple.product-type.tool";
+		};
+		C4C8903608C64570000E7EEE /* test linpack */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C4C8903908C64578000E7EEE /* Build configuration list for PBXNativeTarget "test linpack" */;
+			buildPhases = (
+				C4C8903408C64570000E7EEE /* Sources */,
+				C4C8903508C64570000E7EEE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "test linpack";
+			productName = "test linpack";
+			productReference = C4C8903708C64570000E7EEE /* test linpack */;
+			productType = "com.apple.product-type.tool";
+		};
+		C4C8904308C645A0000E7EEE /* test smoothing_spline */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C4C8904908C645B4000E7EEE /* Build configuration list for PBXNativeTarget "test smoothing_spline" */;
+			buildPhases = (
+				C4C8904108C645A0000E7EEE /* Sources */,
+				C4C8904208C645A0000E7EEE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C4B6C8F10936603700956DDA /* PBXTargetDependency */,
+			);
+			name = "test smoothing_spline";
+			productName = "test smoothing_spline";
+			productReference = C4C8904408C645A0000E7EEE /* test smoothing_spline */;
+			productType = "com.apple.product-type.tool";
+		};
+		C4C8911C08C6525D000E7EEE /* spline */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C4C8912308C65284000E7EEE /* Build configuration list for PBXNativeTarget "spline" */;
+			buildPhases = (
+				C4C8911908C6525D000E7EEE /* Headers */,
+				C4C8911A08C6525D000E7EEE /* Sources */,
+				C4C8911B08C6525D000E7EEE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = spline;
+			productName = spline;
+			productReference = C4C8911D08C6525D000E7EEE /* libspline.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C4C8902008C64509000E7EEE /* Build configuration list for PBXProject "spline" */;
+			compatibilityVersion = "Xcode 2.4";
+			hasScannedForEncodings = 1;
+			mainGroup = 08FB7794FE84155DC02AAC07 /* xcode */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = C4B6C8DB09365FE200956DDA /* Products */;
+					ProjectRef = C4B6C8DA09365FE200956DDA /* random.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				C4C8911C08C6525D000E7EEE /* spline */,
+				C4C8904308C645A0000E7EEE /* test smoothing_spline */,
+				C4C8903608C64570000E7EEE /* test linpack */,
+				C4B6C9DA0937727B00956DDA /* splsm */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		C4B6C8E209365FE200956DDA /* librandom.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = librandom.a;
+			remoteRef = C4B6C8E109365FE200956DDA /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C4B6C8E409365FE200956DDA /* test random */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = "test random";
+			remoteRef = C4B6C8E309365FE200956DDA /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C4B6C9D80937727B00956DDA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4B6C9DD0937728E00956DDA /* splsm.cc in Sources */,
+				C4B6C9E10937729F00956DDA /* smoothing_spline.cc in Sources */,
+				C4B6C9E2093772A300956DDA /* linpack.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8903408C64570000E7EEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4C8903D08C64582000E7EEE /* linpack.cc in Sources */,
+				C4C8903E08C64582000E7EEE /* linpack.test.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8904108C645A0000E7EEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4C8905C08C64749000E7EEE /* smoothing_spline.cc in Sources */,
+				C4C8905D08C6474B000E7EEE /* smoothing_spline.test.cc in Sources */,
+				C4C8906408C6479D000E7EEE /* linpack.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C4C8911A08C6525D000E7EEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4C8911E08C6526D000E7EEE /* linpack.cc in Sources */,
+				C4C8912108C65272000E7EEE /* smoothing_spline.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C4B6C8F10936603700956DDA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = random;
+			targetProxy = C4B6C8F00936603700956DDA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C4B6C9E5093772C100956DDA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = splsm;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		C4B6C9E6093772C100956DDA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = splsm;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		C4B6C9E7093772C100956DDA /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				PREBINDING = NO;
+				PRODUCT_NAME = splsm;
+				ZERO_LINK = YES;
+			};
+			name = Default;
+		};
+		C4C8902108C64509000E7EEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				HEADER_SEARCH_PATHS = (
+					"~/C/utils",
+					"~/C/ranges",
+				);
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		C4C8902208C64509000E7EEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		C4C8902308C64509000E7EEE /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Default;
+		};
+		C4C8903A08C64578000E7EEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test linpack";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug;
+		};
+		C4C8903B08C64578000E7EEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test linpack";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release;
+		};
+		C4C8903C08C64578000E7EEE /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test linpack";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Default;
+		};
+		C4C8904A08C645B4000E7EEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				HEADER_SEARCH_PATHS = (
+					"~/C/utils/",
+					"~/C/ranges/",
+					"~/C/random/",
+				);
+				INSTALL_PATH = "$(HOME)/bin";
+				LIBRARY_SEARCH_PATHS = "";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test smoothing_spline";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Debug;
+		};
+		C4C8904B08C645B4000E7EEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test smoothing_spline";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release;
+		};
+		C4C8904C08C645B4000E7EEE /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = "test smoothing_spline";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Default;
+		};
+		C4C8912408C65284000E7EEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/lib";
+				LIBRARY_STYLE = STATIC;
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = spline;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		C4C8912508C65284000E7EEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/lib";
+				LIBRARY_STYLE = STATIC;
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = spline;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Release;
+		};
+		C4C8912608C65284000E7EEE /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/lib";
+				LIBRARY_STYLE = STATIC;
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = spline;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Default;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C4B6C9E4093772C100956DDA /* Build configuration list for PBXNativeTarget "splsm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C4B6C9E5093772C100956DDA /* Debug */,
+				C4B6C9E6093772C100956DDA /* Release */,
+				C4B6C9E7093772C100956DDA /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		C4C8902008C64509000E7EEE /* Build configuration list for PBXProject "spline" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C4C8902108C64509000E7EEE /* Debug */,
+				C4C8902208C64509000E7EEE /* Release */,
+				C4C8902308C64509000E7EEE /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		C4C8903908C64578000E7EEE /* Build configuration list for PBXNativeTarget "test linpack" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C4C8903A08C64578000E7EEE /* Debug */,
+				C4C8903B08C64578000E7EEE /* Release */,
+				C4C8903C08C64578000E7EEE /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		C4C8904908C645B4000E7EEE /* Build configuration list for PBXNativeTarget "test smoothing_spline" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C4C8904A08C645B4000E7EEE /* Debug */,
+				C4C8904B08C645B4000E7EEE /* Release */,
+				C4C8904C08C645B4000E7EEE /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		C4C8912308C65284000E7EEE /* Build configuration list for PBXNativeTarget "spline" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C4C8912408C65284000E7EEE /* Debug */,
+				C4C8912508C65284000E7EEE /* Release */,
+				C4C8912608C65284000E7EEE /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}

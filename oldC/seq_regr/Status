@@ -1,0 +1,27 @@
+
+The calibration variable has huge mean and variance. Something wrong in the calculations.
+
+
+Check spline code when input data is not sorted (7/20)
+... The sorting happens when the unique values of X are found and weights
+    added up.  I also fixed a bug; the y values were not averaged when
+    ties were found in the x's.
+
+Add ability to drop last predictor to logistic regression (remove_last_predictor, 7/19)
+... Fix problems with convergence by restoring the prior coefficient.
+    Use the restore_state function to trim accumulating data and related
+    data back to prior size.  Iterations converge more rapidly, with less
+    damage from collinearity.
+
+
+-------------------------------------
+Long-term improvements to implement
+-------------------------------------
+
+How to allocate vectors dynamically.
+
+Use gsl-iterators rather than loops.
+
+Test for a linearly redundant predictor to avoid singularity in the addition of a
+new predictor to the model.
+

@@ -1,0 +1,422 @@
+/* $Id: range.h,v 1.52 2002/03/19 21:47:43 foster Exp $ -*- c++ -*-
+
+   Ranges
+
+   19 Feb 02 ... Get composer working in style that I wanted.
+   10 Feb 02 ... Remove argument iterator type in favor of unary, binary iterators.
+   11 Jan 02 ... Created to support factored statistics code.
+
+*/
+
+#ifndef _RANGE_H_
+#define _RANGE_H_
+
+#ifdef __APPLE__
+#include "patch_iterator.h"
+#endif
+
+#include "compose.h"
+#include "range_traits.h"
+
+#include <utility>
+#include <functional>
+#include <vector>
+#include <assert.h>
+
+//////////////////////////////   Composition of ranges  ///////////////////////////////////
+
+template<class F>
+class Composer {
+  F mf;
+public:
+  Composer(const F& f) : mf(f) { }
+  template<class G>
+  boost::compose_f_gx_t<F,G>  operator()(const G& g) const
+  { return boost::compose_f_gx_t<F,G>(mf,g); }
+};
+
+template<class F>
+Composer<F> make_composer(const F& f) 
+{ return Composer<F>(f); }
+
+
+template<class F, class G>
+class operator_traits {
+  typedef typename F::result_type result_type;
+};
+
+template<class F, class G>
+class operator_traits <Composer<F>,G> {
+  typedef typename boost::compose_f_gx_t<F,G> result_type;
+};
+
+
+////////////////////////////  Convenience creator functions  /////////////////////////
+
+// #ifdef __APPLE__
+
+// #define make_range(C) make_pair(C.begin(), C.end())
+
+// #else
+
+template <class Container>
+//typename range_traits<Container>::range
+pair<typename Container::const_iterator,typename Container::const_iterator>
+make_range(const Container& c)
+{
+  return make_pair(begin(c), end(c));
+}
+
+template <class Container>
+//typename range_traits<Container>::range
+pair<typename Container::iterator,typename Container::iterator>
+make_range(Container& c)
+{
+  return make_pair(begin(c), end(c));
+}
+
+// #endif
+
+
+//////////////////////////////   Unary Iterator  ///////////////////////////////////
+
+template<class UnaryOp, class I>
+class forward_unary_iterator : public iterator<typename iterator_traits<I>::iterator_category,
+                                        typename operator_traits<UnaryOp,
+                                          typename iterator_traits<I>::value_type>::result_type>
+{
+ protected:
+  I mIter;
+  UnaryOp mOp;
+
+ public:
+  typedef typename
+    operator_traits<UnaryOp, typename iterator_traits<I>::value_type>::result_type value_type;
+  typedef pair<forward_unary_iterator<UnaryOp,I>,forward_unary_iterator<UnaryOp,I> > range;
+
+  forward_unary_iterator(UnaryOp op, I it)
+    : mIter(it), mOp(op) { }
+
+  forward_unary_iterator& operator++() { ++mIter; return *this; }
+  value_type operator*() const { return mOp(*mIter); }
+
+  bool operator!=(const forward_unary_iterator& it) const { return mIter != it.mIter; }
+  bool operator==(const forward_unary_iterator& it) const { return mIter == it.mIter; }
+
+private:
+  forward_unary_iterator() {}
+};
+
+
+template<class UnaryOp, class I>
+class bidirectional_unary_iterator : public forward_unary_iterator<UnaryOp,I>
+{
+ public:
+  typedef pair<bidirectional_unary_iterator<UnaryOp,I>,
+               bidirectional_unary_iterator<UnaryOp,I> > range;
+
+  bidirectional_unary_iterator(UnaryOp op, I it)
+    : forward_unary_iterator<UnaryOp,I>(op,it) { }
+
+  bidirectional_unary_iterator&
+    operator--() { --mIter; return *this; }
+
+private:
+  bidirectional_unary_iterator() { }
+
+};
+
+
+template<class UnaryOp, class I>
+class random_access_unary_iterator : public bidirectional_unary_iterator<UnaryOp,I>
+{
+ public:
+  typedef pair<random_access_unary_iterator<UnaryOp,I>,
+               random_access_unary_iterator<UnaryOp,I> > range;
+
+  random_access_unary_iterator(UnaryOp op, I it)
+    : bidirectional_unary_iterator<UnaryOp,I>(mOp,it) { }
+
+  random_access_unary_iterator
+  operator+(const int n) 
+  {
+    return random_access_unary_iterator<UnaryOp,I>(mOp,mIter+n);
+  }
+
+  random_access_unary_iterator
+  operator-(const int n) 
+  {
+    return random_access_unary_iterator<UnaryOp,I>(mOp,mIter-n);
+  }
+
+  random_access_unary_iterator&
+  operator+=(const int n) { mIter += n; return *this; }
+  random_access_unary_iterator&
+    operator-=(const int n) { mIter -= n; return *this; }
+
+  typename iterator_traits<I>::difference_type
+    operator-(const random_access_unary_iterator& it) { return mIter - it.mIter; }
+
+  bool
+    operator<(const random_access_unary_iterator& it) const { return mIter < it.mIter; }
+  bool
+    operator>(const random_access_unary_iterator& it) const { return mIter > it.mIter; }
+
+private:
+  random_access_unary_iterator () {}
+  
+};
+
+template <class UnaryOp, class Range>
+typename unary_range_traits<UnaryOp, Range>::range
+make_unary_range (UnaryOp f, Range range)
+{
+  typedef typename unary_range_traits<UnaryOp, Range>::iterator iterator;
+  return make_pair(iterator(f,begin(range)), iterator(f,end(range)));
+}
+
+
+//////////////////////////////   Binary Iterator  ///////////////////////////////////
+
+template<class BinaryOp, class I1, class I2>
+class forward_binary_iterator : public iterator<typename iterator_traits<I1>::iterator_category,
+                                                typename BinaryOp::result_type>
+{
+ protected:
+  I1 mIter1;
+  I2 mIter2;
+  BinaryOp mOp;
+
+ public:
+  typedef typename BinaryOp::result_type value_type;
+  typedef pair<forward_binary_iterator<BinaryOp,I1,I2>,forward_binary_iterator<BinaryOp,I1,I2> > range;
+
+  forward_binary_iterator(BinaryOp op, I1 it1, I2 it2)
+    : mIter1(it1), mIter2(it2), mOp(op) { }
+
+  forward_binary_iterator& operator++() { ++mIter1; ++mIter2; return *this; }
+  value_type operator*() const { return mOp(*mIter1, *mIter2); }
+
+  bool operator!=(const forward_binary_iterator& it) const
+    { return mIter1 != it.mIter1 || mIter2 != it.mIter2; }
+  bool operator==(const forward_binary_iterator& it) const
+    { return mIter1 == it.mIter1 && mIter2 == it.mIter2; }
+
+private:
+  forward_binary_iterator() {}
+};
+
+
+template<class BinaryOp, class I1, class I2>
+class bidirectional_binary_iterator : public forward_binary_iterator<BinaryOp,I1,I2>
+{
+ public:
+  typedef pair<bidirectional_binary_iterator<BinaryOp,I1,I2>,
+               bidirectional_binary_iterator<BinaryOp,I1,I2> > range;
+
+  bidirectional_binary_iterator(BinaryOp op, I1 it1, I2 it2)
+    : forward_binary_iterator<BinaryOp,I1,I2>(op,it1,it2) { }
+
+  bidirectional_binary_iterator&
+    operator--() { --mIter1; --mIter2; return *this; }
+private:
+  bidirectional_binary_iterator() { }
+};
+
+
+template<class BinaryOp, class I1, class I2>
+class random_access_binary_iterator : public bidirectional_binary_iterator<BinaryOp,I1,I2>
+{
+ public:
+  typedef pair<random_access_binary_iterator<BinaryOp,I1,I2>,
+               random_access_binary_iterator<BinaryOp,I1,I2> > range;
+
+  random_access_binary_iterator(BinaryOp op, I1 it1, I2 it2)
+    : bidirectional_binary_iterator<BinaryOp,I1,I2>(op,it1,it2) { }
+
+  random_access_binary_iterator
+  operator+(const int n) 
+  {
+    return random_access_binary_iterator<BinaryOp,I1,I2>(mOp,mIter1+n,mIter2+n);
+  }
+
+  random_access_binary_iterator
+  operator-(const int n) 
+  {
+    return random_access_binary_iterator<BinaryOp,I1,I2>(mOp,mIter1-n,mIter2-n);
+  }
+
+  random_access_binary_iterator&
+  operator+=(const int n) { mIter1 += n; mIter2 += n; return *this; }
+  random_access_binary_iterator&
+    operator-=(const int n) { mIter1 -= n; mIter2 -= n; return *this; }
+
+  typename iterator_traits<I1>::difference_type
+    operator-(const random_access_binary_iterator& it) { return mIter1 - it.mIter1; }
+
+  bool
+    operator<(const random_access_binary_iterator& it) const { return mIter1 < it.mIter1; }
+  bool
+    operator>(const random_access_binary_iterator& it) const { return mIter1 > it.mIter1; }
+
+private:
+  random_access_binary_iterator () {}
+  
+};
+
+template <class BinaryOp, class Range1, class Range2>
+typename binary_range_traits<BinaryOp,  Range1,  Range2>::range
+make_binary_range (BinaryOp f, Range1 range1, Range2 range2)
+{
+  typedef typename binary_range_traits<BinaryOp,  Range1,  Range2>::iterator iterator;
+  
+  return make_pair(iterator(f,begin(range1),begin(range2)),
+		   iterator(f,end  (range1),end  (range2)));
+}
+
+
+//////////////////////////  Function Iterator  ///////////////////////////////////
+
+
+template<class I>
+class forward_function_iterator : public iterator<typename iterator_traits<I>::iterator_category,
+                                           typename iterator_traits<I>::value_type::result_type>
+{
+  typedef typename iterator_traits<I>::value_type F;
+ protected:
+  I mIter;
+  const typename F::argument_type mX;  // could use reference for 'big' types
+
+ public:
+  typedef typename F::result_type value_type;
+  typedef pair<forward_function_iterator<I>,forward_function_iterator<I> > range;
+
+  forward_function_iterator(I it, const typename F::argument_type x)
+    : mIter(it), mX(x) { } 
+
+  forward_function_iterator& operator++() { ++mIter; return *this; }
+  value_type operator*() const { return (*mIter)(mX); }
+
+  bool operator!=(const forward_function_iterator& it) const { return mIter != it.mIter; }
+  bool operator==(const forward_function_iterator& it) const { return mIter == it.mIter; }
+
+private:
+  forward_function_iterator() {}
+};
+
+
+template<class I>
+class bidirectional_function_iterator : public forward_function_iterator<I>
+{
+ public:
+  typedef pair<bidirectional_function_iterator<I>, bidirectional_function_iterator<I> > range;
+
+  bidirectional_function_iterator(I it, const typename F::argument_type x)
+    : forward_function_iterator<I>(it,x) { }
+
+  bidirectional_function_iterator&
+    operator--() { --mIter; return *this; }
+
+private:
+  bidirectional_function_iterator() { }
+
+};
+
+
+template<class I>
+class random_access_function_iterator : public bidirectional_function_iterator<I>
+{
+ public:
+  typedef pair<random_access_function_iterator<I>, random_access_function_iterator<I> > range;
+
+  random_access_function_iterator(I it, const typename F::argument_type x)
+    : bidirectional_function_iterator<I>(it,x) { }
+
+  random_access_function_iterator
+  operator+(const int n) 
+  {
+    return random_access_function_iterator<I>(mIter+n, mX);
+  }
+
+  random_access_function_iterator
+  operator-(const int n) 
+  {
+    return random_access_function_iterator<I>(mIter-n,mX);
+  }
+
+  random_access_function_iterator&
+  operator+=(const int n) { mIter += n; return *this; }
+  random_access_function_iterator&
+    operator-=(const int n) { mIter -= n; return *this; }
+
+  typename iterator_traits<I>::difference_type
+    operator-(const random_access_function_iterator& it) { return mIter - it.mIter; }
+
+  bool
+    operator<(const random_access_function_iterator& it) const { return mIter < it.mIter; }
+  bool
+    operator>(const random_access_function_iterator& it) const { return mIter > it.mIter; }
+
+private:
+  random_access_function_iterator () {}
+  
+};
+
+template <class Range>
+typename function_range_traits<Range>::range
+make_function_range (Range range, typename range_traits<Range>::value_type::argument_type x)
+{
+  typedef typename function_range_traits<Range>::iterator iterator;
+  
+  return make_pair(iterator(begin(range),x), iterator(end  (range),x));
+};
+
+//////////////////////////////  Row iterator for two ranges .. a table  ////////////////////////
+//
+//  Note that the 'column' iterator must be a function_iterator
+//
+/*
+template<class FRange>
+class Apply_f_x {
+  FRange mFRange;
+public:
+  Apply_f_x(FRange fRange)
+    : mFRange(fRange)  { }
+
+  template<class X>
+  typename function_range_traits<FRange>::range
+  operator()(X x) const
+  {
+    return make_function_range(mFRange,x);
+  }
+};
+
+template<class FRange, class XRange>
+typename function_range_traits<FRange>::range
+make_row_major_table(FRange fRange, XRange xRange)
+{
+  return make_unary_range(Apply_f_x(fRange), xRange);
+}
+
+*/
+
+/*
+  template<class Ix,class F>
+  class Apply_x_f {
+  pair<Ix,Ix> mXRange;
+  public:
+  Apply_x_f(pair<Ix,Ix> xRange)
+  : mXRange(xRange) { }
+  
+  unary_range_traits<F,Ix>::range
+  operator()(const F& f) const
+  {
+  return make_unary_range(f,mXRange);
+  }
+  }
+*/
+
+
+// make_function_range(Apply_x_f(x_range),make_range(f));  // col order
+
+#endif

@@ -1,0 +1,125 @@
+# $Id: Makefile,v 1.32 2004/04/27 19:49:41 bob Exp $
+
+###########################################################################
+#
+#        Options
+#
+#   Examples of depending on libaries.  Add names here
+#        LDLIBS =  -lthing -lregression 
+#   and give the LDFLAGS to local dir if needed
+#        LDFLAGS = -Llib 
+# 
+###########################################################################
+
+C_PATH = $(HOME)/C
+
+PROJECT_NAME = auction
+
+all: $(PROJECT_NAME).test.exec
+
+OPT      = # -O2 -DNDEBUG
+
+INCLUDES = -I. -I$(C_PATH)/seq_regr  -I$(C_PATH)/ranges  -I$(C_PATH)/utils -I-
+
+# libs in order of top level then down
+LDLIBS   = -lseq_regr -lranges -lutils -lrandom -lgsl -lgslcblas -lm
+LDFLAGS  = -L$(C_PATH)/seq_regr -L$(C_PATH)/ranges -L$(C_PATH)/utils -L$(C_PATH)/random 
+
+
+###########################################################################
+#
+#	Objects ... objects are listed in order of precedence
+#
+###########################################################################
+
+level_0   = cache.o  featureABC.o  operator_traits.o
+level_1   = my_features.o
+level_2   = feature_factory.o
+level_3   = recommenders.o 
+level_4   = bidders.o
+level_5   = auction.o
+
+
+############################################################################
+#
+#            INCLUDING RULES AND DEFINITIONS
+#
+############################################################################
+
+include ../rules_for_makefiles
+
+%_1.cases:
+	mkfifo $*_1.cases
+	cat ../merge.2 ../merge.3 ../merge.4 ../merge.5 > $*_1.cases &
+
+auction_test: auction.test.exec validator estimator
+	auction.test.exec -f test/bank_post45.dat -r 20
+	cat test/bank_post45.n_rows test/bank_post45.rows | estimator -n test/bank_post45.names -m model/auction.model -o model/refit.model
+	cat test/bank_post45.n_rows test/bank_post45.rows | validator -n test/bank_post45.names -m model/refit.model
+
+c45_parser:
+	-rm -f c45_parser
+	cp ../seq_regr/c45_syntax.test.exec c45_parser
+
+validate.o: validate_model.cc $(above_infinity)
+	$(CC) $(CFLAGS) -c validate_model.cc -o $@
+
+validator: validate.o $(above_infinity)
+	@echo Making executable
+	$(CC) $^ $(LDLIBS) -o  $@
+
+estimate.o: estimate_model.cc $(above_infinity)
+	$(CC) $(CFLAGS) -c estimate_model.cc -o $@
+
+estimator: estimate.o $(above_infinity)
+	@echo Making executable
+	$(CC) $^ $(LDLIBS) -o  $@
+
+#---------------------------------------------
+
+est.data:                                             # raw data for c4.5
+	-rm -f est.data data/est.data
+	head -n 50000 data/ok.1 | cat data/br.1 - > data/est.data
+	ln -s data/est.data est.data
+
+est.dat: est.data                             
+	-rm -f est.dat data/est_post45.dat
+	time c45_parser --input=data/est --raw-data > data/est_post45.dat      
+	ln -s data/est_post45.dat est.dat
+
+val.data:
+	-rm -f val.data data/val.data
+	head -n 200000 data/ok.2 | cat data/br.2 data/br.3 data/br.4 data/br.5 - > data/val.data
+	ln -s data/val.data val.data
+
+val.dat: val.data
+	-rm -f val.dat data/val_post45.dat
+	c45_parser --input=data/val --raw-data > data/val_post45.dat
+	ln -s data/val_post45.dat val.dat
+
+### Merged files with common over-sampling
+# 						   (1.25 min / 25,000, gosset O2)
+
+temp%.names:
+	ln -s data/bank.names $@
+
+temp%.data: temp%.names
+	head -n 5000 data/ok.$* | cat data/br.$* - > $@
+
+merge%.dat: temp%.data temp%.names
+	c45_parser --input=temp$* -n         > data/merge$*.names
+	c45_parser --input=temp$* -v         > data/merge$*.rows
+	c45_parser --input=temp$* --raw-data > data/$@
+	ln -s data/$@ $@
+
+val3.rows:
+	-rm -f val3.rows
+	mkfifo val3.rows
+	cat data/merge1.rows merge2.rows  merge4.rows merge5.rows > val3.rows &
+
+run_auction3: auction.test.exec validator merge3.dat val3.dat
+	auction.test.exec -f merge3.dat -r 100
+	validator         -f val3.dat -m model/refit.model
+
+reestimate: estimator
+	reestimator -m model/auction.model -d merge1.dat -o model/refit.model

@@ -1,0 +1,29 @@
+Model 3
+
+     Auction    4 bidders with total alpha 0.149682
+   Bidder #0 Geom (0.25)  B0 with alpha 0.000216103, Recommender R0[21 since used; 64 rcmd; 378 remain]: sequence @ 64
+   Bidder #1 Constant    B1 with alpha 0.124202, Recommender R1[0 since used; 10 rcmd; 430 remain]: permutation @ 12 -> 183
+   Bidder #2 Constant    B2 with alpha 0.025, Recommender R2[0 since used; 0 rcmd; 97900 remain]: 0 x 1 
+   Bidder #3 Geom (0.2)  B3 with alpha 0.000264453, Recommender R3[25 since used; 26 rcmd; 64 remain]: 1 x 6 
+
+   ____________ Logistic Regression for br? _________________ 
+    n =  50467
+    q =  13 with 116 evaluated and 0 since last added.
+    SSE = 372.964     LL = -1578.23
+        [ 0]                Intercept      -78.34      0.1973  397.2
+        [ 1]              BEHV_SCR-m1     0.04152    0.002771  14.99
+        [ 2]              BEHV_SCR-m2    0.000182   0.0005358  0.3397
+        [ 3]              BEHV_SCR-m4    0.003262   0.0004484  7.276
+        [ 4]                  CASH-m1    -0.01086     0.02048  0.5305
+        [ 5]           BEHV_SCR-m1^2   -5.521e-05   3.052e-06  18.09
+        [ 6]              CASH_INT-m1     0.01432    0.003351  4.275
+        [ 7]       CONVERT-DATE-DOB-2      -0.658      0.1572  4.185
+        [ 8]CONVERT-DATE-DOB_is_missing     -0.4036      0.1098  3.675
+        [ 9]   CONVERT-DATE-EXP_DT-m3      0.5888     0.04929  11.95
+        [10] CONVERT-DATE-MEMBER_DATE      0.1073     0.01525  7.036
+        [11]  CONVERT-YN-CHECK_CD_=_1       1.042      0.1944  5.359
+        [12]              CURR_BAL-m2   0.0001658    1.76e-05  9.418
+        [13]TOT_REV_RET_BAL_is_missing       1.024       0.142  7.211
+
+   __________________________________________________________ 
+VALD: SSE = 1445.89 LL = -6042.94

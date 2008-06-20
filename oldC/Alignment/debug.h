@@ -1,0 +1,1 @@
+/*	Debug.h	*/#ifndef _DEBUG_#define _DEBUG_void Wait(void);void PrintIntVec(int *vec, int n,char *str);void PrintFloatVec(float *vec, int n,char *str);#endif

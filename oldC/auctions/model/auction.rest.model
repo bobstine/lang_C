@@ -1,0 +1,19 @@
+LogisticRegression
+10442 4
+-8.12977 0.140055
+0.0561601 0.00329579
+0.00367579 0.000509148
+-0.125174 0.0180202
+-7.31645e-05 3.66788e-06
+ColumnFeature BEHV_SCR-m1
+FeatureABC 0 1 1 1.16779e-26
+ColumnFeature BEHV_SCR-m3
+FeatureABC 0 1 1 1.41294e-18
+ColumnFeature CASH-m1
+FeatureABC 0 1 1 7.85324e-25
+InteractionFeature
+ColumnFeature BEHV_SCR-m1
+FeatureABC 0 1 1 1.16779e-26
+ColumnFeature BEHV_SCR-m1
+FeatureABC 0 1 1 1.16779e-26
+FeatureABC 0 1 1 8.40618e-304

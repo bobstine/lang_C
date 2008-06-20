@@ -1,0 +1,1 @@
+/*	Random.h	*/void InitRandom (unsigned long  randomSeed);double Uniform(void);void FillUniformVector (double *vp, int len);void	MultinomialRand(int n, double *p, int *x, int nCells);int		DiscreteSample(double *table, int tableLen);void	TruncatedDiscreteSample(double *table, int n, int lo, int hi,						int *x, double *prob);

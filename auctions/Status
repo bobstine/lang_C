@@ -1,0 +1,261 @@
+Need to 
+        Build smarter streams that look at the X's they are recommending, more careful
+        check for which X's make more sense.  More checking before placing bids.
+        EG: add a units, "domain" to the variables to suggest heuristic groups to
+        attempt to use in PC analysis (ie, dont combine unless common domain).
+
+        Build a fixed bidder that considers the terms left in the input stream, not
+        just in the current order that is available.
+                
+        Determine role for bennett, White in logistic?
+        
+        Check cross validation for logistic regression.
+        
+        Get the spline calibration back in place.
+        Figure out how to use calibration for logistic regression.
+
+
+*** Subspace methods are all giving pc's that are not well-scaled....
+
+
+------------------------------------------------------------------------------
+15 Feb 08
+
+Plug in the RKHS kernel method as a stream.  Kinda raw.  Should we standardize?  
+Which kernel do you use? ...
+
+Subspace methods are all giving pc's that are not well-scaled. These look singular,
+or the decomponsition fails.  It should check to make sure that it has a subspace
+to offer before bidding.
+
+------------------------------------------------------------------------------
+29 Jan 08
+
+Have the GSL eigen decompositions working nicely, but need to figure out where
+the space for the eigen vectors that get created should be.  Who manages this
+space?
+        make something like a GSL feature?
+
+
+------------------------------------------------------------------------------
+28 Jan 08
+
+Start working on framework for adding principle component type stream.
+	Bundle Streams
+	Eigen tools in gsl library
+
+
+------------------------------------------------------------------------------
+27 Jan 08
+
+Have polynomial experts in place and running.
+
+
+------------------------------------------------------------------------------
+21 Jan 08
+
+Have auction running with new type of experts.
+
+
+------------------------------------------------------------------------------
+20 Jan 08
+
+Quest to simplify things runs into a problem. On the feature side, can combine
+heterogenous features since they have a common abstract base class whose functions
+do *not* depend on the template classes.  FeatureABC is not a generic class.
+
+On the expert side, the common functions *do* seem to depend on the generic 
+classes. An expert is basically the cross-product of bidders with streams, so theres
+little to offer for an ABC.  How do you put these all together?  You have to
+isolate things that are generic, not requiring the class.  Put that in the ABC.
+
+Build a basic ABC for the experts, and now can combine them.  Dean would call
+these experts an "interface" class, made to put a common front on the underlying
+bidders and streams.
+
+
+------------------------------------------------------------------------------
+17 Jan 08
+
+Fiddle with bidders.  Do not show the obtained p-value, only the test outcome.
+
+
+------------------------------------------------------------------------------
+15 Jan 08
+
+Leave out analysis now running for auction with linear model.
+
+Numerous patches here and there to lower level code allows running auction. 
+Fit a model to the First Funds data, using subset selection to reserve a test
+set for subsequent cross-validation runs.
+
+Get the fit, but not the reasonable R2 sort of summary stats.  t/p-value are
+off compared to what JMP finds in test data. Odd that get the right estimates,
+but not the right SE's and R2.  Turns out to have been that the output was
+labeled wrong!
+
+
+------------------------------------------------------------------------------
+ 4 Jan 08
+
+Have the auction running now, using Richard's bank data as an interesting 
+test.  Converted the auction to generic model class, and forgot about referencing
+the auction.  Now that I fixed that, it's running well -- or so it seems.
+
+
+------------------------------------------------------------------------------
+20 Dec 07  
+
+Screen out collinear predictors at evaluation.  Seems to run well now.  Not sure of
+speed, so perhaps time for some shark feeding.
+
+
+------------------------------------------------------------------------------
+19 Dec 07  
+
+Tests show running OK now, but that current method does not recognize when
+an added variable is perfectly collinear (a copy, in fact) with the previously
+used variables.  (Must be masked in some way by the weights?)
+
+Test works well by recognizing the problem in running the auction, then using
+emacs to find the interesting row, pasting into a file of interesting rows,
+then use the rows-to-columns function (seqregr project) to transpose the data
+and read into JMP.
+
+
+------------------------------------------------------------------------------
+18 Dec 07  
+
+Running better, but not getting a decent fit.
+
+Need to check that its not trying to square an indicator, and that the restore
+prior status is working as it should.  Twice adds things (preliminary test) but
+then dont' work so well in fit (complains about predictions at 0).
+
+
+------------------------------------------------------------------------------
+16 Dec 07    
+
+Now compiling and running code. Not right, but running.
+
+Need to sort out the nature of the recommenders, find out which things
+they are building.  Logistic regression seems to run off the end and produce
+zero weights for many observations, then dies.  Was reading wts as y, but
+that should not cause it to diverge.
+
+What the the apparently duplicate things being offered by the recommenders?
+Resolved.
+
+------------------------------------------------------------------------------
+14 Dec 07    
+
+Get to compile after much nashing of teeth.  Problems were from linking...
+Got to remember to look at the build results when linker fails.  Operator<<
+was over-loaded and confused the compiler...  
+
+
+------------ Current
+
+	Have to remove the calibrator in order to save the calibrator, unless
+	the model 'remembers its fit' that was used prior to adding the calibrator.
+
+	Building my_features.test.exec...
+	Smoothing spline operator running into problems when try
+	to build a feature with a smoothing spline.  Wants to copy
+        construct, and that's not good.  But why so many times?
+
+	Need for the spline to become an object with state so that it can
+	become a feature and be stored.  Could write coefs to a file if needed.
+	Need a calibrator object that acts like a feature.  Something like
+	a unary range that could just compute f(y^) with y^ from another
+	formula.
+
+------------ Do next
+
+The model ought to be responsible for reading/writing the calibration
+function, with the auction, estimator, and validator having no idea
+what sort of beast is being used for the calibration.  Leave all of
+that encapsulated in the model, or in some template parameter that
+becomes part of the model.
+
+Add other types of recommenders that either pass through the data a
+second time or use other methods to construct features.  At 800
+rounds, pretty much done with the set of feature generators tried
+here.
+
+Model linear combination does not have to be recomputed as I am doing;
+after all, the fit is known.
+
+Speed up the caching of centers and scales; get more use from these,
+particularly for the smoothing spline and other unary operators.
+
+Get dummy property propagated better in ABC or cache for features.
+
+Odds and ends
+
+	Shorter, less jumbled names for linear combinations.
+
+	Template more things in the feature factory so that not so
+	bound to a vector of features.
+
+	Feature factory ought to free space when done.
+
+
+------------ Remember that
+
+BIDDERS, RECOMMENDERS, and FEATURES are all abstract classes.
+
+All get tossed around as pointers.  This is especially true for the
+features.  Various things can modify a feature.
+
+---
+
+BIDDERS place all of the bids in the auction.  The auction only sees
+the bidders, not the underlying recommenders or data columns.
+
+BIDDERS come in a one to one correspondence with RECOMMENDERS.
+
+RECOMMENDERS offer features to BIDDERS in the auction.  At the moment,
+each bidder looks at only one recommender, but several bidders can bid
+on the same recommender.
+
+Recommenders come in two flavors.  One builds features directly from a
+collection of columns.  The other uses some 'source' of features,
+which can include the auction itself.
+
+FEATURES are the items of the auction.  
+
+COLUMNS are the repository of the data used to build the features, but
+columns themselves are never offered directly by recommenders.
+
+
+--------------  Dead Bugs
+
+	Smoothing spline is not working correctly. I need to test smoothing 
+	spline code with bigger problem to see if I can figure out why its dying
+	when I build auction_test.
+
+The value of the smoothing spline is not quite an average of the data,
+so you can get values that are negative or larger than 1.  These
+caused the logit function to return nan.  Logit now checks for a
+proper range.
+
+---
+
+	Spline fit fails as well as SE jumps to huge value after get it
+	to add dummy missing data indicator by switching to hybrid optimizer
+	rather than pure newton method.
+
+The spline code has a hard time finding lambda from the input df
+unless the data are widely spread.  So, I just round to a 'coarse
+grid' (1000 pts on [0,1]) and let the algorithm take care to join up
+the associated y's.
+
+---
+
+	How should a model handle the calibrator column since it
+	is not a feature like the other predictors.
+
+Have to make a feature that is the smoothing spline or other
+calibrator.  Otherwise cannot force the appropriate cross-validation
+to happen.

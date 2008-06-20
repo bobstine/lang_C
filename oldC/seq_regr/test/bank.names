@@ -1,0 +1,206 @@
+|--------------------------------------------------------------------------------------------
+|
+|  see http://www.rulequest.com/see5-unix.html for details on the syntax of this file
+|
+| Method of making files and running c5.0 
+|
+| .names
+|    	get name's list of names (cauchy:/data/bank/old/big-merge-names.lsp)
+|	change them to this format (notice the Y is listed twice, and listed as categorical)
+|       the following is useful to figure out what values a column uses in column 140:
+|       head -1 merge.data ; head -5000 merge.data | cut -f140 -d"," | sort | uniq
+|
+| .data
+|	grab the estimation data file, delete weights, convert blanks to commas
+|	head -582000 merge.all_data |sed -e"s/(/ /g" | cut -d " " -f3- | sed -e"s/ /,/g;s/)//g;s/,NA,/,?,/g;s/,NA,/,?,/g" >! merge.data
+|
+| .cost
+|
+|       since we have stripped out the cost, lets put it back in
+|
+|		predicted, true : cost
+|		0,	0	:0
+|		1,	1	:0
+|		0,	1	:1
+|		1,	0	:1
+|
+|
+| .test
+|
+|	grab the testing data file, delete weights, convert blanks to commas
+|	tail -2328000 merge.all_data | ... |  merge.test
+|
+|
+| Now generate the actual output using boosting (-b = boosting):
+|
+|       c5.0 -f merge -b
+|
+|--------------------------------------------------------------------------------------------
+
+
+br?.
+
+| weight:       ignore.
+
+br?: 			continuous.
+Month:			continuous.
+Month7?:		0,1.	
+Month8?:		0,1.
+Month9?:		0,1.
+Month10?:		0,1.
+Month11?:		0,1.
+Month12?:		0,1.
+Month13?:		0,1.
+Month14?:		0,1.
+Month15?:		0,1.
+Month16?:		0,1.
+Month17?:		0,1.
+Month18?:		0,1.
+
+| column #15
+EXT_STAT-m1:		A,B,C,E,F,I,L,U,Z.
+INT_STAT-m1:		D,N,O,X.	    
+BEHV_SCR-m1:		continuous. 
+CASH-m1:		continuous. 
+CASH_INT-m1:		continuous. 
+CRLF_CHG-m1:		continuous.	    
+CSH_LINE-m1:		continuous. 
+CTD_CA-m1:		continuous.	    
+CTD_PMT-m1:		continuous. 
+CTP_PUR-m1:		continuous. 
+CURR_BAL-m1:		continuous. 
+CYCLE-m1:		continuous. 
+CYC_CA-m1:		continuous.	    
+CYC_OS-m1:		continuous. 
+CYC_PMT-m1:		continuous. 
+CYC_PUR-m1:		continuous. 
+ITEM_CHG-m1:		continuous.	    
+LATE_CHG-m1:		continuous. 
+CONVERT-DATE-EXP_DT-m1: continuous. 
+LINE-m1:		continuous. 
+LINE_CHG-m1:		A,D,F,I,M,N,W,Y.
+                        
+        
+MRCH-m1:		continuous. 
+MRCH_INT-m1:		continuous. 
+OVR_CHG-m1:		continuous.        
+
+| c 39
+EXT_STAT-m2:		A,B,C,E,F,I,L,U,Z.    
+INT_STAT-m2:		D,N,O,X.	    
+BEHV_SCR-m2:		continuous. 
+CASH-m2:		continuous. 
+CASH_INT-m2:		continuous. 
+CRLF_CHG-m2:		continuous.	    
+CSH_LINE-m2:		continuous. 
+CTD_CA-m2:		continuous.	    
+CTD_PMT-m2:		continuous.	    
+CTP_PUR-m2:		continuous. 
+CURR_BAL-m2:		continuous. 
+CYCLE-m2:		continuous. 
+CYC_CA-m2:		continuous.	    
+CYC_OS-m2:		continuous. 
+CYC_PMT-m2:		continuous. 
+CYC_PUR-m2:		continuous. 
+ITEM_CHG-m2:		continuous.	    
+LATE_CHG-m2:		continuous.	    
+CONVERT-DATE-EXP_DT-m2:	continuous. 
+LINE-m2:		continuous. 
+LINE_CHG-m2:		A,D,F,I,M,N,W,Y. 
+MRCH-m2:		continuous. 
+MRCH_INT-m2:		continuous. 
+OVR_CHG-m2:		continuous.        
+| c 63
+EXT_STAT-m3:		A,B,C,E,F,I,L,U,Z.    
+INT_STAT-m3:		D,N,O,X.	    
+BEHV_SCR-m3:		continuous. 
+CASH-m3:		continuous. 
+CASH_INT-m3:		continuous. 
+CRLF_CHG-m3:		continuous.	    
+CSH_LINE-m3:		continuous. 
+CTD_CA-m3:		continuous.	    
+CTD_PMT-m3:		continuous.	    
+CTP_PUR-m3:		continuous. 
+CURR_BAL-m3:		continuous. 
+CYCLE-m3:		continuous. 
+CYC_CA-m3:		continuous.	    
+CYC_OS-m3:		continuous. 
+CYC_PMT-m3:		continuous. 
+CYC_PUR-m3:		continuous. 
+ITEM_CHG-m3:		continuous.	    
+LATE_CHG-m3:		continuous.	    
+CONVERT-DATE-EXP_DT-m3:	continuous. 
+LINE-m3:		continuous. 
+LINE_CHG-m3:		A,D,F,I,M,N,W,Y. 
+MRCH-m3:		continuous. 
+MRCH_INT-m3:		continuous. 
+OVR_CHG-m3:		continuous.        
+
+| c 87
+EXT_STAT-m4:		A,B,C,E,F,I,L,U,Z.    
+INT_STAT-m4:		D,N,O,X.	    
+BEHV_SCR-m4:		continuous. 
+CASH-m4:		continuous. 
+CASH_INT-m4:		continuous. 
+CRLF_CHG-m4:		continuous.	    
+CSH_LINE-m4:		continuous. 
+CTD_CA-m4:		continuous.	    
+CTD_PMT-m4:		continuous.	    
+CTP_PUR-m4:		continuous. 
+CURR_BAL-m4:		continuous. 
+CYCLE-m4:		continuous. 
+CYC_CA-m4:		continuous.	    
+CYC_OS-m4:		continuous. 
+CYC_PMT-m4:		continuous. 
+CYC_PUR-m4:		continuous. 
+ITEM_CHG-m4:		continuous.	    
+LATE_CHG-m4:		continuous.	    
+CONVERT-DATE-EXP_DT-m4:	continuous. 
+LINE-m4:		continuous. 
+LINE_CHG-m4:		A,D,F,I,M,N,W,Y. 
+MRCH-m4:		continuous. 
+MRCH_INT-m4:		continuous. 
+OVR_CHG-m4:		continuous.        
+
+| c 111
+FICO:			continuous.
+TOT_REV_BANK_BAL:	continuous.
+TOT_REV_RET_BAL:	continuous.
+TOT_INS_BAL:		continuous.
+TOT_FIN_BAL:		continuous.
+TOT_REV_CREDIT:		continuous.
+TOT_REV_CARDS:		continuous.
+TOT_REV_UTIL:		continuous.
+MAX_CREDIT_LINE:	continuous.
+NUM_NEW_CARDS:		continuous.
+NUM_CARDS_POS:		continuous.
+NUM_CARDS_CLOSED:	continuous.
+NUM_INQUIRIES:		continuous.
+NUM_CARDS_60:		continuous.
+NUM_CARDS_90:		continuous.
+NUM_CARDS_EVER_60:	continuous.
+MAX_AGE_CARD:		continuous.
+NUM_SATISFACTORY:	continuous.
+NUM_FUSA:		continuous.
+MONTHS_SINCE_LAST_LOAN:	continuous.
+TOT_CARDS_UTIL_RATE:	continuous.
+NUM_CARDS:		continuous.
+AGE_GROUP:		0,1,2,3,4.
+CONVERT-YN-CHILD:	0,1.
+CONVERT-DATE-DOB:	continuous.
+|c 136
+DWELL_TYPE:		A,M,P,R,S,U.
+ENH_SC:			M,N.
+HIT_TYPE:		E,H,I,N.
+HOME_OWNER:		P,H,T,U,R.
+INCOME_RANGE:		J,K,L,M,N,O,P,Q,R,U.
+MAIL_RESP:		M,U,Y.
+CONVERT-YN-VERIFIED:	0,1.
+
+|column 143
+MAIL_IND:		U,Y,M.
+OWN_STATUS:		A,G,R,O,*,?.
+CONVERT-YN-CHECK_CD:	0,1.
+CONVERT-DATE-MEMBER_DATE: continuous.
+CONVERT-DATE-DOB-2:	continuous.
+STATE:			AA,AE,AK,AL,AP,AR,AZ,CA,CD,CO,CT,DC,DE,FC,FL,GA,GB,GU,HI,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NA,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,PI,PR,RI,SC,SD,TN,TX,UT,VA,VI,VT,WA,WI,WV,WY.

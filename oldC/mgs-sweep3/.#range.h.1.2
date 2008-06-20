@@ -1,0 +1,105 @@
+/* $Id: range.h,v 1.2 2002/01/14 16:32:20 bob Exp $
+
+   Ranges
+
+   11 Jan 02 ... Created to support factored statistics code.
+
+*/
+
+#ifndef _RANGE_H_
+#define _RANGE_H_
+
+#include <utility>
+#include "patch_iterator.h"
+
+
+template<class I, class X>
+class FunctionIterator : public iterator<forward_iterator_tag,typename I::value_type::result_type>{
+  I mIter;
+  const X& mX;
+ public:
+  typedef pair<FunctionIterator<I,X>,FunctionIterator<I,X> > range;
+  typedef typename I::value_type::result_type value_type;
+  FunctionIterator(I it, const X& x)
+    : mIter(it), mX(x) { }
+  void operator++() { ++mIter; }
+  value_type operator*() { return (*mIter)(mX); }
+  bool operator!=(const FunctionIterator& it) const { return mIter != it.mIter; }
+};
+
+template<class I, class X>
+inline FunctionIterator<I,X>::range
+make_row (I begin, I end, const X& x)
+{
+  return make_pair (FunctionIterator<I,X>(begin),
+		    FunctionIterator<I,X>(end));
+}
+
+template<class I, class X>
+inline FunctionIterator<I,X>::range
+make_row (pair<I,I> range, const X& x)
+{
+  return make_row(range.first, range.second, x);
+}
+
+/////////////////////////  Argument varies over some range  //////////////////////////////
+
+
+template<class F, class I>
+class ArgumentIterator : public std::iterator<forward_iterator_tag, typename F::result_type> {
+  const F& mF;
+  I mIter;
+ public:
+  typedef pair<ArgumentIterator<F,I>,ArgumentIterator<F,I> > range;
+  typedef typename F::result_type value_type;
+  ArgumentIterator(const F& f, I it)
+    : mF(f), mIter(it) { }
+  void operator++() { ++mIter; }
+  value_type operator*() { return mF(*mIter); }
+  bool operator!=(const ArgumentIterator& it) const { return mIter != it.mIter; }
+};
+
+
+template<class F, class I>
+inline ArgumentIterator<F,I>::range
+make_column (const F& f, I begin, I end)
+{
+  return make_pair (ArgumentIterator<F,I>(f, begin),
+		    ArgumentIterator<F,I>(f,end));
+}
+
+template<class F, class I>
+inline ArgumentIterator<F,I>::range
+make_column (const F& f, pair<I,I> range)
+{
+  return make_column(f, range.first, range.second);
+}
+
+/////////////////////////  Range versions of algorithms  ////////////////////
+
+template <class I1, class I2>
+inline I2 copy (pair<I1,I1> range, I2 it)
+{
+  return copy(range.first, range.second, it);
+}
+
+
+template <class I>
+inline typename I::value_type accumulate (pair<I,I> range, typename I::value_type init)
+{
+  return accumulate(range.first, range.second, init);
+}
+
+template <class I1, class I2>
+inline double inner_product (pair<I1,I1> x, I2 y)
+{
+  return inner_product (x.first, x.second, y, 0.0);
+}
+
+template <class I1, class I2, class F>
+inline double inner_product (pair<I1,I1> x, I2 y, F& f)
+{
+  return inner_product (x.first, x.second, y, 0.0);
+}
+
+#endif

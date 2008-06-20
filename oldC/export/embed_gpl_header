@@ -1,0 +1,8 @@
+#!/bin/sh
+# Embed the GPL header into .c and .h files
+for file in *.[hc]
+do
+  mv $file temp
+  cat GPL.header temp > $file
+  rm temp
+done

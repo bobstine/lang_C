@@ -1,0 +1,51 @@
+# $Id: Makefile,v 1.19 2004/02/19 22:55:33 bob Exp $
+
+###########################################################################
+#
+#        Options
+#
+#   Examples of depending on libaries.  Add names here
+#        LDLIBS =  -lthing -lregression 
+#   and give the LDFLAGS to local dir if needed
+#        LDFLAGS = -Llib 
+# 
+###########################################################################
+
+PROJECT_NAME = seq_regr
+
+OPT      =  -O2 -DNDEBUG
+
+INCLUDES = -I. -I$(C_PATH)/utils -I$(C_PATH)/random  -I$(C_PATH)/ranges -I-
+
+LDLIBS   = -lgslcblas -lgsl -lm -lutils -lrandom -lranges
+
+LDFLAGS  = -L$(C_PATH)/utils -L$(C_PATH)/random -L$(C_PATH)/ranges
+
+
+###########################################################################
+#
+#	Objects ... objects are listed in order of precedence
+#
+###########################################################################
+
+level_0   = gsl_regr.o  threshold.o log_regr.o  c45_syntax.o
+level_1   = seq_regr.o 
+level_3   = 
+
+############################################################################
+#
+#            INCLUDING RULES AND DEFINITIONS
+#
+############################################################################
+
+include ../rules_for_makefiles
+
+seq_regr: seq_regr_cmd.o $(above_infinity)
+	g++ $(CFLAGS) $(INCLUDES) seq_regr_cmd.o $(above_infinity) -o $@
+
+# Analysis
+bank.dat:
+	c45_syntax.test.exec --input=test/bank -r > bank.dat
+
+bank:   temp.dat log_regr.test.exec c45_syntax.test.exec
+	cat bank.dat | log_regr.test.exec  -p .01

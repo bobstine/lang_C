@@ -1,0 +1,15 @@
+/*     efdtt.c     Author:  Charles M. Hannum <root@ihack.net>             */
+/*                                                                         */
+/*     Thanks to Phil Carmody <fatphil@asdf.org> for additional tweaks.    */
+/*                                                                         */
+/*     Length:  434 bytes (excluding unnecessary newlines)                 */
+/*                                                                         */
+/*     Usage is:  cat title-key scrambled.vob | efdtt >clear.vob           */
+
+#define m(i)(x[i]^s[i+84])<<
+unsigned char x[5],y,s[2048];main(n){for(read(0,x,5);read(0,s,n=2048);write(1,s
+,n))if(s[y=s[13]%8+20]/16%4==1){int i=m(1)17^256+m(0)8,k=m(2)0,j=m(4)17^m(3)9^k
+*2-k%8^8,a=0,c=26;for(s[y]-=16;--c;j*=2)a=a*2^i&1,i=i/2^j&1<<24;for(j=127;++j<n
+;c=c>y)c+=y=i^i/8^i>>4^i>>12,i=i>>8^y<<17,a^=a>>14,y=a^a*8^a<<6,a=a>>8^y<<9,k=s
+[j],k="7Wo~'G_\216"[k&7]+2^"cr3sfw6v;*k+>/n."[k>>4]*2^k*257/8,s[j]=k^(k&k*2&34)
+*6^c+~y;}}

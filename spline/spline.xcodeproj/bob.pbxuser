@@ -1,0 +1,337 @@
+// !$*UTF8*$!
+{
+	08FB7793FE84155DC02AAC07 /* Project object */ = {
+		activeArchitecture = i386;
+		activeBuildConfigurationName = Debug;
+		activeExecutable = C4C8904508C645A0000E7EEE /* test smoothing_spline */;
+		activeTarget = C4C8911C08C6525D000E7EEE /* spline */;
+		addToTargets = (
+		);
+		codeSenseManager = C4C8902508C64509000E7EEE /* Code sense */;
+		executables = (
+			C4C8903808C64570000E7EEE /* test linpack */,
+			C4C8904508C645A0000E7EEE /* test smoothing_spline */,
+			C4B6C9DC0937727B00956DDA /* splsm */,
+		);
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = 1;
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Target_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					552,
+					20,
+					48,
+					43,
+					43,
+					20,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+					PBXFileDataSource_SCM_ColumnID,
+				);
+			};
+			PBXConfiguration.PBXTargetDataSource.PBXTargetDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					20,
+					512,
+					60,
+					20,
+					48,
+					43,
+					43,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Target_ColumnID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXTargetDataSource_PrimaryAttribute,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 235661966;
+			PBXWorkspaceStateSaveDate = 235661966;
+		};
+		perUserProjectItems = {
+			C43F58610D50B95400531442 /* PBXTextBookmark */ = C43F58610D50B95400531442 /* PBXTextBookmark */;
+			C43F58620D50B95400531442 /* PBXTextBookmark */ = C43F58620D50B95400531442 /* PBXTextBookmark */;
+			C43F58630D50B95400531442 /* PBXTextBookmark */ = C43F58630D50B95400531442 /* PBXTextBookmark */;
+			C43F58660D50B95400531442 /* PBXTextBookmark */ = C43F58660D50B95400531442 /* PBXTextBookmark */;
+			C43F58670D50B95400531442 /* PBXTextBookmark */ = C43F58670D50B95400531442 /* PBXTextBookmark */;
+			C43F58680D50B95400531442 /* PBXTextBookmark */ = C43F58680D50B95400531442 /* PBXTextBookmark */;
+			C4B478720E0BEA970029B081 /* PBXTextBookmark */ = C4B478720E0BEA970029B081 /* PBXTextBookmark */;
+			C4BDC45F0D31D6470058EEF7 /* PBXTextBookmark */ = C4BDC45F0D31D6470058EEF7 /* PBXTextBookmark */;
+			C4BDC4610D31D6470058EEF7 /* PBXTextBookmark */ = C4BDC4610D31D6470058EEF7 /* PBXTextBookmark */;
+			C4DE95A00D304F14000012E5 /* PBXTextBookmark */ = C4DE95A00D304F14000012E5 /* PBXTextBookmark */;
+		};
+		sourceControlManager = C4C8902408C64509000E7EEE /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	C43F58610D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902F08C6453B000E7EEE /* smoothing_spline.h */;
+		name = "smoothing_spline.h: 303";
+		rLen = 0;
+		rLoc = 9716;
+		rType = 0;
+		vrLen = 1634;
+		vrLoc = 4445;
+	};
+	C43F58620D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902D08C6453B000E7EEE /* linpack.h */;
+		name = "linpack.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 286;
+		vrLoc = 0;
+	};
+	C43F58630D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8903008C6453B000E7EEE /* linpack.cc */;
+		name = "linpack.cc: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 704;
+		vrLoc = 0;
+	};
+	C43F58660D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902D08C6453B000E7EEE /* linpack.h */;
+		name = "linpack.h: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 286;
+		vrLoc = 0;
+	};
+	C43F58670D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8903008C6453B000E7EEE /* linpack.cc */;
+		name = "linpack.cc: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 704;
+		vrLoc = 0;
+	};
+	C43F58680D50B95400531442 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8903208C6453B000E7EEE /* linpack.test.cc */;
+		name = "linpack.test.cc: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 562;
+		vrLoc = 0;
+	};
+	C4B478720E0BEA970029B081 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8903208C6453B000E7EEE /* linpack.test.cc */;
+		name = "linpack.test.cc: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 562;
+		vrLoc = 0;
+	};
+	C4B6C9DA0937727B00956DDA /* splsm */ = {
+		activeExec = 0;
+		executables = (
+			C4B6C9DC0937727B00956DDA /* splsm */,
+		);
+	};
+	C4B6C9DC0937727B00956DDA /* splsm */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = splsm;
+		sourceDirectories = (
+		);
+	};
+	C4BDC45F0D31D6470058EEF7 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */;
+		name = "ss.fill_with_smooth(DF, smthDF)";
+		rLen = 31;
+		rLoc = 1007;
+		rType = 0;
+		vrLen = 824;
+		vrLoc = 366;
+	};
+	C4BDC4610D31D6470058EEF7 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902F08C6453B000E7EEE /* smoothing_spline.h */;
+		name = "SmoothingSpline (int df, Iter x, Iter y, int n)";
+		rLen = 52;
+		rLoc = 5496;
+		rType = 0;
+		vrLen = 588;
+		vrLoc = 195;
+	};
+	C4C8902408C64509000E7EEE /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 1;
+		scmConfiguration = {
+			CVSToolPath = /usr/bin/cvs;
+			CVSUseSSH = YES;
+		};
+		scmType = scm.cvs;
+	};
+	C4C8902508C64509000E7EEE /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {783, 1455}}";
+			sepNavSelRange = "{1007, 31}";
+			sepNavVisRect = "{{0, 256}, {774, 406}}";
+			sepNavWindowFrame = "{{115, 181}, {750, 558}}";
+		};
+	};
+	C4C8902D08C6453B000E7EEE /* linpack.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {774, 406}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRect = "{{0, 0}, {774, 406}}";
+		};
+	};
+	C4C8902F08C6453B000E7EEE /* smoothing_spline.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {788, 3744}}";
+			sepNavSelRange = "{9716, 0}";
+			sepNavVisRect = "{{0, 1779}, {774, 406}}";
+		};
+	};
+	C4C8903008C6453B000E7EEE /* linpack.cc */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {774, 576}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRect = "{{0, 0}, {774, 406}}";
+			sepNavWindowFrame = "{{286, 105}, {750, 558}}";
+		};
+	};
+	C4C8903108C6453B000E7EEE /* smoothing_spline.Fortran.cc */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {972, 27465}}";
+			sepNavSelRange = "{40087, 78}";
+			sepNavVisRect = "{{0, 20300}, {459, 186}}";
+			sepNavWindowFrame = "{{453, 80}, {750, 558}}";
+		};
+	};
+	C4C8903208C6453B000E7EEE /* linpack.test.cc */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {754, 406}}";
+			sepNavSelRange = "{0, 0}";
+			sepNavVisRange = "{0, 562}";
+			sepNavVisRect = "{{0, 0}, {774, 406}}";
+			sepNavWindowFrame = "{{79, 120}, {839, 1032}}";
+		};
+	};
+	C4C8903608C64570000E7EEE /* test linpack */ = {
+		activeExec = 0;
+		executables = (
+			C4C8903808C64570000E7EEE /* test linpack */,
+		);
+	};
+	C4C8903808C64570000E7EEE /* test linpack */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "test linpack";
+		sourceDirectories = (
+		);
+	};
+	C4C8904308C645A0000E7EEE /* test smoothing_spline */ = {
+		activeExec = 0;
+		executables = (
+			C4C8904508C645A0000E7EEE /* test smoothing_spline */,
+		);
+	};
+	C4C8904508C645A0000E7EEE /* test smoothing_spline */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 1;
+		configStateDict = {
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = GDBDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		libgmallocEnabled = 0;
+		name = "test smoothing_spline";
+		sourceDirectories = (
+		);
+	};
+	C4C8911C08C6525D000E7EEE /* spline */ = {
+		activeExec = 0;
+	};
+	C4DE95A00D304F14000012E5 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = C4C8902C08C6453B000E7EEE /* smoothing_spline.test.cc */;
+		name = "#include \"random.h\"";
+		rLen = 20;
+		rLoc = 267;
+		rType = 0;
+		vrLen = 930;
+		vrLoc = 470;
+	};
+}

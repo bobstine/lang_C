@@ -1,0 +1,7 @@
+search 
+model: testModel/gsModel.0 
+goal: 5.5 
+type: linear 
+range: 1 5
+
+

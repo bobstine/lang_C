@@ -1,0 +1,1 @@
+/*	17 Jul 89 ... Created from old array def.		Notes: Replace free/malloc with calls to MyFree and MyAlloc if			start to run into problems.*/#ifndef _MemDebug_#define _MemDebug_	char *MyAlloc(int nBytes);	int MyFree (char *ptr);		void PrintMemChain (void);	void CheckMemPointer (char *ptr, char *str);#endif

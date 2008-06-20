@@ -1,0 +1,296 @@
+// $Id: feature_streams.h,v 1.18 2008/02/22 19:39:47 bob Exp $
+
+#ifndef _FEATURE_STREAMS_H_
+#define _FEATURE_STREAMS_H_
+
+/*
+ *  feature_stream.h
+ *  auctions
+ *
+ *  Created by Robert Stine on 1/18/08.
+ *  Copyright 2008. All rights reserved.
+ *
+ 
+ The *only* calls that come down from the expert are calls to
+ 
+        has_feature()
+ 
+ which if true and the bid wins is followed by a call to 
+ 
+        pop()
+ 
+ which must return a feature vector (or else waste the bid).
+ Feature streams are a revised version of the old recommender classes. The 
+ pop() operator must
+        (a) pop off the top element from the stack
+        (b) advance indices/whatever keeps track of the status of the stream
+ 
+ Streams should be lightweight; they will be copied heavily in the auction.  
+ Basically act as a stack/queue.
+ 
+ */
+
+#include "my_features.h"
+
+// polynomial
+#include "function_utils.h"
+
+// principal components
+#include "gsl_eigen.h"
+#include <gsl/gsl_matrix.h>
+
+// operator
+#include <functional>
+
+#include <iostream>
+
+
+
+
+//  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream
+
+template<class Source>
+class FiniteStream
+{
+  std::string   mName;
+  Source const& mSource;
+  int           mPosition;
+  
+public:
+  
+  FiniteStream(std::string const& name, Source const& src)
+    :  mName(name), mSource(src), mPosition(0) {  }
+  
+  std::string name()  const { return mName; }
+  
+  bool                    has_feature();
+  Features::FeatureVector pop();            // pops the top off
+  
+  int                     number_remaining()                  const { return mSource.size() - mPosition; }
+  void                    print_to(std::ostream& os)          const;
+  
+};
+
+template <class Source>
+FiniteStream<Source>
+make_finite_stream (std::string const& name, Source const& s)
+{
+  return FiniteStream<Source>(name, s);
+}
+
+
+//  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  
+
+template<class Source>
+class InteractionStream
+{
+  
+private:
+  std::string     mName;
+  Source const&   mSource;
+  int             mPos1, mPos2;
+  
+public:
+  
+  InteractionStream(std::string name, Source const& src)
+    : mName(name), mSource(src), mPos1(0), mPos2(0) {  if (mSource[0]->is_dummy()) increment_position(); } // skip leading dummy
+  
+  std::string name()                        const { return mName; }
+  
+  bool                     has_feature()                       const;
+  Features::FeatureVector  pop();                      
+  
+  int                      number_remaining()                  const;
+  void                     print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
+   
+private:
+  void increment_position();
+};
+
+template <class Source>
+InteractionStream<Source>
+make_interaction_stream (std::string const& name, Source const& s)
+{
+  return InteractionStream<Source>(name, s);
+}
+
+
+//  CrossProductStream  CrossProductStream  CrossProductStream  CrossProductStream  
+
+template<class Source1, class Source2>
+class CrossProductStream 
+{
+  std::string     mName;
+  Source1 const&  mFixedSource;  // fixed number of features
+  Source2 const&  mDynSource;    // this one iterates most often (odometer style)
+  int             mFixedPos, mDynPos;
+  
+public:
+    
+  CrossProductStream(std::string name, Source1 const& fixedSrc, Source2 const& dynSrc)
+    : mName(name), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0) { }
+  
+  std::string name()  const { return mName; }
+  
+  bool                    has_feature()                       const { return (number_remaining() > 0); }
+  Features::FeatureVector pop();                      
+  
+  int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
+  void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
+  
+private:
+  void increment_position();
+};
+
+template <class Source1, class Source2>
+inline
+CrossProductStream<Source1, Source2>
+make_cross_product_stream (std::string const& name, Source1 const& fixedSrc, Source2 const& dynSrc)
+{
+  return CrossProductStream<Source1, Source2>(name, fixedSrc, dynSrc);
+}
+
+
+
+//  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
+//
+//               This stream forms polynomials from column features 
+//               identified in a dynamically growing list. 
+//               Canonical example of a stream that builds several features
+//               from a subset of features in a different stream.
+//
+
+template<class Source>
+class PolynomialStream 
+{
+  std::string     mName;
+  Source const&   mSource;  
+  int             mPos;
+  int             mDegree;
+  
+public:
+    
+  PolynomialStream(std::string name, Source const& src, int degree)
+    : mName(name), mSource(src), mPos(0), mDegree(degree) { }
+  
+  std::string name()  const { return mName; }
+  
+  bool                    has_feature();
+  Features::FeatureVector pop();                      
+  
+  int                     number_remaining()           const { return (mSource.size()-mPos); }
+  void                    print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
+  
+private:
+  void increment_position();
+  bool feature_meets_conditions(FeatureABC const* feature) const;
+};
+
+template <class Source>
+inline
+PolynomialStream<Source>
+make_polynomial_stream (std::string const& name, Source const& src, int degree = 3)
+{
+  return PolynomialStream<Source>(name, src, degree);
+}
+
+
+
+
+//  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream
+//
+//               This stream transforms a "bundle" of features identified 
+//               in a source, in this case into a subset of eigenvectors.
+//
+//               The stream waits until it obtains a bundle that satisfy the input
+//               predicate of the indicated size, the applies a transformation.
+//               These classes should act like these:
+//                    std::unary_function<Features::FeatureVector,Features::FeatureVector> Transformation;
+//                    std::unary_function<FeatureABC const*, bool>                         Predicate;
+
+
+template<class Source, class Pred, class Trans>
+class BundleStream 
+{
+public:
+  
+private:
+  std::string              mName;
+  Source const&            mSource;  
+  int                      mPos; 
+  int                      mBundleSize;
+  Features::FeatureVector  mBundle;
+  Pred                     mPredicate;       // hold as object, not as reference
+  Trans                    mTransformation;
+  bool                     mPopped;          // set true when popped to avoid stack copy
+  
+public:
+    
+  BundleStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
+    : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mBundle(), 
+      mPredicate(pred), mTransformation(trans), mPopped(false) { }
+  
+  std::string name()  const { return mName; }
+  
+  bool                    has_feature();
+  Features::FeatureVector pop()                              { mPopped=true; return mTransformation(mBundle); }
+  
+  int                     number_remaining()           const { return (mSource.size()-mPos); }
+  void                    print_to(std::ostream& os)   const { os << "BDLS: " << name() << " stream @ " << mPos ; }
+};
+
+template <class Source, class Pred, class Trans>
+BundleStream<Source,Pred,Trans>
+make_bundle_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
+{
+  return BundleStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans);
+}
+
+
+
+
+class FeatureAcceptancePredicate : public std::unary_function<FeatureABC const*,bool>
+{
+public:
+  bool operator()(FeatureABC const* f) const;
+};
+
+
+
+//  SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis
+
+// This class is a wrapper that converts features into the gsl items and back for doing
+// principal components and RKHS.
+#pragma mark SubspaceBasis
+
+
+template<class Method>
+class SubspaceBasis: public std::unary_function<Features::FeatureVector const&, Features::FeatureVector>
+{
+  Method mMethod;
+public:
+  SubspaceBasis (Method m)                : mMethod(m)          { }
+  SubspaceBasis (SubspaceBasis const& pc) : mMethod(pc.mMethod) { }
+                                                                                    
+  Features::FeatureVector operator()(Features::FeatureVector const& fv) const;
+};
+
+
+template <class Source, class Method>
+BundleStream<Source,FeatureAcceptancePredicate,SubspaceBasis<Method> >
+make_subspace_stream(std::string name, Source const& src, int bundleSize, Method method)
+{
+  return make_bundle_stream(name, src, bundleSize, 
+                            FeatureAcceptancePredicate(), 
+                            SubspaceBasis<Method>(method));
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////
+
+#include "feature_streams.Template.h"
+
+#endif

@@ -1,0 +1,56 @@
+cd ~/C/regression/
+make -k variable.test.exec; ./variable.test.exec
+make: `variable.test.exec' is up to date.
+Build transformed variables (trans of trans)
+Build binary variables
+Set of vars in vb2 is : 1 2 
+Compare variables
+ v1 == v2  -> 0
+ v1  < v2  -> 1
+ v1 == v3  -> 1
+ v1  < v3  -> 0
+ v1 == vt1 -> 0
+ v1  < vt1 -> 1
+Push onto a vector and print, then sort and print sorted vector
+_1,sqr(_1),sqrt(sqr(_1)),((_1 * _2) + sqrt(sqr(_1))),_1,(_1 * _2),_2,
+_1,_1,_2,(_1 * _2),((_1 * _2) + sqrt(sqr(_1))),sqrt(sqr(_1)),sqr(_1),
+Evaluate for an observation
+Var[0]  _1=2
+Var[1]  _1=2
+Var[2]  _2=3
+Var[3]  (_1 * _2)=6
+Var[4]  ((_1 * _2) + sqrt(sqr(_1)))=8
+Var[5]  sqrt(sqr(_1))=2
+Var[6]  sqr(_1)=4
+Compiled summation over range to remove virtual calls. 
+Sum v1 = 1.00094e+06
+Time = 167 ticks
+Compiled sum (v1) = Size 1 of content list allows compiling.
+_1,
+  ** index conversion **  
+1.00094e+06
+Time = 160 ticks
+Sum v2 = 2.00135e+06
+Compiled sum of v2  = Size 1 of content list allows compiling.
+_2,
+  ** index conversion **  
+2.00135e+06
+Sum sqr(v1) = 2.00167e+06
+Time = 171 ticks
+Compiled sum sqr (v1) = Size 2 of content list allows compiling.
+_1,sqr(_1),
+  ** index conversion **  
+  ** square conversion **  
+2.00167e+06
+Time = 162 ticks
+Sum (v1*v2) = 2.0022e+06
+Time = 183 ticks
+Compiled sum (v1+v2) = Size 3 of content list allows compiling.
+_1,_2,(_1 * _2),
+  ** index conversion **  
+  ** index conversion **  
+  ** product conversion **  
+2.0022e+06
+Time = 159 ticks
+
+Compilation finished at Thu Jan  9 11:59:32

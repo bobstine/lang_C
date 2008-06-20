@@ -1,0 +1,149 @@
+//  $Id: log_regr.test.cc,v 1.11 2004/02/19 22:55:33 bob Exp $
+ 
+/*
+  Run as
+  
+          log_regr.test.exec -f filename -p pvalue
+
+  with input from std::cin if no filename is given.  A test example is
+
+          log_regr.test.exec -f test/lregr.dat -p .3
+
+  with the large p-value forces it to add some things.  The second X is
+  a copy of the first, and so this also tests the check for linear redundant
+  predictors.
+
+  Base with nothing else running
+    7.700u 0.420s 0:18.41 44.1%     0+0k 10+5io 0pf+0w
+
+  Base with installer running
+    7.650u 0.460s 0:38.99 20.8%     0+0k 0+3io 0pf+0w
+
+*/
+
+#include "log_regr.h"
+#include "print_utils.h"
+#include "range.h"
+
+#include <cstdio>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <list>
+
+void
+parse_arguments(int argc, char** argv, double& pValue, std::string& fileName);
+
+void
+run_logistic_regression(double pValue, std::istream& input); 
+  
+int
+main(int argc, char** argv)
+{
+  double pValue (0.05);
+  if (argc <= 1)
+    run_logistic_regression(pValue, std::cin);
+  else
+  { std::string fileName ("");
+    parse_arguments(argc, argv, pValue, fileName);
+    if (fileName.size()>0)
+    { std::ifstream fileStream (fileName.c_str());
+      if (fileStream)
+	run_logistic_regression(pValue, fileStream);
+      else
+        std::cout << "Could not open input file " << fileName << std::endl;
+    }
+    else
+      run_logistic_regression(pValue, std::cin);
+  }
+  return 0;
+}
+  
+	
+void
+run_logistic_regression(double pValue, std::istream& input)
+{
+  // read, then check sample size
+  int n (0);
+  input >> n;
+  if (n > 0)
+    std::cout << "LREG: Reading data stream with n = " << n << " cases." << std::endl;
+  else
+    std::cout << "LREG: Input stream says n = " << n << "; terminating." << std::endl;
+  // space holding data that is used
+  std::vector<double> data (n);
+  std::string name;
+  // get y first; takes two reads to flush a leading end of line
+  getline(input, name);  getline(input, name);
+  for (int i=0; i<n; ++i)
+    input >> data[i];   // fscanf(input, "%f", data[i]); //
+  std::cout << name << "[0] = " << data[0] << ";  " 
+	    << name <<"[n-1] = " << data[n-1] << std::endl;   
+  // build and print base regression model
+  LogisticRegression regr(name, make_anonymous_range(make_range(data)));
+  std::cout << " *************  Initialized Model  *************** \n"
+	    << regr << std::endl;
+
+  // read sequence of predictors from input file until no more
+  int j (0);
+  bool exit (false);
+  while (input)
+  { ++j;
+    getline(input, name);    getline(input, name);  // flush an eol
+    std::cout << "Considering " << name << " .................................. " << std::endl;
+    for (int i=0; i<n; ++i)
+      if (input)
+	input >> data[i]; // fscanf(input, "%f", data[i]); // 
+      else
+      { exit = true;
+	std::clog << "RUN OUT OF DATA on input." << std::endl;
+	break;
+      }
+    if (exit) break;
+    std::pair<double,double> result;
+    result = regr.add_predictor(name,make_anonymous_range(data),average(data),pValue);
+    std::cout << " For predictor " << name << " result = " << result << std::endl;
+    if (result.second < pValue) // it was added
+      std::cout << " Revised model: " << regr << std::endl;
+  }
+  std::cout << " Total of " << j << " predictors considered." << std::endl;
+  std::cout << "Writing data to file --> lregr.dat <--" << std::endl;
+  std::ofstream outputStream ("lregr.dat");
+  regr.write_data_to(outputStream);
+  outputStream.flush();
+  std::cout.flush();
+}
+
+void
+parse_arguments(int argc, char** argv,
+		double& pValue,
+		std::string& fileName)
+{
+  for (int i=1; i<argc; i=i+2)
+  {
+    char key(argv[i][0]);
+    if ('-' == key)
+    { 
+      switch (argv[i][1])
+      {
+      case 'p' :                                    
+	{ std::stringstream input(argv[i+1]);
+	  input >> pValue;
+	  break;
+	}
+      case 'f' :                                    
+	{ std::string name(argv[i+1]);
+	  fileName = name;
+	  break;
+	}
+      default  :
+	{
+	  std::clog << "Option " << argv[i][0] << " not recognized." << std::endl;
+	  break;
+	}
+      }
+    }
+  }
+}  
+  

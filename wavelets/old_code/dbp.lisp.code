@@ -1,0 +1,1706 @@
+;;;-*- Mode: LISP; Package: :SAPA; Syntax: COMMON-LISP -*-
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;
+;  wavelets.lisp
+;
+;  a collection of Lisp functions concerning wavelets ...
+;
+;  4/9/95
+;
+;  SAPA, Version 1.0; Copyright 1993, Donald B. Percival, All Rights Reserved
+;
+;  Use and copying of this software and preparation of derivative works
+;  based upon this software are permitted.  Any distribution of this
+;  software or derivative works must comply with all applicable United
+;  States export control laws.
+; 
+;  This software is made available AS IS, and no warranty -- about the
+;  software, its performance, or its conformity to any
+;  specification -- is given or implied. 
+;
+;  Comments about this software can be addressed to dbp@apl.washington.edu
+;-------------------------------------------------------------------------------
+;;; (compile-file "ccl:SAPA;wavelets.lisp")
+;;; (load "ccl:SAPA;wavelets.fasl")
+;-------------------------------------------------------------------------------
+(if (not (find-package :SAPA))
+  (defpackage :SAPA (:USE :COMMON-LISP)))
+
+(in-package :SAPA)
+
+(export '(;;; functions for computing the wavelet transform and its inverse ...
+          pyramid-decomposition-Haar
+          pyramid-reconstruction-Haar
+          pyramid-decomposition-4-term
+          pyramid-reconstruction-4-term
+          pyramid-decomposition
+          pyramid-reconstruction
+          wavelet-transform
+          inverse-wavelet-transform
+          dwt->details&smooth
+          
+          ;;; functions for converting 
+          scaling->wavelet
+          wavelet->scaling
+          
+          ;;; a collection of scaling and wavelet filters ...
+          *Haar-scaling*
+          *Haar-wavelet*
+          *D4-scaling*
+          *D4-wavelet*
+          *D6-scaling*
+          *D6-wavelet*
+          *D8-scaling*
+          *D8-wavelet*
+          *D12-scaling*
+          *D12-wavelet*
+          *D20-scaling*
+          *D20-wavelet*
+          *LA8-scaling*
+          *LA8-wavelet*
+          *LA10-scaling*
+          *LA10-wavelet*
+          *LA12-scaling*
+          *LA12-wavelet*
+          *LA14-scaling*
+          *LA14-wavelet*
+          *LA16-scaling*
+          *LA16-wavelet*
+          *LA18-scaling*
+          *LA18-wavelet*
+          *LA20-scaling*
+          *LA20-wavelet*
+
+          ;;; function to compute modulus squared of the transfer function
+          ;;; for the Daubechies wavelets ...
+          mod-sq-tf-for-Daubechies-wavelets
+          mod-sq-tf-for-Daubechies-wavelet-filter
+          mod-sq-tf-for-Daubechies-scaling-filter
+          
+          ;;; functions for computing the fully overlapped wavelet transform ...
+          generate-Haar-filter
+          generate-wavelet-filter
+          generate-scaling-filter
+          wavelet-filter-lengths
+          overlapped-pyramid-decomposition
+          overlapped-wavelet-transform
+          wavelet-length&sample-size->maximum-scale
+          wavelet-length&scale->wavelet-filter-length
+          wavelet-coefficients->wavelet-variance
+          ))
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;;  The functions  pyramid-decomposition-Haar
+;;;                 pyramid-reconstruction-Haar
+;;;                 pyramid-decomposition-4-term
+;;;                 pyramid-reconstruction-4-term
+;;;                 pyramid-decomposition
+;;;                 pyramid-reconstruction
+;;;                 wavelet-transform
+;;;                 inverse-wavelet-transform
+;;;  implement the wavelet transform using wavelets of compact support
+;;;  such as the Haar wavelet, Daubechies's extremal phase wavelets
+;;;  and Daubechies's least asymmetric wavelets.
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; Note: if we assume that the Haar wavelet is given by
+;;;         h_0 = 1/sqrt(2) and h_1 = -1/sqrt(2)
+;;;       and if we regard these as filter coefficients,
+;;;       then, for t = 0, 1, ..., N/2 - 1
+;;;         rough_t = h_0 ts_{2t+1} + h_1 ts_{2t}
+;;;                 = C * (ts_{2t+1} - ts_{2t})
+;;;       where C = 1/sqrt(2).
+;-------------------------------------------------------------------------------
+(defun pyramid-decomposition-Haar (time-series)
+  (let* ((N (length time-series))
+         (N-over-2 (/ N 2))
+         (smooth (make-array N-over-2))
+         (rough (make-array N-over-2))
+         (C (/ (sqrt 2)))
+         (j 0)
+         (k 1))
+    (dotimes (i N-over-2 (values smooth rough))
+      (setf (svref smooth i)
+            (* C (+ (aref time-series j) (aref time-series k)))
+            (svref rough i) 
+            (* C (- (aref time-series k) (aref time-series j))))
+      (incf j 2)
+      (incf k 2))))
+
+;-------------------------------------------------------------------------------
+(defun pyramid-reconstruction-Haar (smooth rough)
+  (let* ((N-over-2 (length smooth))
+         (N (* 2 N-over-2))
+         (time-series (make-array N))
+         (C (/ (sqrt 2)))
+         (j 0))
+    (dotimes (i N-over-2 (values time-series))
+      (setf (svref time-series j) (* C (- (aref smooth i) (aref rough i))))
+      (incf j)
+      (setf (svref time-series j) (* C (+ (aref smooth i) (aref rough i))))
+      (incf j))))
+
+#|
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition-Haar short-time-series)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series
+                  (pyramid-reconstruction-Haar smooth rough))))
+;==>
+39555.0 
+39555.0 
+8.289665250534503E-15
+1.4210854715202004E-14
+|#
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; pyramid scheme using a 4-term wavelet (default is the D4 wavelet) ...
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun pyramid-decomposition-4-term
+       (time-series &key (4-term-wavelet (let ()
+                                           (declare (special *D4-wavelet*))
+                                           *D4-wavelet*)))
+  ;;; d_j are the wavelet coefficients (yields rough = high pass);
+  ;;; c_j are the scaling coefficients (yields smooth = low pass);
+  ;;; c_j's are the quadrature mirror filter  coefficients
+  ;;; corresponding to the d_j's
+  (let* ((d_0 (elt 4-term-wavelet 0))
+         (d_1 (elt 4-term-wavelet 1))
+         (d_2 (elt 4-term-wavelet 2))
+         (d_3 (elt 4-term-wavelet 3))
+         (c_0 (- (elt 4-term-wavelet 3)))
+         (c_1 (elt 4-term-wavelet 2))
+         (c_2 (- (elt 4-term-wavelet 1)))
+         (c_3 (elt 4-term-wavelet 0))
+         (N (length time-series))
+         (N-over-2 (/ N 2))
+         (smooth (make-array N-over-2))
+         (rough (make-array N-over-2))
+         (j_r-and-s 0)
+         (j_0 3)
+         (j_1 2)
+         (j_2 1)
+         (j_3 0))
+    (setf (svref smooth 0) (+ (* c_0 (aref time-series 1))
+                              (* c_1 (aref time-series 0))
+                              (* c_2 (aref time-series (1- N)))
+                              (* c_3 (aref time-series (- N 2))))
+          (svref rough 0)  (+ (* d_0 (aref time-series 1))
+                              (* d_1 (aref time-series 0))
+                              (* d_2 (aref time-series (1- N)))
+                              (* d_3 (aref time-series (- N 2)))))
+    (dotimes (i (1- N-over-2) (values smooth rough))
+      (incf j_r-and-s)
+      (setf (svref smooth j_r-and-s) (+ (* c_0 (aref time-series j_0))
+                                        (* c_1 (aref time-series j_1))
+                                        (* c_2 (aref time-series j_2))
+                                        (* c_3 (aref time-series j_3)))
+            (svref rough j_r-and-s)  (+ (* d_0 (aref time-series j_0))
+                                        (* d_1 (aref time-series j_1))
+                                        (* d_2 (aref time-series j_2))
+                                        (* d_3 (aref time-series j_3))))
+      (incf j_0 2)
+      (incf j_1 2)
+      (incf j_2 2)
+      (incf j_3 2))))
+
+;-------------------------------------------------------------------------------
+(defun pyramid-reconstruction-4-term
+       (smooth rough &key (4-term-wavelet
+                           (let ()
+                             (declare (special *D4-wavelet*))
+                             *D4-wavelet*)))
+  ;;; d_j are the wavelet coefficients (yields rough = high pass);
+  ;;; c_j are the scaling coefficients (yields smooth = low pass);
+  ;;; c_j's are the quadrature mirror filter  coefficients
+  ;;; corresponding to the d_j's
+  (let* ((d_0 (elt 4-term-wavelet 0))
+         (d_1 (elt 4-term-wavelet 1))
+         (d_2 (elt 4-term-wavelet 2))
+         (d_3 (elt 4-term-wavelet 3))
+         (c_0 (- (elt 4-term-wavelet 3)))
+         (c_1 (elt 4-term-wavelet 2))
+         (c_2 (- (elt 4-term-wavelet 1)))
+         (c_3 (elt 4-term-wavelet 0))
+         (N-over-2 (length smooth))
+         (N (* 2 N-over-2))
+         (time-series (make-array N))
+         (j_ts 0)
+         (j_0 0)
+         (j_1 1))
+    (dotimes (i (1- N-over-2))
+      (setf (svref time-series j_ts) (+ (* d_1 (aref rough j_0))
+                                        (* c_1 (aref smooth j_0))
+                                        (* d_3 (aref rough j_1))
+                                        (* c_3 (aref smooth j_1))))
+      (incf j_ts)
+      (setf (svref time-series j_ts) (+ (* d_0 (aref rough j_0))
+                                        (* c_0 (aref smooth j_0))
+                                        (* d_2 (aref rough j_1))
+                                        (* c_2 (aref smooth j_1))))
+      (incf j_ts)
+      (incf j_0 1)
+      (incf j_1 1))
+    (setf (svref time-series j_ts) (+ (* d_1 (aref rough j_0))
+                                      (* c_1 (aref smooth j_0))
+                                      (* d_3 (aref rough 0))
+                                      (* c_3 (aref smooth 0))))
+    (incf j_ts)
+    (setf (svref time-series j_ts) (+ (* d_0 (aref rough j_0))
+                                      (* c_0 (aref smooth j_0))
+                                      (* d_2 (aref rough 0))
+                                      (* c_2 (aref smooth 0))))
+    (values time-series)))
+
+#|
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition-4-term short-time-series)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series
+                  (pyramid-reconstruction-4-term smooth rough))))
+;==>
+39555.0 
+39554.999999999985 
+2.7237471537470508E-14
+4.263256414560601E-14
+
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0))
+      (Haar-as-4-term (vector (svref *Haar-wavelet* 0)
+                              (svref *Haar-wavelet* 1)
+                              0.0
+                              0.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition-4-term
+                        short-time-series
+                        :4-term-wavelet Haar-as-4-term)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series (pyramid-reconstruction-4-term
+                                     smooth rough
+                                     :4-term-wavelet Haar-as-4-term))))
+;==>
+39555.0 
+39555.0 
+1.4210854715202004E-14
+1.4210854715202004E-14
+;;; Note: if we compare the above to the actual Haar wavelet transform,
+;;;       we see that the smooth part is rotated one unit;
+;;;       the rough part remains the same:
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0))
+      (Haar-as-4-term (vector (svref *Haar-wavelet* 0)
+                              (svref *Haar-wavelet* 1)
+                              0.0
+                              0.0)))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition-4-term
+                        short-time-series
+                        :4-term-wavelet Haar-as-4-term)
+    (multiple-value-bind (smooth-Haar rough-Haar)
+                         (pyramid-decomposition-Haar short-time-series)
+      (dotimes (i (length smooth) (values))
+        (format t "~&~1D: ~10,3F ~10,3F   ~10,3F ~10,3F"
+                i
+                (svref smooth i) (svref smooth-Haar i)
+                (svref rough i)  (svref rough-Haar i))))))
+;==>
+0:    133.643     94.752       -5.657     -5.657
+1:     94.752    111.723       12.728     12.728
+2:    111.723    133.643       -6.364     -6.364
+|#
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; pyramid scheme using a general wavelet (default is the D4 wavelet)
+;;; NOTE 12/16/94: if downsample-p is true, this routine returns the
+;;;                usual orthogonal decomposition as given in, e.g.,
+;;;                Numerical Recipes; if it is false, we obtain the
+;;;                maximal overlap decomposition with circular boundary
+;;;                conditions
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun pyramid-decomposition
+       (time-series &key
+                    (wavelet-filter (let ()
+                                      (declare (special *D4-wavelet*))
+                                      *D4-wavelet*))
+                    (scaling-filter (wavelet->scaling wavelet-filter))
+                    (downsampling-level 0)  ;;; used only if downsample-p is nil
+                    (downsample-p t))
+  ;;; Note: this routine uses a cond form to use special code
+  ;;;       for cases where the filter is wrapping periodically.
+  ;;;       If this form is eliminated, the code takes about 70%
+  ;;;       longer to run.
+  (let* ((wavelet-filter_0 (svref wavelet-filter 0))
+         (scaling-filter_0 (svref scaling-filter 0))
+         (N-wavelet (length wavelet-filter))
+         (N-wavelet-minus-1 (1- N-wavelet))
+         (N (length time-series))
+         (N-special (min N (if downsample-p
+                             (1- (/ N-wavelet 2))
+                             (* (expt 2 downsampling-level) (1- N-wavelet)))))
+         (N-s&r (if downsample-p (/ N 2) N))
+         (smooth (make-array N-s&r))
+         (rough (make-array N-s&r))
+         (j (if downsample-p 1 0))
+         (j-inc (if downsample-p 2 1))
+         j-filters
+         j-ts
+         (j-ts-dec (if downsample-p 1 (round (expt 2 downsampling-level)))))
+    (declare (fixnum j j-inc j-filters j-ts j-ts-dec N-special N))
+    (dotimes (i N-s&r (values smooth rough))
+      (declare (fixnum i))
+      (cond
+       ((zerop N-special)
+        (setf (svref smooth i) (* scaling-filter_0 (aref time-series j))
+              (svref rough i)  (* wavelet-filter_0 (aref time-series j))
+              j-filters 0
+              j-ts j)
+        (dotimes (k N-wavelet-minus-1)
+          (incf j-filters)
+          (decf j-ts j-ts-dec)
+          (incf (svref smooth i)
+                (* (svref scaling-filter j-filters) (aref time-series j-ts)))
+          (incf (svref rough i)
+                (* (svref wavelet-filter j-filters) (aref time-series j-ts)))))
+       (t
+        (decf N-special)
+        (setf (svref smooth i) (* scaling-filter_0 (aref time-series j))
+              (svref rough i)  (* wavelet-filter_0 (aref time-series j))
+              j-filters 0
+              j-ts j)
+        (dotimes (k N-wavelet-minus-1)
+          (incf j-filters)
+          (decf j-ts j-ts-dec)
+          (incf (svref smooth i)
+                (* (svref scaling-filter j-filters)
+                   (aref time-series (mod j-ts N))))
+          (incf (svref rough i)
+                (* (svref wavelet-filter j-filters)
+                   (aref time-series (mod j-ts N)))))))
+      (incf j j-inc))))
+
+;-------------------------------------------------------------------------------
+(defun pyramid-reconstruction
+       (smooth rough &key
+               (wavelet-filter (let ()
+                                 (declare (special *D4-wavelet*))
+                                 *D4-wavelet*))
+               (scaling-filter (wavelet->scaling wavelet-filter))
+               (downsampling-level 0)
+               (downsample-p t))
+  (let* ((wavelet-filter_0 (svref wavelet-filter 0))
+         (scaling-filter_0 (svref scaling-filter 0))
+         (wavelet-filter_1 (svref wavelet-filter 1))
+         (scaling-filter_1 (svref scaling-filter 1))
+         (N-wavelet (length wavelet-filter))
+         (N-wavelet-1 (1- N-wavelet))
+         (N-wavelet-over-2-minus-1 (1- (/ N-wavelet 2)))
+         (N-s&r (if smooth (length smooth) (length rough)))
+         (N-special (min N-s&r
+                         (if downsample-p
+                           (1- (/ N-wavelet 2))
+                           (* (expt 2 downsampling-level) (1- N-wavelet)))))
+         (N (if downsample-p (* 2 N-s&r) N-s&r))
+         (time-series (make-array N))
+         (j-ts 0)
+         (j-r&s 0)
+         j-r&s-temp
+         j-filters
+         (j-r&s-inc (if downsample-p 1 (round (expt 2 downsampling-level)))))
+    (declare (fixnum j-ts j-r&s j-r&s-temp j-filters j-r&s-inc N-special N))
+    (cond
+     ((and smooth rough)
+      (cond
+       (downsample-p
+        ;;;  First, the nonspecial cases ...
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series j-ts) (+ (* wavelet-filter_1
+                                               (aref rough j-r&s))
+                                            (* scaling-filter_1
+                                               (aref smooth j-r&s)))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough j-r&s-temp))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth j-r&s-temp)))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (+ (* wavelet-filter_0
+                                               (aref rough j-r&s))
+                                            (* scaling-filter_0
+                                               (aref smooth j-r&s)))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough j-r&s-temp))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth j-r&s-temp)))))
+          (incf j-ts)
+          (incf j-r&s))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (+ (* wavelet-filter_1
+                                               (aref rough (mod j-r&s N-s&r)))
+                                            (* scaling-filter_1
+                                               (aref smooth (mod j-r&s N-s&r))))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough (mod j-r&s-temp N-s&r)))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth (mod j-r&s-temp N-s&r))))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (+ (* wavelet-filter_0
+                                               (aref rough (mod j-r&s N-s&r)))
+                                            (* scaling-filter_0
+                                               (aref smooth (mod j-r&s N-s&r))))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough (mod j-r&s-temp N-s&r)))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth (mod j-r&s-temp N-s&r))))))
+          (incf j-ts)
+          (incf j-r&s)))
+       ;;;
+       ;;; reconstruction from transform without downsampling ...
+       ;;;
+       (t
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series i) (+ (* wavelet-filter_0 (aref rough i))
+                                         (* scaling-filter_0 (aref smooth i)))
+                j-filters 0
+                j-r&s-temp i)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series i)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough j-r&s-temp))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth j-r&s-temp)))))
+          (multf (svref time-series i) 0.5))
+        (setf j-ts (- N-s&r N-special))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (+ (* wavelet-filter_0 (aref rough j-ts))
+                                            (* scaling-filter_0 (aref smooth j-ts)))
+                j-filters 0
+                j-r&s-temp j-ts)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series j-ts)
+                  (+ (* (svref wavelet-filter j-filters)
+                        (aref rough (mod j-r&s-temp N-s&r)))
+                     (* (svref scaling-filter j-filters)
+                        (aref smooth (mod j-r&s-temp N-s&r))))))
+          (multf (svref time-series j-ts) 0.5)
+          (incf j-ts))
+        )))
+     (smooth
+      (cond
+       (downsample-p
+        ;;;  First, the nonspecial cases ...
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series j-ts) (* scaling-filter_1
+                                            (aref smooth j-r&s))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth j-r&s-temp))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (* scaling-filter_0
+                                            (aref smooth j-r&s))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth j-r&s-temp))))
+          (incf j-ts)
+          (incf j-r&s))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (* scaling-filter_1
+                                            (aref smooth (mod j-r&s N-s&r)))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth (mod j-r&s-temp N-s&r)))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (* scaling-filter_0
+                                            (aref smooth (mod j-r&s N-s&r)))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth (mod j-r&s-temp N-s&r)))))
+          (incf j-ts)
+          (incf j-r&s)))
+       ;;;
+       ;;; reconstruction from transform without downsampling ...
+       ;;;
+       (t
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series i) (* scaling-filter_0 (aref smooth i))
+                j-filters 0
+                j-r&s-temp i)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series i)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth j-r&s-temp))))
+          (multf (svref time-series i) 0.5))
+        (setf j-ts (- N-s&r N-special))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (* scaling-filter_0 (aref smooth j-ts))
+                j-filters 0
+                j-r&s-temp j-ts)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series j-ts)
+                  (* (svref scaling-filter j-filters)
+                     (aref smooth (mod j-r&s-temp N-s&r)))))
+          (multf (svref time-series j-ts) 0.5)
+          (incf j-ts))
+        )))
+     (rough
+      (cond
+       (downsample-p
+        ;;;  First, the nonspecial cases ...
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series j-ts) (* wavelet-filter_1 (aref rough j-r&s))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref wavelet-filter j-filters)
+                     (aref rough j-r&s-temp))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (* wavelet-filter_0 (aref rough j-r&s))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref wavelet-filter j-filters)
+                     (aref rough j-r&s-temp))))
+          (incf j-ts)
+          (incf j-r&s))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (* wavelet-filter_1
+                                            (aref rough (mod j-r&s N-s&r)))
+                j-filters 1
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref wavelet-filter j-filters)
+                     (aref rough (mod j-r&s-temp N-s&r)))))
+          (incf j-ts)
+          (setf (svref time-series j-ts) (* wavelet-filter_0
+                                            (aref rough (mod j-r&s N-s&r)))
+                j-filters 0
+                j-r&s-temp j-r&s)
+          (dotimes (k N-wavelet-over-2-minus-1)
+            (incf j-filters 2)
+            (incf j-r&s-temp)
+            (incf (svref time-series j-ts)
+                  (* (svref wavelet-filter j-filters)
+                     (aref rough (mod j-r&s-temp N-s&r)))))
+          (incf j-ts)
+          (incf j-r&s)))
+       ;;;
+       ;;; reconstruction from transform without downsampling ...
+       ;;;
+       (t
+        (dotimes (i (- N-s&r N-special))
+          (setf (svref time-series i) (* wavelet-filter_0 (aref rough i))
+                j-filters 0
+                j-r&s-temp i)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series i)
+                  (* (svref wavelet-filter j-filters)
+                        (aref rough j-r&s-temp))))
+          (multf (svref time-series i) 0.5))
+        (setf j-ts (- N-s&r N-special))
+        ;;; Now the special cases ...
+        (dotimes (i N-special (values time-series))
+          (setf (svref time-series j-ts) (* wavelet-filter_0 (aref rough j-ts))
+                j-filters 0
+                j-r&s-temp j-ts)
+          (dotimes (k N-wavelet-1)
+            (incf j-filters)
+            (incf j-r&s-temp j-r&s-inc)
+            (incf (svref time-series j-ts)
+                  (* (svref wavelet-filter j-filters)
+                     (aref rough (mod j-r&s-temp N-s&r)))))
+          (multf (svref time-series j-ts) 0.5)
+          (incf j-ts))
+        )))
+     )))
+
+#|
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition short-time-series)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series (pyramid-reconstruction smooth rough))))
+;==>
+39555.0 
+39554.999999999985 
+2.3684757858670007E-14
+4.263256414560601E-14
+
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition
+                        short-time-series
+                        :wavelet-filter *Haar-wavelet*)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series (pyramid-reconstruction
+                            smooth rough
+                            :wavelet-filter *Haar-wavelet*))))
+;==>
+39555.0 
+39555.0 
+1.4210854715202004E-14
+1.4210854715202004E-14
+
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (print (sum-of-squares short-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition
+                        short-time-series
+                        :wavelet-filter *LA8-wavelet*)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs short-time-series (pyramid-reconstruction
+                            smooth rough
+                            :wavelet-filter *LA8-wavelet*))))
+;==>
+39555.0 
+39555.00000000066 
+8.2647962547829E-12
+1.2931877790833823E-11
+
+(let ((long-time-series (ranorms 10000)))
+  (print (sum-of-squares long-time-series))
+  (multiple-value-bind (smooth rough)
+                       (pyramid-decomposition
+                        long-time-series
+                        :wavelet-filter *LA8-wavelet*)
+    (print (+ (sum-of-squares smooth) (sum-of-squares rough)))
+    (compare-seqs long-time-series (pyramid-reconstruction
+                            smooth rough
+                            :wavelet-filter *LA8-wavelet*))))
+;==>
+9838.927707015182 
+9838.927707019282 
+3.8472913012138013E-13
+1.9109158699848194E-12
+|#
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; The function wavelet-transform can be used to give complete or partial
+;;; wavelet decompositions of a time series.  For a complete decomposition,
+;;; it is required that the series have a length equal to a power of 2.
+;;; The complete decomposition is just the discrete wavelet transform
+;;; with periodic boundary conditions.  A partial decomposition required that
+;;; N-levels be set to the desired number of steps of the pyramid decomposition.
+;;; For a partial decomposition, it is only required that
+;;; (/ (length time-series) (expt 2 N-levels)) be an integer
+;;; (thus, a decomposition of just one level will work on any time series of
+;;; even length).  This function returns a list of vectors with the following:
+;;;   smooth of last level
+;;;   rough of last level  (i.e., wavelet coefficients of largest scale)
+;;;   rough of next-to-last level
+;;;   ...
+;;;   rough of second level
+;;;   rough of first level (i.e., wavelet coefficients of smallest scale)
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun wavelet-transform
+       (time-series
+        &key
+        (wavelet-filter (let ()
+                          (declare (special *D4-wavelet*))
+                          *D4-wavelet*))
+        (N-levels (let ()
+                    (assert (power-of-2 (length time-series)))
+                    (round (log (length time-series) 2))))
+        (downsample-p t))
+  (if downsample-p
+    (assert (integerp (/ (length time-series) (expt 2 N-levels)))))
+  (let ((list-of-wavelet-coeffs '())
+        (smooth time-series)
+        rough)
+    (dotimes (i N-levels (push smooth list-of-wavelet-coeffs))
+      (multiple-value-setq (smooth rough)
+        (pyramid-decomposition 
+         smooth
+         :wavelet-filter wavelet-filter
+         :downsampling-level i
+         :downsample-p downsample-p))
+      (push rough list-of-wavelet-coeffs))))
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; Takes the output from wavelet transform and reconstructs
+;;; original time series  ...
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun inverse-wavelet-transform
+       (list-of-wavelet-coeffs
+        &key
+        (wavelet-filter (let ()
+                          (declare (special *D4-wavelet*))
+                          *D4-wavelet*))
+        (downsample-p t))
+  (let ((smooth (car list-of-wavelet-coeffs))
+        (i (1- (length list-of-wavelet-coeffs))))
+    (dolist (rough (cdr list-of-wavelet-coeffs) smooth)
+      (setf smooth (pyramid-reconstruction
+                    smooth rough
+                    :wavelet-filter wavelet-filter
+                    :downsampling-level (decf i)
+                    :downsample-p downsample-p)))))
+
+#|
+(let ((8-point-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0 110.0 135.0)))
+  (compare-seqs 8-point-time-series (inverse-wavelet-transform
+                                     (wavelet-transform 8-point-time-series))))
+;==>
+7.993605777301127E-14
+1.4210854715202004E-13
+
+(let ((8-point-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0 110.0 135.0)))
+  (compare-seqs 8-point-time-series (inverse-wavelet-transform
+                            (wavelet-transform 8-point-time-series
+                                               :wavelet-filter *Haar-wavelet*)
+                            :wavelet-filter *Haar-wavelet*)))
+;==>
+5.5067062021407764E-14
+7.105427357601002E-14
+
+(let ((8-point-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0 110.0 135.0)))
+  (compare-seqs 8-point-time-series (inverse-wavelet-transform
+                            (wavelet-transform 8-point-time-series
+                                               :wavelet-filter *LA8-wavelet*)
+                            :wavelet-filter *LA8-wavelet*)))
+;==>
+1.8752999153548444E-11
+3.083755473198835E-11
+
+(let ((long-time-series (ranorms 8192)))
+  (compare-seqs long-time-series (inverse-wavelet-transform
+                         (wavelet-transform long-time-series
+                                            :wavelet-filter *LA8-wavelet*)
+                         :wavelet-filter *LA8-wavelet*)))
+;==>
+7.857078255908116E-13
+4.122924224247981E-12
+
+(let ((long-time-series (ranorms (* 32 7))))
+  (compare-seqs long-time-series (inverse-wavelet-transform
+                         (wavelet-transform long-time-series
+                                            :wavelet-filter *LA8-wavelet*
+                                            :N-levels 5)
+                         :wavelet-filter *LA8-wavelet*)))
+;==>
+7.468404808586511E-13
+2.8901325777042075E-12
+|#
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; Takes the output from wavelet-transform and constructs
+;;; the corresponding details (returned as a list of vectors, from
+;;; small to large details) and final smooth (returned as a vector)
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun dwt->details&smooth (dwt
+                            &key
+                            (wavelet-filter (let ()
+                                              (declare (special *D4-wavelet*))
+                                              *D4-wavelet*))
+                            (downsample-p t))
+  (let ((list-of-details '())
+        (lots-of-nils (let ((list-of-nils '()))
+                        (dotimes (i (length dwt) list-of-nils)
+                          (push nil list-of-nils))))
+        (j 0))
+    (dotimes (i (1- (length dwt)) (values list-of-details
+                                          (inverse-wavelet-transform
+                                           (substitute (elt dwt 0)
+                                                       nil
+                                                       lots-of-nils
+                                                       :start 0 :end 1)
+                                           :wavelet-filter wavelet-filter
+                                           :downsample-p downsample-p)))
+      (incf j)
+      (push (inverse-wavelet-transform
+             (substitute (elt dwt j)
+                         nil
+                         lots-of-nils
+                         :start j
+                         :end (1+ j))
+             :wavelet-filter wavelet-filter
+             :downsample-p downsample-p)
+            list-of-details))))
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;;  The functions  scaling->wavelet and wavelet->scaling take, respectively,
+;;;  a scaling filter and a wavelet filter and return the quadrature mirror
+;;;  of that filter.
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun scaling->wavelet (scaling)
+  (let ((wavelet (reverse scaling))
+        (i 1))
+    (dotimes (j (/ (length wavelet) 2) wavelet)
+      (multf (svref wavelet i) -1)
+      (incf i 2))))
+
+;-------------------------------------------------------------------------------
+(defun wavelet->scaling (wavelet)
+  (let ((scaling (reverse wavelet))
+        (i 0))
+    (dotimes (j (/ (length scaling) 2) scaling)
+      (multf (svref scaling i) -1)
+      (incf i 2))))
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; a modest collection of wavelets, including
+;;; [1]  the Haar wavelet,
+;;; [2]  Daubechies's "extremal phase" wavelets
+;;;      (Daubechies, 1992, p.195, Table 6.1)
+;;; and
+;;; [3]  Daubechies's "least asymmetric" wavelets
+;;;      (Daubechies, 1992, p.198, Table 6.3)
+;;; In each case, the wavelet filter is defined as the conjugate mirror
+;;; of a scaling filter.  Each scaling filter satisfies two normalizations:
+;;; [a] its coefficients sum to the square root of 2 and
+;;; [b] the sum of squares of its coefficients is unity.
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defvar *Haar-scaling* (vector (/ (sqrt 2)) (/ (sqrt 2))))
+(defvar *Haar-wavelet* (scaling->wavelet *Haar-scaling*))
+;;; (sum *Haar-scaling*) ==> 1.414213562373095
+;;; (sum-of-squares *Haar-scaling*) ==> 0.9999999999999998
+;;; (dot-product *Haar-scaling* *Haar-wavelet*) ==>  0.0
+
+;;; Daubechies's D_4 wavelet (extremal phase) ...
+(defvar *D4-scaling* (vector (/ (+ 1.0 (sqrt 3))
+                                (* 4.0 (sqrt 2)))
+                             (/ (+ 3.0 (sqrt 3))
+                                (* 4.0 (sqrt 2)))
+                             (/ (- 3.0 (sqrt 3))
+                                (* 4.0 (sqrt 2)))
+                             (/ (- 1.0 (sqrt 3))
+                                (* 4.0 (sqrt 2)))))
+(defvar *D4-wavelet* (scaling->wavelet *D4-scaling*))
+;;; (sum *D4-scaling*) ==> 1.4142135623730947
+;;; (sum-of-squares *D4-scaling*) ==> 0.9999999999999997
+;;; (dot-product *D4-scaling* *D4-wavelet*) ==>  0.0
+
+;;; Daubechies's D_6 wavelet (explicit form of the coeffcients are
+;;; from Bradley and Brislawn, "Image Compression by Vector Quantization
+;;; of Multiresolution Decompositions" Physica D, 60, 1992, 245--258,
+;;; but the resulting computed values agree with the tabulated values
+;;; in Daubechies's Table 6.1) ...
+(defvar *D6-scaling* (let* ((beta (expt 2 -9/2))
+                            (sqrt10 (sqrt 10))
+                            (alpha (sqrt (+ 5 (* 2 sqrt10)))))
+                       (vector (* beta (+ 1 sqrt10 alpha))
+                               (* beta (+ 5 sqrt10 (* 3 alpha)))
+                               (* beta (+ 10 (* -2 sqrt10) (* 2 alpha)))
+                               (* beta (+ 10 (* -2 sqrt10) (* -2 alpha)))
+                               (* beta (+ 5 sqrt10 (* -3 alpha)))
+                               (* beta (+ 1 sqrt10 (- alpha))))))
+(defvar *D6-wavelet* (scaling->wavelet *D6-scaling*))
+;;; (sum *D6-scaling*) ==> 1.4142135623730954
+;;; (sum-of-squares *D6-scaling*) ==> 1.0000000000000004
+;;; (dot-product *D6-scaling* *D6-wavelet*) ==>  3.469446951953614E-18
+
+;;; Daubechies's D_8 wavelet ...
+(defvar *D8-scaling* (vector 0.2303778133088964
+                             0.7148465705529154
+                             0.6308807679398587
+                             -0.0279837694168599
+                             -0.1870348117190931
+                             0.0308413818355607
+                             0.0328830116668852
+                             -0.0105974017850690))
+(defvar *D8-wavelet* (scaling->wavelet *D8-scaling*))
+;;; (sum *D8-scaling*) ==> 1.4142135623830943
+;;; (sum-of-squares *D8-scaling*) ==> 1.0000000000126172
+;;; (dot-product *D8-scaling* *D8-wavelet*) ==> -1.3010426069826053E-18
+
+;;; Daubechies's D_12 wavelet ...
+(defvar *D12-scaling* (vector 0.1115407433501095
+			      0.4946238903984533
+			      0.7511339080210959
+			      0.3152503517091982
+			      -0.2262646939654400
+			      -0.1297668675672625
+			      0.0975016055873225
+			      0.0275228655303053
+			      -0.0315820393174862
+			      0.0005538422011614
+			      0.0047772575109455
+			      -0.0010773010853085))
+(defvar *D12-wavelet* (scaling->wavelet *D12-scaling*))
+;;; (sum *D12-scaling*) ==> 1.4142135623730945
+;;; (sum-of-squares *D12-scaling*) ==> 1.0000000000000016
+;;; (dot-product *D12-scaling* *D12-wavelet*) ==> 5.692061405548898E-19
+
+;;; Daubechies's D_20 wavelet ...
+(defvar *D20-scaling* (vector 0.0266700579005473
+                              0.1881768000776347
+                              0.5272011889315757
+                              0.6884590394534363
+                              0.2811723436605715
+                              -0.2498464243271598
+                              -0.1959462743772862
+                              0.1273693403357541
+                              0.0930573646035547
+                              -0.0713941471663501
+                              -0.0294575368218399
+                              0.0332126740593612
+                              0.0036065535669870
+                              -0.0107331754833007
+                              0.0013953517470688
+                              0.0019924052951925
+                              -0.0006858566949564
+                              -0.0001164668551285
+                              0.0000935886703202
+                              -0.0000132642028945))
+(defvar *D20-wavelet* (scaling->wavelet *D20-scaling*))
+;;; (sum *D20-scaling*) ==> 1.4142135623730878
+;;; (sum-of-squares *D20-scaling*) ==> 0.9999999999994521
+;;; (dot-product *D20-scaling* *D20-wavelet*) ==> -9.911344274059382E-19
+
+;;; Daubechies's least asymmetric wavelet of order 8 ...
+(defvar *LA8-scaling* (let ((sqrt-2 (sqrt 2)))
+                        (vector (/ -0.107148901418 sqrt-2)
+                                (/ -0.041910965125 sqrt-2)
+                                (/  0.703739068656 sqrt-2)
+                                (/  1.136658243408 sqrt-2)
+                                (/  0.421234534204 sqrt-2)
+                                (/ -0.140317624179 sqrt-2)
+                                (/ -0.017824701442 sqrt-2)
+                                (/  0.045570345896 sqrt-2))))
+(defvar *LA8-wavelet* (scaling->wavelet *LA8-scaling*))
+;;; (sum *LA8-scaling*) ==> 1.414213562373095
+;;; (sum-of-squares *LA8-scaling*) ==> 1.0000000000004223
+;;; (dot-product *LA8-scaling* *LA8-wavelet*) ==> 0.0
+
+;;; Daubechies's least asymmetric wavelet of order 10 ...
+(defvar *LA10-scaling* (let ((sqrt-2 (sqrt 2)))
+                        (vector (/  0.038654795955 sqrt-2)
+                                (/  0.041746864422 sqrt-2)
+                                (/ -0.055344186117 sqrt-2)
+                                (/  0.281990696854 sqrt-2)
+                                (/  1.023052966894 sqrt-2)
+                                (/  0.896581648380 sqrt-2)
+                                (/  0.023478923136 sqrt-2)
+                                (/ -0.247951362613 sqrt-2)
+                                (/ -0.029842499869 sqrt-2)
+                                (/  0.027632152958 sqrt-2)
+                                )))
+(defvar *LA10-wavelet* (scaling->wavelet *LA10-scaling*))
+;;; (sum *LA10-scaling*) ==> 1.414213562373095
+;;; (sum-of-squares *LA10-scaling*) ==> 0.9999999999998792
+;;; (dot-product *LA10-scaling* *LA10-wavelet*) ==> 1.5612511283791264E-17
+
+;;; Daubechies's least asymmetric wavelet of order 12 ...
+(defvar *LA12-scaling* (let ((sqrt-2 (sqrt 2)))
+                         (vector (/  0.021784700327 sqrt-2)
+			         (/  0.004936612372 sqrt-2)
+			         (/ -0.166863215412 sqrt-2)
+			         (/ -0.068323121587 sqrt-2)
+			         (/  0.694457972958 sqrt-2)
+			         (/  1.113892783926 sqrt-2)
+			         (/  0.477904371333 sqrt-2)
+			         (/ -0.102724969862 sqrt-2)
+			         (/ -0.029783751299 sqrt-2)
+			         (/  0.063250562660 sqrt-2)
+			         (/  0.002499922093 sqrt-2)
+			         (/ -0.011031867509 sqrt-2))))
+(defvar *LA12-wavelet* (scaling->wavelet *LA12-scaling*))
+;;; (sum *LA12-scaling*) ==> 1.4142135623730951
+;;; (sum-of-squares *LA12-scaling*) ==> 1.000000000000107
+;;; (dot-product *LA12-scaling* *LA12-wavelet*) ==> -1.4907779871675686E-18
+
+;;; Daubechies's least asymmetric wavelet of order 14 ...
+(defvar *LA14-scaling* (let ((sqrt-2 (sqrt 2)))
+                         (vector (/  0.003792658534 sqrt-2)
+                                 (/ -0.001481225915 sqrt-2)
+                                 (/ -0.017870431651 sqrt-2)
+                                 (/  0.043155452582 sqrt-2)
+                                 (/  0.096014767936 sqrt-2)
+                                 (/ -0.070078291222 sqrt-2)
+                                 (/  0.024665659489 sqrt-2)
+                                 (/  0.758162601964 sqrt-2)
+                                 (/  1.085782709814 sqrt-2)
+                                 (/  0.408183939725 sqrt-2)
+                                 (/ -0.198056706807 sqrt-2)
+                                 (/ -0.152463871896 sqrt-2)
+                                 (/  0.005671342686 sqrt-2)
+                                 (/  0.014521394762 sqrt-2))))
+(defvar *LA14-wavelet* (scaling->wavelet *LA14-scaling*))
+;;; (sum *LA14-scaling*) ==> 1.4142135623738021
+;;; (sum-of-squares *LA14-scaling*) ==> 1.0000000000000355
+;;; (dot-product *LA14-scaling* *LA14-wavelet*) ==> -3.903127820947816E-18
+
+;;; Daubechies's least asymmetric wavelet of order 16 ...
+(defvar *LA16-scaling* (let ((sqrt-2 (sqrt 2)))
+                         (vector (/  0.002672793393 sqrt-2)
+                                 (/ -0.000428394300 sqrt-2)
+                                 (/ -0.021145686528 sqrt-2)
+                                 (/  0.005386388754 sqrt-2)
+                                 (/  0.069490465911 sqrt-2)
+                                 (/ -0.038493521263 sqrt-2)
+                                 (/ -0.073462508761 sqrt-2)
+                                 (/  0.515398670374 sqrt-2)
+                                 (/  1.099106630537 sqrt-2)
+                                 (/  0.680745347190 sqrt-2)
+                                 (/ -0.086653615406 sqrt-2)
+                                 (/ -0.202648655286 sqrt-2)
+                                 (/  0.010758611751 sqrt-2)
+                                 (/  0.044823623042 sqrt-2)
+                                 (/ -0.000766690896 sqrt-2)
+                                 (/ -0.004783458512 sqrt-2))))
+(defvar *LA16-wavelet* (scaling->wavelet *LA16-scaling*))
+;;; (sum *LA16-scaling*) ==> 1.4142135623730945
+;;; (sum-of-squares *LA16-scaling*) ==> 1.0000000000001599
+;;; (dot-product *LA16-scaling* *LA16-wavelet*) ==> 1.886765890008954E-17
+
+;;; new version of Daubechies's least asymmetric wavelet of order 16 ...
+(defparameter *new-LA16-scaling* (reverse *LA16-scaling*))
+(defparameter *new-LA16-wavelet* (scaling->wavelet *new-LA16-scaling*))
+
+;;; Daubechies's least asymmetric wavelet of order 18 ...
+(defvar *LA18-scaling* (let ((sqrt-2 (sqrt 2)))
+                         (vector (/  0.001512487309 sqrt-2)
+                                 (/ -0.000669141509 sqrt-2)
+                                 (/ -0.014515578553 sqrt-2)
+                                 (/  0.012528896242 sqrt-2)
+                                 (/  0.087791251554 sqrt-2)
+                                 (/ -0.025786445930 sqrt-2)
+                                 (/ -0.270893783503 sqrt-2)
+                                 (/  0.049882830959 sqrt-2)
+                                 (/  0.873048407349 sqrt-2)
+                                 (/  1.015259790832 sqrt-2)
+                                 (/  0.337658923602 sqrt-2)
+                                 (/ -0.077172161097 sqrt-2)
+                                 (/  0.000825140929 sqrt-2)
+                                 (/  0.042744433602 sqrt-2)
+                                 (/ -0.016303351226 sqrt-2)
+                                 (/ -0.018769396836 sqrt-2)
+                                 (/  0.000876502539 sqrt-2)
+                                 (/  0.001981193736 sqrt-2))))
+(defvar *LA18-wavelet* (scaling->wavelet *LA18-scaling*))
+;;; (sum *LA18-scaling*) ==> 1.4142135623723877
+;;; (sum-of-squares *LA18-scaling*) ==> 0.9999999999975407
+;;; (dot-product *LA18-scaling* *LA18-wavelet*) ==> -2.1385252577566134E-17
+ 
+;;; Daubechies's least asymmetric wavelet of order 20 ...
+(defvar *LA20-scaling* (let ((sqrt-2 (sqrt 2)))
+                         (vector (/  0.001089170447 sqrt-2)
+                                 (/  0.000135245020 sqrt-2)
+			         (/ -0.012220642630 sqrt-2)
+			         (/ -0.002072363923 sqrt-2)
+			         (/  0.064950924579 sqrt-2)
+			         (/  0.016418869426 sqrt-2)
+			         (/ -0.225558972234 sqrt-2)
+			         (/ -0.100240215031 sqrt-2)
+			         (/  0.667071338154 sqrt-2)
+			         (/  1.088251530500 sqrt-2)
+			         (/  0.542813011213 sqrt-2)
+			         (/ -0.050256540092 sqrt-2)
+                                 (/ -0.045240772218 sqrt-2)
+			         (/  0.070703567550 sqrt-2)
+			         (/  0.008152816799 sqrt-2)
+			         (/ -0.028786231926 sqrt-2)
+			         (/ -0.001137535314 sqrt-2)
+			         (/  0.006495728375 sqrt-2)
+			         (/  0.000080661204 sqrt-2)
+			         (/ -0.000649589896 sqrt-2))))
+(defvar *LA20-wavelet* (scaling->wavelet *LA20-scaling*))
+;;; (sum *LA20-scaling*) ==> 1.4142135623752161
+;;; (sum-of-squares *LA20-scaling*) ==> 0.9999999995811621
+;;; (dot-product *LA20-scaling* *LA20-wavelet*) ==> 2.4470570087939923E-17
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;;  The function   mod-sq-tf-for-Daubechies-wavelets
+;;;  computes the squared modulus of the transfer function for
+;;;  a Daubechies wavelet of length 2, 4, 6, ...
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun mod-sq-tf-for-Daubechies-wavelets (L)
+  (let ((N (/ L 2))
+        (freqs (make-array 257))
+        (mod-sq-tf (make-array 257)))
+    (dotimes (i 257 (values mod-sq-tf freqs))
+      (setf (svref freqs i) (float (/ i 512)))
+      (let ((sum 0.0)
+            (cos-term (cos (* pi (svref freqs i))))
+            (sin-term (sin (* pi (svref freqs i)))))
+        (dotimes (k N)
+          (incf sum (/ (* (factorial (1- (+ N k)))
+                          (expt cos-term (* 2 k)))
+                       (* (factorial k)
+                          (factorial (1- N))))))
+        ;;; The 2 is to compensate for the different
+        ;;; scaling that we use for wavelets ...
+        (multf sum (* 2 (expt sin-term (* 2 N))))
+        (setf (svref mod-sq-tf i)
+              (careful-convert-to-dB
+               sum
+               -100))))))
+
+;-------------------------------------------------------------------------------
+(defun mod-sq-tf-for-Daubechies-wavelet-filter (f wavelet-filter-length)
+  ;;; wavelet-filter-length should be a positive even integer ...
+  (let* ((L-over-2 (/ wavelet-filter-length 2))
+         (sum 0.0)
+         (cos-term (cos (* pi f)))
+         (sin-term (sin (* pi f)))
+         (L-over-2-minus-1-factorial (factorial (1- L-over-2))))
+    (dotimes (k L-over-2 (* sum (* 2 (expt sin-term wavelet-filter-length))))
+      (incf sum (/ (* (factorial (1- (+ L-over-2 k)))
+                      (expt cos-term (* 2 k)))
+                   (* (factorial k)
+                      L-over-2-minus-1-factorial))))))
+
+;-------------------------------------------------------------------------------
+(defun mod-sq-tf-for-Daubechies-scaling-filter (f wavelet-filter-length)
+  ;;; wavelet-filter-length should be a positive even integer ...
+  (let* ((L-over-2 (/ wavelet-filter-length 2))
+         (sum 0.0)
+         (cos-term (cos (* pi f)))
+         (sin-term (sin (* pi f)))
+         (L-over-2-minus-1-factorial (factorial (1- L-over-2))))
+    (dotimes (k L-over-2 (* sum (* 2 (expt cos-term wavelet-filter-length))))
+      (incf sum (/ (* (factorial (1- (+ L-over-2 k)))
+                      (expt sin-term (* 2 k)))
+                   (* (factorial k)
+                      L-over-2-minus-1-factorial))))))
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;;  The functions  generate-Haar-filter
+;;;                 generate-wavelet-filter
+;;;                 generate-scaling-filter
+;;;                 wavelet-filter-lengths
+;;;                 overlapped-pyramid-decomposition
+;;;                 overlapped-wavelet-transform
+;;;  can be used to implement the fully overlapped wavelet transform
+;;;  either by creating an appropriate filter or by use of a pyramid algorithm.
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; scale should be a positive integer ...
+(defun generate-Haar-filter (scale)
+  (let* ((scale*2 (* 2 scale))
+         (C (/ (sqrt scale*2)))
+         (the-filter (make-array scale*2)))
+    (fill the-filter C :end scale)
+    (fill the-filter (- C) :start scale)
+    (values the-filter)))
+
+;-------------------------------------------------------------------------------
+;;; scale should be 1, 2, 4, 8, 16 ... you get the idea!
+(defun generate-wavelet-filter (scale basic-wavelet basic-scaling)
+  (assert (power-of-2 scale))
+  (let ((N-downsampled-filters (power-of-2 scale)))
+    (cond
+     ((zerop N-downsampled-filters) basic-wavelet)
+     (t
+      (let ((filters-to-be-composed `(,basic-scaling))
+            (downsampling-factor 2))
+        (dotimes (i (1- N-downsampled-filters))
+          (push (downsample-filter basic-scaling downsampling-factor)
+                filters-to-be-composed)
+          (multf downsampling-factor 2))
+        (push (downsample-filter basic-wavelet downsampling-factor)
+              filters-to-be-composed)
+        (apply #'compose-filters (reverse filters-to-be-composed)))))))
+
+;-------------------------------------------------------------------------------
+(defun generate-scaling-filter (scale basic-scaling)
+  (assert (power-of-2 scale))
+  (let ((N-downsampled-filters (power-of-2 scale)))
+    (cond
+     ((zerop N-downsampled-filters) basic-scaling)
+     (t
+      (let ((filters-to-be-composed `(,basic-scaling))
+            (downsampling-factor 2))
+        (dotimes (i (1- N-downsampled-filters))
+          (push (downsample-filter basic-scaling downsampling-factor)
+                filters-to-be-composed)
+          (multf downsampling-factor 2))
+        (push (downsample-filter basic-scaling downsampling-factor)
+              filters-to-be-composed)
+        (apply #'compose-filters (reverse filters-to-be-composed)))))))
+
+;-------------------------------------------------------------------------------
+(defun wavelet-filter-lengths
+       (basic-wavelet-length
+        n-scale
+        &key
+        (print-p nil))
+  "returns length of filter for scale 2^{n-scale}, n = 0, 1, 2, ..."
+  (let ((wl-2 (- basic-wavelet-length 2))
+        (current-scale 1)
+        (current-length basic-wavelet-length))
+    (if print-p (format t "~&~10D: ~10D" 1 current-length))
+    (dotimes (i n-scale current-length)
+      (multf current-scale 2)
+      (setf current-length (+ wl-2 (* 2 current-length)))
+      (if print-p (format t "~&~10D: ~10D" current-scale current-length)))))
+
+#|
+;;; (wavelet-filter-lengths 2 6 :print-p t)     ;Haar
+         1:          2
+         2:          4
+         4:          8
+         8:         16
+        16:         32
+        32:         64
+        64:        128
+128
+
+;;; (wavelet-filter-lengths 4 6 :print-p t)     ;D4
+         1:          4
+         2:         10
+         4:         22
+         8:         46
+        16:         94
+        32:        190
+        64:        382
+382
+
+;;; (wavelet-filter-lengths 20 6 :print-p t)    ;D20
+         1:         20
+         2:         58
+         4:        134
+         8:        286
+        16:        590
+        32:       1198
+        64:       2414
+2414
+|#
+
+;-------------------------------------------------------------------------------
+(defun downsampling-level->wavelet-filter-length
+       (basic-wavelet-length downsampling-level)
+  "returns length of filter for downsampling levels  0, 1, 2, 3, ...,
+where downsampling level 0 = no downsampling    yields scale 1
+                         1 = downsampling by 2  yields scale 2
+                         2 = downsampling by 4  yields scale 4
+                         3 = downsampling by 8  yields scale 8
+                         4 = downsampling by 16 yields scale 16;
+when we downsample by n, we effectively stick n-1 zeros
+between each of the filter coefficients in the basic scaling
+and wavelet filters"
+  (let* ((2^k+1 (expt 2 (1+ downsampling-level))))
+    (- (* basic-wavelet-length (1- 2^k+1))
+       2^k+1
+       -2)))
+
+#|
+(downsampling-level->wavelet-filter-length 8 0)   ;==>    8
+(downsampling-level->wavelet-filter-length 8 1)   ;==>   22
+(downsampling-level->wavelet-filter-length 8 2)   ;==>   50
+(downsampling-level->wavelet-filter-length 8 3)   ;==>  106
+(downsampling-level->wavelet-filter-length 8 4)   ;==>  218
+(downsampling-level->wavelet-filter-length 8 5)   ;==>  442
+(downsampling-level->wavelet-filter-length 8 6)   ;==>  890
+|#
+
+;-------------------------------------------------------------------------------
+(defun maximum-downsampling-level
+       (basic-wavelet-length sample-size)
+  "given the length of a basic wavelet filter
+and the sample size of a time series,
+computes the maximum downsampling size that yields an effective filter
+with a length not exceeding the sample size (return nil
+if sample-size is greater than basic-wavelet-length)"
+  (assert (and (integerp basic-wavelet-length)
+               (integerp sample-size)
+               (> basic-wavelet-length 1)))
+  (if (>= sample-size basic-wavelet-length)
+    (let ((wl-2 (- basic-wavelet-length 2))
+          (current-downsampling-level 0)
+          next-length
+          (current-length basic-wavelet-length))
+      ;;; The maximum number of times this loop will execute
+      ;;; is dictated by the shortest possible wavelet, namely,
+      ;;; the Haar wavelet, for which the largest scale is N/2.
+      (dotimes (i (round (log (next-power-of-2 sample-size) 2))
+                  (error "should not get here --- program error!!!"))
+        (setf next-length (+ wl-2 (* 2 current-length)))
+        (if (> next-length sample-size)
+          (return (values current-downsampling-level)))
+        (setf current-length next-length)
+        (incf current-downsampling-level)))))
+
+#|
+(maximum-downsampling-level 8 6875) ;==> 8
+(maximum-downsampling-level 20 500) ;==> 3
+(maximum-downsampling-level 2 512)  ;==> 8
+|#
+
+;-------------------------------------------------------------------------------
+(defun symmod (j N)
+  (declare (fixnum j N))
+  (if (= N 1)
+    0
+    (let ((N-1 (1- N)))
+      (declare (dynamic-extent N-1))
+      (- N-1 (abs (- N-1 (mod j (+ N-1 N-1))))))))
+
+;;; (dotimes (i 12) (format t "~D " (symmod i 6)))
+;;; (dotimes (i 12) (format t "~D " (mod i 6)))
+
+;-------------------------------------------------------------------------------
+(defun overlapped-pyramid-decomposition
+       (time-series
+        &key
+        (wavelet-filter (let ()
+                          (declare (special *D4-wavelet*))
+                          *D4-wavelet*))
+        (downsampling-level 0)
+        (boundary-conditions :brick-wall)  ;;; :circular or :symmetric
+        )
+  (let* ((N-wavelet (length wavelet-filter))
+         (N-wavelet-minus-1 (1- N-wavelet))
+         (downsampling-factor (1- (expt 2 downsampling-level)))
+         (N-downsampled-filter (+ N-wavelet
+                                  (* (1- N-wavelet) downsampling-factor)))
+         (N-ts (length time-series))
+         (N-output (ecase boundary-conditions
+                     (:brick-wall (max 0 (1+ (- N-ts N-downsampled-filter))))
+                     ((:circular :symmetric) N-ts)))
+         (smooth (make-array N-output))
+         (rough (make-array N-output))
+         (N-output-nonwrapped (max 0 (1+ (- N-ts N-downsampled-filter))))
+         (N-output-wrapped (- N-output N-output-nonwrapped))
+         (scaling-filter (wavelet->scaling wavelet-filter))
+         (wavelet-filter_0 (svref wavelet-filter 0))
+         (scaling-filter_0 (svref scaling-filter 0))
+         (j (1- N-downsampled-filter))
+         j-filters
+         j-ts
+         (j-ts-dec (1+ downsampling-factor))
+         (i-wrapped N-output-nonwrapped)
+         (mod-func (case boundary-conditions
+                     (:brick-wall nil)
+                     (:circular  #'mod)
+                     (:symmetric #'symmod))))
+    ;;; First, we do the nonwrapped filtering, by which we mean filtering not
+    ;;; involving any boundary conditions -- if brick wall boundary conditions
+    ;;; are used, this is all the filtering that is done.
+    (dotimes (i N-output-nonwrapped)
+      (setf (svref smooth i) (* scaling-filter_0 (aref time-series j))
+            (svref rough i)  (* wavelet-filter_0 (aref time-series j))
+            j-filters 0
+            j-ts j)
+      (dotimes (k N-wavelet-minus-1)
+        (incf j-filters)
+        (decf j-ts j-ts-dec)
+        (incf (svref smooth i)
+              (* (svref scaling-filter j-filters) (aref time-series j-ts)))
+        (incf (svref rough i)
+              (* (svref wavelet-filter j-filters) (aref time-series j-ts))))
+      (incf j))
+    (dotimes (i N-output-wrapped (values smooth rough))
+      (setf (svref smooth i-wrapped)
+            (* scaling-filter_0 (aref time-series (funcall mod-func j N-ts)))
+            (svref rough i-wrapped) 
+            (* wavelet-filter_0 (aref time-series (funcall mod-func j N-ts)))
+            j-filters 0
+            j-ts j)
+      (dotimes (k N-wavelet-minus-1)
+        (incf j-filters)
+        (decf j-ts j-ts-dec)
+        (incf (svref smooth i-wrapped)
+              (* (svref scaling-filter j-filters)
+                 (aref time-series (funcall mod-func j-ts N-ts))))
+        (incf (svref rough i-wrapped)
+              (* (svref wavelet-filter j-filters)
+                 (aref time-series (funcall mod-func j-ts N-ts)))))
+      (incf i-wrapped)
+      (incf j))))
+
+#|
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (multiple-value-bind (smooth-1 rough-1)
+                       (overlapped-pyramid-decomposition
+                        short-time-series
+                        :wavelet-filter *Haar-wavelet*)
+    (print smooth-1)
+    (print rough-1)
+    (multiple-value-bind (smooth-2 rough-2)
+                         (overlapped-pyramid-decomposition
+                          smooth-1
+                          :wavelet-filter *Haar-wavelet*
+                          :downsampling-level 1)
+      (print smooth-2)
+      (print rough-2)
+  (values))))
+;==>
+#(94.75230867899737 94.04520189781081 111.7228714274745 132.22896808188437 133.64318164425748) 
+#(-5.656854249492376 4.94974746830583 12.727922061357852 7.778174593052029 -6.363961030678929) 
+#(145.99999999999997 159.99999999999997 173.49999999999997) 
+#(12.0 27.0 15.5)
+
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (multiple-value-bind (smooth-1 rough-1)
+                       (overlapped-pyramid-decomposition
+                        short-time-series
+                        :wavelet-filter *Haar-wavelet*
+                        :boundary-conditions :circular)
+    (print smooth-1)
+    (print rough-1)
+    (multiple-value-bind (smooth-2 rough-2)
+                         (overlapped-pyramid-decomposition
+                          smooth-1
+                          :wavelet-filter *Haar-wavelet*
+                          :downsampling-level 1
+                          :boundary-conditions :circular)
+      (print smooth-2)
+      (print rough-2)
+  (values))))
+;==>
+#(94.75230867899737 94.04520189781081 111.7228714274745 132.22896808188437 133.64318164425748 113.84419177103413) 
+#(-5.656854249492376 4.94974746830583 12.727922061357852 7.778174593052029 -6.363961030678929 -13.435028842544405) 
+#(145.99999999999997 159.99999999999997 173.49999999999997 173.99999999999997 161.49999999999997 146.99999999999997) 
+#(12.0 27.0 15.5 -13.0 -27.5 -14.0)
+
+(let ((short-time-series (vector 71.0  63.0  70.0  88.0  99.0  90.0)))
+  (multiple-value-bind (smooth-1 rough-1)
+                       (overlapped-pyramid-decomposition
+                        short-time-series
+                        :wavelet-filter *Haar-wavelet*
+                        :boundary-conditions :symmetric)
+    (print smooth-1)
+    (print rough-1)
+    (multiple-value-bind (smooth-2 rough-2)
+                         (overlapped-pyramid-decomposition
+                          smooth-1
+                          :wavelet-filter *Haar-wavelet*
+                          :downsampling-level 1
+                          :boundary-conditions :symmetric)
+      (print smooth-2)
+      (print rough-2)
+  (values))))
+;==>
+#(94.75230867899737 94.04520189781081 111.7228714274745 132.22896808188437 133.64318164425748 133.64318164425748) 
+#(-5.656854249492376 4.94974746830583 12.727922061357852 7.778174593052029 -6.363961030678929 6.363961030678929) 
+#(145.99999999999997 159.99999999999997 173.49999999999997 187.99999999999997 188.99999999999997 187.99999999999997) 
+#(12.0 27.0 15.5 1.0 0.0 -1.0) 
+|#
+
+#|
+(vector 71.0  63.0  70.0  88.0  99.0  90.0)
+(setf *h_0* (svref *Haar-wavelet* 0))
+(setf *h_1* (svref *Haar-wavelet* 1))
+(+ (* *h_0* 63.0) (* *h_1* 71.0))
+(+ (* *h_0* 70.0) (* *h_1* 63.0))
+(+ (* *h_0* 88.0) (* *h_1* 70.0))
+(+ (* *h_0* 99.0) (* *h_1* 88.0))
+(+ (* *h_0* 90.0) (* *h_1* 99.0))
+(+ (* *h_0* 99.0) (* *h_1* 90.0))   ;==> 6.363961030678929
+(setf *g_0* (svref *Haar-scaling* 0))
+(setf *g_1* (svref *Haar-scaling* 1))
+(+ (* *g_0* 63.0) (* *g_1* 71.0))
+(+ (* *g_0* 70.0) (* *g_1* 63.0))
+(+ (* *g_0* 88.0) (* *g_1* 70.0))
+(+ (* *g_0* 99.0) (* *g_1* 88.0))
+(+ (* *g_0* 90.0) (* *g_1* 99.0))
+(+ (* *g_0* 99.0) (* *g_1* 90.0))   ;==> 133.64318164425748
+#(94.75230867899737 94.04520189781081 111.7228714274745 132.22896808188437 133.64318164425748 133.64318164425748) 
+(+ (* *g_0* 111.7228714274745)  (* *g_1* 94.75230867899737))
+(+ (* *g_0* 132.22896808188437) (* *g_1* 94.04520189781081))
+(+ (* *g_0* 133.64318164425748) (* *g_1* 111.7228714274745))
+(+ (* *g_0* 133.64318164425748) (* *g_1* 132.22896808188437))
+(+ (* *g_0* 133.64318164425748) (* *g_1* 133.64318164425748))
+(+ (* *g_0* 132.22896808188437) (* *g_1* 133.64318164425748))
+
+(+ (* *h_0* 111.7228714274745)  (* *h_1* 94.75230867899737))
+(+ (* *h_0* 132.22896808188437) (* *h_1* 94.04520189781081))
+(+ (* *h_0* 133.64318164425748) (* *h_1* 111.7228714274745))
+(+ (* *h_0* 133.64318164425748) (* *h_1* 132.22896808188437))
+(+ (* *h_0* 133.64318164425748) (* *h_1* 133.64318164425748))
+(+ (* *h_0* 132.22896808188437) (* *h_1* 133.64318164425748))
+
+(vector 71.0  63.0  70.0  88.0  99.0  90.0)
+(+ (* 1/2 88.0) (* 1/2 70.0) (* -1/2 63.0) (* -1/2 71.0))  ;==>  12.0
+(+ (* 1/2 99.0) (* 1/2 88.0) (* -1/2 70.0) (* -1/2 63.0))  ;==>  27.0
+(+ (* 1/2 90.0) (* 1/2 99.0) (* -1/2 88.0) (* -1/2 70.0))  ;==>  15.5
+(+ (* 1/2 99.0) (* 1/2 90.0) (* -1/2 99.0) (* -1/2 88.0))  ;==>   1.0
+(+ (* 1/2 88.0) (* 1/2 99.0) (* -1/2 90.0) (* -1/2 99.0))  ;==>  -1.0
+(+ (* 1/2 70.0) (* 1/2 88.0) (* -1/2 99.0) (* -1/2 90.0))  ;==> -15.5
+
+|#
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;;; The overlapped wavelet transform can be used to give a "shift invariant"
+;;; wavelet decomposition of a time series.  There is no restriction on
+;;; sample size (other than that the sample size must be longer than the
+;;; the basis wavelet filter).
+;;; If return-smooths-p is nil (the default),
+;;; this function returns a list of vectors with the following:
+;;;   smooth of last level
+;;;   rough of last level  (i.e., wavelet coefficients of largest scale)
+;;;   rough of next-to-last level
+;;;   ...
+;;;   rough of second level
+;;;   rough of first level (i.e., wavelet coefficients of smallest scale)
+;;; If return-smooths-p is t,
+;;; this function returns two lists of vectors, the first of which are
+;;; the roughs (in the same order as above) and the second of which are
+;;; the corresponding smooths.
+;;; NOTE: if physically meaningful coefficients are desired, you should
+;;;       divide each element of the usual wavelet filter by (sqrt 2)
+;;;       (this compensates for the fact that we are no longer downsampling
+;;;       by a factor of two at each stage of the pyramid algorithm).
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+(defun overlapped-wavelet-transform
+       (time-series
+        &key
+        (wavelet-filter (let ()
+                          (declare (special *D4-wavelet*))
+                          *D4-wavelet*))
+        (N-levels (1+ (maximum-downsampling-level
+                       (length wavelet-filter)
+                       (length time-series))))
+        (return-smooths-p nil))
+  (let ((list-of-wavelet-coeffs '())
+        (list-of-smooths '())
+        (smooth time-series)
+        rough)
+    (dotimes (i N-levels (if return-smooths-p
+                           (values list-of-wavelet-coeffs list-of-smooths)
+                           (push smooth list-of-wavelet-coeffs)))
+      (multiple-value-setq (smooth rough)
+        (overlapped-pyramid-decomposition
+         smooth
+         :wavelet-filter wavelet-filter
+         :downsampling-level i))
+      (push rough list-of-wavelet-coeffs)
+      (if return-smooths-p (push smooth list-of-smooths))
+      )))
+
+#|
+(setf *a-line* (iota 10 100 :float-p t))
+
+(inspect (multiple-value-list
+          (overlapped-wavelet-transform
+           *a-line*
+           :wavelet-filter *Haar-wavelet*)))
+
+(inspect (multiple-value-list
+          (overlapped-wavelet-transform
+           *a-line*
+           :wavelet-filter *D4-wavelet*)))
+|#
+
+;-------------------------------------------------------------------------------
+(defun wavelet-length&sample-size->maximum-scale (L_1 N)
+  "given the length L_1 of a unit scale wavelet filter
+and the sample size N of a time series,
+computes the maximum scale for which the fully overlapped wavelet transform
+[i.e., the maximal-overlap transform] can compute something useful"
+  (values (round (expt 2 (1- (floor (log (/ (- (+ N L_1) 2) (1- L_1)) 2)))))))
+
+;-------------------------------------------------------------------------------
+(defun wavelet-length&scale->wavelet-filter-length (scale L_1)
+  "given a scale [assumed to be a power of 2]
+and the length L_1 of a unit scale wavelet filter,
+computes the length of the filter needed to produce the wavelet coefficients
+by filtering the original time series"
+  (1+ (* (1- (* 2 scale))
+         (1- L_1))))
+
+;-------------------------------------------------------------------------------
+;;; NOTE: the primary input to this function is assumed to be the output
+;;;       from either
+;;;        wavelet-transform or overlapped-wavelet-transform
+;;;       with the keyword return-smooths-p set to its default value of nil.
+;;; NOTE 12/30/94: changed to reflect new definition of wavelet variance
+;;;                in revised version of Biometrika paper ...
+(defun wavelet-coefficients->wavelet-variance
+       (overlapped-wavelet-transform-goodies
+        &key
+        (tau 1.0))
+  (let* ((N-taus (1- (length overlapped-wavelet-transform-goodies)))
+         (w-vars (make-array N-taus))
+         (taus (make-array N-taus))
+         (j 0)
+         (k 1))
+    (dolist (a-result (reverse (cdr overlapped-wavelet-transform-goodies))
+                      (values w-vars taus))
+      (setf (svref taus j) tau)
+      (setf (svref w-vars j) (/ (sum-of-squares a-result)
+                                (* 2 k (length a-result))))
+      (incf j)
+      (multf tau 2)
+      (multf k 2))))
+

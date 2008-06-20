@@ -1,0 +1,1 @@
+;;;  Uses the test code.(setf resnum (open-resource-file  "Chuck:ThinkC:XLispCR:test.CR"))(close-resource-file resnum)(call-cfun "test" 0 (float (iseq 4)) 4 0.7)

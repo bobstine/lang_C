@@ -1,0 +1,91 @@
+Opened file with n = 10 cases.
+y[n-1] = 1
+LREG: Y vector has 6/4 = 10cases.
+LREG: Setting intercept with n0=4 n1=6 gives log likelihood = -6.73012 @ b0 = 0.405465
+ *************  Initialized Model  *************** 
+
+   ______________ Logistic Regression Model _________________ 
+    n =  10
+    q =  0 with 0 evaluated and 0 since last added.
+    LL = -6.73012
+         {Constant }
+     b = {0.405465 }
+    se = LREG: SE for beta[0] invalid; set to zero.   m_jj=-inf
+{0 }
+
+   __________________________________________________________ 
+
+Considering x[1] .................................. 
+MATR: Resize from 1 to 11 ... done.
+MATR: Resizing to append column
+LREG: Preparing for MLE iterations.
+LREG: Update Hessian, with top corner set to -2.4, -13.2, -13.2, -92.4
+LREG: solver status at iteration 0
+       @ 0.405465 0 
+     f'= -8.88178e-16 5 
+     H = -2.4 -13.2 -13.2 -92.4 
+LREG: Update Hessian, with top corner set to -2.11207, -10.7542, -10.7542, -70.2228
+LREG: Update Hessian, with top corner set to -2.09525, -10.6263, -10.6263, -69.1354
+LREG: solver status at iteration 5
+       @ -1.04853 0.275408 
+     f'= 8.97391e-08 8.2553e-07 
+     H = -2.09525 -10.6263 -10.6263 -69.1354 
+LREG: Log like change from -6.73012 to -6.07152 was not significant; p-value = 0.251095
+ For predictor #1 result = <1.3172,0.251095> 
+Considering x[2] .................................. 
+LREG: Preparing for MLE iterations.
+LREG: Update Hessian, with top corner set to -2.4, -34.56, -34.56, -510.72
+LREG: solver status at iteration 0
+       @ 0.405465 0 
+     f'= -8.88178e-16 -1.4 
+     H = -2.4 -34.56 -34.56 -510.72 
+LREG: Update Hessian, with top corner set to -2.36401, -34.2456, -34.2456, -509.243
+LREG: solver status at iteration 3
+       @ 1.93968 -0.106188 
+     f'= 3.75682e-09 4.28888e-08 
+     H = -2.36401 -34.2456 -34.2456 -509.243 
+LREG: Log like change from -6.73012 to -6.65569 was not significant; p-value = 0.699639
+ For predictor #2 result = <0.148848,0.699639> 
+Considering x[3] .................................. 
+LREG: Preparing for MLE iterations.
+LREG: Update Hessian, with top corner set to -2.4, -56.4, -56.4, -1342.32
+LREG: solver status at iteration 0
+       @ 0.405465 0 
+     f'= -8.88178e-16 6 
+     H = -2.4 -56.4 -56.4 -1342.32 
+LREG: Update Hessian, with top corner set to -1.95684, -44.6544, -44.6544, -1029.21
+LREG: Update Hessian, with top corner set to -1.88124, -42.7085, -42.7085, -978.72
+LREG: solver status at iteration 6
+       @ -9.73183 0.438497 
+     f'= 7.07875e-09 1.90964e-07 
+     H = -1.88124 -42.7085 -42.7085 -978.72 
+LREG: Log like improves from -6.73012 to -5.54732 @ {-9.73183 0.438497 }
+LREG: Chi-square = 2.36559 with p-value 0.124037 < 0.25
+ For predictor #3 result = <2.36559,0.124037> 
+ Revised model: 
+   ______________ Logistic Regression Model _________________ 
+    n =  10
+    q =  1 with 3 evaluated and 0 since last added.
+    LL = -5.54732
+         {Constant x }
+     b = {-9.73183 0.438497 }
+    se = {7.54682 0.330869 }
+
+   __________________________________________________________ 
+
+Considering x[4] .................................. 
+LREG: Preparing for MLE iterations.
+LREG: Update Hessian, with top corner set to -1.88116, -42.7065, -42.7065, -978.668
+LREG: solver status at iteration 0
+       @ -9.73183 0.438497 0 
+     f'= 7.07875e-09 1.90964e-07 0.11012 
+     H = -1.88116 -42.7065 -65.1177 -42.7065 -978.668 -1482.69 -65.1177 -1482.69 -2257.01 
+LREG: Update Hessian, with top corner set to -1.87846, -42.6455, -42.6455, -977.236
+LREG: solver status at iteration 3
+       @ -12.889 0.375423 0.132561 
+     f'= -3.08158e-11 -5.86148e-10 -1.05282e-09 
+     H = -1.87846 -42.6455 -65.036 -42.6455 -977.236 -1480.77 -65.036 -1480.77 -2254.55 
+LREG: Log like change from -5.54732 to -5.54001 was not significant; p-value = 0.903752
+ For predictor #4 result = <0.0146222,0.903752> 
+Considering x[5] .................................. 
+ Total of 1 added out of 5 predictors considered.

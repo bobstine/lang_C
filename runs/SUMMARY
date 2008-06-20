@@ -1,0 +1,148 @@
+$Id: SUMMARY,v 3.3 2004/12/18 13:56:03 foster Exp $
+
+ + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+
+ |	Production run details					       |
+
+ |	This file is a log of the runs that have been made.  It isn't  |
+	definitive--but should help find the information you might be
+ |	looking for.  Insert your comments after the $log$ line and    |
+	they will be time stamped when you check them in.
+ |								       |
+
+ + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+
+$Log: SUMMARY,v $
+Revision 3.3  2004/12/18 13:56:03  foster
+added number of SVD_variables to svd_data file name.
+
+Revision 3.2  2004/12/13 20:44:55  foster
+edits
+
+Revision 3.1  2004/12/13 20:42:56  foster
+added info on rkhs done first.
+
+
+p = 1Million  total_alpha = 10, (with RKHS & SVDs added first)
+	ARCENE:        q=6pc+2 vs 5k	L1=.25  vs .15 (.1)     AUC=.93 vs .9 (.98)
+	DEXTER:        q=9pc+1 vs .3-5k	L1=.086 vs .07 (.04)    AUC=.99 vs .97 (.99)  
+win	DOROTHEA: didn't run???
+YEA!	GISETTE:       q=60pc+10 vs1000	L1=.038 vs .02 (.0125)  AUC=.995 vs .99 (.999)
+worse	MADELON:       q=23pc+5 vs 20	L1=.28  vs .10 (.06)    AUC=.94  vs .9 (.97)
+	REHG:          q=200pc vs 200  (L1=.18,  AUC=.97,  RMSE = .36) accuracy @ 50% false positive = .05 vs .03
+
+	CATALYSIS:     q=12pc+2 vs ???    L1=.31  vs .3?          AUC=.92 vs ?
+
+Revision 3.0  2004/11/19 18:58:36  foster
+Tagging as version 3.0 via the command:
+
+
+REHG targeting 50%   Type I error            Type II error
+
+        AdaBoost        10%  = 503/4832         50%
+        AdaBoost/LAC    7%   = 324/4832         50%
+        FFS             7%   = 357/4832         50%
+        FFS/LAC         6.7% = 324/4832         50%
+        AsymBoost       8%   = 428/4832         50%
+        AsymBOost/LAC   6%   = 292/4832         50%
+
+        Streaming       6%   = 299/5000         43%
+        Streaming       3.6% = 179/5000         57%
+
+
+Revision 2.8  2004/10/31 02:06:26  foster
+1million!
+
+Madelon drops from .4 down to .23.  Still not competitive, but much better. 
+
+p = 1Million  total_alpha = 10, (with RKHS & SVDs added last)
+	ARCENE:        q=4+1pc vs 5k	L1=.29  vs .15 (.1)     AUC=.93 vs .9 (.98)
+	DEXTER:        q=4+2pc vs .3-5k	L1=.11  vs .07 (.04)    AUC=.98 vs .97 (.99)  
+win	DOROTHEA (100k): q=8 vs 3k-10k	L1=.09  vs .17 (.08)    AUC=.95  vs .85 (.96)
+bad	GISETTE:       q=90+5 vs 1000	L1=.39  vs .02 (.0125)  AUC=.85 vs .99 (.999)
+	MADELON:       q=2+23pc vs 20	L1=.23  vs .10 (.06)    AUC=.95  vs .9 (.97)
+	REHG:          q=200+50 vs 200  (L1=.17,  AUC=.97,  RMSE = .35) accuracy @ 50% false positive = .05 vs .03
+
+	CATALYSIS:     q=15+4 vs ???    L1=.31  vs .3?          AUC=.93 vs ?
+
+Revision 2.5  2004/10/20 14:51:14  foster
+
+total_alpha = 10	Us vs them (best)
+*GISETTE:       q=43 vs 1000	L1=.28  vs .02 (.0125)  AUC=.9 vs .99 (.999)
+ARCENE:        q=5 vs 2k-10k	L1=.30  vs .15 (.1)     AUC=.93 vs .9 (.98)
+DEXTER:        q=6 vs 300-5k	L1=.21  vs .07 (.04)    AUC=.95 vs .97 (.99)
+DOROTHEA:      q=8 vs 3k-10k	L1=.08  vs .17 (.08)    AUC=.96  vs .85 (.96)
+MADELON:       q=6 vs 20	L1=.39  vs .10 (.06)    AUC=.9  vs .9 (.97)
+
+
+total_alpha = 1		Us vs them (best)
+GISETTE:       q=43 vs 1000	L1=.28  vs .02 (.0125)  AUC=.9 vs .99 (.999)
+ARCENE:        q=1 vs 2k-10k	L1=.36  vs .15 (.1)     AUC=.93 vs .9 (.98)
+DEXTER:        q=3 vs 300-5k	L1=.28  vs .07 (.04)    AUC=.95 vs .97 (.99)
+DOROTHEA:      q=7 vs 3k-10k	L1=.09  vs .17 (.08)    AUC=.96  vs .85 (.96)
+MADELON:       q=3 vs 20	L1=.41  vs .10 (.06)    AUC=.9  vs .9 (.97)
+
+Revision 2.4  2004/10/19 03:22:59  foster
+added AUC output.
+
+total_alpha = .1		Us vs them (best)
+GISETTE:       q=25 vs 1000	L1=.29  vs .02 (.0125)  AUC=.9 vs .99 (.999)
+ARCENE:        q=1 vs 2k-10k	L1=.48  vs .15 (.1)     AUC=.9 vs .9 (.98)
+DEXTER:        q=3 vs 300-5k	L1=.27  vs .07 (.04)    AUC=.95 vs .97 (.99)
+DOROTHEA:      q=3 vs 3k-10k	L1=.076 vs .17 (.08)    AUC=.97  vs .85 (.96)
+MADELON:       q=3 vs 20	L1=.41  vs .10 (.06)    AUC=.9  vs .9 (.97)
+
+Revision 2.3  2004/10/18 17:33:49  foster
+added description of what is new in version 2
+
+Revision 2.2  2004/10/18 16:49:45  foster
+first error free run.
+
+
+GISETTE:
+	Target for 1:1 error is 2% (best about 1.25%, using about 1000 variables)
+	current run is about 29% (1740 errors) using about 25 variables
+
+ARCENE:
+	Target for 1:1 error is 15% (best about 10%, using about 2k-10k variables)
+	current run is about 48% (48 errors) using about 1 variables
+
+DEXTER:
+	Target for 1:1 error is 7% (best about 4%, using about 300-5k variables)
+	current run is about 27% (81 errors) using about 3 variables
+
+DOROTHEA
+	Target for 1:1 error is 17% (best about 8%, using about 3k-10k variables)
+	current run is about 7.6% (61 errors) using about 3 variables
+
+MADELON
+	Target for 1:1 error is 10% (best about 6%, using about 20 variables)
+	current run is about 41% (822 errors) using about 3 variables
+
+Revision 2.1  2004/10/18 15:47:19  foster
+
+The following changes have been made to bob's code for version 2:
+
+(1) Major bug fix that caused the writing of files to fail.   (THANKS
+BOB!)
+
+(2) Better "bidders" that will handle arbitary number of variables.
+(Ok, limited to about 10 billion, but given that is several months of
+CPU, I don't think that will be a problem.)
+
+(3) Make files work on parallel system (grid).  Will build all current
+data sets in about 3 hours, searching 100k variables.  (5forward and
+5reverse on dataset called: arcene dexter gisette madelon dorothea
+rehg.)
+
+
+Revision 1.3  2004/10/14 23:23:23  foster
+fixed bug which added two copies of same bidder.
+
+
+First run.
+
+
+Revision 1.2  2004/10/14 21:02:48  foster
+testing log
+

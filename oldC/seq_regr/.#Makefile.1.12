@@ -1,0 +1,45 @@
+# $Id: Makefile,v 1.12 2004/01/20 15:43:32 bob Exp $
+
+###########################################################################
+#
+#        Options
+#
+#   Examples of depending on libaries.  Add names here
+#        LDLIBS =  -lthing -lregression 
+#   and give the LDFLAGS to local dir if needed
+#        LDFLAGS = -Llib 
+# 
+###########################################################################
+
+PROJECT_NAME = seq_regr
+
+OPT      = # -O2 -DNDEBUG
+
+INCLUDES = -I. -I$(C_PATH)/utils -I$(C_PATH)/random  -I$(C_PATH)/ranges -I-
+
+# ranges do not generate object code, so nothing to add to lib
+
+LDLIBS   = -lgsl -lgslcblas -lm -lutils -lrandom
+LDFLAGS  = -L$(C_PATH)/utils -L$(C_PATH)/random
+
+
+###########################################################################
+#
+#	Objects ... objects are listed in order of precedence
+#
+###########################################################################
+
+level_0   = gsl_regr.o  threshold.o log_regr.o
+level_1   = seq_regr.o 
+level_3   = 
+
+############################################################################
+#
+#            INCLUDING RULES AND DEFINITIONS
+#
+############################################################################
+
+include ../rules_for_makefiles
+
+seq_regr: seq_regr_cmd.o $(above_infinity)
+	g++ $(CFLAGS) $(INCLUDES) seq_regr_cmd.o $(above_infinity) -o $@

@@ -1,0 +1,24 @@
+
+
+
+
+
+Loader finds two versions of a function...
+
+	The likely cause is that a function has been defined
+	in a header file and is not inlined or a template
+	function.
+
+	Sometimes the link order will cause this to occur as
+	well; change that in the description of the target.
+
+
+Dubugger says "not enough frames on stack" and points to weird line
+
+	An object is being used that no longer exists.  This will
+	happen, for example, if a pointer that held by an object
+	is deleted by someone else.
+
+	Another source of this problem is an object that holds const&
+	to an object, but the object was created in a function and
+	goes away when the function exits.

@@ -1,0 +1,233 @@
+/*  $Id: range_stats.h,v 1.9 2003/05/06 22:01:46 bob Exp $  -*- c++ -*-
+
+   These functions perform statistics directly on ranges without
+   reference to variables or data sets.
+
+   7 Jan 03 ... Renamed and moved from prior statistic_base code.
+  13 Dec 02 ... Revise for newer range code.
+  26 Jan 02 ... Roll in the newer range code with tables.     
+  16 Jan 02 ... Created as ranges get more powerful.
+
+*/
+
+#ifndef _RANGE_STATS_H_
+#define _RANGE_STATS_H_
+
+#include "range_traits.h"
+#include "range.h"
+#include "make_range.h"
+#include "range_ops.h"
+#include "apl.h"
+
+#include "function_utils.h"
+#include "print_utils.h"
+
+
+////  Averages
+
+template <class R>
+inline double
+average (R const& range)
+{
+  return average(make_range(range));
+}
+
+template <class I>
+inline double
+average (range<I> const& range)
+{
+  return average(range, range_ops::length(range));
+}
+
+
+template <class I>
+inline double
+average (range<I> range, double divisor)
+{
+  return range_ops::accumulate(range,0.0)/divisor;
+}
+
+template <class Ix, class Iw>
+inline double
+weighted_average (range<Ix> range, double divisor, range<Iw> wts)
+{
+  return range_ops::weighted_accumulate(range,wts,0.0)/divisor;
+}
+
+
+////  Variances and SD
+//    No automatic centering so that we can use sparse ranges.
+
+template <class R1>
+inline double
+sum_of_squares (R1 const& range)
+{
+  return sum_of_squares(make_range(range));
+}
+
+template <class R1>
+inline double
+sum_of_squares (R1 const& range, double avg)
+{
+  return sum_of_squares(make_range(range), avg);
+}
+
+template <class I>
+inline double
+sum_of_squares (range<I> range)
+{
+  return range_ops::accumulate(make_unary_range(Function_Utils::Square(),range), 0.0);
+}
+
+
+template <class I>
+inline double
+sum_of_squares (range<I> range, double center)
+{
+  return range_ops::accumulate(make_unary_range(Function_Utils::CenterSquare(center),range), 0.0);
+}
+
+
+template <class I, class Iw>
+inline double
+weighted_sum_of_squares (range<I> range, range<Iw> wts)
+{
+  return range_ops::accumulate(
+		    make_binary_range(
+				      std::multiplies<double>(),
+				      make_unary_range(Function_Utils::Square(),range),
+				      wts),
+		    0.0);      
+}
+
+
+template <class I, class Iw>
+inline double
+weighted_sum_of_squares (range<I> range, double center, range<Iw> wts)
+{
+  return range_ops::accumulate(
+		    make_binary_range(
+				      std::multiplies<double>(),
+				      make_unary_range(Function_Utils::CenterSquare(center),range),
+				      wts),
+		    0.0);      
+}
+
+// Note:  these are numerically 'desirable' but must be fixed for sparse ranges
+
+template <class I>
+inline double
+variance (range<I> range, double yBar, double df)
+{
+  return sum_of_squares(range, yBar) / df;
+}
+
+template <class I, class Iw>
+inline double
+weighted_variance (range<I> range, double yBar, double df, range<Iw>wts)
+{
+  return weighted_sum_of_squares(range,yBar,wts) / df;
+}
+
+template <class I>
+inline double
+standard_deviation (range<I> range, double yBar, int df)
+{
+  return sqrt(variance(range, yBar, df));
+}
+
+template <class I, class Iw>
+inline double
+weighted_standard_deviation (range<I> range, double yBar, double df, range<Iw> wts)
+{
+  return sqrt(weighted_variance(range, yBar, df, wts));
+}
+
+
+//// Covariance:  do your centering elsewhere.
+
+
+template <class I1, class I2>
+inline double
+covariance(range<I1> y, const double yBar, range<I2> x, const double xBar, const double df)
+{
+  return covariance(make_unary_range(Function_Utils::Center(yBar),y),
+		    make_unary_range(Function_Utils::Center(xBar),x),
+		    df);
+}
+
+
+template <class I1, class I2>
+inline double
+covariance(range<I1> y, range<I2> x, const double df)
+{ 
+  return range_ops::accumulate(make_binary_range(std::multiplies<double>(),y,x), 0.0) / df;
+}
+
+
+template <class I1, class I2, class Iw>
+inline double
+weighted_covariance(range<I1> y, const double yBar, range<I2> x, const double xBar,
+		    const double df, range<Iw> wts)
+{
+  return weighted_covariance(make_unary_range(Function_Utils::Center(yBar),y),
+			     make_unary_range(Function_Utils::Center(xBar),x),
+			     df,
+			     wts);
+}
+
+template <class I1, class I2, class Iw>
+inline double
+weighted_covariance(range<I1> y, range<I2> x, const double df, range<Iw> wts)
+{
+  return range_ops::weighted_accumulate(make_binary_range(std::multiplies<double>(),y,x), wts, 0.0) / df;
+}
+
+
+//  Cross-products are not so numerically sound, but avoid issues for sparse ranges
+
+template <class R1, class R2>
+inline double
+cross_product (R1 const& y, double yBar, R2 const& x, double xBar)
+{
+  return cross_product(make_range(y), yBar, make_range(x), xBar);
+}
+
+
+template <class I1, class I2>
+inline double
+cross_product (range<I1> y, double yBar, range<I2> x, double xBar)
+{
+  return
+    range_ops::accumulate(make_binary_range(std::multiplies<double>(), x, y),
+			  0.0)
+    - yBar * xBar;
+}
+
+
+template <class Range1, class Range2, class Range3>
+void
+fill_cross_product_vector (Range1 const& y, const double yBar,   //  iterates over scalars
+			   Range2 const& x, Range3 const& xBar,  //  iterates over vectors
+			   double  *cp)
+{
+  typename range_traits<Range1>::range  yRange (make_range(y));
+
+  typedef typename range_traits<Range2>::range  MatrixRange;
+  MatrixRange mat(make_range(x));
+  typename range_traits<MatrixRange>::const_iterator matColIter (begin(mat));
+  
+  typedef typename range_traits<Range3>::range  AvgRange;
+  AvgRange avg(make_range(xBar));
+  typename range_traits<AvgRange>::const_iterator avgIter (begin(avg));
+
+  unsigned int k (range_ops::length(x));
+  for (unsigned int i=0; i < k; ++i)
+  { *cp = cross_product(yRange, yBar, make_range(*matColIter), *avgIter);
+    ++cp;
+    ++avgIter;
+    ++matColIter;
+  }
+}
+     
+#endif

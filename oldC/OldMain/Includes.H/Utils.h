@@ -1,0 +1,1 @@
+/*			Utils.h							*//*							7 Oct 87		*//*					rev						*/int IsNearZero (double x);     /* Checks to see if |x| is within tolerance of zero. */int IsNegative (double x);	/* Checks if x is too close to being negative*/	double PolyValue (double *coef, int maxPower, double x);    /* Evaluates polynomial via Horner; uses coef[0] as const */ 

@@ -1,0 +1,159 @@
+# $Id: rules_for_makefiles,v 1.13 2005/06/14 22:36:21 bob Exp $
+
+#------------------------------------------------------------------------------
+#
+#  Makefile notes
+#	target : dependencies
+#		commmand...
+#	
+#	$@ refers to current target name
+#	$? are more recent dependencies
+#	$< is name of the dependency (as in rules with % matching) 
+#	$* matches the stem of a matched dependency
+#
+#	Rules	The `target'.c files are automatically included as dependency.
+#		The wildcard `*' does not expand when used in dependencies.
+#			(use `$(wildcard *.c)' to get the desired effect)
+#
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+#
+#                      LEVELIZATION
+#
+#------------------------------------------------------------------------------
+ 
+above_1 =              $(level_0)  
+above_2 = $(above_1)   $(level_1)  
+above_3 = $(above_2)   $(level_2)  
+above_4 = $(above_3)   $(level_3)  
+above_5 = $(above_4)   $(level_4)  
+above_6 = $(above_5)   $(level_5)  
+above_7 = $(above_6)   $(level_6)  
+above_8 = $(above_7)   $(level_7)  
+above_9 = $(above_8)   $(level_8)  
+
+above_infinity = $(above_9)
+
+$(level_0:.o=.test.exec):              
+$(level_1:.o=.test.exec):  $(above_1)  
+$(level_2:.o=.test.exec):  $(above_2)  
+$(level_3:.o=.test.exec):  $(above_3)  
+$(level_4:.o=.test.exec):  $(above_4)  
+$(level_5:.o=.test.exec):  $(above_5) 
+$(level_6:.o=.test.exec):  $(above_6) 
+$(level_7:.o=.test.exec):  $(above_7) 
+$(level_8:.o=.test.exec):  $(above_8) 
+$(level_9:.o=.test.exec):  $(above_9) 
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+vpath %.a $(patsubst %, ../%, $(USES))
+
+# -I- deprecated in version 4.0 of gcc
+# INCLUDES =  -I. $(patsubst %,-I%,$(patsubst %, ../%, $(USES))) -I-
+
+INCLUDES =  -I. $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+# names of libraries
+LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm 
+# paths
+LDFLAGS = $(patsubst %,-L%,$(patsubst %, ../%, $(USES)))
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+sources = $(addsuffix .cc, $(basename $(above_infinity)))
+test_sources = $(wildcard *.test.cc)
+
+-include $(sources:.cc=.dd)
+-include $(sources:.cc=.test.dd)
+
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+#
+#           Targets
+# 
+#  Order shouldn't matter--but for Gnu-Make it does.
+#
+#	-u will only copy newer files, so make copying times faster and make times are shorter.
+#       -p will keep the time stop the same.  So it makes the -u unneed.
+#	cp -uf *.h ../Include
+#
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+.PHONY : clean
+clean:
+	-rm -f     *.o *.d *.dd *.exec
+	-rm        core
+
+
+test: test.o $(above_infinity)
+	$(CC) -o test.exec $(LDLIBS) test.o $(above_infinity) $(USELIBS) | c++filt
+
+speed.test: speed.test.o $(above_infinity)
+	$(CC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
+
+%.test.exec: %.test.o %.o
+	@echo Making executable test program. $@
+	$(CC) $^ $(LDLIBS) -o  $@
+
+%.o: %.cc %.h
+	$(CC) $(CFLAGS) -c $< -o $@ 
+
+
+%.test.o: %.test.cc  # does not require a .h file
+	$(CC) $(CFLAGS) -c $< -o $@ 
+
+
+install:  $(INSTALL_PATH)/Include  lib$(PROJECT_NAME).a 
+
+$(INSTALL_PATH)/Include:
+	mkdir $(INSTALL_PATH)/Include
+
+$(INSTALL_PATH)/lib/lib$(PROJECT_NAME).a: lib$(PROJECT_NAME).a 
+	-chmod +w $(INSTALL_PATH)/Include/*.h
+	-cp -pf *.h $(INSTALL_PATH)/Include
+	-chmod -w $(INSTALL_PATH)/Include/*.h
+	-cp -f $< $@
+
+
+lib: lib$(PROJECT_NAME).a
+
+lib$(PROJECT_NAME).a: $(above_infinity) 
+	-rm lib$(PROJECT_NAME).a
+	$(LIBTOOL_CMD)
+
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+#
+#               DEPENDENCIES
+#
+# From the GNU make info node and _Gnu make_ book (neither worked unmodified)
+# book version:	$(CC) -M $(CPPFLAGS) $< | sed '\''s/\($*\)\.o[ :]*/\1 $@/g'\'' > $@
+# info version:	$(CC) -M $(CPPFLAGS) $< | sed 's/$*.o/& $@/g' > $@
+#
+# The -rm kills off any .d file that is made with zero length.  It probably
+# could be made shorter and clearer.
+#
+# Using MM option suppresses the system dependencies (use M otherwise)
+
+# these work--but the two below are more "modern"
+#
+# %.test.d: %.test.cc %.h
+#	$(CC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
+#	-rm `ls -lF *.d | grep " 0 " | sed "s/.* //g" | tr "\n" " "`
+#
+# %.d: %.cc %.h
+#	$(CC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
+#	-rm `ls -lF *.d | grep " 0 " | sed "s/.* //g" | tr "\n" " "`
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+%.dd: %.cc
+	set -e; $(CC) $(CFLAGS) -MM $(CPPFLAGS) $*.cc   \
+        | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
+
+%.test.dd: %.test.cc
+	set -e; $(CC) $(INCLUDES) -MM $(CPPFLAGS) $< \
+       | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
+
+
+##	set -e; $(CC) $(INCLUDES) -MM $(CPPFLAGS) $< | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@

@@ -1,0 +1,6 @@
+init testModel/db testModel/ 
+INDX 7.7 1
+INDX 7.7 2
+INDX 7.7 3
+INDX 7.7 4
+end 0.0

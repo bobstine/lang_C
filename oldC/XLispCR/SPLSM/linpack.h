@@ -1,0 +1,1 @@
+//                Linpack.hvoid   daxpy(long n, double *a, double *x, double *y);double ddot(long n, double *x, double *y);double d_sign(double *x, double *y);double pow_dd (double *x, double *y);

@@ -1,0 +1,70 @@
+cd ~/C/ranges/
+make -k speed.test.exec; speed.test.exec
+g++ -I. -I/Users/bob/C//utils -I/Users/bob/C//random -I- -L/Users/bob/C//utils -L/Users/bob/C//random -finline-functions -gstabs+  -Wall -W -Werror -Woverloaded-virtual -O3  -DNDEBUG -c speed.test.cc -o speed.test.o 
+g++ -I. -I/Users/bob/C//utils -I/Users/bob/C//random -I- -L/Users/bob/C//utils -L/Users/bob/C//random speed.test.o range.o                               composer.o evaluator.o      range_traits.o sparse_iterator.o     function_iterators.o      range_ops.o   -lm -lutils -lrandom -o speed.test.exec
+
+Speed tests for computing s2
+
+ NOTHING: Time for length 200 was 0
+ NOTHING: Time for length 2000 was 0
+ NOTHING: Time for length 20000 was 0
+
+ FOR[i]: Time for length 200 was 0.23
+ FOR[i]: Time for length 2000 was 0.23
+ FOR[i]: Time for length 20000 was 0.19
+
+ FOR */idx: Time for length 200 was 0.13
+ FOR */idx: Time for length 2000 was 0.14
+ FOR */idx: Time for length 20000 was 0.12
+
+ RANGE: Time for length 200 was 0.31
+ RANGE: Time for length 2000 was 0.24
+ RANGE: Time for length 20000 was 0.24
+
+ FOR * : Time for length 200 was 0.19
+ FOR * : Time for length 2000 was 0.17
+ FOR * : Time for length 20000 was 0.19
+
+ FOR *4: Time for length 200 was 0.05
+ FOR *4: Time for length 2000 was 0.05
+ FOR *4: Time for length 20000 was 0.05
+
+ FOR *10: Time for length 200 was 0.26
+ FOR *10: Time for length 2000 was 0.24
+ FOR *10: Time for length 20000 was 0.25
+
+ FOR_EACH: Time for length 200 was 1.02
+ FOR_EACH: Time for length 2000 was 0.95
+ FOR_EACH: Time for length 20000 was 1.1
+
+ TRANSFORM: Time for length 200 was 1.03
+ TRANSFORM: Time for length 2000 was 2.1
+ TRANSFORM: Time for length 20000 was 2.2
+
+
+
+ Inner product loops... 
+
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 200 was 1.63 giving avg 49.7435
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 2000 was 2.64 giving avg 500.208
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 20000 was 2.68 giving avg 4995.05
+
+ip ITERATOR ITERATOR: Time for length 200 was 0.32 giving avg 50.1542
+ip ITERATOR ITERATOR: Time for length 2000 was 1.71 giving avg 500.343
+ip ITERATOR ITERATOR: Time for length 20000 was 1.64 giving avg 4997.81
+
+ip STL_IP STL_IP: Time for length 200 was 0.34 giving avg 49.9879
+ip STL_IP STL_IP: Time for length 2000 was 1.74 giving avg 501.228
+ip STL_IP STL_IP: Time for length 20000 was 1.71 giving avg 4999.91
+
+
+
+ Dot product for pair of vectors comparison 
+Dot prod via INNER_PRODUCT: Time for length 100 was 8
+Dot prod via INNER_PRODUCT: Time for length 1000 was 9
+Dot prod via INNER_PRODUCT: Time for length 10000 was 8
+Dot prod via RANGE: Time for length 100 was 6
+Dot prod via RANGE: Time for length 1000 was 8
+Dot prod via RANGE: Time for length 10000 was 8
+
+Compilation finished at Sun Mar 21 17:53:29

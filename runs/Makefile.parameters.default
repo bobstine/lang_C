@@ -1,0 +1,28 @@
+# $Id: Makefile.parameters.default,v 3.3 2006/03/22 21:05:14 foster Exp $ -*- Makefile -*-
+
+# DON'T EDIT:
+# DON'T EDIT:  This file it the template for the Makefile parameters.
+# DON'T EDIT:  It is copied over to Makefile.parameters before it is used.
+# DON'T EDIT:  This copy is checked into cvs, but the actual Makefile.parameter
+# DON'T EDIT:  file isn't checked in.  In this way you have Makefile's that have
+# DON'T EDIT:  different behavior depending on which directory it is run in.
+# DON'T EDIT:
+
+
+# NUMBER_ROUND's is the primary control variable.  Cpu is basically linear in this variable.
+
+NUMBER_ROUNDS = 10000
+
+# Number of SVD variables to create.
+
+NUMBER_SVD_VARIABLES = 100
+
+# if the number of random SVD variables is set to -1, then the system will compute
+# the "correct" number of variables to create.
+
+NUMBER_RANDOM_SVD_VARIABLES = -1
+
+#  COMPILE_CODE = 1  --->  always build new code if necessary 
+#  COMPILE_CODE = 0  --->  only build new code when actually needed 
+
+COMPILE_CODE = 0

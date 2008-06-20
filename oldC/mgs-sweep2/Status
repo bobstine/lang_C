@@ -1,0 +1,195 @@
+Status of the MGS code  [$Id: Status,v 1.15 2001/11/28 21:28:33 bob Exp $]
+
+=========================================================================
+21 Nov 01
+
+	Model paths are now possible to do with a subdirectory
+	to keep all the relevant files together.
+
+
+=========================================================================
+15 Nov 01
+
+	Revise structure of Lisp auction objects to the following
+	
+	  Model          ... the controller of MVC notion, joining the 
+				c-code external modeling process
+			     to 
+				some 'expert' which is an operator stream
+
+	  Auction	 ... op stream formed from a collection of bidders
+	  Bidder	 ... tracks 'value' of an operator stream
+	  Handicapper	 ... attaches a grade (ie, probability) to op strm
+
+	  OperatorStream ... sequence of operators
+	  Operators      ... things that generate a predictor from data	
+
+=========================================================================
+ 2 Nov 01
+
+	Now have auction running to find a seqence of models, but still
+	only with very simple experts with no real feedback.
+
+  	Fixed... Lisp was not writing the instructions in the proper format
+	for the C program.  INTR should be written as
+		INTR #vars index1 index2, or INTR 2 2 2
+
+	Need to figure out why C code dies on running INTR 2 2. 
+	Driver code generates an underflow ... might this be messing up	
+	the pipes?  Just run 'driver' with input file driver.input
+	as stored.  Does not 'hang', so suspect it generates someoutput
+	that confuses the lisp code.
+
+=========================================================================
+ 1 Nov 01
+
+        Have the predictor auction running, but only with very simple
+	sequential experts.
+
+  ***   Need to add adaptive experts to capture the changes in search
+	as variables are added to the model.
+
+=========================================================================
+18 Oct 01
+
+	Have pipes running, so that can create a model from object in
+	Lisp and then have it evaluate operators
+
+        Save/echo communications from lisp to C and back (monitor files)
+	Current run in monitor.file, which is moved >> into monitor.archive
+	upon next command session (see start-external-process).
+
+=========================================================================
+25 Sep 01
+
+	Done...Need to get the initialization from a "null" model running
+	so that search does not have to handle startup differently.
+
+=========================================================================
+ 9 Sep 01
+
+Implement a queue for doubles to set the thresholds for the search.  Need
+to have a more 'clever' function than the current constant being used,one
+derived from the info theory rules for the F.
+
+        Need adaptive goal setting queue.
+
+=========================================================================
+29 Aug 01
+
+Get simplified version of the commit variable code running. This version
+does not try to reduce the number of passes over the data and also explicitly
+normalizes the columns of Q.
+  
+	Computes the QR decomp correctly (two predictors)
+	Computes QtY and residual SS correctly
+	Computes QVQ correctly (1 and 2 predictors)
+	Checks the conservative F prior to update of residuals (ok for first)
+
+=========================================================================
+22 Aug 01
+
+Change of design...
+
+	Operators accessed via abstract queue rather than directly from file.
+
+        Do not alter the input database, storing locally the X's.
+
+=========================================================================
+18 Aug 01
+
+Correctly adds a first predictor past the constant.
+
+Operators now carry some information for the model selection process,
+the value of the conservative F that got them picked.
+
+    Need to compare the conservative F when committed to model to screened value.
+        (29 Aug 01) Checks this in the new simplified sweep code.
+    Need to get the new predictor added to the model array, where is it? 
+	(26 Aug 01) Had been in padded space which was not written to file.
+    Need to update QVQ when a predictor is added to the model. 
+        (23 Aug 01) Done
+
+=========================================================================
+14 Aug 01
+
+Simplify design:  
+	(1) Assume that the system *is* weighted.  Avoid duplicates.
+	(2) Treat constant like any other column.
+
+=========================================================================
+13 Aug 01
+
+ Done  Fix difference in mgs numberator.
+
+     Need to handle the issue of padding in beta vector and QVQ matrix
+     Probably best to handle this as part of the object, so that nPad
+     was a field indicating how much space was around for growth.  It
+     writes itself out then when the padded space is consumed. (26 Aug 01)
+
+     How is orthonormal defined for a weighted system, as with the
+     constant terms for which Q_0 = 1/sqrt(n) for uniform weights.
+
+=========================================================================
+22 Jul 01
+
+Start installing the proper check for significance using the prior stage
+residuals and the white estimator (QDQ).
+
+  Need to 	(1) Make the constant an explicit part of the model,
+		    rather than occasionally explicit.This requires
+		    inserting the constant into Q so that its size 
+		    matches that of the X matrix,meaning that XtX and
+		    QDQ will be of same size.
+	 	(2) Put the Sum of X's in the first row of X'X rather
+			than the mean terms
+
+=========================================================================
+ 9 Jul 01
+
+Have implemented a new version of operators to build the variables.
+Also have ability to write and read a gsModel.
+
+=========================================================================
+ 6 Jul 01
+
+Have code running correctly for one variable.  Need to check for 
+considering more than one and then committing a second to the model.
+
+=========================================================================
+ 5 Jul 01
+
+Revise code to avoid extra double sums over data array, but will require
+q passes over data array when commit to adding a variable to get the MGS
+to have numerical stability.
+
+*** need to revise the old dRSS code to use the newer functions.
+
+=========================================================================
+04 Jul 01
+
+Implement first version that commits to adding a variable to the model.
+
+=========================================================================
+30 Jun 01
+
+Code for finding the change in the RSS now runs without crashing, but
+clearly seems to return the wrong value for the effect of the change.
+Either that or the change is pretty large (since the test data is very
+systematic, it might fit very well).
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Documentation
+
+
+Operators
+
+Index columns always in the *logical* format  of 
+
+            Y in column 0
+
+with the predictors starting in column 1.  The software knows if the
+data are weighted and adjusts indices appropriately into the actual data
+file.

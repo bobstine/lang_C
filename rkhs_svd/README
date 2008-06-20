@@ -1,0 +1,69 @@
+$Id: README,v 3.1 2004/12/20 13:58:37 foster Exp $ -*- text -*-
+
+For a nice introduction to reproducing kernel hilbert spaces see Wabba's article: 
+
+	http://www.stat.wisc.edu/~wahba/talks1/rotter.03/sysid1.pdf
+
+Some good discussion of SVD or more accurately eigenvector problems:
+
+	http://mahery.math.u-psud.fr/~gtn/EIG_LEC.pdf
+
+General idea:
+
+	Sometimes the "fit" is spread over many different variables.
+We want to concentrate this into a few variables so regression can
+work better.  
+
+	The first method of doing this is simply using some sort of
+SVD (singular value decomposion, aka "PCA" = Principle component
+analysis and aka "factor analysis").  This will reduce a large number
+of X's down to a handful.
+
+	But we are happy dealing with large number of X's.  So why is
+this valuable?  The reason is that hopefully these new variables have
+a higher concentration of "good stuff."  But using only SVD we only
+get one shot.  Adding RKHS gives us more shots.
+
+	The idea then is to first transform the X's into a new space.
+This transformation is via a RKHS.  We then do the SVD in this new
+space.  Since it is a hilbert space, this is easy to do.  Finally we
+transform the big components back into the orginal domain.  These are
+then added to the regression.
+
+	So we will be able to have a whole bunch of new variables.
+With luck, a few of these will actually capture the main piece of the
+fit.  Then usual regression code will pick these up and generate a
+better fit.
+
+
+			WHICH PC's TO INCLUDE
+			---------------------
+
+The program will try to build a target number of PC's and then quit
+running.  This is just a CPU hack.  If you have the time, ask for
+millions, and it will generate as many as it can and quite.
+
+It tries 3 different approaches.  PC's in correlation space
+(i.e. normalized to have SD=1 in each variable), PC's in untransformed
+space, and PC of radial basis functions.  But not all PC's are put
+in.  
+
+The rule for deciding which variables to add is as follows.  Sometimes
+the eigenvalues look like:
+
+	1   .5   .1   .02   .003  ...
+
+In otherwords, they are well seperated.  Then the eigenvectors can be
+well estimated.  So in this case, we keep all of them such that the
+ratio of the biggest to the smallest is less than 10k to 1.
+
+But sometimes they look like:
+
+	1   1   1   1   .99999   .9999   ...
+
+In this case, the eigenvectors are almost impossible to estimate.
+Hence they really are just random rotations in a vector space of
+"things with approximate eigenvalue of 1."  So these aren't included
+either.  The rule requires that there is at least a 1% difference
+between two eigenvalues before either one is used.
+

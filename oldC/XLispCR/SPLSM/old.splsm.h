@@ -1,0 +1,1 @@
+/* Splsm.h */#include "XLSX.h"	void splsm  (XLSXblock *parms);

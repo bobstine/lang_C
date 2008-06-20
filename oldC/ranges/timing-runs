@@ -1,0 +1,81 @@
+    // In spite of the "natural version" of the following running blazingly fast, using it here is is amazing slow!
+    //    int length = end(range) - begin(range);
+    //    for(int i = 0;i < length;++i)
+    //      init = init + *(beg + i);
+    // RANGE: Time for length 200 was 23.46
+    // RANGE: Time for length 2000 was 36.48
+    // RANGE: Time for length 20000 was 36.47
+
+
+    // generic unrolled 6 times code:
+    // RANGE: Time for length 200 was 3.26
+    // RANGE: Time for length 2000 was 9.55
+    // RANGE: Time for length 20000 was 9.45
+
+    // generic not-unrolled code:
+    // RANGE: Time for length 200 was 6.35
+    // RANGE: Time for length 2000 was 11.06
+    // RANGE: Time for length 20000 was 10.96
+  
+
+
+
+  /*
+    using end(range)
+
+    RANGE_IP: Time for length 200 was 6.43 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 7.18 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 6.61 giving avg 5000.24
+    3.0:
+    RANGE_IP: Time for length 200 was 5.18 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 6.26 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 5.37 giving avg 5000.24
+
+    A slight/big improvement if end(Range) uses a const reference
+
+    RANGE_IP: Time for length 200 was 4.76 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 5.59 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 4.94 giving avg 5000.24
+    3.0:
+    RANGE_IP: Time for length 200 was 2.68 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.93 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.84 giving avg 5000.24
+
+    A big improvement by using "ending" instead of end(range):
+
+    RANGE_IP: Time for length 200 was 2.01 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.12 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.96 giving avg 5000.24
+    3.0:
+    RANGE_IP: Time for length 200 was 2.36 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.56 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.76 giving avg 5000.24
+
+    Also a big/slight improvement by using range.second:
+
+    RANGE_IP: Time for length 200 was 2.22 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.03 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.76 giving avg 5000.24
+    3.0:
+    RANGE_IP: Time for length 200 was 2.12 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.56 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.76 giving avg 5000.24
+
+    removing the return from operator++() doesn't help:
+
+    RANGE_IP: Time for length 200 was 2.04 giving avg 49.9387
+    RANGE_IP: Time for length 2000 was 2.22 giving avg 500.405
+    RANGE_IP: Time for length 20000 was 2.84 giving avg 5000.24
+
+
+    TARGET:
+    STL_IP: Time for length 200 was 1.45 giving avg 49.8428
+    STL_IP: Time for length 2000 was 1.57 giving avg 500.043
+    STL_IP: Time for length 20000 was 1.69 giving avg 5002.44
+    3.0:
+    STL_IP: Time for length 200 was 1.35 giving avg 49.8428
+    STL_IP: Time for length 2000 was 1.44 giving avg 500.043
+    STL_IP: Time for length 20000 was 1.49 giving avg 5002.44
+
+
+  */

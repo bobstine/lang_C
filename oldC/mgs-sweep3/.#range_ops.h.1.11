@@ -1,0 +1,217 @@
+// $Id: range_ops.h,v 1.11 2002/03/19 21:45:58 foster Exp $ -*- c++ -*-
+
+/*
+
+  15 Mar 02 ... Created to hold the un-localized functions of ranges.
+
+*/
+
+#ifndef _RANGE_OPS_H_
+#define _RANGE_OPS_H_
+
+#ifdef __APPLE__
+#include "patch_iterator.h"
+#endif
+
+#include "range_traits.h"
+
+////////////////////////////////  Range output  ///////////////////////////////////
+
+template <class Range>
+inline ostream&
+operator<<(ostream& os, Range r)
+{
+  copy(begin(r), end(r), ostream_iterator<typename range_traits<Range>::value_type>(os, " "));
+  os << endl;
+  return os;
+}
+
+// specialize for pair of doubles or ints
+inline ostream&
+operator<<(ostream& os, pair<double,double> range)
+{
+  os << "<" << begin(range) << " , " << end(range) << ">\n";
+  return os;
+}
+
+inline ostream&
+operator<<(ostream& os, pair<int,int> range)
+{
+  os << "<" << begin(range) << " , " << end(range) << ">\n";
+  return os;
+}
+
+////////////////////////  Operator + - / * /////////////////////////////////////////////////////////
+
+
+template <class Range1,class Range2>
+inline
+typename binary_range_traits<std::multiplies<typename range_traits<Range1>::value_type>,  Range1,  Range2>::range
+operator*(Range1 range1,  Range2 range2)
+{
+  return make_binary_range(std::multiplies<typename range_traits<Range1>::value_type>(), range1, range2);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  WHAT DIVIDE SHOULD LOOK LIKE:
+//  template <class Range1,class Range2>
+//  inline
+//  typename binary_range_traits<std::divides<typename range_traits<Range1>::value_type>,  Range1,  Range2>::range
+//  operator/(Range1 range1,  Range2 range2)
+//  {
+//    return make_binary_range(std::divides<typename range_traits<Range1>::value_type>(), range1, range2);
+//  }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class iter1,class iter2>
+inline
+typename binary_range_traits<std::divides<typename iterator_traits<iter1>::value_type>,
+                             pair<iter1,iter1>,
+                             pair<iter2,iter2> >::range
+operator/(pair<iter1,iter1> range1,  pair<iter2,iter2> range2)
+{
+  return make_binary_range(std::divides<typename iterator_traits<iter1>::value_type>(), range1, range2);
+}
+
+template <class iter1,class iter2>
+inline
+typename binary_range_traits<std::plus<typename iterator_traits<iter1>::value_type>,
+                             pair<iter1,iter1>,
+                             pair<iter2,iter2> >::range
+operator+(pair<iter1,iter1> range1,  pair<iter2,iter2> range2)
+{
+  return make_binary_range(std::plus<typename iterator_traits<iter1>::value_type>(), range1, range2);
+}
+
+template <class iter1,class iter2>
+inline
+typename binary_range_traits<std:: minus<typename iterator_traits<iter1>::value_type>,
+                             pair<iter1,iter1>,
+                             pair<iter2,iter2> >::range
+operator-(pair<iter1,iter1> range1,  pair<iter2,iter2> range2)
+{
+  return make_binary_range(std:: minus<typename iterator_traits<iter1>::value_type>(), range1, range2);
+}
+
+
+//////////////////////////////  Range versions of algorithms  //////////////////////
+
+template <class Range>
+inline typename range_traits<Range>::iterator
+min_element(Range range)
+{
+  return min_element(begin(range), end(range));
+}
+
+template <class Range>
+inline typename range_traits<Range>::iterator
+max_element(Range range)
+{
+  return max_element(begin(range), end(range));
+}
+
+template <class Range, class I>
+inline I copy (Range range, I it)
+{
+  return copy(begin(range), end(range), it);
+}
+
+template <class Range, class F>
+inline F for_each (Range range, F f)
+{
+  return for_each(begin(range), end(range), f);
+}
+
+
+namespace{
+  template <class Range,class Tag>
+  inline typename range_traits<Range>::value_type
+  accumulate_unrolled_maybe(Range range, typename range_traits<Range>::value_type init,Tag)
+  {
+    // the following is 6 times slower than our own loop!
+    // For some reason, its a lot faster to do it here that call the STL.
+    //    return accumulate(begin(range), end(range), init);
+    for(typename range_traits<Range>::iterator i = begin(range); i != end(range); ++i)
+      init = init + *i;
+    return init;
+  }
+  
+  template <class Range>
+  inline typename range_traits<Range>::value_type
+  accumulate_unrolled_maybe(Range range, typename range_traits<Range>::value_type init,random_access_iterator_tag)
+  {
+    typename range_traits<Range>::const_iterator i = begin(range);
+    if(end(range) - begin(range) > 6)
+      {
+	typename range_traits<Range>::const_iterator last = end(range) - 5;
+	while(i < last)
+	  {
+	    init = init + *i; ++i;
+	    init = init + *i; ++i;
+	    init = init + *i; ++i;
+	    init = init + *i; ++i;
+	    init = init + *i; ++i;
+	  }
+      }
+    for(;i != end(range);++i)
+      init = init + *i;
+
+    return init;
+  }
+}
+
+template <class Range>
+inline typename range_traits<Range>::value_type
+accumulate (Range range, typename range_traits<Range>::value_type init)
+{
+  return accumulate_unrolled_maybe(range,init,typename range_traits<Range>::iterator_category());
+}
+
+
+
+template <class R1, class R2, class C>
+inline C inner_product (R1 x, R2 y, C initial)
+{
+  return inner_product (begin(x), end(x), begin(y), initial);
+}
+
+template <class I1, class I2, class I3, class C>
+inline C weighted_inner_product (pair<I1,I1> x, pair<I2,I2> y, pair<I3,I3> wts, C initial)
+{
+  return inner_product (x, make_binary_range(multiplies<double>(),y,wts), initial);
+}
+
+template <class R1, class R2, class R3, class C>
+inline C weighted_inner_product (R1 x, R2 y, R3 wts, C initial)
+{
+  return inner_product (x, make_binary_range(multiplies<double>(),y,wts), initial);
+}
+
+
+template <class R1, class R2, class UnaryOp>
+inline void
+transform (R1 x, R2 y, UnaryOp f)
+{
+  transform(begin(x), end(x), begin(y), f);
+}
+
+template <class I1, class I2, class I3, class BinaryOp>
+inline void
+transform (pair<I1,I1> x, pair<I2,I2> y, pair<I3,I3> z,  BinaryOp f)
+{
+  transform(begin(x), end(x), begin(y), begin(z), f);
+}
+
+
+/////////////////////  Accumulate a table  //////////////////////////////
+
+template <class Range1, class Range2>
+inline Range2
+accumulate_table(Range1 table, Range2 init)
+{
+  for(typename range_traits<Range1>::iterator i = begin(table); i != end(table); ++i)
+    transform(*i, init, init, plus<double>());
+  return init;
+}
+
+#endif

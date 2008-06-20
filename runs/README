@@ -1,0 +1,184 @@
+$Id: README,v 3.0 2004/11/19 18:58:36 foster Exp $ -*- text -*-
+
+
+DATA:
+-----
+
+To use previous existing data you can check it out using CVS.  They
+live on gosset:/cvs/cvs in a module called data.  For example:
+
+cvs -d ":ext:foster@gosset.wharton.upenn.edu:/cvs/cvs" co data
+
+is how I would grab them.
+
+
+USER CODE:
+----------
+
+To use the system, you have to first 
+
+	(1) find some data and drop it into "data/foo/.../data" (or somewhere similar)
+	(2) write a program (say convert_foo) to convert it to "bob" format
+	(3) add the following line to the make file:
+
+foo.dir/data:  data/foo/.../data convert_foo
+	-mkdir $(@D)
+	cat $< | convert_foo > $@
+
+
+SYSTEM USAGE:
+-------------
+
+To use the system try "make foo.5forward.summary" to generate the
+results from a 5-fold cross-validation analysis of your data.  Other
+targets would be:
+
+	make foo.5forward.summary
+	make foo.10forward.summary
+	make foo.5reverse.summary
+	make foo.10reverse.summary
+
+If you want to replicate your results on different folds, the
+following should work:
+
+	make foo.A.5forward.summary
+	make foo.B.5forward.summary
+	make foo.C.5forward.summary
+	make foo.D.5forward.summary
+	
+If you want more than 5 replications, you will need to edit the
+Makefile.  (It is obvious what to do.)  
+
+LOG FILES
+---------
+
+	Each time you edit a program file all of the output files are
+rebuilt.  Since you often want to compare to previous runs, there is a
+running_log file.  The name is something like:
+
+	foo.dir/5forward.summary.running_log
+
+This file will have the last round of 5forward.summary in it.  It will
+also have a single copy of a log file in it.  (In particular, a copy
+of foo.dir/0of5forward/log.)
+
+Some useful commands are:
+
+	grep -A3 -B500 Arguments 5forward.summary.running_log  > short_summary
+	tail -500 >> short_summary
+
+This shorten the file drastically and sitll leave most of what a
+typical user would care to ever look at.
+
+	egrep "^SSE|Area|Id|^1 " 5forward.summary.running_log
+
+This will grab all the key summary statistics.  Note that the run Id
+comes after the statistics:
+
+
+SSE = 356.816 LL = -1082.61
+Area under ROC curve is approximately 0.951458
+1    251 261 512
+	.
+	.
+	.
+AUCT: $Id. auction.test.cc,v 2.2 2004/10/19 14:25:16 foster Exp $
+
+
+
+THE FILE STRUCTURE
+------------------
+
+Here is an outline of the file structure.  Directories end with /.
+Links end with @.  Important files that the user might want to look at
+are marked with a ==> flag.
+
+
+    ./data/				# This directory has raw data in it.
+	.../cancer/			# The data is in whatever form it
+	.../citeseer/Sasha		# was given to us in.
+	.../citeseer
+	.../rehg
+	.../NIPS2003/ARCENE/
+	.../NIPS2003/DEXTER/
+	.../NIPS2003/DOROTHEA/
+	.../NIPS2003/GISETTE/
+	.../NIPS2003/MADELON/
+	.../NIPS2003/
+	.../davatzikos/
+
+==> gisette.5reverse.summary@ --> gisette.dir/5reverse/5reverse.summary
+==> gisette.5forward.summary@ --> gisette.dir/5reverse/5reverse.summary
+
+    ./gisette.dir/					
+	raw_data				# Data in Bob's format
+	raw_data.Y				# First three lines of raw_data
+	raw_data.Xs				# rest of raw_data
+	svd_data				# more "Xs", so complete file is: "cat raw_data.Y svd_data raw_data.Xs > input"
+
+	.../5folds/
+		5_folds_made			#  flag file to say inputs are built
+		input				#  cat raw_data.Y svd_data raw_data.Xs > input
+		input.0				#  folds in Bob's format
+		Input.1
+		input.2
+		input.3
+		input.4
+		row_order.0			# folds in row order format
+		row_order.1
+		row_order.2
+		row_order.3
+		row_order.4
+		names				# names useful for row_order format files
+
+	.../5reverse/
+		names-->../names
+		data-->../raw_data
+		5reverse.summary                # summarizes all gisette./*/costs files
+	==>	5reverse.summary.running_log    # store previous runs
+		.../5reverse/0of5reverse/
+			all_input		# 
+			alpha.dat		#
+			auction.model		#
+			auction.model.txt	#
+		==>	costs			# output summary (MSE, etc)
+			input
+			input.data@
+		==>	log			# detailed log of the fitting process
+			names@
+			validation.1@		# Links to the validation data
+			validation.2@
+			validation.3@
+			validation.4@
+			validation_size
+		.../5reverse/1of5reverse/
+		.../5reverse/2of5reverse/
+		.../5reverse/3of5reverse/
+		.../5reverse/4of5reverse/
+		.../5folds/-->../5folds/
+
+	.../5forward/
+		.../0of5forward/		# same as reverse, but different number of
+			...			# inputs and validataion
+			input.1@
+			input.2@
+			input.3@
+			input.4@
+			...
+			validation.data@
+			validation_size
+		.../2of5forward/
+		.../1of5forward/
+		.../4of5forward/
+		.../3of5forward/
+		.../5folds/
+./arcene.dir/
+	...
+./dexter.dir/
+	...
+./dorothea.dir/
+	...
+./madelon.dir/
+	...
+./rehg.dir/
+	...

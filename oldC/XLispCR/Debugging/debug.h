@@ -1,0 +1,1 @@
+/*	Debug.h	*/#ifndef _DEBUG_#define _DEBUG_void Wait(void);void PrintIntVec   		(int  *vec, 			 int n, char *str);void PrintLongVec  		(long *vec,              int n, char *str);void PrintLongVecPair	(long *vec1, long *vec2, int n, char *str);void PrintDoubleVec		(double *vec, int n, char *str);#endif

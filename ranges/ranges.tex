@@ -1,0 +1,1205 @@
+% $Id: ranges.tex,v 1.1 2006/01/07 16:56:04 foster Exp $
+\documentclass[12pt]{article}
+\usepackage[longnamesfirst]{natbib}
+\usepackage[dvips]{graphics}
+\input{../../standard}
+
+% --- Paragraph split
+\setlength{\parskip}{0.00in}
+
+% --- Line spacing
+\renewcommand{\baselinestretch}{1.3}
+
+% --- Hypthenation
+\sloppy  % fewer hyphenated
+\hyphenation{stan-dard}
+\hyphenation{among}
+
+% --- Customized commands, abbreviations
+\newcommand{\TIT}{{\it Ranges \& the STL {\tiny (DRAFT, \today)}}}
+
+% --- Header
+\pagestyle{myheadings}
+\markright{\TIT}
+
+\newcommand{\stl}{{\it STL}}
+
+
+% --- Title
+
+\title{ Range Programming in the \stl }
+
+\author{
+        Dean P. Foster and Robert A. Stine   \\
+        Department of Statistics \\
+        The Wharton School of the University of Pennsylvania \\
+        Philadelphia, PA 19104-6340
+}
+
+\date{\today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\maketitle 
+%------------------------------------------------------------------------
+
+\abstract{ 
+
+  Ranges are pairs of iterators that control the extent of an
+iterative calculation.  Although the Standard Template Library (\stl)
+makes extensive use of pairs of iterators, the pairing is implicit.
+Explicit binding of two iterators as a pair offers numerous
+advantages.  For one, binding the pair reduces the chance of
+introducing bugs from mismatched iterators.  Second, ranges allow one
+to postpone calculations until needed.  In this way, for example,
+ranges make it possible to represent a much larger array than can be
+stored while preserving its semantic content.  Third, ranges offer a
+route to writing programs that run faster.  The speed-up comes in
+various ways.  Because ranges focus calculations on {\em accumulating}
+the values referenced by iterators, they lead us to optimize one
+function that speeds up various tasks.  Ranges also make it convenient
+to match specialized iterators with matched versions of this function.
+
+  We illustrate these and other benefits of ranges by using them to
+manipulate sparse arrays.  The elements of a sparse arrays are almost
+all zero, with a scattering of a few non-zero terms.  Sparse arrays
+are also often large, as in the analysis of data from processing
+natural languages and genetics.
+
+}
+
+%------------------------------------------------------------------------
+\vspace{0.05in}
+
+\noindent
+{\it Key Phrases: C++, iterator, templates, sparse array, standard
+template library. }
+
+\begin{enumerate}
+  \item Introduction
+  \item Ranges: a class and a policy
+  \item Delayed evaluation
+  \item Tables and arrays
+  \item Sparse iterators
+  \item Analysis of sparse data
+  \item Extensions
+\end{enumerate}
+
+\clearpage
+
+%
+% To Do
+% 
+
+% ----------------------------------------------------------------------
+\section{Introduction}
+% ----------------------------------------------------------------------
+
+  The \stl\ commonly uses a pair of iterators to define the bounds of a
+calculation.  All of its algorithms interact with containers via
+half-open ranges \citep{josuttis99}.  For example, if {\tt x}
+represents the vector $x = (x_0,\ldots,x_{n-1})$ of $n$ doubles, then
+\begin{verbatim} 
+   double sum (accumulate(x.begin(), x.end(), 0.0));
+\end{verbatim}
+initializes {\tt sum} with the total $x_0 + x_1 + \cdots + x_{n-1}$.
+Similarly, to copy the elements of $x$ into another vector $y$, say,
+one can use the {\tt copy} function,
+\begin{verbatim}
+   copy (x.begin(), x.end(), y.begin());
+\end{verbatim}
+This call only considers the starting location for the destination, so
+{\tt y} had better be large enough to hold all of {\tt x}.
+
+
+  These examples illustrate that although ranges are ubiquitous in the
+\stl, they lack the status of containers and iterators.  Though texts
+like that of Josuttis or \citet{austern99} refer to ranges as though
+they were a class like a {\tt vector} or a {\tt iterator}, ranges in
+the \stl\ are just two iterators --- any two iterators.  It is up to
+the programmer to decide which two to use.  Obviously, this design
+emphasizes flexibility and offers a ``low-level view'' appealing to C
+programmers.  For example, the range expected by {\tt accumulate}
+consists of two distinct iterators, one marking the beginning of the
+domain of calculation and the other marking (one beyond) the end.  One
+can write
+\begin{verbatim} 
+   double partialSum = accumulate(x.begin()+2, x.end()-3, 0.0);
+\end{verbatim}
+to find $x_2 + x_3 + \cdots + x_{n-4}$. Such flexibility may be handy
+in special cases, but it opens the door to errors.  Probably the most
+common is the ``copy/paste'' bug introduced when, for example, the
+name of a container was changed from {\tt x} to {\tt y}, but only
+updated in one of the iterators,
+\begin{verbatim} 
+  double buggySum = accumulate(x.begin(), y.end(), 0.0)
+\end{verbatim}
+
+
+  Our use of ranges eliminates this sort of error by explicitly
+pairing iterators.  Ranges that bind two iterators into ``one thing''
+obviously reduce the chance for this type of bug; there's only one
+reference to the container, not two.  Using a helper function {\tt
+make\_range} to extract the beginning and end of the vectors, the
+first two examples become
+\begin{verbatim} 
+   double sum (accumulate(make_range(x), 0.0));
+\end{verbatim}
+and
+\begin{verbatim}
+   copy (make_range(x), make_assignable_range(y));
+\end{verbatim}
+Such binding of a pair of iterators into an explicit range reaches
+much further, though, and offers programs that are not only more
+easily written and maintained, but also run faster and accommodate
+larger data sources.  The key is that the range need not refer to a
+container that already exists; it can leverage the abstraction offered
+by iterators to define the values as we need them.
+
+
+  All of our source code is available on the web at {\tt
+www-stat.wharton.upenn.edu/$\sim$stine}.  The file {\tt range.h} gives our
+definitions for range-pairs, and the file {\tt range\_ops.h} holds
+convenience functions, such as the output operators and pair-oriented
+versions of some STL algorithms.  Code for evaluating the speed of
+calculations is in the file {\tt speed.test.cc} and some further
+illustrations are in {\tt range.test.cc}.
+
+
+% ----------------------------------------------------------------------
+\section{Ranges: a class and a policy}
+% ----------------------------------------------------------------------
+
+  What is a range?  On the one hand, a range is a class that behaves
+much like the built-in {\tt std::pair} class from {\tt $<$utility$>$}.
+Rather than {\tt first} and {\tt second}, our range class defined in
+Figure \ref{fi:range-class} has {\tt begin} and {\tt end}.  Otherwise,
+this class is just a pair that binds two elements of the same
+type.\footnote{It is useful have a distinct class for handling output
+operators, so we use the class shown in Figure \ref{fi:range-class}.}
+
+\begin{figure}
+\caption{ \label{fi:range-class} 
+\it Range class.  See the on-line listings for the full implementation.}
+\begin{verbatim}
+template <class Iter>
+class range
+{
+public:
+  Iter mBegin, mEnd;
+  range () : mBegin(0), mEnd(0) { }
+  range (Iter begin, Iter end) : mBegin(begin), mEnd(end) { }
+  range (range<Iter> const& r ) : mBegin(r.mBegin), mEnd(r.mEnd) { }
+  void operator= (range<Iter> const& src)
+  { this->mBegin = src.mBegin;
+    this->mEnd   = src.mEnd; } 
+};
+\end{verbatim}
+\end{figure}
+
+
+  Containers that implement {\tt begin} and {\tt end} (such as lists
+and vectors) are ranges as well.  Such classes are not literally
+ranges, but for our purposes {\em any} class that implements {\tt
+begin} and {\tt end} is a range.  It is up the to class to decide how
+to implement such a ``range policy'' \citep[in the sense
+of][]{alexandrescu01}.  With helper functions like {\tt make\_range},
+defined (partially) in Figure \ref{fi:make-range}, we can use a
+container that implements the range policy wherever an instance of the
+range class would also be suitable.  The function {\tt make\_range}
+can also convert a pair of iterators into a range, and simply copies a
+range if presented with one.  Notice how the first implementation of
+{\tt make\_range} uses the traits of the iterator given by the
+container to deduce the type of range that results (and hence be able
+to know the return type of the function at compile time).  {\tt
+make\_range} builds constant ranges.  Our code includes {\tt
+make\_assignable\_range} which builds ranges that are writable (as
+needed by a range-aware of {\tt copy}), but we find these much less
+useful in our applications.  By and large, we use read-only ranges.
+
+
+\begin{figure}
+\caption{ \label{fi:make-range}
+\it The {\tt make\_range} helper function uses templates to convert a
+container into a range.}
+\begin{verbatim}
+template <typename Container>
+range<typename Container::const_iterator>
+make_range(Container const& c)
+{
+  return range<typename Container::const_iterator>(c.begin(),c.end());
+}
+template <class Iter>
+range<Iter>
+make_range(std::pair<Iter, Iter> r)
+{
+  return range<Iter>(r.first, r.second);
+}
+template <class Iter>
+range<Iter>
+make_range(Iter b, Iter e)
+{
+  return range<Iter>(b, e);
+}
+template <class Iter>
+range<Iter>
+make_range(range<Iter> r)
+{
+  return r;
+}
+\end{verbatim}
+\end{figure}
+
+
+  In order to make use of ranges, we need range-aware versions of the
+standard \stl\ algorithms.  For example, Figure
+\ref{fi:simple-accumulate} lists a simple implementation of a
+range-aware version of {\tt accumulate}.  This implementation uses
+{\tt make\_range} to convert the first input argument into an explicit
+range, and then it calls {\tt accumulate} from the \stl.  To be able
+to define this function, however, we must know at compile time the
+type of the result.  Since this version of {\tt accumulate} allows one
+to input either a container or a range, it becomes more tedious to
+know at compile time the type of range that {\tt make\_range} will
+create.  The range-aware {\tt accumulate} in Figure
+\ref{fi:simple-accumulate} uses traits to define the local variable
+{\tt r}.
+
+
+\begin{figure}
+\caption{ \label{fi:simple-accumulate}
+A first implementation of a range-aware accumulate function.}
+\begin{verbatim}
+template <class Range, class Result>
+Result range_ops::accumulate (Range const& containerOrRange, Result init)
+{
+  typename range_traits<Range>::range r = make_range(containerOrRange);
+  return std::accumulate(begin(r), end(r), init);
+};
+\end{verbatim}
+\end{figure}
+
+
+  Trait classes expose the types needed for compiling templates.  The
+traits of a range are essentially those of the underlying iterator,
+and so range traits inherit publically from iterator traits.  Range
+traits add only two additional traits: a trait that reveals the class
+of the iterator ({\tt const\_iterator}) and a trait that defines the
+range itself ({\tt range}).  For a range derived from a container,
+Figure \ref{fi:range-traits} shows is a portion of the relevant
+definitions.  Similar classes cover ranges defined from iterators.
+
+
+\begin{figure}
+\caption{ \label{fi:range-traits}
+Excerpt of the definition of the range traits class.}
+\begin{verbatim}
+template <class Container>
+class range_traits:public 
+        std::iterator_traits<typename Container::const_iterator>
+{
+ public:
+  typedef typename Container::const_iterator const_iterator;
+  typedef range<const_iterator>              range;
+};
+\end{verbatim}
+\end{figure}
+
+
+
+%--------------------------------------------------------------------------
+\section{Delayed evaluation}
+%--------------------------------------------------------------------------
+
+  So far, ranges offer little more than a pair of iterators and
+related templates.  The representation of pairs of iterators as a
+range has a much more powerful effect than we have seen so far.
+Because ranges are just a pair of iterators, we can use a range to
+represent a container that may never explicitly exist --- at least not
+all at one time.  This use of ranges defers calculations until we need
+them, while at the same time allowing us to manipulate the quantities
+as though they were typical containers.  In this sense, ranges offer
+many of the benefits of delayed evaluation streams.  The key is to
+build a range from a special type of iterator.  An example helps to
+fix the ideas.
+
+
+  For this illustration, suppose we'd like to summarize a vector $x$
+that holds $n$ doubles by finding its average $\ol{x}$ and variance
+$s^2$, 
+\begin{displaymath}
+    \ol{x} = (x_0+x_1+\cdots+x_{n-1})/n = \smfrac{1}{n} \sum_{i=0}^{n-1} x_i, \qquad
+     s^2 = \smfrac{1}{n-1} \sum_i (x_i - \ol{x})^2 \;.
+\end{displaymath}
+Of course, we'd like to compute these two summaries without resorting
+to {\tt for} loops that dodge the \stl\ algorithms.  Getting the
+average is simple; it's just the sum found previously divided by the
+length of $x$.  Assuming we know $n$, we have
+\begin{verbatim}
+  double xBar = accumulate(make_range(x),0.0) / n;
+\end{verbatim}
+No problem here. Computing $s^2$, however, does present a problem.
+How are we to accumulate the sum of the squared deviations using \stl\ 
+algorithms without {\em first} forming a temporary vector {\tt dev},
+say, that holds the deviations $dev_i = (x_i - \ol{x})^2$?  The
+siren's call of a {\tt for} loop is quite alluring at this point, but
+by adding a layer of abstraction to ranges, we can avoid the lure.
+Let's first try, however, to use the standard \stl\ functions.
+
+
+  Although the \stl\ offers many ways to compute $s^2$, none of these
+seem very appealing.  For example, we could transform $x$ into {\tt
+dev} using a function object that fills a temporary vector that we can
+sum.  The {\tt CenterSquare} operator defined in Figure
+\ref{fi:CenterSquare} first subtracts $\ol{x}$ from its argument, and
+then squares the result to get $(x_i-\ol{x})^2$.  To get the sample
+variance, we accumulate the transformed vector:
+\begin{verbatim}
+   vector<double> temp(n);
+   transform(make_range(x), make_assignable_range(y), CenterSquare(xBar));
+   double s2 = accumulate(make_range(y),0.0) / n;
+\end{verbatim}
+The problem with this scheme is pretty clear.  We only want the {\em
+sum} of the squared deviations around the average --- not the vector
+of squared elements.  Yes, we need to find the squared deviations at
+some point, but we'd certainly rather not have to have them all around
+at once, especially if $n$ is large.  This temporary storage requires
+memory allocation and then disposal which can take longer than the
+summing itself.\footnote{Elementary statistics texts offer the
+so-called ``computational formula'' $(n-1)s^2 = \sum_{i=0}^{n-1} x_i^2
+- n \, \ol{x}^2$.  Ironically, though known as a compuational formula,
+this expression is not numerically stable \citep{golubxx}.
+Cancellation introduces substantial error into the calculations if
+$\ol{x}$ is large but the deviations around the mean are small.}
+
+
+\begin{figure}
+\caption{ \label{fi:CenterSquare}
+\it The {\tt CenterSquare} operator class subtracts a constant from
+its input, whereas the similar {\tt AccumSqaure} operator keeps a
+running total (and so its {\tt operator} method is not {\tt const}).}
+\begin{verbatim}
+   class CenterSquare : public unary_function<double,double> {
+     const double mC;
+   public:
+     CenterSquare(double c) : mC(c) { }
+     double operator()(double x) const { double z = x - mC; return z*z; }
+   };
+   class AccumSquares : public unary_function<double,double> {
+     const double mC;
+     double mTotal;
+   public:
+     AccumSquares(double c) : mC(c), mTotal(0.0) { }
+     double total() { return mTotal; }
+     operator()(double x) { double z = x - mC; mTotal += z*z; }
+   };\end{verbatim}
+\end{figure}
+
+
+  The flexible \stl\ algorithm {\tt for\_each} offers an alternative,
+but one that we find less appealing.  With {\tt for\_each}, we can
+iterate a function object over a range and have the function object
+accumulate information.  The sum is computed, basically, as a
+side-effect. After passing it over the input range, {\tt for\_each}
+returns a copy of the input function object from which we can extract
+a running total. The {\tt AccumSquare} operator (Figure
+\ref{fi:CenterSquare}) is a slight modification of {\tt CenterSquare}
+that accumulates a running total of the squared deviations:\footnote{
+The need to accumulate the sum within the operator call requires that
+its {\tt operator()} member function not be {\tt const}, inhibiting
+some compiler optimization.  IS THIS TRUE???}  Combining {\tt
+AccumSquares} with {\tt for\_each}, we can compute the variance $s^2$
+as
+\begin{verbatim}
+   AccumSquares accum = for_each(make_range(x), AccumSquares(xBar));
+   double s2 = accum.total() / n;
+\end{verbatim}
+This code works, but this use of {\tt for\_each} obscures the purpose
+of the code; the result depends on the inner workings of the {\tt
+AccumSquares} function object.  Certainly this use of {\tt for\_each}
+is less specific than {\tt accumulate} as a way of describing what is
+happening.
+
+
+\begin{verbatim}
+HERE  HERE  HERE  HERE  HERE  HERE  HERE  HERE  HERE  HERE  HERE  
+\end{verbatim}
+
+
+  At this point, it becomes rather tempting to just use a {\tt for} loop
+and move on.  A special type of iterator, built around the use of
+ranges, however, offers an alternative --- one that retains the {\tt
+accumulate} function without the need for temporary store.  In
+particular, ranges becomes more useful when combined with an iterator
+class that applies a function to a range.  This class of iterators,
+which we call {\tt unary\_iterators}, combine a function object ($f$)
+with a range ($x_0,\ldots,x_{n-1}$).  The template that defines {\tt
+unary\_iterators} captures the class of the fucntion object {\tt
+UnaryOp} and the class {\tt Iter} of the underlying iterator.  A unary
+iterator returns the sequence of values obtained by mapping $f$ over
+the input range, obtaining $f(x_0)$ through $f(x_{n-1})$.  A
+simplified version of the code that defines {\tt unary\_iterators}
+appears in Figure \ref{fi:unary-iterator}.  Again, we use traits to
+capture features of the underlying iterator, such as its {\tt
+value\_type}.
+
+
+  Helper functions simplify the use of these iterators because one
+does not have to explicitly name the parameters of the template that
+defines a function. For example, assuming the definition of a {\tt
+unary\_iterator} and making extensive use of traits, we can write a
+helper as
+\begin{verbatim}
+  template <typename UnaryOp, class Range>
+  range<unary_iterator<UnaryOp, typename range_traits<Range>::const_iterator >
+  make_unary_range (UnaryOp f, Range r)
+  {
+    typedef typename range_traits<Range>::const_iterator Iter;
+    return make_range(unary_iterator<UnaryOp, Iter, Tag>(f, begin(r)),
+                      unary_iterator<UnaryOp, Iter, Tag>(f, end(r)));
+  };
+\end{verbatim}
+With this helper (and the associated {\tt unary\_iterators}, we can
+compute the variance $s^2$ of $\{x_0,\ldots,x_{n-1}\}$ with the
+expression
+\begin{verbatim}
+   double s2 = accumulate(make_unary_range(CenterSquare(xBar),
+                                           make_range(x)),
+                          0.0);
+\end{verbatim}
+Each call to the {\tt unary\_iterator} returns the squared deviation
+from the average of the current value. Incrementing the {\tt
+unary\_iterator} moves it along the underlying range. This approach
+eschews the need for the accumlating operator {\tt AccumSquare};
+this task is confined to {\tt accumulate} where it can be optimized.
+
+
+\begin{figure}
+\label{figure:unary iterator}
+\caption{Unary iterators apply a function $f$ to a the elements of a
+container $X$, returning $f(x_i)$ as the iterator traveres the
+elements of the container.}
+\footnote{We will describe the {\tt operator\_traits} specialization
+below in section 6. For now, think of it as a general method of
+finding the result type of a function object.}
+\begin{verbatim}
+   template<class UnaryOp, class I>
+   class unary_iterator : public 
+      iterator<forward_iterator_tag,  // full code captures from I
+               typename operator_traits
+                 <UnaryOp,typename iterator_traits<I>::value_type>::result_type> 
+   {
+     I mIter;
+     UnaryOp mOp;
+    public:
+     typedef typename operator_traits<UnaryOp, 
+       typename iterator_traits<I>::value_type>::result_type value_type;
+     typedef pair<unary_iterator<UnaryOp,I>,unary_iterator<UnaryOp,I> > range;
+     
+     unary_iterator(UnaryOp op, I it) : mIter(it), mOp(op) { }
+     
+     unary_iterator<UnaryOp,I> operator++() { ++mIter; return *this; }
+     value_type operator*() const { return mOp(*mIter); }
+     
+     bool operator!=(const unary_iterator& it) const { return mIter != it.mIter; }
+     bool operator==(const unary_iterator& it) const { return mIter == it.mIter; }
+   };
+\end{verbatim}
+\end{figure}
+
+
+  Here is another example that combines ranges with unary iterators.
+Suppose that we have a collection of employee records, with each
+employee represented by a class like the following simple class {\tt
+Employee}: the following:
+\begin{verbatim}
+   class Employee  {
+     string mName;
+     double mSalary;
+   public:
+     Employee (char *name, double salary)
+       : mName(name), mSalary(salary) { }
+     string name() const { return mName; }
+     double salary() const { return mSalary; }
+   };
+\end{verbatim}
+A collection of employees might be kept in a list like the
+following: 
+\begin{verbatim}
+   list<Employee> staff;
+   staff.push_back( Employee("Fred", 110) );
+   staff.push_back( Employee("Barney", 90) );
+   staff.push_back( Employee("Wilma", 125) );
+   staff.push_back( Employee("Betty", 105) );
+   staff.push_back( Employee("Dino", 5) );
+\end{verbatim}
+We can find the average salary of the five staff members in the same
+fashion that we used when manipulating a vector previously. Range pairs
+make no assumptions about the underlying collection other than that it
+supports {\tt begin} and {\tt end}.
+\begin{verbatim}
+   cout << "Avg salary is "
+        << accumulate(make_unary_range(const_mem_fun_ref(&Employee::salary), 
+                                       make_range(staff)),0.0) / 5;
+\end{verbatim}
+The function {\tt const\_mem\_fun\_ref} allows us to use the member
+function {\tt Employee::salary} as though it were a regular function
+object. Using the {\tt const} version of this STL utility reinforces
+the {\tt const} properties of range pairs.  In this case, we can map
+the function over the list of staff members, extracting the salary
+from each. As with vectors, we don't need to create a new collection
+that holds the explicit salaries.
+
+
+We can obtain other features of the staff similarly.  These examples
+illustrate that range pairs work nicely with other capabilities of the
+STL. For example, to find the employee with the highest salary, we can
+use a unary iterator as follows:
+\begin{verbatim}
+   cout << "Max salary is "
+        << *max_element(make_unary_range(const_mem_fun_ref(&Employee::salary), 
+                        make_range(staff)));
+\end{verbatim}
+A more interesting example is to count how many employees make above a
+given salary.  For this, we simply count the number of employees that
+make above 100:
+\begin{verbatim}
+   cout << "Number above 100 is "
+        << count_if(make_unary_range(const_mem_fun_ref(&Employee::salary), 
+                    make_range(staff)),
+                    bind2nd(greater<int>(), 100));
+\end{verbatim}
+Analogous to {\tt mem\_fun\_ref}, {\tt bind2nd} constructs a predicate
+function object that {\tt count\_if} accumulates over the range.
+Since the range 
+\begin{verbatim}
+  make_unary_range(const_mem_fun_ref(&Employee::salary), make_range(staff))
+\end{verbatim}
+appears in each of these examples, we might want to save it rather
+than create it for each use.  Since the function {\tt make\_range} is
+inlined, there's no speed advantage to local definitions.  Just the
+same, we might prefer to highlight the repeated use of a specific
+range by defining it as a local variable.  That's harder than usual to
+do in this example since the defining function is obtained from the
+{\tt Employee} class through {\tt mem\_fun\_ref}.  It's still
+possible, just messy:  YUK
+\begin{verbatim}
+   unary_iterator
+     <const_mem_fun_ref_t<double,Employee,> >, list<Employee>::const_iterator>::range 
+      salaryRange = make_unary_range(mem_fun_ref(&Employee::salary), make_range(staff))
+\end{verbatim}
+
+
+  Speed matters.  Although we find the style of programming with
+ranges intuitive and syntactically appealing (for example, compare the
+combination of {\tt unary\_iterators} with {\tt accumulate} to the use
+of {\tt for\_each}), few would sacrifice much run-time for these
+benefits.  Fortunately, modern compilers remove the overhead of the
+function calls involved in {\tt unary\_iterators}, inlining the calls
+to the associated function.  Table \ref{table:accumulate} summarizes
+the observed run times obtained by summing vectors of length 200, 2000
+and 20000 elements, with the number of iterations varied so as to fix
+the number of summed elements.  We sum 30,000 random vectors of 20,000
+elements, 300,000 random vectors of 2000 elements, and 3,000,000
+random vectors of length 200 -- a 600 million operations for each.
+Since filling the vectors with uniformly distributed random values
+takes longer than adding them up, the times shown in the table are
+only for the accumulation step.  (See the file {\tt speed.test.cc} for
+the details.)
+
+
+The results in Table \ref{table:accumulate} indicate that we give
+nothing for using range pairs.  The table includes results for
+accumulating the sum in four ways, using
+\begin{itemize}
+  \item pointers and a C-style {\tt for} loop,
+  \item {\tt transform} followed by {\tt accumulate},
+  \item {\tt for\_each} with an accumulating function object, and
+  \item range pairs.
+\end{itemize}
+
+
+
+\begin{table}
+\label{table:accumulate}
+\caption{Time in seconds to compute $s^2 = \sum_i(x_i-\ol{x})^2$ for 
+random vectors of varying length. The number of vectors is varied
+to keep the same number of terms summed, with a total of 600 million
+items summed. Compiled with g++ version
+with O2 optimization and run under linux on a 900 mMHz Pentium III.}
+\begin{center}
+\begin{tabular}{|l|rrr|} \hline
+ Method               & \multicolumn{3}{c|}{Length of Vector} \cr
+                      & 200   & 2000   & 20000  \cr \hline
+{\tt for} loop        &   3   &   5    &     3 \cr
+{\tt for\_each}       &  12   &  11    &    14 \cr
+{\tt unary\_iterator} &  33   &  31    &    31 \cr
+{\tt transform}       &  39   &  27    &    62 \cr 
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+%--------------------------------------------------------------------------
+\section{Traversing Three Ranges}
+%--------------------------------------------------------------------------
+
+Calculations with three ranges move beyond the scope of the algorithms
+of the STL without range iterators.  Such calculations are not
+unusual.  For example, consider the weighted inner-product of two
+vectors,
+\begin{eqnarray*}
+  W(x,y) 
+  &=& w_0\, x_0 y_0 + w_1\, x_1 y_1 + \cdots + w_{n-1}\, x_{n-1}y_{n-1} \\
+  &=& \sum_{i=0}^{n-1} w_i \, x_i y_i \;.
+\end{eqnarray*} 
+The weights $w_i \ge 0$ give more influence to some terms than others
+(typically the weights sum to one).  The STL function {\tt
+inner-product} can traverse two ranges, but not three.  Of course, one
+could use {\tt transform} first to form a temporary weighted vector,
+say $z_i = w_i x_i$, and then use the two-range version of {\tt
+inner-product}, as in the following snippet of code:
+\begin{verbatim}
+   vector<double> z(n);
+   transform(x.begin(), x.end(), w.begin(), z.begin(), multiplies<double>);
+   double w = inner_product(z.begin(), z.end(), y.begin(), 0.0);
+\end{verbatim}
+As in the examples of adding up a vector, this approach requires an
+extra transform step to fill the temporary vector $z$ before  calling
+to {\tt inner-product} using the temporary variable.  The timing
+example summarized in Table \ref{table:accumulate} suggests its going
+to be slow as well.
+
+
+Some syntactic sugar and a simple variation on {\tt unary\_iterators}
+introduced in the previous section handles this task easily.  Figure
+\ref{figure:binary iterator} gives the definition of a {\tt
+binary\_iterator}.  As with a {\tt unary\_iterator}, a {\tt
+binary\_iterator} returns the value of a function applied to the
+elements of some container.  As its name implies, a {\tt
+binary\_iterator} traverses two containers whereas a {\tt
+unary\_iterator} traverses a single container.  The convenience
+function {\tt make\_binary\_iterator} constructs a {\tt binary\_iterator}.
+\begin{verbatim}
+   template <class BinaryOp, class I1, class I2>
+   typename binary_iterator<BinaryOp,I1,I2>::range
+   make_binary_range (BinaryOp f, pair<I1,I1> range1, pair<I2,I2> range2)
+   {
+    return make_pair
+    ( binary_iterator<BinaryOp,I1,I2>(f,range1.first,range2.first),
+      binary_iterator<BinaryOp,I1,I2>(f,range1.second,range2.second)
+      );
+}
+\end{verbatim}
+The syntactic sugar is obtained by overloading the standard arithmetic
+functions +,-,* and / for ranges.  For example, for multiplication of
+ranges, the file {\tt range\_ops.h} includes a generalization of the
+following definition: \footnote{The code in {\tt range\_ops.h} is
+``richer'' than this example suggests since it must accommodate
+different types of iterators.}
+\begin{verbatim}
+   template <class I1, class I2>
+   inline
+   typename binary_iterator<std::multiplies<double>,I1,I2>::range
+   operator*(pair<I1,I1> range1,  pair<I2,I2> range2)
+   {
+     return make_binary_range(std::multiplies<double>(), range1, range2);
+   }
+\end{verbatim}
+With this overloading in place, we can simply write
+\begin{verbatim}
+   make_range(X) * make_range(Y)
+\end{verbatim}
+to multiply two ranges rather than have to write
+\begin{verbatim}
+   make_binary_iterator(multiplies<double>, make_range(y),make_range(Y))
+\end{verbatim}
+
+
+  With {\tt binary\_iterators} and an overloaded multiply, we can
+easily find the weighted inner-product. We have two obvious
+approaches. One way would be to use a range-adopted version of the STL
+{\tt inner-product} function:
+\begin{verbatim}
+  double w = inner_product(make_range(w) * make_range(x), 
+                           make_range(y), 0.0);
+\end{verbatim}
+Alternatively, we could just use the {\tt accumulate} function with a
+product of three ranges:
+\begin{verbatim}
+  double w = accumulate(make_range(w) * make_range(x) * make_range(y),
+                        0.0);
+\end{verbatim}
+
+
+Table \ref{table:inner-product} compares the time required to compute
+weighted dot products, for varying combinations of vectors.  In these
+calculations, the weights $w_i$ and elements of $x_i$ and $y_i$ are
+random on $[0,1]$ as in the examples of computing $s^2$.  The four
+methods that are compared are
+\begin{description}
+  \item[for] A C-style {\tt for} loop, using iterators to index
+      vectors,
+  \item[transform] Transform two vectors into a product, then
+      call the STL {\tt inner-product} function,
+  \item[range ip] Use the {\tt inner\_product} function, but with
+      a product of ranges, and
+  \item[range prod] Accumulate the sum of a product of three ranges.
+\end{description}
+
+
+
+\begin{table}
+\label{table:inner-product}
+\caption{ Timings for computing a weighted dot product $\sum_i w_i
+\,x_i y_i$ using four approaches. }
+\begin{center}
+\begin{tabular}{|l|rrr|} \hline
+Method           &  \multicolumn{3}{c|}{Length of Vectors} \cr
+                 &   100  & 1000  & 10000  \cr \hline
+{\tt transform}  &  46  &  42  &  53 \cr
+{\tt ranges   }  &  45  &  43  &  50 \cr \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+\begin{figure}
+\label{figure:binary iterator}
+\caption{ Simplified definition of the class {\tt binary\_iterator}.  A binary
+iterator maps a single function $f$ over the elements of two
+containers $x$ and $y$, returning $f(x_i,y_i)$.}
+\begin{verbatim}
+template<class BinOp, class I1, class I2>
+class binary_iterator : public iterator<forward_iterator_tag, 
+                                        typename BinOp::result_type> {
+  typedef typename BinOp::result_type value_type;
+  I1 mIter1;
+  I2 mIter2;
+  BinOp mOp;
+ public:
+  typedef pair<binary_iterator<BinOp,I1,I2>,binary_iterator<BinOp,I1,I2> > range;
+  binary_iterator(BinOp f, I1 it1, I2 it2)
+    : mIter1(it1), mIter2(it2), mOp(f) { }
+  binary_iterator<BinOp,I1,I2> operator++() 
+    { ++mIter1; ++ mIter2; return *this; }
+  value_type operator*() const
+    { return mOp(*mIter1, *mIter2); }
+  bool operator!=(const binary_iterator& it) const 
+    { return mIter1 != it.mIter1; }
+  bool operator==(const binary_iterator& it) const 
+    { return mIter1 == it.mIter1; }
+};
+\end{verbatim}
+\end{figure}
+
+
+
+%--------------------------------------------------------------------------
+\section{Tables and Outer Products}
+%--------------------------------------------------------------------------
+
+  In order to motivate the use of range pairs to form tables, we need
+a richer application. Our research in statistics and data mining
+considers the selection of predictive factors from large data sets.
+For example, we have modeled how well one can predict the onset of
+personal bankruptcy from a history of credit card use
+\citep{fosterstine00}.  Our models in this application were developed
+by choosing from among some 67,000 features available on 3 million
+observations.  Thought of as a table, that's 67,000 columns and 3
+million rows.  Most of these columns, however, are not primary
+measurements of the credit-card accounts (such as the current balance
+or size of last month's payment), but instead are derived from others.
+For example, one might consider the month-to-month change in the
+balance of an account as a predictor rather than the balance itself.
+Our research exploits the use of products of primary features (also
+known as ``interactions''), leading to an explosion in the number of
+features.  When reduced to the raw source measurements, however, we
+have ``only'' 350 features (though still 3 million rows).  Returning
+to the simple salary example used in Section 2, it is as though we
+have several hundred characteristics for 3 million employees.  From
+these characteristics, we could easily form many others --- others
+that we might not want to add to the definition of the employee class.
+
+
+  Though we never actually store the full 3,000,000 by 67,000 cell
+table, we program our algorithms as though the table were explicitly
+held.  For example, as a part of a preliminary step, we need the
+average of each column in the virtual table.  The key to this
+abstraction is once again the use of range pairs.  For this
+discussion, suppose that the columns of our table are obtained by
+mapping a collection of $p$ real-valued functions
+$v_0,v_1,\ldots,v_{p-1}$ over a separate collection of $n$ objects
+$z_0, z_1, \ldots, z_{n-1}$.  In the salary example, the $z_i$ are the
+employees and the $v_j$ are calls to member functions or
+manipulations of the results of employee characteristics.  The data
+set that we wish to analyze is then the $n \times p$ array with
+$v_j(z_i)$ in the $i$th row and $j$th column, arrayed as
+
+\begin{displaymath}
+  \begin{array}{c|cccccc}
+       & v_0         & v_1         & \cdots   & v_j      & \cdots & v_{p-1} \cr \hline
+z_0    & v_0(z_0)    & v_1(z_0)    & \cdots   &          &        & v_{p-1}(z_0)  \cr
+z_1    & v_0(z_1)    & v_1(z_1)    & \cdots   &          &        & v_{p-1}(z_1)  \cr
+\vdots & \vdots      & \vdots      & \ddots   &          &        &         \cr
+z_i    &             &             &          & v_j(z_i) &        &         \cr
+\vdots &             &             &          &          &        &         \cr
+z_{n-1}& v_0(z_{n-1})& v_1(z_{n-1})& \cdots   &          &        & v_{p-1}(z_{n-1}) \cr
+\end{array}
+\end{displaymath}
+
+
+
+  To form this table, we need two new classes of range iterators.  The
+first new class of iterators maps a range of functions $f_0,
+f_1,\ldots,f_{p-1}$ over a single argument $x$, traversing the range
+\begin{displaymath}
+  f_0(x), f_1(x), \ldots , f_{p-1}(x)    \;.
+\end{displaymath}
+This iterator resembles the {\tt unary\_iterator} defined previously,
+except that incrementing the iterator moves over the range of
+functions rather than over the range of arguments.  We call these
+iterators {\tt function\_iterators}; our definition of this class
+appears in Figure \ref{figure:function iterators}.  The helper
+function {\tt make\_function\_iterator} is defined similar to other
+helpers.  That takes care of a single row of the table. \footnote{The
+need for {\tt function\_iterators} is analogous to the motivation for
+having both {\tt mem\_fun} and {\tt mem\_fun\_ref} within the STL. The
+method {\tt operator()} depends on whether the associated iterator is
+the function (and so invoked as {\tt (*mIter)(mX)}) or the data
+(invoked as {\tt mF(*mIter)}. }
+
+\begin{figure}
+\label{figure:function iterators}
+\caption{Function iterators traverse a range of functions, applying
+each in turn to a single argument to produce the sequence $f_0(x),
+f_1(x), \ldots, f_{p-1}(x)$.}
+\begin{verbatim}
+
+template<class I>
+class function_iterator : public iterator<forward_iterator_tag, 
+            typename iterator_traits<I>::value_type::result_type> {
+  typedef typename iterator_traits<I>::value_type F;
+  I mIter;
+  const typename F::argument_type mX;  
+ public:
+  typedef pair<function_iterator<I>,function_iterator<I> > range;
+  typedef typename F::result_type value_type;
+  function_iterator(I it, const typename F::argument_type x)
+    : mIter(it), mX(x) { }
+  function_iterator<I> operator++() 
+    { ++mIter; return *this; }
+  value_type operator*() const
+    { return (*mIter)(mX); }
+  bool operator!=(const function_iterator& it) const
+    { return mIter != it.mIter; }
+  bool operator==(const function_iterator& it) const
+    { return mIter == it.mIter; }
+};
+\end{verbatim}
+\end{figure}
+
+
+  The table itself is also a range.  For our purposes it is most
+natural to traverse the table one row at a time, rather than by
+column.  Each row of the table is a range pair composed of two
+function iterators.  In keeping with this order of traversal, we
+define a table using a pair of {\tt row\_iterators} as defined in
+Figure \ref{figure:row iterators} (with the usual style of helpers).
+Though the definition of these iterators can be over-whelming because
+of the use of traits and typedefs, the use of tables themselves is
+quite simple as we next illustrate.
+
+
+  For this simple example, the raw data for the rows (denoted by the
+$z_i$ in the previous discussion) are simple scalars.  We've chosen to
+use a rather simple example where the row data and functions are quite
+simple so that we can emphasize the ease of building the table once
+you've defined the functions and the basic row data. The functions
+that define the columns of the table shift the value by a fixed
+amount; if $z$ is the basic value for some row, then the columns for this
+row are of the form $z+c_0, z+c_1, z+c_2, z+c_3$.  We use the following {\tt
+Shifter} class of function objects to handle the translations.
+\begin{verbatim}
+   class Shifter : public unary_function<double,double> {
+     double mShift;
+   public:
+     Shifter() { }
+     Shifter(double s) : mShift(s) { }
+     double operator()(const double x) const { return x + mShift; }
+   };
+\end{verbatim}
+With a vector of functions defined as
+\begin{verbatim}
+  vector< Shifter > f(4);
+    f[0] = Shifter(1.0);  f[1] = Shifter(2.0);
+    f[2] = Shifter(3.0);  f[3] = Shifter(4.0);
+\end{verbatim}
+and the row basic data defined as
+\begin{verbatim}
+  vector<double> x (5);
+  x[0] = 0.0; x[1] = 1.0; x[2] = 2.0; x[3] = 3.0; x[4] = 4.0;
+\end{verbatim}
+the table of values is constructed and then printed by this command:
+\begin{verbatim}
+   cout << make_row_range(make_range(f), make_range(x));
+\end{verbatim}
+Here's the result:
+\begin{verbatim}
+ 1 2 3 4 
+ 2 3 4 5 
+ 3 4 5 6 
+ 4 5 6 7 
+ 5 6 7 8 
+\end{verbatim}
+
+
+\begin{figure}
+\label{figure:row iterators}
+\caption{Row iterators define the range of a table. Incrementing a row
+iterator moves to the next row of the table; dereferenceing a row
+iterator returns the range obtained by applying a range of functions
+to the underlying row data.}
+\begin{verbatim}
+
+template<class If, class Ix>
+class RowIterator : public iterator<forward_iterator_tag, 
+                                    function_iterator<If>::range> {
+  typedef pair<RowIterator<If,Ix>,RowIterator<If,Ix> > range;
+  typedef typename function_iterator<If>::range value_type;
+  typedef typename iterator_traits<If>::value_type::argument_type X;
+  If mFIterBegin, mFIterEnd;
+  Ix mXIter;  // note: has to agree with type X
+ public:
+  RowIterator(If fBegin, If fEnd, Ix x)
+    : mFIterBegin(fBegin), mFIterEnd(fEnd), mXIter(x) { }
+  int size () 
+    { return distance(mFIterBegin, mFIterEnd); }
+  void operator++() 
+    { ++mXIter; }
+  value_type operator*() 
+    { return apply(mFIterBegin, mFIterEnd, *mXIter) ; }
+  bool operator!=(const RowIterator& it) const 
+    { return mXIter != it.mXIter; }
+  bool operator==(const RowIterator& it) const
+    { return mXIter == it.mXIter; }
+};
+\end{verbatim}
+\end{figure}
+
+
+
+
+  The employee staff example allows for more interesting example
+that's closer to our use of tables in data mining.
+
+
+
+%--------------------------------------------------------------------------
+\section{Composing Functions}
+%--------------------------------------------------------------------------
+
+  Our use of {\tt function\_iterators} is in the previous tables has
+also led us to further work on the composition of functions.  Function
+composition was curiously omitted from the STL, but the boost
+libraries hold what has become the standard implementation
+\citep{josuttis99}.  This implementation has a variety of versions,
+allowing several variations on function composition, depending on the
+number and nature of the arguments and functions.  The simplest of
+these is adequate for our discussion here.  If $f$ and $g$ are two
+real-valued functions that take real arguments, then the composition
+$f \circ g$ is also a real-valued function.  The value of the
+composition is $(f \circ g)(x) = f(g(x))$.
+
+  For an example of function composition, let's go back to our
+original example in which we had to find the squared deviation from an
+average value, $(x_i - \ol{x})^2$.  If $f(x) = x^2$ and $g(x) = x -
+\ol{x}$, then $(x_i - \ol{x})^2 = f(g(x))$.  In the prior example, we
+accomplished this task with the {\it ad hoc} {\tt CenterSquare}
+function object.
+
+  Function composition provides an alternative approach that builds the
+squared deviation out of simpler functions.  Suppose that we already
+have function objects that translate (or center) and square their
+arguments.
+\begin{verbatim}
+   class Square : public unary_function<double,double> {
+   public:
+     double operator()(double x) const { return x*x; }
+   };
+
+   class Center : public unary_function<double,double> {
+     const double mC;
+   public:
+     Center(double c) : mC(c) { }
+     double operator()(double x) const { return x-mC; }
+   };
+\end{verbatim}
+Rather than build another function object (though it's obviously easy
+to do in this case, it might not be so convenient in others), function
+composition lets us compute the squared deviation using these two
+function objects directly.  For example, to compute a single squared
+deviation with $\ol{x} = 5$, we can write
+\begin{verbatim}
+    const double avg = 5.0;
+    cout << ``Squared deviation of 3 from 5 = ``
+         << boost::compose_f_gx(Square(), Center(avg))(3.0) << endl;
+\end{verbatim}
+This expression prints back
+\begin{verbatim}
+  Squared deviation of 3 from 5 = 4
+\end{verbatim}
+It's correct, but seems hardly worth the effort.  If we return to the
+problem of accumulating the sum of squared deviations when computing
+the variation of a vector, the value becomes more apparent:  we can
+use the composition just as though it were a function object ---
+indeed, it {\em is} a function object.  Thus, the code
+\begin{verbatim}
+   vector<double> x(5);
+   x[0] = 0.0; x[1] = 1.0; x[2] = 2.0; x[3] = 3.0; x[4] = 4.0;
+   cout << ``Vector of squared deviations about 5:  ``
+        << make_unary_range(boost::compose_f_gx(Square(), Center(avg)),
+                            make_range(x)) << endl;
+\end{verbatim}
+prints back
+\begin{verbatim}
+  Vector of squared deviations about 5:  25 16 9 4 1 
+\end{verbatim}
+
+
+Suppose, now, that we'd like to take this approach to computing the
+sum of squared deviations in a column of one of our tables as defined
+in the previous section.  Recall that a table is defined a range of
+rows, with each row returning a range defined by mapping a range of
+functions that take the row data as argument.  Note carefully that
+each column is itself a function.  To keep things precise, denote the
+function that we want to evaluate over the table by $f$.  For example,
+$f(x) = (x-\ol{x})^2$ in our examples.  Each column of the table is
+also a function which we can label as before as
+$v_0,v_1,\ldots,v_{p-1}$.  To map $f$ over the elements of the table,
+then, we want to form the compositions
+\begin{displaymath}
+  f \circ v_0, f \circ v_1, \ldots, f \circ v_{p-1}
+\end{displaymath}
+By mapping these over the basic row data (denoted as $z_i$ in the
+prior section), we obtain the squared deviations.  Thinking back,
+recall that {\tt unary\_iterators} would seem to be just what we need,
+since a {\tt unary\_iterator} maps one function over a list of
+arguments.  In this context, the ``function'' we'd like to map is,
+say, $f \circ$ and the arguments are the functions $v_0, v_1, \ldots,
+v_{p-1}$.  The type of function composition defined in the boost
+library, however, is not suited to this task since it binds $f$ to
+$g$, once and for all, forming the function object with value $f \circ
+g$. 
+
+Fortunately, it is not too hard to extend the boost library to handle
+this situation. All we need is a class that holds the ``outer''
+function $f$ and whose {\tt operator()} method takes the ``inner''
+function $g$ as an argument, returning the composition $f\circ g$.
+Here's our code:
+\begin{verbatim}
+   template<class F>
+   class Composer {
+     F mf;
+   public:
+     Composer(const F& f) : mf(f) { }
+     template<class G>
+     boost::compose_f_gx_t<F,G>  operator()(const G& g) const
+     { return boost::compose_f_gx_t<F,G>(mf,g); }
+   };
+\end{verbatim}
+This function makes forming the composer class easier
+\begin{verbatim}
+   template<class F>
+   Composer<F> make_composer(const F& f) 
+   { return Composer<F>(f); }
+\end{verbatim}
+The last wrinkle to handle is that in order to use these with tables,
+we need to be able to get the result type of the function.  For this,
+we define a new type of trait, one to associate with  a function.  For
+usual function objects like {\tt Center}, 
+\begin{verbatim}
+  operator_traits<Center>::result_type;
+\end{verbatim}
+returns the result type of the function.  For a composed object, we
+specialize this template to look inside the composition.  Here's the
+code:
+\begin{verbatim}
+   template<class F, class G>
+   class operator_traits {
+     typedef typename F::result_type result_type;
+   };
+
+   template<class F, class G>
+   class operator_traits <Composer<F>,G> {
+     typedef typename boost::compose_f_gx_t<F,G> result_type;
+   };
+\end{verbatim}
+
+
+%---------------------------------------------------------------------------
+\section{Discussion}
+%--------------------------------------------------------------------------
+
+  Ranges emphasize the use of {\tt accumulate} to form sums rather than
+alternatives like {\tt for\_each} or {\tt inner\_product}. Indeed,
+with ranges, does the STL even need to feature {\tt inner\_product} as
+a key function, even for the standard dot-product $d = \sum_i x_i
+y_i$?  Or, can we handle this more naturally as an accumulation of a
+{\tt binary\_iterator}?  
+
+
+  To make some comparisons, suppose that we have two vectors of
+doubles
+\begin{verbatim}
+   vector<double> x (n);
+   vector<double> y (n);
+\end{verbatim}
+Assume that these have been filled with some values, say random
+doubles.  The standard STL function {\tt inner\_product} gives the dot
+product as
+\begin{verbatim}
+   double dp = inner_product(x.begin(), x.end(), y.begin(), 0.0);
+\end{verbatim}
+Using a {\tt binary\_iterator}, we can compute the same sum as
+\begin{verbatim}
+   double dp = accumulate(make_binary_iterator(multiplies<double>,
+                            make_range(x), make_range(y)));
+\end{verbatim}
+Here's a small timing comparison, structured as before to have the
+same number of terms divided into vectors of different lengths.
+
+\begin{center}
+\begin{tabular}{|l|rrr|}  \hline
+   Method              & \multicolumn{3}{c|}{Length of Vector} \cr
+                       &  100  & 1000 & 10000 \cr \hline
+{\tt inner\_product}   &   39  &   40  &   43 \cr
+{\tt binary\_iterator} &   42  &   42  &   44 \cr 
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+It seems that the {\tt inner\_product} has little advantage and is
+by-and-large redundant.  In particular, were {\tt accumulate} enhanced
+to unroll loops and preserve locality of reference as done with Blitz
+vectors, funneling calculations into such an enhanced {\tt accumulate}
+would be quite appealing.
+
+Post our collection of statistics base functions.
+
+Used vectors here since natural in our problems, though other
+sequences would work just as well.
+
+Like the mapc function of Lisp.
+
+%--------------------------------------------------------------------------
+% References
+%--------------------------------------------------------------------------
+
+\bibliography{../stat}
+\bibliographystyle{../bst/asa}
+
+\end{document} %==========================================================

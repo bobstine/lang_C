@@ -1,0 +1,1 @@
+/*			ARGeneration.h						*//*									17 Oct 87	*//*								rev	18 Oct 87	*//*	 NOTE:										*//*		 (1) Use spectral form with [0] = 1.0.	*/#include "ARDef.h"void arDefineGenModel (ARModel *model);		/* Force constant terms to be zero	*/void arGenerateSeries (Matrix *input, Matrix *output);		/* Input error series; scalar model fills first [0] column. */

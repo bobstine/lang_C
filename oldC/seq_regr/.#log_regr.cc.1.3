@@ -1,0 +1,329 @@
+/* $Id: log_regr.cc,v 1.3 2004/01/20 15:43:32 bob Exp $
+   
+*/
+
+#include <gsl/gsl_multiroots.h>
+
+#include "log_regr.h"
+#include "function_utils.h"
+#include "print_utils.h"   // for printing tags
+
+////  Printing  ////
+
+void
+LogisticRegression::print_to (std::ostream& os) const
+{
+  os << std::endl << "   ______________ Logistic Regression Model _________________ " << std::endl;
+  os << "    n =  " << number_of_observations() << std::endl;
+  os << "    q =  " << number_of_predictors() << " with " << mPredictorsEvaluated
+     << "      considered and " << mPredictorsSinceAdded << " since last added." << std::endl;
+  os << "      Run lengths between predictors are:  ";
+  for (int i=0; i<number_of_predictors(); ++i) os << mIndex[i] << " ";
+  os << std::endl;
+  for (int i=0; i<number_of_predictors(); ++i) os << "         [" << i+1 << "] "
+						  << mTags[i] << std::endl;
+}  
+
+////  Destructor  ////
+
+LogisticRegression::~LogisticRegression()
+{
+  std::clog << "LREG: deleting logistic regression with n = "
+	    << mN << ", q = " << number_of_predictors()
+	    << std::endl;
+  free_gsl_components();
+}
+
+
+////  GSL components  ////
+
+void
+LogisticRegression::free_gsl_components()
+{
+  if (mBetaGSL) gsl_vector_free(mBetaGSL);
+  if (mXBarGSL) gsl_vector_free(mXBarGSL);  
+  if (mGradGSL) gsl_vector_free(mGradGSL);  
+  if (mHessGSL) gsl_matrix_free(mHessGSL);
+}
+
+////  Initialization of GSL components  ////
+
+void
+LogisticRegression::initialize_gsl_components ()
+{
+  const int size (101);  // 100 x's plus an intercept
+  mBetaGSL = gsl_vector_alloc(size);      gsl_vector_set_zero (mBetaGSL);
+  mXBarGSL = gsl_vector_alloc(size);      gsl_vector_set_zero (mXBarGSL);
+  mGradGSL = gsl_vector_alloc(size);      gsl_vector_set_zero (mGradGSL);
+  mHessGSL = gsl_matrix_alloc(size,size); gsl_matrix_set_zero (mHessGSL);
+}
+  
+
+void
+LogisticRegression::resize_gsl_components (unsigned int newSize)
+{
+  int oldSize = mBetaGSL->size;
+  std::cout << "LREG: Exceeding length of beta vector; increasing size from "
+	    << oldSize << " to " << newSize;
+  gsl_vector *b = gsl_vector_alloc(newSize);         gsl_vector_set_zero (b);
+  gsl_vector *x = gsl_vector_alloc(newSize);         gsl_vector_set_zero (x);
+  gsl_vector *g = gsl_vector_alloc(newSize);         gsl_vector_set_zero (g);
+  gsl_matrix *h = gsl_matrix_alloc(newSize,newSize);
+  for(int i=0; i<oldSize; ++i)
+  { gsl_vector_set(b, i, gsl_vector_get(mBetaGSL,i));
+    gsl_vector_set(x, i, gsl_vector_get(mXBarGSL,i));
+    gsl_vector_set(g, i, gsl_vector_get(mGradGSL,i));
+  }
+  for(int i=0; i<oldSize; ++i)
+    for (int j=0; j<oldSize; ++j)
+      gsl_matrix_set(h,i,j,gsl_matrix_get(mHessGSL,i,j));
+  free_gsl_components();
+  mBetaGSL = b;
+  mXBarGSL = x;
+  mGradGSL = g;
+  mHessGSL = h;
+  std::cout << " Done. " << std::endl;
+}
+
+
+////  Accessors  ////
+
+std::vector<double>
+LogisticRegression::x_bar() const
+{
+  int q (number_of_predictors());
+  std::vector<double> avg(q);
+  for (int j=1; j<=q; ++j)
+    avg[j-1] = gsl_vector_get(mXBarGSL,j);
+  return avg;
+}
+
+
+///  Likelihood  ///
+
+double
+LogisticRegression::log_likelihood() const
+{
+  return range_ops::accumulate
+    (
+     make_binary_range (std::plus<double>(),
+			make_binary_range(std::multiplies<double>(), make_range(mY), make_range(mXB)),
+			make_unary_range(Function_Utils::Logistic(), make_range(mXB))
+			),
+     0.0);
+}
+
+
+///  Maximization iterations  ///
+
+void
+LogisticRegression::set_beta(gsl_vector const* b)
+{
+  if (b->size > mBetaGSL->size)
+    resize_gsl_components(mBetaGSL->size + 100);
+  update_fit_and_residuals();
+  update_gradient();
+}
+
+void
+LogisticRegression::update_fit_and_residuals()
+{
+  int m (mBetaGSL->size);
+  range_ops::fill(make_range(&mXB), gsl_vector_get(mBetaGSL,0));  // init to intercept
+  for (int j=1; j<m-1; ++j)
+  { // use transform to accumulate the fit
+    double b (gsl_vector_get(mBetaGSL,j));
+    range_ops::transform(mX[j], make_range(mXB), mXB.begin(), Function_Utils::AXPY(b));
+  }
+  range_ops::transform(make_range(mXB), mFit.begin(), Function_Utils::Logistic());
+  range_ops::transform(make_range(mFit), mY, mRes.begin(), Function_Utils::AXPY(-1.0));
+}
+
+void
+LogisticRegression::update_gradient()
+{
+  int m (mBetaGSL->size);
+  for (int j=0; j<m; ++j)
+    gsl_vector_set(mGradGSL, j, range_ops::inner_product(make_range(mRes),mX[j], 0.0));
+}
+
+void
+LogisticRegression::update_hessian()
+{
+  std::vector<double> wts (mN);
+  for(int i=0; i<mN; ++i)
+    wts[i] = mFit[i] * (1.0-mFit[i]);
+  int m (mBetaGSL->size);
+  for (int k=0; k<m; ++k)
+  { for (int j=0; j<k; ++j)
+    { double cp ( range_ops::weighted_inner_product(mX[k],mX[j],make_range(wts), 0.0));
+      gsl_matrix_set(mHessGSL,k,j, cp);
+      gsl_matrix_set(mHessGSL,j,k, cp);
+    }
+    gsl_matrix_set(mHessGSL,k,k,range_ops:: weighted_inner_product(mX[k],mX[k],make_range(wts), 0.0));
+  }
+}
+
+///  Adding a predictor  ///
+
+bool
+LogisticRegression::evaluate_predictor (Vector z, double zBar, double threshold)
+{
+  // double ll0 (mLogLike);
+  // ??? updat mXB and mFit
+  std::cout << zBar << threshold;
+  for (int i=0; i<mN; ++i)
+    mFit[i] *= (1.0 - mFit[i]);             // p(1-p)
+  // expand edges of X'X
+  int m (1+number_of_predictors());
+  for (int j=0; j<m; ++j)
+  { double dot (range_ops::weighted_inner_product(z, mX[j], make_range(mFit), 0.0));
+    gsl_matrix_set(mHessGSL,  j,m+1, dot);
+    gsl_matrix_set(mHessGSL,m+1,  j, dot);
+  }
+  gsl_matrix_set(mHessGSL,m+1,m+1,range_ops::weighted_inner_product(z, z, make_range(mFit), 0.0));
+  // find zero of mle
+  //  gsl_vector *b0 (gsl_vector_alloc(mQ+2));  // intercept + new
+  return false;
+}
+
+double
+LogisticRegression::add_predictor(ID const& id, Vector x, double xBar)
+{
+  int newDim (number_of_predictors() + 2);  // const + new slope
+  mTags.push_back(id);
+  mX.push_back(x);
+  gsl_vector_set(mXBarGSL,newDim-1,xBar);
+  gsl_vector *b = gsl_vector_alloc(newDim);
+  for(int j=0; j<newDim-1; ++j)
+    gsl_vector_set(b, j, mBeta[j]);
+  gsl_vector_set(b, newDim-1, 0.0);
+  set_beta(b);
+  find_mle();
+  gsl_vector_free(b);
+  return log_likelihood();
+}
+
+double
+LogisticRegression::initialize_constant()
+{
+  mTags.push_back(make_tag(std::string("Constant"),std::vector<int>(0)));
+  range_ops::fill(make_range(&mConstant), 1.0);
+  mX.push_back(make_anonymous_range(mConstant));
+  gsl_vector_set(mXBarGSL,0,1);
+  mBeta[0]
+  return log_likelihood();
+}
+
+///  GSL optimization functions  ///
+
+
+void
+LogisticRegression::fill_with_gradient(gsl_vector *v) const
+{
+  int dim (mBetaGSL->size);
+  for (int j=0; j<dim; ++j)
+    gsl_vector_set(v,j,gsl_vector_get(mGradGSL,j));
+}
+
+void
+LogisticRegression::fill_with_hessian(gsl_matrix *h) const
+{
+  int dim (mBetaGSL->size);
+  for (int k=0; k<dim; ++k)
+    for (int j=0; j<dim; ++j)
+      gsl_matrix_set(h,k,j,gsl_matrix_get(mHessGSL,k,j));
+}
+
+
+///  External friends
+
+int logistic_gradient (const gsl_vector *x, void *pM, gsl_vector *f);
+int logistic_hessian (const gsl_vector *x, void *pM, gsl_matrix *H);
+int logistic_components (const gsl_vector *x, void *pM, gsl_vector *g, gsl_matrix *H);
+
+
+void
+LogisticRegression::print_optimizer_state (int iter, int dim, gsl_multiroot_fdfsolver * s)
+{
+  std::cout << "LREG: solver status at iteration " << iter << std::endl
+	    << "       @ ";
+  for (int i=0; i<dim; ++i)
+    std::cout << gsl_vector_get (s->x, i) << " ";
+  std::cout << std::endl
+	    << "     f'= ";
+  for (int i=0; i<dim; ++i)
+    std::cout << gsl_vector_get (s->f, i) << " ";
+  std::cout << std::endl;
+}
+
+double
+LogisticRegression::find_mle ()
+{
+  const gsl_multiroot_fdfsolver_type *T;
+  T = gsl_multiroot_fdfsolver_gnewton;
+  gsl_multiroot_fdfsolver *solver;
+
+  int dim (mBetaGSL->size);
+  
+  gsl_multiroot_function_fdf FDF;
+  FDF.f      = &logistic_gradient;
+  FDF.df     = &logistic_hessian;
+  FDF.fdf    = &logistic_components;
+  FDF.n      = dim;
+  FDF.params = (void *) this;
+
+  solver = gsl_multiroot_fdfsolver_alloc(T, dim);
+  gsl_multiroot_fdfsolver_set (solver, &FDF, mBetaGSL);
+  int iter (0), status (0);
+  print_optimizer_state (iter, dim, solver);
+  do
+  { ++iter;
+    status = gsl_multiroot_fdfsolver_iterate (solver);
+    print_optimizer_state (iter, dim, solver);
+    if (status) break;
+    status = gsl_multiroot_test_residual (solver->f, 1.0e-7);
+  }
+  while (status == GSL_CONTINUE && iter < 10);
+  std::clog << "LREG: gsl iteration status = " << gsl_strerror(status)
+	    << std::endl;
+  gsl_multiroot_fdfsolver_free(solver);
+  return log_likelihood();
+}
+
+
+///  External friends
+
+int
+logistic_gradient (const gsl_vector *x, void *pM, gsl_vector *f)
+{
+  LogisticRegression *pModel = (LogisticRegression *) pM;
+  
+  pModel->set_beta(x);
+  pModel->fill_with_gradient(f);
+  return 0;
+}
+
+
+int
+logistic_hessian (const gsl_vector *x, void *pM, gsl_matrix *H)
+{
+  LogisticRegression *pModel = (LogisticRegression *) pM;
+  
+  pModel->set_beta(x);
+  pModel->fill_with_hessian(H);
+  return 0;
+}
+
+
+int
+logistic_components (const gsl_vector *x, void *pM, gsl_vector *g, gsl_matrix *H)
+{
+  LogisticRegression *pModel = (LogisticRegression *) pM;
+  
+  pModel->set_beta(x);
+  pModel->fill_with_gradient(g);
+  pModel->fill_with_hessian(H);
+  return 0;
+}
+

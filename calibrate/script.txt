@@ -1,0 +1,5 @@
+# first build a pool adjacent violators table
+./pav < input.dat > cal.table
+
+# then use it to calibrate another data set (with wider range)
+cat cal.table valInput.dat | ./calibrate 

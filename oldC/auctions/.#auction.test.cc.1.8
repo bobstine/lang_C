@@ -1,0 +1,43 @@
+// $Id: auction.test.cc,v 1.8 2003/08/14 23:03:57 bob Exp $
+
+/*
+  13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
+   1 Aug 03 ... Created
+*/
+
+#include "auction.h"
+
+int
+main(void)
+{
+  // pick dataset
+  const std::string fileName ("/Users/bob/raslisp/stepwise/C/wind/wind2/6weeks/est.dat");
+  const bool transposed(true);
+  // const std::string fileName ("/Users/bob/C/batch_regr/test/covar.dat");
+  // const bool        transposed (false);
+
+  // create dataset
+  NumericDataset data(fileName, transposed);
+
+  // auction constants
+  const double overallErrorRate (.05);  // family error rate
+
+  // create bidders
+  std::vector<Bidder*> bidders;
+  ConstantBidder  bidder1 (COLUMN);            bidders.push_back(&bidder1);
+  ConstantBidder  bidder2 (INTERACTION);       bidders.push_back(&bidder2);
+  GeometricBidder bidder3 (COLUMN);            bidders.push_back(&bidder3);
+  GeometricBidder bidder4 (INTERACTION, .25);  bidders.push_back(&bidder4);
+
+  // create auction for this dataset; auction creates predictor streams over dataset
+  Auction theAuction(overallErrorRate, data, bidders);
+
+  // run the auction
+  for (int round=0; round<50; ++round)
+  { double result (theAuction.auction_next_predictor());
+    if (result)
+      std::cout << "TEST: @@@ Auction adds predictor @@@" << std::endl;
+    std::cout << theAuction << std::endl;
+  }
+  return 0;  
+}

@@ -1,0 +1,117 @@
+// $Id: log_regr.h,v 1.3 2004/01/20 15:43:32 bob Exp $
+
+/*
+
+Ranges are used to hold vectors in data space (n dim), whereas GSL
+used for things like the hessian and gradiant that live in the space
+of estimators.
+
+  19 Jan 03 ... Start port from sequential ols regression code.
+
+*/
+
+#ifndef _LOG_REGR_H_
+#define _LOG_REGR_H_ 
+
+#include <vector>
+#include <string>
+#include <ostream>
+
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multiroots.h>
+
+#include "tags.h"
+#include "range.h"
+#include "range_ops.h"
+#include "range_stats.h"
+#include "anonymous_iterator.h"
+
+class LogisticRegression
+{
+ public:
+  typedef Tag<std::string, std::vector<int> >                                 ID;
+  typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double> Iter;
+  typedef range<Iter>                                                         Vector;
+  typedef std::vector<Vector>                                                 Matrix;
+  typedef std::pair<double,double>                                            TestStat;
+
+ private:
+  Vector                  mY;                    // better be all 0/1
+  int                     mN;     
+  double                  mYBar;                 // proportion 1
+  std::vector<double>     mConstant;             // holder for constant range
+  Matrix                  mX;                    // constant leading range, most recent sits on end
+  std::vector<double>     mBeta;                 // coefs of most recent model
+  std::vector<ID>         mTags;                 // tagged names of the predictors
+  std::vector<int>        mIndex;                // identify the spacing of selected predictors
+  Vector                  mZ;                    // current var being considered
+  int                     mPredictorsEvaluated;  // number of predictors considered
+  int                     mPredictorsSinceAdded; // number of predictors since added one
+  double                  mLogLike;              // current value of log likelihood
+  std::vector<double>     mFit, mRes, mXB;       // used to compute likelihood
+  gsl_vector             *mBetaGSL;              // current MLE used in iterations
+  gsl_vector             *mXBarGSL;              // avgs of Xs
+  gsl_vector             *mGradGSL;              // gradient of log like (score function)
+  gsl_matrix             *mHessGSL;              // current information matrix
+   
+ public:
+  ~LogisticRegression();
+  
+  LogisticRegression (Vector y)
+    :
+    mY(y), mN (range_ops::length(y)), mYBar(average(y)),
+    mConstant(mN), mX(), mBeta(), mTags(), mIndex(), mZ(make_anonymous_range(y)),
+    mPredictorsEvaluated (0), mPredictorsSinceAdded(0), mLogLike(0.0),
+    mFit(mN), mRes(mN), mXB(mN)
+    {
+      initialize_gsl_components();
+      initialize_constant();
+    }
+
+
+  int                    number_of_observations() const  { return mN; }
+  int                    number_of_predictors()   const  { return mBeta.size()-1; }
+  
+  double                 y_bar()                  const  { return mYBar; }
+  std::vector<double>    x_bar()                  const;
+  std::vector<double>    beta()                   const  { return mBeta; } 
+
+  ID const&              last_predictor_tag ()    const  { return mTags[mTags.size()-1]; }
+  std::vector<ID> const& predictor_tags ()        const  { return mTags; }
+  
+  double                 log_likelihood()                    const;
+  void                   set_beta           (gsl_vector const* b);
+  void                   fill_with_gradient (gsl_vector *g)   const;
+  void                   fill_with_hessian  (gsl_matrix *h)   const;
+  
+  bool                   evaluate_predictor (Vector z, double zBar, double threshold);
+
+  TestStat               predictor_stats    (Vector x, double xBar); 
+  TestStat               predictor_stats    (Vector x) { return predictor_stats (x, average(x)); }
+
+  double                 add_predictor(ID const& id, Vector x, double xBar);    // returns change in log_like
+  double                 add_predictor(ID const& id, Vector x)  { return add_predictor(id, x, average(x)); }
+  
+  void                   write_to (std::ostream& os) const;
+  void                   print_to (std::ostream& os) const;
+  void                   read_from (std::istream& is);
+  
+ private:
+  double                 initialize_constant();
+  double                 find_mle();                  // returns gsl status code
+  void                   update_fit_and_residuals();  // revised in mle iterations
+  void                   update_gradient();
+  void                   update_hessian();
+  void                   print_optimizer_state (int iter, int dim, gsl_multiroot_fdfsolver * s);
+
+  void                   initialize_gsl_components ();
+  void                   resize_gsl_components(unsigned int size);
+  void                   free_gsl_components();
+};
+
+inline
+std::ostream&
+operator<< (std::ostream& os, LogisticRegression const& regr)
+{ regr.print_to(os); return os; }
+
+#endif

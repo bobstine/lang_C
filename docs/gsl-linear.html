@@ -1,0 +1,1119 @@
+<HTML>
+<HEAD>
+<!-- This HTML file has been created by texi2html 1.54
+     from ../gsl-ref.texi on 16 December 2002 -->
+
+<TITLE>GNU Scientific Library -- Reference Manual - Linear Algebra</TITLE>
+<link href="gsl-ref_14.html" rel=Next>
+<link href="gsl-ref_12.html" rel=Previous>
+<link href="gsl-ref_toc.html" rel=ToC>
+
+</HEAD>
+<BODY>
+<p>Go to the <A HREF="gsl-ref_1.html">first</A>, <A HREF="gsl-ref_12.html">previous</A>, <A HREF="gsl-ref_14.html">next</A>, <A HREF="gsl-ref_49.html">last</A> section, <A HREF="gsl-ref_toc.html">table of contents</A>.
+<P><HR><P>
+
+
+<H1><A NAME="SEC216" HREF="gsl-ref_toc.html#TOC216">Linear Algebra</A></H1>
+<P>
+<A NAME="IDX1118"></A>
+<A NAME="IDX1119"></A>
+<A NAME="IDX1120"></A>
+<A NAME="IDX1121"></A>
+
+</P>
+<P>
+This chapter describes functions for solving linear systems.  The
+library provides simple linear algebra operations which operate directly
+on the <CODE>gsl_vector</CODE> and <CODE>gsl_matrix</CODE> objects.  These are
+intended for use with "small" systems where simple algorithms are
+acceptable.
+
+</P>
+<P>
+<A NAME="IDX1122"></A>
+Anyone interested in large systems will want to use the sophisticated
+routines found in LAPACK. The Fortran version of LAPACK is
+recommended as the standard package for linear algebra.  It supports
+blocked algorithms, specialized data representations and other
+optimizations.
+
+</P>
+<P>
+The functions described in this chapter are declared in the header file
+<TT>`gsl_linalg.h'</TT>.
+
+</P>
+
+
+
+<H2><A NAME="SEC217" HREF="gsl-ref_toc.html#TOC217">LU Decomposition</A></H2>
+<P>
+<A NAME="IDX1123"></A>
+
+</P>
+<P>
+A general square matrix A has an LU decomposition into
+upper and lower triangular matrices,
+
+</P>
+
+<PRE>
+P A = L U
+</PRE>
+
+<P>
+where P is a permutation matrix, L is unit lower
+triangular matrix and U is upper triangular matrix. For square
+matrices this decomposition can be used to convert the linear system
+A x = b into a pair of triangular systems (L y = P b,
+U x = y), which can be solved by forward and back-substitution.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_permutation * <VAR>p</VAR>, int *<VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1124"></A>
+<DT><U>Function:</U> int <B>gsl_linalg_complex_LU_decomp</B> <I>(gsl_matrix_complex * <VAR>A</VAR>, gsl_permutation * <VAR>p</VAR>, int *<VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1125"></A>
+These functions factorize the square matrix <VAR>A</VAR> into the LU
+decomposition PA = LU.  On output the diagonal and upper
+triangular part of the input matrix <VAR>A</VAR> contain the matrix
+U. The lower triangular part of the input matrix (excluding the
+diagonal) contains L.  The diagonal elements of L are
+unity, and are not stored.
+
+</P>
+<P>
+The permutation matrix P is encoded in the permutation
+<VAR>p</VAR>. The j-th column of the matrix P is given by the
+k-th column of the identity matrix, where k = p_j the
+j-th element of the permutation vector. The sign of the
+permutation is given by <VAR>signum</VAR>. It has the value (-1)^n,
+where n is the number of interchanges in the permutation.
+
+</P>
+<P>
+The algorithm used in the decomposition is Gaussian Elimination with
+partial pivoting (Golub &#38; Van Loan, <CITE>Matrix Computations</CITE>,
+Algorithm 3.4.1).
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1126"></A>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_solve</B> <I>(const gsl_matrix * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1127"></A>
+<DT><U>Function:</U> int <B>gsl_linalg_complex_LU_solve</B> <I>(const gsl_matrix_complex * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector_complex * <VAR>b</VAR>, gsl_vector_complex * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1128"></A>
+These functions solve the system A x = b using the LU
+decomposition of A into (<VAR>LU</VAR>, <VAR>p</VAR>) given by
+<CODE>gsl_linalg_LU_decomp</CODE> or <CODE>gsl_linalg_complex_LU_decomp</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_svx</B> <I>(const gsl_matrix * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1129"></A>
+<DT><U>Function:</U> int <B>gsl_linalg_complex_LU_svx</B> <I>(const gsl_matrix_complex * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_vector_complex * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1130"></A>
+These functions solve the system A x = b in-place using the
+LU decomposition of A into (<VAR>LU</VAR>,<VAR>p</VAR>). On input
+<VAR>x</VAR> should contain the right-hand side b, which is replaced
+by the solution on output.
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1131"></A>
+<A NAME="IDX1132"></A>
+<A NAME="IDX1133"></A>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_refine</B> <I>(const gsl_matrix * <VAR>A</VAR>, const gsl_matrix * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>, gsl_vector * <VAR>residual</VAR>)</I>
+<DD><A NAME="IDX1134"></A>
+<DT><U>Function:</U> int <B>gsl_linalg_complex_LU_refine</B> <I>(const gsl_matrix_complex * <VAR>A</VAR>, const gsl_matrix_complex * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector_complex * <VAR>b</VAR>, gsl_vector_complex * <VAR>x</VAR>, gsl_vector_complex * <VAR>residual</VAR>)</I>
+<DD><A NAME="IDX1135"></A>
+These functions apply an iterative improvement to <VAR>x</VAR>, the solution
+of A x = b, using the LU decomposition of A into
+(<VAR>LU</VAR>,<VAR>p</VAR>). The initial residual r = A x - b is also
+computed and stored in <VAR>residual</VAR>.
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1136"></A>
+<A NAME="IDX1137"></A>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_invert</B> <I>(const gsl_matrix * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_matrix * <VAR>inverse</VAR>)</I>
+<DD><A NAME="IDX1138"></A>
+<DT><U>Function:</U> int <B>gsl_complex_linalg_LU_invert</B> <I>(const gsl_matrix_complex * <VAR>LU</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_matrix_complex * <VAR>inverse</VAR>)</I>
+<DD><A NAME="IDX1139"></A>
+These functions compute the inverse of a matrix A from its
+LU decomposition (<VAR>LU</VAR>,<VAR>p</VAR>), storing the result in the
+matrix <VAR>inverse</VAR>. The inverse is computed by solving the system
+A x = b for each column of the identity matrix.  It is preferable
+to avoid direct computation of the inverse whenever possible.
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1140"></A>
+<A NAME="IDX1141"></A>
+<DL>
+<DT><U>Function:</U> double <B>gsl_linalg_LU_det</B> <I>(gsl_matrix * <VAR>LU</VAR>, int <VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1142"></A>
+<DT><U>Function:</U> gsl_complex <B>gsl_linalg_complex_LU_det</B> <I>(gsl_matrix_complex * <VAR>LU</VAR>, int <VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1143"></A>
+These functions compute the determinant of a matrix A from its
+LU decomposition, <VAR>LU</VAR>. The determinant is computed as the
+product of the diagonal elements of U and the sign of the row
+permutation <VAR>signum</VAR>.
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1144"></A>
+<DL>
+<DT><U>Function:</U> double <B>gsl_linalg_LU_lndet</B> <I>(gsl_matrix * <VAR>LU</VAR>)</I>
+<DD><A NAME="IDX1145"></A>
+<DT><U>Function:</U> double <B>gsl_linalg_complex_LU_lndet</B> <I>(gsl_matrix_complex * <VAR>LU</VAR>)</I>
+<DD><A NAME="IDX1146"></A>
+These functions compute the logarithm of the absolute value of the
+determinant of a matrix A, \ln|det(A)|, from its LU
+decomposition, <VAR>LU</VAR>.  This function may be useful if the direct
+computation of the determinant would overflow or underflow.
+</DL>
+
+</P>
+<P>
+<A NAME="IDX1147"></A>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_LU_sgndet</B> <I>(gsl_matrix * <VAR>LU</VAR>, int <VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1148"></A>
+<DT><U>Function:</U> gsl_complex <B>gsl_linalg_complex_LU_sgndet</B> <I>(gsl_matrix_complex * <VAR>LU</VAR>, int <VAR>signum</VAR>)</I>
+<DD><A NAME="IDX1149"></A>
+These functions compute the sign or phase factor of the determinant of a
+matrix A, det(A)/|det(A)|, from its LU decomposition,
+<VAR>LU</VAR>.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC218" HREF="gsl-ref_toc.html#TOC218">QR Decomposition</A></H2>
+<P>
+<A NAME="IDX1150"></A>
+
+</P>
+<P>
+A general rectangular M-by-N matrix A has a
+QR decomposition into the product of an orthogonal
+M-by-M square matrix Q (where Q^T Q = I) and
+an M-by-N right-triangular matrix R,
+
+</P>
+
+<PRE>
+A = Q R
+</PRE>
+
+<P>
+This decomposition can be used to convert the linear system A x =
+b into the triangular system R x = Q^T b, which can be solved by
+back-substitution. Another use of the QR decomposition is to
+compute an orthonormal basis for a set of vectors. The first N
+columns of Q form an orthonormal basis for the range of A,
+ran(A), when A has full column rank.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>tau</VAR>)</I>
+<DD><A NAME="IDX1151"></A>
+This function factorizes the M-by-N matrix <VAR>A</VAR> into
+the QR decomposition A = Q R.  On output the diagonal and
+upper triangular part of the input matrix contain the matrix
+R. The vector <VAR>tau</VAR> and the columns of the lower triangular
+part of the matrix <VAR>A</VAR> contain the Householder coefficients and
+Householder vectors which encode the orthogonal matrix <VAR>Q</VAR>.  The
+vector <VAR>tau</VAR> must be of length k=\min(M,N). The matrix
+Q is related to these components by, Q = Q_k ... Q_2 Q_1
+where Q_i = I - \tau_i v_i v_i^T and v_i is the
+Householder vector v_i =
+(0,...,1,A(i+1,i),A(i+2,i),...,A(m,i)). This is the same storage scheme
+as used by LAPACK.
+
+</P>
+<P>
+The algorithm used to perform the decomposition is Householder QR (Golub
+&#38; Van Loan, <CITE>Matrix Computations</CITE>, Algorithm 5.2.1).
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_solve</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1152"></A>
+This function solves the system A x = b using the QR
+decomposition of A into (<VAR>QR</VAR>, <VAR>tau</VAR>) given by
+<CODE>gsl_linalg_QR_decomp</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_svx</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1153"></A>
+This function solves the system A x = b in-place using the
+QR decomposition of A into (<VAR>QR</VAR>,<VAR>tau</VAR>) given by
+<CODE>gsl_linalg_QR_decomp</CODE>. On input <VAR>x</VAR> should contain the
+right-hand side b, which is replaced by the solution on output.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_lssolve</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>, gsl_vector * <VAR>residual</VAR>)</I>
+<DD><A NAME="IDX1154"></A>
+This function finds the least squares solution to the overdetermined
+system A x = b where the matrix <VAR>A</VAR> has more rows than
+columns.  The least squares solution minimizes the Euclidean norm of the
+residual, ||Ax - b||.The routine uses the QR decomposition
+of A into (<VAR>QR</VAR>, <VAR>tau</VAR>) given by
+<CODE>gsl_linalg_QR_decomp</CODE>.  The solution is returned in <VAR>x</VAR>.  The
+residual is computed as a by-product and stored in <VAR>residual</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_QTvec</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, gsl_vector * <VAR>v</VAR>)</I>
+<DD><A NAME="IDX1155"></A>
+This function applies the matrix Q^T encoded in the decomposition
+(<VAR>QR</VAR>,<VAR>tau</VAR>) to the vector <VAR>v</VAR>, storing the result Q^T
+v in <VAR>v</VAR>.  The matrix multiplication is carried out directly using
+the encoding of the Householder vectors without needing to form the full
+matrix Q^T.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_Qvec</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, gsl_vector * <VAR>v</VAR>)</I>
+<DD><A NAME="IDX1156"></A>
+This function applies the matrix Q encoded in the decomposition
+(<VAR>QR</VAR>,<VAR>tau</VAR>) to the vector <VAR>v</VAR>, storing the result Q
+v in <VAR>v</VAR>.  The matrix multiplication is carried out directly using
+the encoding of the Householder vectors without needing to form the full
+matrix Q.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_Rsolve</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1157"></A>
+This function solves the triangular system R x = b for
+<VAR>x</VAR>. It may be useful if the product b' = Q^T b has already
+been computed using <CODE>gsl_linalg_QR_QTvec</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_Rsvx</B> <I>(const gsl_matrix * <VAR>QR</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1158"></A>
+This function solves the triangular system R x = b for <VAR>x</VAR>
+in-place. On input <VAR>x</VAR> should contain the right-hand side b
+and is replaced by the solution on output. This function may be useful if
+the product b' = Q^T b has already been computed using
+<CODE>gsl_linalg_QR_QTvec</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_unpack</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, gsl_matrix * <VAR>Q</VAR>, gsl_matrix * <VAR>R</VAR>)</I>
+<DD><A NAME="IDX1159"></A>
+This function unpacks the encoded QR decomposition
+(<VAR>QR</VAR>,<VAR>tau</VAR>) into the matrices <VAR>Q</VAR> and <VAR>R</VAR>, where
+<VAR>Q</VAR> is M-by-M and <VAR>R</VAR> is M-by-N. 
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_QRsolve</B> <I>(gsl_matrix * <VAR>Q</VAR>, gsl_matrix * <VAR>R</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1160"></A>
+This function solves the system R x = Q^T b for <VAR>x</VAR>. It can
+be used when the QR decomposition of a matrix is available in
+unpacked form as (<VAR>Q</VAR>,<VAR>R</VAR>).
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QR_update</B> <I>(gsl_matrix * <VAR>Q</VAR>, gsl_matrix * <VAR>R</VAR>, gsl_vector * <VAR>w</VAR>, const gsl_vector * <VAR>v</VAR>)</I>
+<DD><A NAME="IDX1161"></A>
+This function performs a rank-1 update w v^T of the QR
+decomposition (<VAR>Q</VAR>, <VAR>R</VAR>). The update is given by Q'R' = Q
+R + w v^T where the output matrices Q' and R' are also
+orthogonal and right triangular. Note that <VAR>w</VAR> is destroyed by the
+update.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_R_solve</B> <I>(const gsl_matrix * <VAR>R</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1162"></A>
+This function solves the triangular system R x = b for the
+N-by-N matrix <VAR>R</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_R_svx</B> <I>(const gsl_matrix * <VAR>R</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1163"></A>
+This function solves the triangular system R x = b in-place. On
+input <VAR>x</VAR> should contain the right-hand side b, which is
+replaced by the solution on output.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC219" HREF="gsl-ref_toc.html#TOC219">QR Decomposition with Column Pivoting</A></H2>
+<P>
+<A NAME="IDX1164"></A>
+
+</P>
+<P>
+The QR decomposition can be extended to the rank deficient case
+by introducing a column permutation P,
+
+</P>
+
+<PRE>
+A P = Q R
+</PRE>
+
+<P>
+The first r columns of this Q form an orthonormal basis
+for the range of A for a matrix with column rank r.  This
+decomposition can also be used to convert the linear system A x =
+b into the triangular system R y = Q^T b, x = P y, which can be
+solved by back-substitution and permutation.  We denote the QR
+decomposition with column pivoting by QRP^T since A = Q R
+P^T.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>tau</VAR>, gsl_permutation * <VAR>p</VAR>, int *<VAR>signum</VAR>, gsl_vector * <VAR>norm</VAR>)</I>
+<DD><A NAME="IDX1165"></A>
+This function factorizes the M-by-N matrix <VAR>A</VAR> into
+the QRP^T decomposition A = Q R P^T.  On output the
+diagonal and upper triangular part of the input matrix contain the
+matrix R. The permutation matrix P is stored in the
+permutation <VAR>p</VAR>.  The sign of the permutation is given by
+<VAR>signum</VAR>. It has the value (-1)^n, where n is the
+number of interchanges in the permutation. The vector <VAR>tau</VAR> and the
+columns of the lower triangular part of the matrix <VAR>A</VAR> contain the
+Householder coefficients and vectors which encode the orthogonal matrix
+<VAR>Q</VAR>.  The vector <VAR>tau</VAR> must be of length k=\min(M,N). The
+matrix Q is related to these components by, Q = Q_k ... Q_2
+Q_1 where Q_i = I - \tau_i v_i v_i^T and v_i is the
+Householder vector v_i =
+(0,...,1,A(i+1,i),A(i+2,i),...,A(m,i)). This is the same storage scheme
+as used by LAPACK.  On output the norms of each column of <VAR>R</VAR>
+are stored in the vector <VAR>norm</VAR>.
+
+</P>
+<P>
+The algorithm used to perform the decomposition is Householder QR with
+column pivoting (Golub &#38; Van Loan, <CITE>Matrix Computations</CITE>, Algorithm
+5.4.1).
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_decomp2</B> <I>(const gsl_matrix * <VAR>A</VAR>, gsl_matrix * <VAR>q</VAR>, gsl_matrix * <VAR>r</VAR>, gsl_vector * <VAR>tau</VAR>, gsl_permutation * <VAR>p</VAR>, int *<VAR>signum</VAR>, gsl_vector * <VAR>norm</VAR>)</I>
+<DD><A NAME="IDX1166"></A>
+This function factorizes the matrix <VAR>A</VAR> into the decomposition
+A = Q R P^T without modifying <VAR>A</VAR> itself and storing the
+output in the separate matrices <VAR>q</VAR> and <VAR>r</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_solve</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1167"></A>
+This function solves the system A x = b using the QRP^T
+decomposition of A into (<VAR>QR</VAR>, <VAR>tau</VAR>, <VAR>p</VAR>) given by
+<CODE>gsl_linalg_QRPT_decomp</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_svx</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_vector * <VAR>tau</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1168"></A>
+This function solves the system A x = b in-place using the
+QRP^T decomposition of A into
+(<VAR>QR</VAR>,<VAR>tau</VAR>,<VAR>p</VAR>). On input <VAR>x</VAR> should contain the
+right-hand side b, which is replaced by the solution on output.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_QRsolve</B> <I>(const gsl_matrix * <VAR>Q</VAR>, const gsl_matrix * <VAR>R</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1169"></A>
+This function solves the system R P^T x = Q^T b for <VAR>x</VAR>. It can
+be used when the QR decomposition of a matrix is available in
+unpacked form as (<VAR>Q</VAR>,<VAR>R</VAR>).
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_update</B> <I>(gsl_matrix * <VAR>Q</VAR>, gsl_matrix * <VAR>R</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_vector * <VAR>u</VAR>, const gsl_vector * <VAR>v</VAR>)</I>
+<DD><A NAME="IDX1170"></A>
+This function performs a rank-1 update w v^T of the QRP^T
+decomposition (<VAR>Q</VAR>, <VAR>R</VAR>,<VAR>p</VAR>). The update is given by
+Q'R' = Q R + w v^T where the output matrices Q' and
+R' are also orthogonal and right triangular. Note that <VAR>w</VAR> is
+destroyed by the update. The permutation <VAR>p</VAR> is not changed.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_Rsolve</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_permutation * <VAR>p</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1171"></A>
+This function solves the triangular system R P^T x = b for the
+N-by-N matrix R contained in <VAR>QR</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_QRPT_Rsvx</B> <I>(const gsl_matrix * <VAR>QR</VAR>, const gsl_permutation * <VAR>p</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1172"></A>
+This function solves the triangular system R P^T x = b in-place
+for the N-by-N matrix R contained in <VAR>QR</VAR>. On
+input <VAR>x</VAR> should contain the right-hand side b, which is
+replaced by the solution on output.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC220" HREF="gsl-ref_toc.html#TOC220">Singular Value Decomposition</A></H2>
+<P>
+<A NAME="IDX1173"></A>
+<A NAME="IDX1174"></A>
+
+</P>
+<P>
+A general rectangular M-by-N matrix A has a
+singular value decomposition (SVD) into the product of an
+M-by-N orthogonal matrix U, an N-by-N
+diagonal matrix of singular values S and the transpose of an
+N-by-N orthogonal square matrix V,
+
+</P>
+
+<PRE>
+A = U S V^T
+</PRE>
+
+<P>
+The singular values
+\sigma_i = S_{ii} are all non-negative and are
+generally chosen to form a non-increasing sequence 
+\sigma_1 &#62;= \sigma_2 &#62;= ... &#62;= \sigma_N &#62;= 0.
+
+</P>
+<P>
+The singular value decomposition of a matrix has many practical uses.
+The condition number of the matrix is given by the ratio of the largest
+singular value to the smallest singular value. The presence of a zero
+singular value indicates that the matrix is singular. The number of
+non-zero singular values indicates the rank of the matrix.  In practice
+singular value decomposition of a rank-deficient matrix will not produce
+exact zeroes for singular values, due to finite numerical
+precision. Small singular values should be edited by choosing a suitable
+tolerance.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_SV_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_matrix * <VAR>V</VAR>, gsl_vector * <VAR>S</VAR>, gsl_vector * <VAR>work</VAR>)</I>
+<DD><A NAME="IDX1175"></A>
+This function factorizes the M-by-N matrix <VAR>A</VAR> into
+the singular value decomposition A = U S V^T. On output the
+matrix <VAR>A</VAR> is replaced by U. The diagonal elements of the
+singular value matrix S are stored in the vector <VAR>S</VAR>. The
+singular values are non-negative and form a non-increasing sequence from
+S_1 to S_N. The matrix <VAR>V</VAR> contains the elements of
+V in untransposed form. To form the product U S V^T it is
+necessary to take the transpose of <VAR>V</VAR>.  A workspace of length
+<VAR>N</VAR> is required in <VAR>work</VAR>.
+
+</P>
+<P>
+This routine uses the Golub-Reinsch SVD algorithm.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_SV_decomp_mod</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_matrix * <VAR>X</VAR>, gsl_matrix * <VAR>V</VAR>, gsl_vector * <VAR>S</VAR>, gsl_vector * <VAR>work</VAR>)</I>
+<DD><A NAME="IDX1176"></A>
+This function computes the SVD using the modified Golub-Reinsch
+algorithm, which is faster for M&#62;&#62;N.  It requires the vector
+<VAR>work</VAR> and the N-by-N matrix <VAR>X</VAR> as additional
+working space.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_SV_decomp_jacobi</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_matrix * <VAR>V</VAR>, gsl_vector * <VAR>S</VAR>)</I>
+<DD><A NAME="IDX1177"></A>
+This function computes the SVD using one-sided Jacobi orthogonalization
+(see references for details).  The Jacobi method can compute singular
+values to higher relative accuracy than Golub-Reinsch algorithms.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_SV_solve</B> <I>(gsl_matrix * <VAR>U</VAR>, gsl_matrix * <VAR>V</VAR>, gsl_vector * <VAR>S</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1178"></A>
+This function solves the system A x = b using the singular value
+decomposition (<VAR>U</VAR>, <VAR>S</VAR>, <VAR>V</VAR>) of A given by
+<CODE>gsl_linalg_SV_decomp</CODE>.
+
+</P>
+<P>
+Only non-zero singular values are used in computing the solution. The
+parts of the solution corresponding to singular values of zero are
+ignored.  Other singular values can be edited out by setting them to
+zero before calling this function. 
+
+</P>
+<P>
+In the over-determined case where <VAR>A</VAR> has more rows than columns the
+system is solved in the least squares sense, returning the solution
+<VAR>x</VAR> which minimizes ||A x - b||_2.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC221" HREF="gsl-ref_toc.html#TOC221">Cholesky Decomposition</A></H2>
+<P>
+<A NAME="IDX1179"></A>
+<A NAME="IDX1180"></A>
+<A NAME="IDX1181"></A>
+
+</P>
+<P>
+A symmetric, positive definite square matrix A has a Cholesky
+decomposition into a product of a lower triangular matrix L and
+its transpose L^T,
+
+</P>
+
+<PRE>
+A = L L^T
+</PRE>
+
+<P>
+This is sometimes referred to as taking the square-root of a matrix. The
+Cholesky decomposition can only be carried out when all the eigenvalues
+of the matrix are positive.  This decomposition can be used to convert
+the linear system A x = b into a pair of triangular systems
+(L y = b, L^T x = y), which can be solved by forward and
+back-substitution.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_cholesky_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>)</I>
+<DD><A NAME="IDX1182"></A>
+This function factorizes the positive-definite square matrix <VAR>A</VAR>
+into the Cholesky decomposition A = L L^T. On output the diagonal
+and lower triangular part of the input matrix <VAR>A</VAR> contain the matrix
+L. The upper triangular part of the input matrix contains
+L^T, the diagonal terms being identical for both L and
+L^T.  If the matrix is not positive-definite then the
+decomposition will fail, returning the error code <CODE>GSL_EDOM</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_cholesky_solve</B> <I>(const gsl_matrix * <VAR>cholesky</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1183"></A>
+This function solves the system A x = b using the Cholesky
+decomposition of A into the matrix <VAR>cholesky</VAR> given by
+<CODE>gsl_linalg_cholesky_decomp</CODE>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_cholesky_svx</B> <I>(const gsl_matrix * <VAR>cholesky</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1184"></A>
+This function solves the system A x = b in-place using the
+Cholesky decomposition of A into the matrix <VAR>cholesky</VAR> given
+by <CODE>gsl_linalg_cholesky_decomp</CODE>. On input <VAR>x</VAR> should contain
+the right-hand side b, which is replaced by the solution on
+output.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC222" HREF="gsl-ref_toc.html#TOC222">Tridiagonal Decomposition of Real Symmetric Matrices</A></H2>
+<P>
+<A NAME="IDX1185"></A>
+
+</P>
+<P>
+A symmetric matrix A can be factorized by similarity
+transformations into the form,
+
+</P>
+
+<PRE>
+A = Q T Q^T
+</PRE>
+
+<P>
+where Q is an orthogonal matrix and T is a symmetric
+tridiagonal matrix.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_symmtd_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>tau</VAR>)</I>
+<DD><A NAME="IDX1186"></A>
+This function factorizes the symmetric square matrix <VAR>A</VAR> into the
+symmetric tridiagonal decomposition Q T Q^T.  On output the
+diagonal and subdiagonal part of the input matrix <VAR>A</VAR> contain the
+tridiagonal matrix T.  The remaining lower triangular part of the
+input matrix contains the Householder vectors which, together with the
+Householder coefficients <VAR>tau</VAR>, encode the orthogonal matrix
+Q. This storage scheme is the same as used by LAPACK.  The
+upper triangular part of <VAR>A</VAR> is not referenced.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_symmtd_unpack</B> <I>(const gsl_matrix * <VAR>A</VAR>, const gsl_vector * <VAR>tau</VAR>, gsl_matrix * <VAR>Q</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>subdiag</VAR>)</I>
+<DD><A NAME="IDX1187"></A>
+This function unpacks the encoded symmetric tridiagonal decomposition
+(<VAR>A</VAR>, <VAR>tau</VAR>) obtained from <CODE>gsl_linalg_symmtd_decomp</CODE> into
+the orthogonal matrix <VAR>Q</VAR>, the vector of diagonal elements <VAR>diag</VAR>
+and the vector of subdiagonal elements <VAR>subdiag</VAR>.  
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_symmtd_unpack_T</B> <I>(const gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>subdiag</VAR>)</I>
+<DD><A NAME="IDX1188"></A>
+This function unpacks the diagonal and subdiagonal of the encoded
+symmetric tridiagonal decomposition (<VAR>A</VAR>, <VAR>tau</VAR>) obtained from
+<CODE>gsl_linalg_symmtd_decomp</CODE> into the vectors <VAR>diag</VAR> and <VAR>subdiag</VAR>.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC223" HREF="gsl-ref_toc.html#TOC223">Tridiagonal Decomposition of Hermitian Matrices</A></H2>
+<P>
+<A NAME="IDX1189"></A>
+
+</P>
+<P>
+A hermitian matrix A can be factorized by similarity
+transformations into the form,
+
+</P>
+
+<PRE>
+A = U T U^T
+</PRE>
+
+<P>
+where U is an unitary matrix and T is a real symmetric
+tridiagonal matrix.
+
+</P>
+
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_hermtd_decomp</B> <I>(gsl_matrix_complex * <VAR>A</VAR>, gsl_vector_complex * <VAR>tau</VAR>)</I>
+<DD><A NAME="IDX1190"></A>
+This function factorizes the hermitian matrix <VAR>A</VAR> into the symmetric
+tridiagonal decomposition U T U^T.  On output the real parts of
+the diagonal and subdiagonal part of the input matrix <VAR>A</VAR> contain
+the tridiagonal matrix T.  The remaining lower triangular part of
+the input matrix contains the Householder vectors which, together with
+the Householder coefficients <VAR>tau</VAR>, encode the orthogonal matrix
+Q. This storage scheme is the same as used by LAPACK.  The
+upper triangular part of <VAR>A</VAR> and imaginary parts of the diagonal are
+not referenced.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_hermtd_unpack</B> <I>(const gsl_matrix_complex * <VAR>A</VAR>, const gsl_vector_complex * <VAR>tau</VAR>, gsl_matrix_complex * <VAR>Q</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>subdiag</VAR>)</I>
+<DD><A NAME="IDX1191"></A>
+This function unpacks the encoded tridiagonal decomposition (<VAR>A</VAR>,
+<VAR>tau</VAR>) obtained from <CODE>gsl_linalg_hermtd_decomp</CODE> into the
+unitary matrix <VAR>U</VAR>, the real vector of diagonal elements <VAR>diag</VAR> and
+the real vector of subdiagonal elements <VAR>subdiag</VAR>. 
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_hermtd_unpack_T</B> <I>(const gsl_matrix_complex * <VAR>A</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>subdiag</VAR>)</I>
+<DD><A NAME="IDX1192"></A>
+This function unpacks the diagonal and subdiagonal of the encoded
+tridiagonal decomposition (<VAR>A</VAR>, <VAR>tau</VAR>) obtained from
+<CODE>gsl_linalg_hermtd_decomp</CODE> into the real vectors <VAR>diag</VAR> and
+<VAR>subdiag</VAR>.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC224" HREF="gsl-ref_toc.html#TOC224">Bidiagonalization</A></H2>
+<P>
+<A NAME="IDX1193"></A>
+
+</P>
+<P>
+A general matrix A can be factorized by similarity
+transformations into the form,
+
+</P>
+
+<PRE>
+A = U B V^T
+</PRE>
+
+<P>
+where U and V are orthogonal matrices and B is a
+N-by-N bidiagonal matrix with non-zero entries only on the
+diagonal and superdiagonal.  The size of <VAR>U</VAR> is M-by-N
+and the size of <VAR>V</VAR> is N-by-N.
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_bidiag_decomp</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>tau_U</VAR>, gsl_vector * <VAR>tau_V</VAR>)</I>
+<DD><A NAME="IDX1194"></A>
+This function factorizes the M-by-N matrix <VAR>A</VAR> into
+bidiagonal form U B V^T.  The diagonal and superdiagonal of the
+matrix B are stored in the diagonal and superdiagonal of <VAR>A</VAR>.
+The orthogonal matrices U and <VAR>V</VAR> are stored as compressed
+Householder vectors in the remaining elements of <VAR>A</VAR>.  The
+Householder coefficients are stored in the vectors <VAR>tau_U</VAR> and
+<VAR>tau_V</VAR>.  The length of <VAR>tau_U</VAR> must equal the number of
+elements in the diagonal of <VAR>A</VAR> and the length of <VAR>tau_V</VAR> should
+be one element shorter.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_bidiag_unpack</B> <I>(const gsl_matrix * <VAR>A</VAR>, const gsl_vector * <VAR>tau_U</VAR>, gsl_matrix * <VAR>U</VAR>, const gsl_vector * <VAR>tau_V</VAR>, gsl_matrix * <VAR>V</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>superdiag</VAR>)</I>
+<DD><A NAME="IDX1195"></A>
+This function unpacks the bidiagonal decomposition of <VAR>A</VAR> given by
+<CODE>gsl_linalg_bidiag_decomp</CODE>, (<VAR>A</VAR>, <VAR>tau_U</VAR>, <VAR>tau_V</VAR>)
+into the separate orthogonal matrices <VAR>U</VAR>, <VAR>V</VAR> and the diagonal
+vector <VAR>diag</VAR> and superdiagonal <VAR>superdiag</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_bidiag_unpack2</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>tau_U</VAR>, gsl_vector * <VAR>tau_V</VAR>, gsl_matrix * <VAR>V</VAR>)</I>
+<DD><A NAME="IDX1196"></A>
+This function unpacks the bidiagonal decomposition of <VAR>A</VAR> given by
+<CODE>gsl_linalg_bidiag_decomp</CODE>, (<VAR>A</VAR>, <VAR>tau_U</VAR>, <VAR>tau_V</VAR>)
+into the separate orthogonal matrices <VAR>U</VAR>, <VAR>V</VAR> and the diagonal
+vector <VAR>diag</VAR> and superdiagonal <VAR>superdiag</VAR>.  The matrix <VAR>U</VAR>
+is stored in-place in <VAR>A</VAR>.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_bidiag_unpack_B</B> <I>(const gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>diag</VAR>, gsl_vector * <VAR>superdiag</VAR>)</I>
+<DD><A NAME="IDX1197"></A>
+This function unpacks the diagonal and superdiagonal of the bidiagonal
+decomposition of <VAR>A</VAR> given by <CODE>gsl_linalg_bidiag_decomp</CODE>, into
+the diagonal vector <VAR>diag</VAR> and superdiagonal vector <VAR>superdiag</VAR>.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC225" HREF="gsl-ref_toc.html#TOC225">Householder solver for linear systems</A></H2>
+<P>
+<A NAME="IDX1198"></A>
+<A NAME="IDX1199"></A>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_HH_solve</B> <I>(gsl_matrix * <VAR>A</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1200"></A>
+This function solves the system A x = b directly using
+Householder transformations. On output the solution is stored in <VAR>x</VAR>
+and <VAR>b</VAR> is not modified. The matrix <VAR>A</VAR> is destroyed by the
+Householder transformations.
+</DL>
+
+</P>
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_HH_svx</B> <I>(gsl_matrix * <VAR>A</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1201"></A>
+This function solves the system A x = b in-place using
+Householder transformations.  On input <VAR>x</VAR> should contain the
+right-hand side b, which is replaced by the solution on output.  The
+matrix <VAR>A</VAR> is destroyed by the Householder transformations.
+</DL>
+
+</P>
+
+
+<H2><A NAME="SEC226" HREF="gsl-ref_toc.html#TOC226">Tridiagonal Systems</A></H2>
+<P>
+<A NAME="IDX1202"></A>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_solve_symm_tridiag</B> <I>(const gsl_vector * <VAR>diag</VAR>, const gsl_vector * <VAR>e</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1203"></A>
+This function solves the general N-by-N system A x =
+b where <VAR>A</VAR> is symmetric tridiagonal.  The form of <VAR>A</VAR> for the
+4-by-4 case is shown below,
+
+</P>
+
+<PRE>
+A = ( d_0 e_0         )
+    ( e_0 d_1 e_1     )
+    (     e_1 d_2 e_2 )
+    (         e_2 d_3 )
+</PRE>
+
+</DL>
+
+<P>
+<DL>
+<DT><U>Function:</U> int <B>gsl_linalg_solve_symm_cyc_tridiag</B> <I>(const gsl_vector * <VAR>diag</VAR>, const gsl_vector * <VAR>e</VAR>, const gsl_vector * <VAR>b</VAR>, gsl_vector * <VAR>x</VAR>)</I>
+<DD><A NAME="IDX1204"></A>
+This function solves the general N-by-N system A x =
+b where <VAR>A</VAR> is symmetric cyclic tridiagonal.  The form of <VAR>A</VAR>
+for the 4-by-4 case is shown below,
+
+</P>
+
+<PRE>
+A = ( d_0 e_0     e_3 )
+    ( e_0 d_1 e_1     )
+    (     e_1 d_2 e_2 )
+    ( e_3     e_2 d_3 )
+</PRE>
+
+</DL>
+
+
+
+<H2><A NAME="SEC227" HREF="gsl-ref_toc.html#TOC227">Examples</A></H2>
+
+<P>
+The following program solves the linear system A x = b. The
+system to be solved is,
+
+</P>
+
+<PRE>
+[ 0.18 0.60 0.57 0.96 ] [x0]   [1.0]
+[ 0.41 0.24 0.99 0.58 ] [x1] = [2.0]
+[ 0.14 0.30 0.97 0.66 ] [x2]   [3.0]
+[ 0.51 0.13 0.19 0.85 ] [x3]   [4.0]
+</PRE>
+
+<P>
+and the solution is found using LU decomposition of the matrix A.
+
+</P>
+
+<PRE>
+#include &#60;stdio.h&#62;
+#include &#60;gsl/gsl_linalg.h&#62;
+
+int
+main (void)
+{
+  double a_data[] = { 0.18, 0.60, 0.57, 0.96,
+                      0.41, 0.24, 0.99, 0.58,
+                      0.14, 0.30, 0.97, 0.66,
+                      0.51, 0.13, 0.19, 0.85 };
+
+  double b_data[] = { 1.0, 2.0, 3.0, 4.0 };
+
+  gsl_matrix_view m 
+    = gsl_matrix_view_array(a_data, 4, 4);
+
+  gsl_vector_view b
+    = gsl_vector_view_array(b_data, 4);
+
+  gsl_vector *x = gsl_vector_alloc (4);
+  
+  int s;
+
+  gsl_permutation * p = gsl_permutation_alloc (4);
+
+  gsl_linalg_LU_decomp (&#38;m.matrix, p, &#38;s);
+
+  gsl_linalg_LU_solve (&#38;m.matrix, p, &#38;b.vector, x);
+
+  printf ("x = \n");
+  gsl_vector_fprintf(stdout, x, "%g");
+
+  gsl_permutation_free (p);
+  return 0;
+}
+</PRE>
+
+<P>
+Here is the output from the program,
+
+</P>
+
+<PRE>
+x = -4.05205
+-12.6056
+1.66091
+8.69377
+</PRE>
+
+<P>
+This can be verified by multiplying the solution x by the
+original matrix A using GNU OCTAVE,
+
+<PRE>
+octave&#62; A = [ 0.18, 0.60, 0.57, 0.96;
+              0.41, 0.24, 0.99, 0.58; 
+              0.14, 0.30, 0.97, 0.66; 
+              0.51, 0.13, 0.19, 0.85 ];
+
+octave&#62; x = [ -4.05205; -12.6056; 1.66091; 8.69377];
+
+octave&#62; A * x
+ans =
+
+  1.0000
+  2.0000
+  3.0000
+  4.0000
+</PRE>
+
+<P>
+This reproduces the original right-hand side vector, b, in
+accordance with the equation A x = b.
+
+</P>
+
+
+<H2><A NAME="SEC228" HREF="gsl-ref_toc.html#TOC228">References and Further Reading</A></H2>
+<P>
+Further information on the algorithms described in this section can be
+found in the following book,
+
+</P>
+
+<UL>
+<LI>
+
+G. H. Golub, C. F. Van Loan, <CITE>Matrix Computations</CITE> (3rd Ed, 1996),
+Johns Hopkins University Press, ISBN 0-8018-5414-8.
+</UL>
+
+<P>
+The LAPACK library is described in,
+
+</P>
+
+<UL>
+<LI>
+
+<CITE>LAPACK Users' Guide</CITE> (Third Edition, 1999), Published by SIAM,
+ISBN 0-89871-447-8.
+
+<A HREF="http://www.netlib.org/lapack"><TT>http://www.netlib.org/lapack</TT></A> 
+</UL>
+
+<P>
+The LAPACK source code can be found at the website above, along
+with an online copy of the users guide.
+
+</P>
+<P>
+The Modified Golub-Reinsch algorithm is described in the following paper,
+
+</P>
+
+<UL>
+<LI>
+
+T.F. Chan, "An Improved Algorithm for Computing the Singular Value
+Decomposition", <CITE>ACM Transactions on Mathematical Software</CITE>, 8
+(1982), pp 72--83.
+</UL>
+
+<P>
+The Jacobi algorithm for singular value decomposition is described in
+the following papers,
+
+</P>
+
+<UL>
+<LI>
+
+J.C.Nash, "A one-sided transformation method for the singular value
+decomposition and algebraic eigenproblem", <CITE>Computer Journal</CITE>,
+Volume 18, Number 1 (1973), p 74--76
+
+<LI>
+
+James Demmel, Kresimir Veselic, "Jacobi's Method is more accurate than
+QR", <CITE>Lapack Working Note 15</CITE> (LAWN-15), October 1989. Available
+from netlib, <A HREF="http://www.netlib.org/lapack/"><TT>http://www.netlib.org/lapack/</TT></A> in the <CODE>lawns</CODE> or
+<CODE>lawnspdf</CODE> directories.
+</UL>
+
+<P><HR><P>
+<p>Go to the <A HREF="gsl-ref_1.html">first</A>, <A HREF="gsl-ref_12.html">previous</A>, <A HREF="gsl-ref_14.html">next</A>, <A HREF="gsl-ref_49.html">last</A> section, <A HREF="gsl-ref_toc.html">table of contents</A>.
+</BODY>
+</HTML>

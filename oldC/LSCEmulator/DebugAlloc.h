@@ -1,0 +1,1 @@
+/*		Debug Allocation Calls		*/#ifndef _DebugAlloc_#define malloc MyAlloc#define free   MyFreevoid PrintMemChain(void);char *MyAlloc(int nBytes);int MyFree (char *ptr);	#define _DebugAlloc_#endif

@@ -1,0 +1,51 @@
+Pipes appear to break pretty often, esp for longer series.  May run
+better with binary data rather than text?
+
+Loop coder needs to rescale threshold estimates back up.
+
+ 1 May 00  ---------------------------------------------------
+
+Try to see if I can get dyn-load method to work for c++ files.  Have
+it running for c files, but not with the addition of STL function
+calls.
+
+Try this method to avoid the breaking pipes.
+
+25 Apr 00  ---------------------------------------------------
+
+Run the new loop encoder in the wavelet application with some test
+data.  Revise the code that formerly called the so-called initial
+adaptive code methods.
+
+24 Apr 00  -----------------------------------------------------
+
+Revise the definitions in thresholding to 'tune' using only
+a vector as input rather than the entire input deque.
+
+Plug Encoder into the wavelet thresholding functions in
+thresholding.cc.  Running OK in the test of the thresholding
+objects.
+
+
+22 Apr 00  -----------------------------------------------------
+
+Work on fixing the interface problems
+
+	- coding with zero and one probabilities set to 1/n^2
+	  (avoids the discontinuity of length near ends)
+	  so have to fix interface of Encoder class.
+
+	- private constructor/friend allow use of empty declaration
+	  to declare an Encoder prior to search for best
+
+
+19 Apr 00  ------------------------------------------------------
+
+Code is running.  Needs tests.
+
+Add monotone codes from lisp testing to cc.
+
+Move the coding functions to coding.cc, coding.h and put just 
+the encoding object that translates coefs to integer codes as 
+the encoder object.
+

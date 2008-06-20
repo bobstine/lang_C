@@ -1,0 +1,34 @@
+Status of C...
+
+
+TODO
+
+* Convert data from column form to row form (opposite of the transpose function).
+
+* Implement sequential version of batch selection.  Make an external recommender that can
+  run 'over' the sequential code, picking the next variable 'endogenously', a sort of 
+  illegal recommender that uses the Y variable to pick it's next choice 'dishonestly.' Seems
+  like it would be easy to just loop over the other variables externally.
+	
+* Port the old batch regression code to use selection weights.  Prefer prior factorization in
+  which there's an engine that adds/evaluates a variable. 
+
+* Test the use of selection weights using MBA exam results.
+
+* Implement selection weights in the logistic regression code.
+
+
+
+DONE
+
+8 Jan 07
+
+   Figure out how to rebuild applications that stand alone. Build products up in the 
+   xcode.build director.  Need to include paths to the header files.  Thought that this 
+   was easier?
+
+5 Jan 07
+
+   Get the data from the last MBA exam into 'JMP format' so that can convert it into a file
+   suitable for running through the sequential regression program, using the selection weights
+   option.
