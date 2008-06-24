@@ -18,7 +18,7 @@
  All IO from these is as a pointer to double, *except* for the input
  vectors which are allowed to be arbitrary iterators.  
       (overall input length = len)  >=   (calculation length = n)
- All data is permuted into a packed form in which 'n' rows are the data used
+ All data is permuted when read into a packed form in which 'n' rows are data used
  in the calculation, and the remaining rows held.  The remaining rows are 
  *only* used when fitted values are requested.
  
@@ -159,7 +159,9 @@ public:
   
   TestResult  f_test_evaluation () const   { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
   TestResult  White_evaluation()           { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()      )); }
-  TestResult  Bennett_evaluation(double m, double M);    // response must be of form m < y < M       
+ 
+  TestResult  Bennett_evaluation()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
+  TestResult  Bennett_evaluation(double m, double M);                               // response must be of form m ² y ² M       
   
   int add_current_predictors ();                         // return size of expanded model
   

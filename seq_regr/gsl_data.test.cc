@@ -1,9 +1,9 @@
-/*
+/* $Id$
  *  gsl_data.test.cc
  *  seq_regr
  *
  *  Created by Robert Stine on 12/14/07.
- *  Copyright 2007 __MyCompanyName__. All rights reserved.
+ *  Copyright 2007. All rights reserved.
  *
  */
 

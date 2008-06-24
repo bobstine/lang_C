@@ -1,5 +1,15 @@
 // $Id: gsl_model.test.cc,v 1.10 2008/01/22 21:15:07 bob Exp $
 
+
+/*
+ 
+ Note that a new data object is used for each regression that is constructed.
+ The regression object uses the data for its own internal purposes and will
+ alter data as it chooses.  Don't try to reuse from one model to another.
+ 
+*/
+
+
 #include "gsl_model.h"
 
 // for simulation
@@ -47,11 +57,12 @@ main (void)
 
   // Use this to fill slot for boolean CV selection  
   constant_iterator<bool> noSelection(true);
+  // This iterator used in setting initial weights in logistic
+  constant_iterator<double> equalWeights (1.0);
   
-  { // Test adding a sequence of variables to a linear regression
-    
-    // Start by building the data.  Then add predictors, one at a time.
-    gslData  theData(y, b, weights, LEN, gslRegression_Max_Q);  // subsetting
+  // Test adding a sequence of variables to a linear regression
+  { // Start by building the data.  Then add predictors, one at a time.
+    gslData  theData(y, b, weights, LEN, gslRegression_Max_Q);            // uses b to subset data
     // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
     LinearModel <gslData, olsEngine> regr(&theData);
     std::cout << regr;
@@ -116,19 +127,17 @@ main (void)
   
   std::cout << "\n\n\n\n  Next test logistic regression   \n\n\n\n";
   
-  { // Test adding a sequence of variables to a logistic regression
-    
+  std::cout << "\n\nTEST: Add sequence of predictors to a logistic regression.\n\n";
+  {  
     // Start by building the data.  Then add predictors, one at a time.
     // Set the initial weights via the constant iterator
-    constant_iterator<double> equalWeights (1.0);
-
     gslData  theData(y, b, equalWeights, LEN, gslRegression_Max_Q); 
     LogisticModel <gslData> regr(&theData);
     std::cout << regr;
     
     // Evaluate a predictor
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.evaluate_predictor(x2);
+    regr.evaluate_predictor(x1);
     std::cout << "TEST: " << regr.f_test_evaluation() << std::endl;
     regr.add_current_predictors();
     std::cout << "TEST: " << regr.maximize_log_likelihood(1);
@@ -136,7 +145,7 @@ main (void)
  
     // Evaluate second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.evaluate_predictor(x1);
+    regr.evaluate_predictor(x2);
     std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
     regr.add_current_predictors();
     std::cout << "TEST: " <<regr.maximize_log_likelihood(1);
@@ -150,23 +159,31 @@ main (void)
     std::cout << "TEST: " <<regr.maximize_log_likelihood(1);
     std::cout << regr;
 
-    // read predictions
-    std::vector<double> preds (LEN);
-    regr.fill_with_predictions (preds.begin());
-    std::cout << "TEST: Predictions are \n" ;
-    std::copy (preds.begin(), preds.begin() + LEN, std::ostream_iterator<double>(std::cout, "\n"));
-    std::cout << std::endl;
+    // read predictions if cut and paste to other application
+    /*
+     std::vector<double> preds (LEN);
+     regr.fill_with_predictions (preds.begin());
+     std::cout << "TEST: Predictions are \n" ;
+     std::copy (preds.begin(), preds.begin() + LEN, std::ostream_iterator<double>(std::cout, "\n"));
+     std::cout << std::endl;
+    */
     
+  }
+  
+  std::cout << "\n\nTEST: Add a bundle of 3 predictors at once.\n\n";
+  { 
+    // Start by building the data.  
+    gslData  theData(y, b, equalWeights, LEN, gslRegression_Max_Q); 
+    LogisticModel <gslData> regr(&theData);
+    std::cout << regr;
     
-    ////  Now with 2 at once
-    LogisticModel <gslData> regr3(&theData);
+    // Add predictors, three at a time.
     std::vector<double*> predictors;
     predictors.push_back(x1);
     predictors.push_back(x2);
-    // nan   predictors.push_back(x3);
-    std::cout << "\nTEST: Evaluate 2 predictors at once.\n";
-    regr3.add_predictors_if_useful(predictors, 0.5);
-    std::cout << regr3 << std::endl;    
+    predictors.push_back(x3);
+    regr.add_predictors_if_useful(predictors, 0.5);
+    std::cout << regr << std::endl;    
     
   }
   

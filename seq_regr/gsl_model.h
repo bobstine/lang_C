@@ -12,6 +12,11 @@
  appropriate summary (SS vs LL) and controlling the fitting process. The data
  object must support the type of calls illustrated in gsl_data.
   
+ The functions write into the data object (via the "live" group of accessors)
+ and will alter variables (typically involved with centering).  The data object
+ is updated to suit the needs of these calculations and is not suitable for
+ long-term store.
+ 
   4 Dec 07 ... Created to support partitioning of linear and logistic models
  */
 

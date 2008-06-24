@@ -315,7 +315,7 @@ gslRegression<Data,Engine>::change_in_rss (gsl_matrix const* sandwich)  const
   gsl_vector_view       tmp (gsl_vector_subvector(mpData->temp_vec(0),0,mDimZ));
   gsl_blas_dsymv(CblasLower, 1.0, zz, c, 0.0, &tmp.vector);   // (Z'Z) c
   double ss;
-  gsl_blas_ddot(c,&tmp.vector,&ss);                           // c' [(Z'Z)c]
+  gsl_blas_ddot(c,&tmp.vector,&ss);                           // c'(Z'Z)c
   return ss;
 }
 
@@ -344,7 +344,7 @@ template <class Data, class Engine>
 void 
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights, gsl_vector const* newY)    // changes the estimates
 {
-  // std::cout << "GSLR: Replacing response in model with = " << mQ << " predictors.\n";
+  // std::cout << "GSLR:  Replacing response in model with = " << mQ << " predictors.\n";
   gsl_vector_memcpy (mpData->live_y(), newY);
   mYBar = 0.0;          // reset in reweighting                                                    
   reweight(newWeights);
@@ -513,7 +513,7 @@ namespace {
   double
   abs_val(double x)
   {
-    if (x >= 0.0) return x; else return -x;
+    return (x >= 0.0) ? x : -x;
   }
   
   double
@@ -524,8 +524,12 @@ namespace {
     if (ax >= ay) return ax; else return ay;
   }
   
+  double 
+  binomialCase(double z, double p) { return p * (1.0 - p); }
+  
+  double    
+  whiteCase(double z, double p) { return z * z; }
 }
-
 
 template <class Data, class Engine>
 std::pair<double,double>
@@ -533,6 +537,10 @@ gslRegression<Data,Engine>::Bennett_evaluation (double m, double M)
 {
   if (mDimZ != 1)
     std::cout << "GSLR: Warning. Bennett evaluation for first Z only. \n";
+  
+  // function that computes variance
+  double (*var) (double, double) (((0 == m) && (1 == M)) ? binomialCase : whiteCase);
+  
   double maxA  (0.0);
   double sumB2 (0.0);
   double absZ  (0.0);
@@ -540,16 +548,17 @@ gslRegression<Data,Engine>::Bennett_evaluation (double m, double M)
   const gsl_vector * z0 (&gsl_matrix_const_column(mZResids,0).vector);
   const double     * pE (gsl_vector_const_ptr(mpData->e(),0));        // current residual
   const double     *pMu (gsl_vector_const_ptr(mpData->Xb(),0));       // current fit
-  compute_fitted_values(mN);                               // only accesses first n
+  
+  compute_fitted_values(mN);                               // only affects first n
+  
   for (int i=0; i<mN; ++i)
   { double fit (pMu[i]);
-    double zi  (gsl_vector_get(z0,i));
-    if (fit <= m)         fit = m + epsilon;
+    double  zi (gsl_vector_get(z0,i));
+    if (fit <= m)         fit = m + epsilon;               // handle values outside boundary
     else if (fit >= M)    fit = M - epsilon;
     absZ = abs_val(zi) * max_abs(fit-m, M-fit);            // largest possible error   
     if (absZ > maxA) maxA = absZ;                          // largest in this column?
-    // sumB2 = sumB2 + pZ[i] * pZ[i] * fit*(1.0 - fit);    // sum_i z_i^2 V_i  binomial variance       
-    sumB2 = sumB2 + zi*zi * pE[i]*pE[i];                   // sum_i z_i^2 e_i^2
+    sumB2 = sumB2 + zi*zi * var(pE[i],fit);                // squared z residual times variance of fit
   }
   double rootZDZ (sqrt(sumB2));
   double Mz      (maxA/rootZDZ);

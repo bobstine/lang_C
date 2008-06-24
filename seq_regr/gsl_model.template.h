@@ -103,7 +103,7 @@ LinearModel<Data,Engine>::print_to    (std::ostream& os) const
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
   os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os);
   if (0 == GSLR::mQ)
-    os << "     Model has no explanatory variables.\n";
+    os << "      Model has no explanatory variables.\n";
   else 
   { gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
@@ -197,8 +197,7 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
   gsl_vector  * wts  (data()->temp_vec(1));      
   gsl_vector  *  ys  (data()->temp_vec(2));     
   std::cout << "LOGM: Maximizing likelihood, starting from " << mLL1 << std::endl;
-  // GSLR::update_XtXinv(); revise this before look at beta norm
-  // iterate until no change in log like or until 10 steps
+  // iterate until no change in log like or until reach max_iterations
   double saveLL (mLL1);
   int iter (0);
   while(iter++ < max_iterations) {
@@ -207,7 +206,8 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
     for (int i=0; i<n(); ++i) {            
       double wi (prob[i]*(1-prob[i]));
       gsl_vector_set(wts,i, wi );
-      gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  }
+      gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  
+    }
     GSLR::reweight(wts, ys);  // calls QR factorization
     mLL1 = calc_log_likelihood();
     std::cout << "LOGM: At step " << iter << "   Log-likelihood = " << mLL1 << ", beta = ";
@@ -284,7 +284,7 @@ LogisticModel<Data>::print_to    (std::ostream& os) const
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
   os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os);
   if (0 == GSLR::mQ)
-    os << "     Model has no explanatory variables.\n";
+    os << "      Model has no explanatory variables.\n";
   else 
   { gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
