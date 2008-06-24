@@ -11,7 +11,10 @@
  *  Copyright 2008. All rights reserved.
  *
  
- The *only* calls that come down from the expert are calls to
+ These streams build the features that actually go into the model.
+ That happens when an expert makes a call for the next feature from one of
+ these streams. In fact, the *only* calls that come down from the expert 
+ are calls to
  
         has_feature()
  
@@ -21,12 +24,13 @@
  
  which must return a feature vector (or else waste the bid).
  Feature streams are a revised version of the old recommender classes. The 
- pop() operator must
+ pop() operator of the stream must
         (a) pop off the top element from the stack
         (b) advance indices/whatever keeps track of the status of the stream
  
  Streams should be lightweight; they will be copied heavily in the auction.  
- Basically act as a stack/queue.
+ Basically act as a stack/queue, a type of iterator really.  The stream 
+ itself does not hold data.   
  
  */
 

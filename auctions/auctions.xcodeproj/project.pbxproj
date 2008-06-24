@@ -624,10 +624,6 @@
 				C448618B0D40FA3700BDEC54 /* experts.cc */,
 				C43BDBBF08C7A0620008DFCF /* bidders.h */,
 				C43BDBB208C7A0620008DFCF /* bidders.cc */,
-				C43BDBBC08C7A0620008DFCF /* recommenders.test.cc */,
-				C43BDBBE08C7A0620008DFCF /* recommenders.h */,
-				C43BDBBD08C7A0620008DFCF /* recommenders.Template.h */,
-				C43BDBB308C7A0620008DFCF /* recommenders.cc */,
 				C441D2790D413B2A002F9158 /* feature_streams.h */,
 				C441D27C0D413B3C002F9158 /* feature_streams.Template.h */,
 				C441D27A0D413B2A002F9158 /* feature_streams.cc */,
@@ -639,9 +635,7 @@
 				C43BDBC708C7A0620008DFCF /* my_features.cc */,
 				C43BDBB508C7A0620008DFCF /* featureABC.h */,
 				C43BDBB408C7A0620008DFCF /* featureABC.cc */,
-				C43BDBC208C7A0620008DFCF /* cache.test.cc */,
-				C43BDBC008C7A0620008DFCF /* cache.h */,
-				C43BDBBA08C7A0620008DFCF /* cache.cc */,
+				C4F320FA0E11A2B0002BCE7D /* Old Code */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -700,6 +694,20 @@
 				C4E388590E0AF11000CE22B3 /* test range */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C4F320FA0E11A2B0002BCE7D /* Old Code */ = {
+			isa = PBXGroup;
+			children = (
+				C43BDBC208C7A0620008DFCF /* cache.test.cc */,
+				C43BDBC008C7A0620008DFCF /* cache.h */,
+				C43BDBBA08C7A0620008DFCF /* cache.cc */,
+				C43BDBB308C7A0620008DFCF /* recommenders.cc */,
+				C43BDBBD08C7A0620008DFCF /* recommenders.Template.h */,
+				C43BDBBE08C7A0620008DFCF /* recommenders.h */,
+				C43BDBBC08C7A0620008DFCF /* recommenders.test.cc */,
+			);
+			name = "Old Code";
 			sourceTree = "<group>";
 		};
 		C6859E8C029090F304C91782 /* Documentation */ = {
