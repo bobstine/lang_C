@@ -20,7 +20,8 @@ OPT = -O2 -DNDEBUG
 
 LDLIBS   = -lgsl -lm 
 
-INCLUDES = -I. -I-
+#
+INCLUDES = -iquote.
 
 
 ###########################################################################
@@ -29,7 +30,7 @@ INCLUDES = -I. -I-
 #
 ###########################################################################
 
-level_0   = print_utils.o stat_utils.o function_utils.o bennett.o normal.o file_utils.o coding.o cyclic_iterator.o gsl_iterator.o operator_traits.o data_registry.o
+level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o
 level_1   = tags.o
 
 ############################################################################
@@ -39,14 +40,14 @@ level_1   = tags.o
 ###########################################################################
 
 cols_to_rows: columns_to_rows.o
-	$(CC) columns_to_rows.o $(LDLIBS) -o $@
+	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
 
 mands: mands.o
-	$(CC) mands.o $(LDLIBS) -o $@
+	$(GCC) mands.o $(LDLIBS) -o $@
 
 cutt: cutt.o
-	$(CC) cutt.o $(LDLIBS) -o $@
+	$(GCC) cutt.o $(LDLIBS) -o $@
 
 ###########################################################################
 

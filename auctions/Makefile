@@ -79,7 +79,6 @@ estimator: estimate.o $(above_infinity)
 	$(CC) $^ $(LDLIBS) -o  $@
 
 #---------------------------------------------
-
 ### Merged files with common over-sampling
 # 						   (1.25 min / 25,000, gosset O2)
 
