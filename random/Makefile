@@ -18,10 +18,6 @@ OPT      = -O2 -DNDEBUG
 
 USES     = utils
 
-# INCLUDES = -I. -I$(C_PATH)/utils -I-
-# LDLIBS   = -lm -lutils
-# LDFLAGS  = -L$(C_PATH)/utils
-
 
 ###########################################################################
 #

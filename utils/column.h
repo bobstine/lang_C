@@ -33,7 +33,8 @@ private:
   double          mAvg;
   double          mMin, mMax;
   int             mUnique;          // number distinct values
-  double*         mBegin, mEnd;     // space managed by someone else; would be nice to manage internally ???
+  double*         mBegin;           // space managed by someone else; would be nice to manage internally ???
+  double*         mEnd;
 
  public:
   ~Column() { }
@@ -56,10 +57,10 @@ private:
   double          min()           const { return mMin; }
   double          max()           const { return mMin; }
   int             unique()        const { return mUnique; }
-  double          element(int i)  const { return *(Ranges::begin(mRange)+i); }
-  double*         begin()         const { return Ranges::begin(mRange); }
-  range<double*>  range()         const { return mRange; }
-  double*         memory()        const { return Ranges::begin(mRange); }
+  double          element(int i)  const { return *(mBegin+i); }
+  double*         begin()         const { return mBegin; }
+  double*         end()           const { return mEnd; }
+  //  double*         memory()        const { return mBegin; }
   
   bool            is_constant()   const { return mUnique == 1; }
   bool            is_dummy()      const { return ((mUnique == 2) && (mMin == 0) && (mMax == 1)); }

@@ -2,6 +2,8 @@
 
 #include "c45_syntax.h"
 
+#include <math.h>   // for sqrt
+
 #include <sstream>
 #include <assert.h>
 #include <iostream>

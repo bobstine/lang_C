@@ -273,12 +273,13 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>52</integer>
-									<integer>51</integer>
+									<integer>16</integer>
+									<integer>1</integer>
+									<integer>0</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 370}, {210, 732}}</string>
+							<string>{{0, 0}, {210, 732}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -313,7 +314,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>range_ops.Template.h</string>
+								<string>range_ops.h</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -321,11 +322,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>range_ops.Template.h</string>
+										<string>range_ops.h</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>C4B479AE0E0D841A0029B081</string>
+										<string>C4D4A6C40E1313DC0088DBD8</string>
 										<key>history</key>
 										<array>
 											<string>C42AC79C0CE4FD0A00B337DB</string>
@@ -348,8 +349,8 @@
 											<string>C426728B0D50FC7C00C2C1BA</string>
 											<string>C42672E20D5123A600C2C1BA</string>
 											<string>C45B72DC0D60FE6F00DCDF99</string>
+											<string>C4D4A6C20E1313DC0088DBD8</string>
 											<string>C45B72E50D60FECD00DCDF99</string>
-											<string>C4BF58DF0E09FE06004F8E7F</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -373,6 +374,7 @@
 											<string>C43F58790D50BA1500531442</string>
 											<string>C43F587A0D50BA1500531442</string>
 											<string>C426728C0D50FC7C00C2C1BA</string>
+											<string>C4D4A6C30E1313DC0088DBD8</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -430,9 +432,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>C4B479AF0E0D841A0029B081</string>
+				<string>C4D4A6C50E1313DC0088DBD8</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>C4B479B00E0D841A0029B081</string>
+				<string>C4D4A6C60E1313DC0088DBD8</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -564,7 +566,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>C4BF58D60E09FE04004F8E7F</string>
 		<string>/Users/bob/C/ranges/ranges.xcodeproj</string>
 	</array>
 	<key>WindowString</key>

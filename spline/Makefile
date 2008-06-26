@@ -16,7 +16,7 @@ PROJECT_NAME = spline
 
 USES = ranges random utils
 
-# OPT = -O2 -DNDEBUG
+OPT = -O2 -DNDEBUG
 
 
 ###########################################################################

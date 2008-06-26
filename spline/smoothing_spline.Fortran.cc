@@ -1358,7 +1358,10 @@ sinerp_(double *abd, int *ld4, int *nk, double *p1ip, double *p2ip, int *ldnk, i
     /* Local variables */
     int  i, j, k;
     double c0 (0.0), c1 (0.0), c2 (0.0), c3 (0.0), wjm1[1], wjm2[2], wjm3[3];
-
+    wjm1[0] = 0.0;
+    wjm2[0] = 0.0; wjm2[1] = 0.0;
+    wjm3[0] = 0.0; wjm3[1] = 0.0; wjm3[2] = 0.0;
+    
     /* Parameter adjustments */
     p2ip_dim1 = *ldnk;
     p2ip_offset = p2ip_dim1 + 1;

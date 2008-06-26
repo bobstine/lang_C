@@ -16,7 +16,8 @@ Column::operator= (Column const& c)
   mMin = c.mMin;
   mMax = c.mMax;
   mUnique = c.mUnique;
-  mRange = make_range(c.mRange);
+  mBegin = c.mBegin;
+  mEnd = c.mEnd;
   init_fields();
   return *this;
 }
@@ -24,8 +25,8 @@ Column::operator= (Column const& c)
 void
 Column::print_to (std::ostream &os) const
 { 
-  double *x(Ranges::begin(mRange));
-  int n(size());
+  double *x (mBegin);
+  int     n (size());
   os << "Column " << mName << " [" << mUnique << "/" << n << ", "
      << mMin << " < " << mAvg << " < " << mMax << "] "
      << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] ;
@@ -34,13 +35,13 @@ Column::print_to (std::ostream &os) const
 void
 Column::init_fields ()
 {
-  double *x = Ranges::begin(mRange);
+  double *x = mBegin;
   if (!x) return;  // nothing to do 
   
   std::set<double> uniq;
   int n (0);
   mMin = mMax = *x;
-  while (x != end(mRange))
+  while (x != mEnd)
   { ++n;
     mAvg += *x;
     if (*x > mMax)

@@ -19,7 +19,7 @@
 void 
 olsEngine::configure (gslData *data)
 { 
-  std::cout << "OLSE: Configuring OLS engine with n = " << mN << std::endl;
+  std::cout << "OLSE: Configuring OLS engine with n = " << mN << " with gslData pointer " << data << std::endl;
 }
 
 

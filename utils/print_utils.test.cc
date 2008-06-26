@@ -11,8 +11,6 @@
 #include "print_utils.h"
 #include "gsl/gsl_vector.h"
 
-// check with gsl iterator
-#include "gsl_iterator.h"
 
 #include <vector>
 #include <iostream>

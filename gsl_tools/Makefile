@@ -24,10 +24,10 @@ EXTERNAL_USES = gsl gslcblas
 #
 ###########################################################################
 
-level_0   = gsl_iterator.o gsl_data.o    gsl_eigen.o    gsl_kalman.o
+level_0   = gsl_iterator.o gsl_data.o    gsl_eigen.o    gsl_kalman.o    column.o   threshold.o
 level_1   = gsl_utils.o gsl_engine.o   
-level_1   = gsl_regr.o
-level_2   = gsl_model.o
+level_2   = gsl_regr.o
+level_3   = gsl_model.o
 
 ############################################################################
 #

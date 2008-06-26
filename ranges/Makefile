@@ -1,13 +1,13 @@
 # $Id: Makefile,v 1.42 2004/10/15 18:30:06 foster Exp $
 
+include ../c_flags
+
 ###########################################################################
 #
 #        Options
 #
 ###########################################################################
 
-all:  sparse_iterator.test.exec     range.test.exec      range_traits.test.exec\
-      function_iterators.test.exec  range_ops.test.exec  range_stats.test.exec
 # make_range.test.exec apl.test.exec
 
 
@@ -16,9 +16,6 @@ PROJECT_NAME = ranges
 OPT      =  -O4  -DNDEBUG
 
 USES = utils random
-
-
-include ../c_flags
 
 
 ###########################################################################
@@ -38,6 +35,8 @@ level_4   = range_stats.o anonymous_iterator.o
 level_5   = vectorize.o  matrix.o
 level_6	  = apl.o
 level_7   = 
+
+all:  sparse_iterator.test.exec     range.test.exec      range_traits.test.exec function_iterators.test.exec  range_ops.test.exec  range_stats.test.exec
 
 pair: pair-test.o
 	$(CC) pair-test.o $(LDLIBS) -o $@

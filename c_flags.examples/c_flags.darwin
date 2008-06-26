@@ -108,8 +108,10 @@ LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 
 #CFLAGS = -g -Wall -I. -D_STLP_DEBUG -USINGLE -W -Woverloaded-virtual -Weffc++ $(OPT) -fmessage-length=0
 CFLAGS = -g -Wall -I. -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0
-CC = g++-4.0 $(INCLUDES) $(LDFLAGS) 
+CC = g++ $(INCLUDES) $(LDFLAGS) 
 
 #
 ##################################################################################################
+
+
 

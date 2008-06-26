@@ -28,8 +28,6 @@ print_stat_summary_table (int k, Iter est, Iter se, std::ostream &os)
 {
   os << "      Estimates :  ";
   
-  double y (*est);
-  
   for (int i=0; i<k; ++i) 
   { double x (est.operator[](i));
     os << std::setw(10) << x << " ";

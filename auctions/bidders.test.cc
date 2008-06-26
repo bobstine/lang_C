@@ -8,7 +8,7 @@
 
 #include "column.h"
 #include "my_features.h"
-#include "feature_factory.h"
+#include "feature_streams.h"
 #include "recommenders.h"
 
 

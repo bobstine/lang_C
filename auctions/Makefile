@@ -5,11 +5,6 @@ include ../c_flags
 ###########################################################################
 #
 #        Options
-#
-#   Examples of depending on libaries.  Add names here
-#        LDLIBS =  -lthing -lregression 
-#   and give the LDFLAGS to local dir if needed
-#        LDFLAGS = -Llib 
 # 
 ###########################################################################
 
@@ -19,7 +14,7 @@ all: $(PROJECT_NAME).test.exec validator
 
 OPT      = -O2 -DNDEBUG
 
-USES = seq_regr spline ranges random utils 
+USES = gsl_tools spline ranges random utils 
 
 EXTERNAL_USES = gsl gslcblas
 
@@ -30,12 +25,11 @@ EXTERNAL_USES = gsl gslcblas
 #
 ###########################################################################
 
-level_0   = cache.o  featureABC.o 
+level_0   = featureABC.o       bidders.o
 level_1   = my_features.o
-level_2   = feature_factory.o
-level_3   = recommenders.o 
-level_4   = bidders.o
-level_5   = auction.o
+level_2   = adapter.o          feature_streams.o
+level_3   = experts.o
+level_4   = auction.o
 
 
 ############################################################################
