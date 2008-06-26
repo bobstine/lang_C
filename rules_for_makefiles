@@ -50,7 +50,7 @@ $(level_9:.o=.test):  $(above_9)
 
 vpath %.a $(patsubst %, ../%, $(USES))
 
-INCLUDES =  -I. $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+INCLUDES = -I. $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
 # names of libraries
 LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm 
 # paths
@@ -94,6 +94,10 @@ speed.test: speed.test.o $(above_infinity)
 	$(CC) $^ $(LDLIBS) -o  $@
 
 %.o: %.cc %.h
+	$(CC) $(CFLAGS) -c $< -o $@ 
+
+# naked version without a header
+%.o: %.cc
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 
