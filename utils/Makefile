@@ -27,7 +27,7 @@ EXTERNAL_USES = gsl
 #
 ###########################################################################
 
-level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o
+level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o
 level_1   = tags.o  column.o
 
 ############################################################################
