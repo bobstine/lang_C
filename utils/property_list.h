@@ -8,7 +8,7 @@
   at least arbitrary in that they are decended from the ABC
   of a property.
 
-  properties are copied into the list (via references) so
+  Properties are copied into the list (via references) so
   make sure that these are light weight.
 
   30 Jun 08 ... Created.
@@ -16,104 +16,129 @@
 */
 
 #include <string>
-#include <set>
+#include <map>
 #include <iostream>   // only debug
 
+class PropertyEnvelope;
 
 // Shell base class that supplies common result for clone
 
-class propertyABC {
+class PropertyABC {
+  // Friend class propertyEnvelope;
+  
+ public:                                                 // protected constructors for envelope only
+  virtual ~PropertyABC() {}
+  virtual PropertyABC* clone() const = 0;
  public:
-  virtual ~propertyABC() {}
-  virtual propertyABC* clone() const = 0;
   virtual void         print_to (std::ostream&) const = 0;
 };
 
 
-// Envelope adds name to abc pointer, handles new(via clone)/delete
-
-class propertyEnvelope {
- private:
-  std::string mName;
-  propertyABC* mProperty;
-
- public:
-  ~propertyEnvelope() { // std::cout << "PRPE: deleteing property " << mName << std::endl;
-                        delete mProperty; }
-  
-  propertyEnvelope  (std::string const& name, propertyABC const& property) : mName (name), mProperty(property.clone()) {}
-  propertyEnvelope  (propertyEnvelope const& pe) : mName(pe.mName), mProperty(pe.mProperty->clone()) {}
-  propertyEnvelope& operator= (propertyEnvelope const& pe) { this->mName = pe.name(); this->mProperty=pe.property()->clone(); return *this; }
-
-  std::string const& name()          const { return mName; }
-  propertyABC const* property()      const { return mProperty; }
-  void rename(std::string newName)         { mName = newName; }
-
-  bool operator< (propertyEnvelope const& p) const { return mName < p.mName; }
-  bool operator==(propertyEnvelope const& p) const { return mName == p.mName; }
-};
-
-std::ostream&
-operator<< (std::ostream &os, propertyEnvelope const& p)
-{
-  os << "property envelope " << p.name() << "(";
-  p.property()->print_to(os);
-  os << ")  ";
-  return os;
-}
-
-
-// generic class of properties
+// Generic class of properties
 
 template<typename T>
-class property : public propertyABC {
+class Property : public PropertyABC {
+  //friend class propertyEnvelope;
  private:
   T const mValue;
   
  public:
-  ~property() {}
+  ~Property() {}
 
-  property (T const& value) : mValue(value) {}
+  Property (T const& value)    : PropertyABC(), mValue(value) {}
+  Property (Property const& p) : PropertyABC(), mValue(p.mValue) {}
   
-  virtual propertyABC*  clone()                    const { return new property<T>(mValue); }  // whoever calls clone resp for delete
-  virtual void          print_to(std::ostream& os) const { os << " " << mValue << " "; }
-  
+  virtual PropertyABC*  clone()           const { return new Property<T>(mValue); }  // whoever *calls* clone resp for delete
+
+ public:
+  virtual void print_to(std::ostream& os) const { os << " " << mValue << " "; }
+  T            value()                    const { return mValue; }         
+
  private:
-  property(property const& p) : mValue(p.mValue) {}
-  property& operator= (property const&);
+  Property& operator= (Property const&);
  };
 
 
-// convenience collection class
 
-class propertyList {
+// Envelope for abc pointer, handles new(via clone)/delete
+
+class PropertyEnvelope {
+ private:
+  PropertyABC* mpProperty;
+
+ public:
+  ~PropertyEnvelope() { // std::cout << "PRPE: deleteing property " << mName << std::endl;
+                        if (mpProperty) delete mpProperty; }
+  PropertyEnvelope() : mpProperty(0) {}
+
+  // from other properties
+  PropertyEnvelope  (PropertyEnvelope const& pe)  : mpProperty(pe.clone_property()) {}
+  PropertyEnvelope& operator= (PropertyEnvelope const& pe) { this->mpProperty=pe.clone_property(); return *this; }
+
+  // from data
+  template <typename T>
+    PropertyEnvelope (T const& value): mpProperty(new Property<T>(value)) {}
+
+  PropertyABC const* property()      const { return mpProperty; }
 
  private:
-  std::set<propertyEnvelope> mSet;
-  property<int> mKey;
-  
- public:
-  typedef std::set<propertyEnvelope>::const_iterator iterator;
-  
-  ~propertyList () { };
-  propertyList (): mSet(), mKey(0) { }
-
-  int  size()                             const { return mSet.size(); }
-  iterator begin()                        const { return mSet.begin(); }
-  iterator end()                          const { return mSet.end(); }
-  bool has_item (std::string const& name) const { propertyEnvelope key(name, mKey); return mSet.find(key) != mSet.end(); }
-  void insert(propertyEnvelope pe)       { mSet.insert(pe); }
+  PropertyABC* clone_property()      const { return (mpProperty) ? mpProperty->clone() :  0; }
 };
 
+
 std::ostream&
-operator<< (std::ostream &os, propertyList const& pl)
+operator<< (std::ostream &os, PropertyEnvelope const& p)
 {
-  os << "PRPL:  size " << pl.size() << std::endl;
-  for (propertyList::iterator it (pl.begin()); it != pl.end(); ++it)
-    os << "      " << *it << std::endl;
+  os << "property envelope (";  p.property()->print_to(os);  os << ")  ";
   return os;
 }
-  
+
+
+// Convenience collection class
+
+class PropertyList: public std::map<const std::string, PropertyEnvelope> {};
+
+std::ostream&
+operator<< (std::ostream &os, PropertyList const& pl)
+{
+  os << "PRPL:  size " << pl.size() << std::endl;
+  for (PropertyList::const_iterator it (pl.begin()); it != pl.end(); ++it)
+    os << "      " << it->first << std::endl;
+  return os;
+}
+
+// Convenience accessor
+
+template <typename T>
+T
+extract_value_of_property(std::string const& name, T const&, PropertyList const& properties)
+{
+  PropertyList::const_iterator it (properties.find(name));
+  if (it == properties.end()) {
+    std::cout << "PRPL: Warning.  Property " << name << " was not found.\n";
+    return T(0);
+  }
+  PropertyABC const* p  (it->second.property());
+  Property<T> const* px (0);
+  //  std::cout << "PRPL: Type of src is " << typeid(*p).name();
+  try
+    {
+      px = dynamic_cast< Property<T> const* >(p);
+    }
+  catch (std::bad_cast)
+    { std::cout << "BAD_CAST: Error attempting cast; return 0.\n";
+    }
+  catch (...)
+    { std::cout << "ERROR: unknown exception encountered in extracting value from property list.\n";
+    }
+  if(px)
+    return px->value();
+  else {
+    std::cout << "PRPL: Cast in extraction from property list failed; return 0.\n";
+    return T(0);
+  }
+}
+
   
 
 

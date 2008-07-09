@@ -7,34 +7,53 @@
 
 int  main()
 {
-  std::cout << "\n\nTest program is starting... \n\n";
+  std::cout << "\n\nTEST: Test program is starting... \n\n";
   
-  property<double>      propDouble0(6.0);
-  property<double>      propDouble1(6.1);
-  property<double>      propDouble2(6.2);
-  property<int>         propInteger(1);
-  property<std::string> propString("String 1");
-  
-  propertyList properties;
-  
-  properties.insert(propertyEnvelope("str 1"   , propString));
-  std::cout << "TEST: inserted first string property.\n";
+  PropertyList properties;
 
-  properties.insert(propertyEnvelope("double 0", propDouble0));
-  properties.insert(propertyEnvelope("double 1", propDouble1));
-  properties.insert(propertyEnvelope("double 2", propDouble2));
-  properties.insert(propertyEnvelope("int",      propInteger));
+  std::string key;
+  std::string str1 ("string 1");
+  std::string str2 ("string 2");
+
+  std::cout << "TEST: about to insert a string.\n";
+  properties["STR1"] = str1;
+  std::cout << "TEST: inserted one string property.\n";
+  properties["STR2"] = str2;
+  std::cout << "TEST: inserted two string properties.\n";
+
+  properties["DBL0"]= (double) 0.0;
+  properties["DBL1"]= (double) 1.0;
+  properties["DBL2"]= (double) 2.2;
+  properties["INT1"]= (int)      1;
   
-  std::cout << "TEST: test property list (which is a set) has " << properties.size() << " elements.\n";
+  std::cout << "TEST: test property list (which is a map) has " << properties.size() << " elements.\n";
   
   std::cout << properties << std::endl;
 
-  if (properties.has_item("double 2"))
-    std::cout << "Found\n";
-  else
-    std::cout << "Property was not found.\n";
 
-  if (properties.has_item("another"))
+  double xx (0.0);
+  std::cout << "TEST: extracted " <<
+    extract_value_of_property("NONE", xx, properties) << std::endl;
+
+  std::cout << "TEST: extracted " <<
+    extract_value_of_property("STR1", xx, properties) << std::endl;
+
+  std::cout << "TEST: extracted " <<
+    extract_value_of_property("DBL1", xx, properties) << std::endl;
+
+    {
+    PropertyList::iterator it (properties.find("DBL2"));
+    if (it != properties.end()) {
+      PropertyABC const* p (it->second.property());
+      std::cout << "Found ";
+      Property<double> const* px = dynamic_cast< Property<double> const* >(p);
+      std::cout << " with value " << px->value() << std::endl;
+    }
+    else
+      std::cout << "Property was not found.\n";
+  }  
+
+  if (properties.find("another") != properties.end())
     std::cout << "Found\n";
   else
     std::cout << "Property was not found.\n";
