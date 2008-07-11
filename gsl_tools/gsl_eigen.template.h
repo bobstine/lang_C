@@ -56,7 +56,7 @@ gslRKHS<Kernel>::operator()(gsl_matrix * srcData) const
   double evalBound (1.0);
   if (mNumComponents>0) evalBound = gsl_vector_get(eVals,mNumComponents);
   std::cout << "GSLE: SD of RKHS basis elements are ";
-  for (int j=0; gsl_vector_get(eVals,j)>evalBound && j<eVecs->size2; ++j)
+  for (int j=0; gsl_vector_get(eVals,j)>evalBound && j<(int)eVecs->size2; ++j)
   { gsl_vector* coefj (&gsl_matrix_const_column(eVecs,j).vector);
     gsl_vector* pcj   (gsl_vector_alloc(n));
     gsl_blas_dgemv(CblasNoTrans, 1.0, dist, coefj, 0.0, pcj);

@@ -1,3 +1,4 @@
+// -*- c++ -*-
 // $Id: gsl_engine.h,v 1.13 2008/01/07 04:06:38 bob Exp $
 #ifndef _GSL_ENGINE_H_
 #define _GSL_ENGINE_H_
@@ -89,6 +90,7 @@ public:
 
   void   prepare_vector_for_analysis (gsl_vector *dest, gsl_vector const* src)                 const;
   void   insert_analysis_matrix      (gsl_matrix *dest, gsl_matrix const* src)                 const;
+  void   unweight                    (gsl_vector *vec)                                         const;
    
   void   blas_ddot (gsl_vector const* x, gsl_vector const* y, double *dp)                      const;
   void   blas_dsyr (gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz)                 const;
@@ -107,6 +109,7 @@ private:
   
   wlsEngine& operator=(const wlsEngine& engine);
 };
+
 /*
 namespace gsl_engine { // avoid conflict with gsl_regression operator<< 
 
@@ -118,4 +121,5 @@ namespace gsl_engine { // avoid conflict with gsl_regression operator<<
 
 }
 */
+
 #endif

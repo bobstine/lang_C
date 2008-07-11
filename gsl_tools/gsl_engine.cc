@@ -175,6 +175,11 @@ wlsEngine::prepare_vector_for_analysis (gsl_vector *dest, gsl_vector const* src)
   gsl_vector_mul(&(gsl_vector_subvector(dest,0,mN).vector), mSqrtW);
 }
 
+void
+wlsEngine::unweight (gsl_vector *vec) const
+{
+  gsl_vector_div(&(gsl_vector_subvector(vec,0,mN).vector), mSqrtW);
+}
 
 void 
 wlsEngine::blas_ddot(gsl_vector const* x, gsl_vector const* y, double *dp) const

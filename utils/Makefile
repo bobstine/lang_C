@@ -18,6 +18,8 @@ PROJECT_NAME = utils
 
 OPT = -O2 -DNDEBUG
 
+USES = ranges
+
 EXTERNAL_USES = gsl
 
 
@@ -27,7 +29,7 @@ EXTERNAL_USES = gsl
 #
 ###########################################################################
 
-level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o
+level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o
 level_1   = tags.o  column.o
 
 ############################################################################
@@ -39,6 +41,9 @@ level_1   = tags.o  column.o
 cols_to_rows: columns_to_rows.o
 	$(CC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
+
+transpose: transpose.o column.o 
+	g++ $(CFLAGS) $(INCLUDES) transpose.o column.o -o $@
 
 mands: mands.o
 	$(CC) mands.o $(LDLIBS) -o $@

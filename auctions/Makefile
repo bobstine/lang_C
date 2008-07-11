@@ -10,7 +10,7 @@ include ../c_flags
 
 PROJECT_NAME = auction
 
-all: $(PROJECT_NAME).test.exec validator
+all: $(PROJECT_NAME).test validator
 
 OPT      = -O2 -DNDEBUG
 
@@ -42,8 +42,8 @@ include ../rules_for_makefiles
 
 auction_test: model/costs
 
-quick_test: auction.test.exec 
-	./auction.test.exec -f test/bank_post45.dat,test2.dat -r 100 -c 5
+quick_test: auction.test
+	./auction.test -f test/bank_post45.dat,test2.dat -r 100 -c 5
 	cat test/bank_post45.n_rows test/bank_post45.rows > model/test.dat
 
 model/costs: model/test.dat model/auction.model estimator validator
@@ -51,7 +51,7 @@ model/costs: model/test.dat model/auction.model estimator validator
 	./validator -f test/bank_post45.rows -n test/bank_post45.names -m model/auction.model -o model/costs
 
 model/auction.model model/test.dat: auction.test.exec 
-	./auction.test.exec -f test/bank_post45.dat -r 100 -c 5
+	./auction.test -f test/bank_post45.dat -r 100 -c 5
 	cat test/bank_post45.n_rows test/bank_post45.rows > model/test.dat
 
 c45_parser:
@@ -97,7 +97,7 @@ merge%.dat: big%.data big%.names small%.data small%.names
 	c45_parser --input=big$* --raw-data   > data/$@              # can use small here and re-estimate
 	ln -s data/$@ $@
 
-# ___.rows is row-oriented, transposed format
+# *.rows is row-oriented, transposed format
 
 est%.rows: data/merge%.rows
 	-rm -f est$*.rows

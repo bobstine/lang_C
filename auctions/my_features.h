@@ -99,8 +99,7 @@ class gslVectorFeature : public FeatureABC
 public:
   
     gslVectorFeature(std::string name, gsl_vector const* v)
-    : FeatureABC(v->size), mName(name), mVector(v), mUnique(0), 
-      mAvg(0.0), mMin(0.0), mMax(0.0) { initialize(); }
+      : FeatureABC(v->size), mVector(v), mName(name), mUnique(0), mAvg(0.0), mMin(0.0), mMax(0.0) { initialize(); }
   
   std::string class_name()     const { return "gslVectorFeature"; }
   std::string name()           const { return mName; }

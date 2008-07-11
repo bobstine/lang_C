@@ -68,7 +68,7 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (double alpha, BidHistory const& history) const { return alpha/mStream.number_remaining(); }
+  double bid (double alpha, BidHistory const&) const { return alpha/mStream.number_remaining(); }
   
 }; 
 
@@ -87,7 +87,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (double alpha, BidHistory const& history) const { return alpha * mRate; }
+  double bid (double alpha, BidHistory const&) const { return alpha * mRate; }
 
 };
 

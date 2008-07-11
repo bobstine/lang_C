@@ -33,7 +33,7 @@ template<class Source>
 bool
 InteractionStream<Source>::has_feature() const
 {
-  return (mPos2 < mSource.size());
+  return (mPos2 < (int)mSource.size());
 }
 
 
@@ -63,7 +63,6 @@ template<class Source>
 typename Features::FeatureVector
 InteractionStream<Source>::pop()
 {
-  bool skip (true);
   while ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())  ||
           (mSource[mPos1]->is_constant())  ||
           (mSource[mPos2]->is_constant())  )
@@ -185,11 +184,11 @@ BundleStream<Source, Pred, Trans>::has_feature()
     mBundle.clear();
   }
   // add as much to the bundle as possible from the current source
-  while ((mBundle.size()<mBundleSize) && (mPos<mSource.size()) && mPredicate(mSource[mPos]))
+  while (((int)mBundle.size()<mBundleSize) && (mPos<(int)mSource.size()) && mPredicate(mSource[mPos]))
   { mBundle.push_back(mSource[mPos]);
     ++mPos;
   }
-  return (mBundle.size() == mBundleSize);
+  return ((int)mBundle.size() == mBundleSize);
 }
  
 template <class Method>

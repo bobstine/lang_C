@@ -1,4 +1,4 @@
-/*
+/* -*- c++ -*- 
  *  gsl_model.Template.h
  *  seq_regr
  *
@@ -118,6 +118,8 @@ LinearModel<Data,Engine>::print_to    (std::ostream& os) const
 }
 
 
+
+
 //////////  Logistic     Logistic     Logistic     Logistic     Logistic     Logistic     Logistic     
 
 template <class Data>
@@ -148,13 +150,25 @@ std::pair<double,double>
 LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
 {
   std::pair<double,double> result;
-  // first check to see if pass an initial loose score test with inflated threshold
-  evaluate_predictors(c);
-  result = GSLR::f_test_evaluation();
-  if (result.second > 3 * pToEnter)  { return result;  }
+  // use bennett to screen before revising likelihood
+  // note that logistic regression has pseudo-y as the response, pseudo-resids as the residuals
+  evaluate_predictors(c);   // leaves centered vars in Z, sweeps X and weights  Zres, and leaves (Zres)'W(Zres) in mZZ
+  // call bennett
+  const double     *pMu (estimated_probability(GSLR::mN));
+  std::cout << "TEST: in adding_predictors_if_useful; pMu[0] = " << pMu[0] << std::endl;
+  // need to unweight Z's
+  gsl_vector       *pZv (gsl_vector_alloc(GSLR::mN));
+  gsl_vector const* pZ0 (&gsl_matrix_const_column(GSLR::mZResids,0).vector);// includes weights
+  gsl_vector_memcpy(pZv, pZ0);
+  GSLR::mEngine.unweight(pZv);
+  const double     * pZ (gsl_vector_const_ptr(pZv,0));
+  const double     * pY (gsl_vector_const_ptr(mOriginalY,0));        
+  result = GSLR::Bennett_evaluation(pZ, pY, pMu, 0, 1);                     //  result = GSLR::f_test_evaluation();
+  std::cout << "TEST: bennett returns " << result.first << " " << result.second << std::endl;
+  if (result.second > pToEnter)  { return result;  }
   std::cout << "LOGM: Predictor passes initial evaluation; p-value " << result.second << " <  3 * " << pToEnter << std::endl;
   // if passes, then maximize likelihood with it included
-  gslRegressionState state (GSLR::state());  // save in case need to back out
+  gslRegressionState state (GSLR::state());                           // save in case need to back out
   GSLR::add_current_predictors();
   result = maximize_log_likelihood(1); 
   if (result.second > pToEnter)  
@@ -162,6 +176,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
     GSLR::restore_state(state);
   } 
   else std::cout << "LOGM: Predictor improves likelihood; added to model\n";
+  gsl_vector_free(pZv);
   return result;
 }
 
@@ -203,13 +218,14 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
   while(iter++ < max_iterations) {
     double log_like_0 (mLL1); 
     std::transform(xb, xb+n(), prob, Function_Utils::LogisticNeg());  // 1/(1+e(-x))
-    for (int i=0; i<n(); ++i) {            
-      double wi (prob[i]*(1-prob[i]));
+    for (int i=0; i<n(); ++i) {
+      double pi (prob[i]);
+      double wi (pi*(1.0-pi));
       gsl_vector_set(wts,i, wi );
-      gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  
+      gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  // pseudo-y response
     }
-    GSLR::reweight(wts, ys);  // calls QR factorization
-    mLL1 = calc_log_likelihood();
+    GSLR::reweight(wts, ys);        // calls QR factorization, pseudo-y residuals
+    mLL1 = calc_log_likelihood();   
     std::cout << "LOGM: At step " << iter << "   Log-likelihood = " << mLL1 << ", beta = ";
     for(int j=0; j<GSLR::mQ; ++j) std::cout << gsl_vector_get(GSLR::mBeta,j) << " ";  
     std::cout << std::endl;

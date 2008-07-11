@@ -1,3 +1,4 @@
+// -*- c++ -*-
 // $Id: gsl_regr.h,v 1.48 2008/01/16 03:28:08 bob Exp $
 
 #ifndef _GSL_REGR_H_
@@ -16,33 +17,37 @@
 /*
  The GSL regression object acts as an API to the GSL matrix routines.
  All IO from these is as a pointer to double, *except* for the input
- vectors which are allowed to be arbitrary iterators.  
-      (overall input length = len)  >=   (calculation length = n)
- All data is permuted when read into a packed form in which 'n' rows are data used
- in the calculation, and the remaining rows held.  The remaining rows are 
+ vectors which are allowed to be arbitrary iterators.  (overall input
+ length = len) >= (calculation length = n) All data is permuted when
+ read into a packed form in which 'n' rows are data used in the
+ calculation, and the remaining rows held.  The remaining rows are
  *only* used when fitted values are requested.
  
- Fitted values are computed in a lazy fashion when the function fitted_values
- is called.  Otherwise, the items Xb in data may not be current.
+ Fitted values are computed in a lazy fashion when the function
+ fitted_values is called.  Otherwise, Xb may not be current.
  
- The style of calculation is to evaluate predictors in two stages. When the
- predictors are not in the model (Z), use a fast method based on the QR 
- factorization of current model and ratios of sums of squares. If Z is 
- added to the model, update the QR factorization to add these columns.
+ The calculation evaluate predictors in two stages. When the
+ predictors are not in the model (Z), use a fast method based on the
+ QR factorization of current model and ratios of sums of
+ squares. Bennett testing is possible at this step since the weights
+ are those of the prior iteration; we can thus do a version of the
+ partial regression test. Once Z is added to the model, update the QR
+ factorization to add these columns.
  
- For weighted analysis, only the QR terms are weighted so that have the ability
- to reweight.  Thus sweep on X uses QR, not the mX matrix (which is not weighted).
- Similarly, residuals have been weighted, but not Y.  X and Y are only centered
- which can be corrected when weights change.
+ For weighted analysis, only the QR terms are weighted so that have
+ the ability to reweight.  Thus sweep on X uses QR, not the mX matrix
+ (which is not weighted).  Similarly, residuals have been weighted,
+ but not Y.  X and Y are only centered which can be corrected when
+ weights change.
 
- This class is made to handle selection weighting, as in APL's compression
- vector for reduction.  Other types of weighting must be handled externally.
- If no selection weights are supplied, the full range is used, with n set
- to the length of the input response.  
+ This class is made to handle selection weighting, as in APL's
+ compression vector for reduction.  Other types of weighting must be
+ handled externally.  If no selection weights are supplied, the full
+ range is used, with n set to the length of the input response.
  
- All selection subsetting is handled in the gslData object that is kept in the
- model. The data used in the gslRegression is of length n, the length of data
- to be used in calculations.
+ All selection subsetting is handled in the gslData object that is
+ kept in the model. The data used in the gslRegression is of length n,
+ the length of data to be used in calculations.
  
  Shapes:
        X and Z held in usual form, with one row per case
@@ -54,8 +59,8 @@
   10 Dec 02 ... Created to support new model code, with added iterators.
 */
 
-const int gslRegression_Max_Q (127)  ; // default max size of the model
-const int gslRegression_Max_P ( 15)  ; // max number to evaluate for adding
+const int gslRegression_Max_Q (255)  ; // default max size of the model
+const int gslRegression_Max_P ( 31)  ; // max number to evaluate for adding
 
 // State preserves enough information to return to a prior phase in the analysis
 
@@ -106,6 +111,7 @@ protected:
   double        mYBar;
   gsl_vector   *mXBar;
   gsl_matrix   *mXtXinv;
+  gsl_matrix   *mZResids;                 // residuals after sweeping X from z vector
   
 private:
   gsl_matrix *mQR;                        // current QR factorization, centered and weighted as needed
@@ -114,7 +120,6 @@ private:
   gsl_vector *mC;                         // partial slope of e on z
   gsl_matrix *mGammaZ;                    // slopes for sweeping X from Z, one column for each X
   gsl_matrix *mZ;                         // new predictors Z, held as (mN x mDimZ)
-  gsl_matrix *mZResids;                   // residuals after sweeping X from z vector
   gsl_vector *mZE;
   gsl_vector *mZBar;                      // covariances      
   gsl_matrix *mZZ, *mZX;        
@@ -161,9 +166,9 @@ public:
   TestResult  White_evaluation()           { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()      )); }
  
   TestResult  Bennett_evaluation()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
-  TestResult  Bennett_evaluation(double m, double M);                               // response must be of form m ² y ² M       
-  
-  int add_current_predictors ();                         // return size of expanded model
+  TestResult  Bennett_evaluation(double m, double M);                               // response must be of form m <= y <= M       
+  TestResult  Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M); // num is dot of z'(y-mu)
+  int add_current_predictors ();                                                    // return size of expanded model
   
   //  save and restore state
   gslRegressionState state() const { return gslRegressionState(mQ, mYBar, mBeta, mRSS, mpData); }
@@ -171,7 +176,7 @@ public:
   
   //  printing and output
   void print_header_to (std::ostream &os)       const;
-  void print_to (std::ostream &os, int depth=0) const;    // depth controls printing of y,x observations
+  void print_to (std::ostream &os, int depth=0) const;                              // depth controls printing of y,x observations
   void write_data_to (std::ostream &os)         const;
   
   // -------------------------------------------------------------------------

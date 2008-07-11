@@ -24,7 +24,7 @@ EXTERNAL_USES = gsl gslcblas
 #
 ###########################################################################
 
-level_0   = gsl_iterator.o gsl_data.o    gsl_eigen.o    gsl_kalman.o    column.o   threshold.o
+level_0   = gsl_iterator.o gsl_data.o    gsl_eigen.o    gsl_kalman.o
 level_1   = gsl_utils.o gsl_engine.o   
 level_2   = gsl_regr.o
 level_3   = gsl_model.o
@@ -39,9 +39,6 @@ include ../rules_for_makefiles
 
 seq_regr: seq_regr_cmd.o $(above_infinity)
 	g++ $(CFLAGS) $(INCLUDES) seq_regr_cmd.o $(above_infinity) -o $@
-
-transpose: transpose.o column.o 
-	g++ $(CFLAGS) $(INCLUDES) transpose.o column.o -o $@
 
 # Analysis
 # bank_small is test file with y + 20 predictors
@@ -68,7 +65,7 @@ time:   bank_small.dat log_regr.test.exec c45_syntax.test.exec
 	time cat bank_small.dat | log_regr.test.exec  -p .5       # was .01 for runs
 
 jmp_test: test/lregr.dat log_regr.test.exec                       # cmp to JMP results from test.jmp
-	log_regr.test.exec -f test/lregr.dat -p .3                # signs should be reversed from JMP, but rest agree
+	log_regr.test -f test/lregr.dat -p .3                     # signs should be reversed from JMP, but rest agree
 
 
 # All run under emacs, 50 preds,  iMacG4 school

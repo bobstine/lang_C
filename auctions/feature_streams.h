@@ -206,7 +206,7 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 //               This stream transforms a "bundle" of features identified 
 //               in a source, in this case into a subset of eigenvectors.
 //
-//               The stream waits until it obtains a bundle that satisfy the input
+//               The stream waits until it obtains a bundle that satisfies the input
 //               predicate of the indicated size, the applies a transformation.
 //               These classes should act like these:
 //                    std::unary_function<Features::FeatureVector,Features::FeatureVector> Transformation;
@@ -244,8 +244,9 @@ public:
 };
 
 template <class Source, class Pred, class Trans>
-BundleStream<Source,Pred,Trans>
-make_bundle_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
+  inline 
+  BundleStream<Source,Pred,Trans>
+  make_bundle_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
 {
   return BundleStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans);
 }

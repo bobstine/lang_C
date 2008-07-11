@@ -7,11 +7,11 @@
  *
 
 Experts combine the features of a bidder with those of a stream.  The expert
-serves as a host class, enforced certain procedural rules.  It's up to the user
+serves as a host class, enforcing certain procedural rules.  It's up to the user
 to make sure that the bidder and stream are compatible.
 
 A bidder assigns a bid to the output of a stream of candidate features that can be 
-used as explanatory variables in the auction.  Each recommender includes a typedef of
+used as explanatory variables in the auction.  Each stream includes a typedef of
 its result type.  Some will be features, some will be collections of features.  The
 expert never holds the features explicitly.  It leaves them in the stream until a bid
 is accepted and then it pops the feature off of the stream.
@@ -34,8 +34,9 @@ protected:
   BidHistory  mBidHistory;
   
 public:
-    ~ ExpertABC () { }
-  ExpertABC(double alpha)
+  virtual ~ExpertABC () { }
+  
+ ExpertABC(double alpha)
     : mAlpha(alpha), mCurrentBid(0.0), mBidHistory() { }
   
   double                alpha()        const { return mAlpha; }
@@ -48,7 +49,6 @@ public:
   virtual std::string             name()         const = 0;
   virtual Features::FeatureVector features()           = 0;
   virtual double                  get_new_bid()        = 0;
-
 };
 
   
@@ -61,6 +61,8 @@ private:
   Stream      mStream;
   
 public:
+  virtual ~Expert () { };
+  
   Expert (double alpha, Bidder b, Stream s)
     : ExpertABC(alpha), mBidder(b), mStream(s) { }
   
@@ -73,11 +75,7 @@ public:
 
 protected:
   double              max_bid ()     const { return mAlpha/(1.0-mAlpha); }
-  
 };
-
-
-
 
 
 inline
@@ -92,7 +90,7 @@ inline
 std::ostream&
 operator<< (std::ostream& os, std::vector<ExpertABC*> const& experts)
 {
-  for (int i=0; i<experts.size(); ++i)
+  for (int i=0; i<(int)experts.size(); ++i)
     os << "      " << experts[i] << std::endl;
   return os;
 }

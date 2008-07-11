@@ -31,7 +31,8 @@ gslData::allocate(int nr, int nc, bool wts)
   mScratch = new double[gslDataTempSize*gslDataTempSize];
   for (int j=0; j< gslDataTempSize; ++j)
     mTempVec.push_back(gsl_vector_alloc(nr));
-  mWeights = gsl_vector_alloc(nr);    
+  if (wts) mWeights = gsl_vector_alloc(nr);
+  else     mWeights = 0;
 }
 
 void

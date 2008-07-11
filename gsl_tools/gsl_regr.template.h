@@ -1,4 +1,5 @@
-/*  $Id: gsl_regr.template.h,v 1.29 2008/01/16 03:28:08 bob Exp $
+/*   -*- c++ -*-
+     $Id: gsl_regr.template.h,v 1.29 2008/01/16 03:28:08 bob Exp $
 
  *  Created by Robert Stine on 12/12/05.
  *  Copyright 2005. All rights reserved.
@@ -53,7 +54,7 @@ gslRegression<Data,Engine>::evaluate_predictors(C predictor_collection)
   mDimZ = predictor_collection.size();
   for (int j=0; j<mDimZ; ++j)
   { // save centered new predictors into X without increasing mQ in case need later
-    int qj = mQ + j;                        // offset from current model predictors
+    int qj = mQ + j;                                               // offset from current model predictors
     gsl_vector_view vXj (gsl_matrix_column(mpData->live_x(),qj));
     mpData->permuted_copy_from_iterator(predictor_collection[j], &vXj.vector);
     // centers *all* mLen cases using mean from first n
@@ -93,25 +94,23 @@ void
 gslRegression<Data,Engine>::sweep_x_from_z_into_zres() 
 {
   // copy centered Z into Z res
-  gsl_matrix_const_view   vZ  (gsl_matrix_const_submatrix(mZ, 0,0, mN, mDimZ));
-  gsl_matrix_view       vZRes (gsl_matrix_submatrix(mZResids, 0,0, mN, mDimZ));
-  gsl_matrix            *zres (&vZRes.matrix);
+  gsl_matrix  const*   z  (&gsl_matrix_const_submatrix(mZ, 0,0, mN, mDimZ).matrix);
+  gsl_matrix       *zres  (&gsl_matrix_submatrix(mZResids, 0,0, mN, mDimZ).matrix);
   if (mQ == 0) // dont need to sweep anything since only mean in model (weight for WLS)
-    mEngine.insert_analysis_matrix (zres, &vZ.matrix);
+    mEngine.insert_analysis_matrix (zres, z);
   else
   { // regress each Z on X, leaving coefs in gamma; row j holds coefs of z_j on X
     // Z is centered as is X, so no intercept in gamma = z'x (x'x)i
-    gsl_matrix_view       vG     (gsl_matrix_submatrix (mGammaZ, 0,0, mDimZ, mQ)); 
-    gsl_matrix            *g     (&vG.matrix);
-    gsl_matrix_const_view vQR    (gsl_matrix_const_submatrix(mQR, 0,0, mN, mQ));
-    gsl_vector_const_view vTau   (gsl_vector_const_subvector(mTau, 0, mQ));
-    gsl_vector            *Zj    (gsl_vector_alloc(mN)); 
+    gsl_matrix      *   g   (&gsl_matrix_submatrix (mGammaZ, 0,0, mDimZ, mQ).matrix); 
+    gsl_matrix const*  qr   (&gsl_matrix_const_submatrix(mQR, 0,0, mN, mQ).matrix);
+    gsl_vector const* tau   (&gsl_vector_const_subvector(mTau, 0, mQ).vector);
+    gsl_vector      *  Zj   (gsl_vector_alloc(mN)); 
     for(int j = 0; j<mDimZ; ++j)
-    { gsl_vector_const_view vZj  (gsl_matrix_const_column (&vZ.matrix,j));
+    { gsl_vector_const_view vZj  (gsl_matrix_const_column (z,j));
       gsl_vector_view       vZRj (gsl_matrix_column (zres, j));
       gsl_vector_view       vGj  (gsl_matrix_row (g,j));
       mEngine.prepare_vector_for_analysis(Zj, &vZj.vector);
-      gsl_linalg_QR_lssolve (&vQR.matrix, &vTau.vector, Zj, &vGj.vector, &vZRj.vector);
+      gsl_linalg_QR_lssolve (qr, tau, Zj, &vGj.vector, &vZRj.vector);
     }
     gsl_vector_free(Zj);
   }
@@ -150,10 +149,8 @@ template <class Data, class Engine>
 void   
 gslRegression<Data,Engine>::compute_cross_products_z()
 {
-  gsl_vector_view       vZe (gsl_vector_subvector(mZE,0,mDimZ));
-  gsl_vector            *ze (&vZe.vector);
-  gsl_matrix_view       vZZ (gsl_matrix_submatrix(mZZ,0,0,mDimZ,mDimZ));
-  gsl_matrix            *zz (&vZZ.matrix);
+  gsl_vector  *ze (&gsl_vector_subvector(mZE,0,mDimZ).vector);
+  gsl_matrix  *zz (&gsl_matrix_submatrix(mZZ,0,0,mDimZ,mDimZ).matrix);
   if (mZIsSingular) 
   { // set cross product to zero and ss to 1, then leave
     gsl_vector_set_zero( ze );
@@ -161,10 +158,8 @@ gslRegression<Data,Engine>::compute_cross_products_z()
     return;
   }
   // dot with the current residuals
-  gsl_matrix_const_view  vZ (gsl_matrix_const_submatrix(mZResids,0,0,mN,mDimZ));
-  const gsl_matrix       *z (&vZ.matrix);
-  gsl_vector_const_view  vE (gsl_vector_const_subvector(mpData->e(), 0, mN));
-  const gsl_vector       *e (&vE.vector);
+  gsl_matrix const* z (&gsl_matrix_const_submatrix(mZResids,0,0,mN,mDimZ).matrix);
+  gsl_vector const* e (&gsl_vector_const_subvector(mpData->e(), 0, mN).vector);
   gsl_blas_dgemv (CblasTrans, 1.0, z, e, 0.0, ze);  
   gsl_blas_dsyrk(CblasLower, CblasTrans, 1.0, z, 0.0, zz);     // bugged in GSL 1.5; need 1.7
 }
@@ -325,7 +320,7 @@ gslRegression<Data,Engine>::change_in_rss (gsl_matrix const* sandwich)  const
 
 template <class Data, class Engine>
 void 
-gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)              // changes the estimates
+gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)                            // changes the estimates
 {
   gsl_vector *weights  (mEngine.weights());
   gsl_vector_memcpy(weights, newWeights);
@@ -342,7 +337,7 @@ gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)              
 
 template <class Data, class Engine>
 void 
-gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights, gsl_vector const* newY)    // changes the estimates
+gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights, gsl_vector const* newY)    // also inserts new response
 {
   // std::cout << "GSLR:  Replacing response in model with = " << mQ << " predictors.\n";
   gsl_vector_memcpy (mpData->live_y(), newY);
@@ -417,7 +412,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
     std::cout << "GSLR: Warning. Status of QR decomp is " << status << std::endl;
   else
     mQ = newQ;
-  // put beta into place along with residuals
+  // store beta and residuals
   gsl_vector_const_view vY    (gsl_vector_const_subvector(mpData->y(),0,mN));
   gsl_vector_view       vBeta (gsl_vector_subvector(mBeta,0,mQ));
   gsl_vector_view       vRes  (gsl_vector_subvector(mpData->live_e(),0,mN));
@@ -528,48 +523,52 @@ namespace {
     binomialVar(double, double p) { return p * (1.0 - p); }
   
   double    
-    whiteVar(double z, double) { return z * z; }
+    whiteVar(double e, double) { return e * e; }
+}
+
+
+
+template <class Data, class Engine>
+  std::pair<double,double>
+  gslRegression<Data,Engine>::Bennett_evaluation (double m, double M)
+{
+  compute_fitted_values(mN);                                          // only affects first n
+  const gsl_vector * z0 (&gsl_matrix_const_column(mZResids,0).vector);// include weights
+  const double     * pZ (gsl_vector_const_ptr(z0,0));
+  const double     * pY (gsl_vector_const_ptr(mpData->y(),0)); 
+  const double     *pMu (gsl_vector_const_ptr(mpData->Xb(),0));       // current fit
+  return Bennett_evaluation(pZ, pY, pMu, m, M);
 }
 
 template <class Data, class Engine>
-std::pair<double,double>
-gslRegression<Data,Engine>::Bennett_evaluation (double m, double M)
+  std::pair<double,double>
+  gslRegression<Data,Engine>::Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M)
 {
   if (mDimZ != 1)
     std::cout << "GSLR: Warning. Bennett evaluation for first Z only. \n";
   
-  // function that computes variance
-  double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
-  
+  // pick function that computes variance
+  // double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
+
+  double num   (0.0);
   double maxA  (0.0);
-  double sumB2 (0.0);
+  //  double sumB2 (0.0);
   double absZ  (0.0);
   const double epsilon (1.0E-10);
-  const gsl_vector * z0 (&gsl_matrix_const_column(mZResids,0).vector);
-  const double     * pE (gsl_vector_const_ptr(mpData->e(),0));        // current residual
-  const double     *pMu (gsl_vector_const_ptr(mpData->Xb(),0));       // current fit
-  
-  compute_fitted_values(mN);                               // only affects first n
-  
-  for (int i=0; i<mN; ++i)
-  { double fit (pMu[i]);
-    double  zi (gsl_vector_get(z0,i));
-    if (fit <= m)         fit = m + epsilon;               // handle values outside boundary
+  for (int i=0; i<mN; ++i, ++z, ++y, ++mu) {
+    double fit = *mu;
+    if (fit <= m)         fit = m + epsilon;          // handle values outside boundary
     else if (fit >= M)    fit = M - epsilon;
-    absZ = abs_val(zi) * max_abs(fit-m, M-fit);            // largest possible error   
-    if (absZ > maxA) maxA = absZ;                          // largest in this column?
-    sumB2 = sumB2 + zi*zi * var(pE[i],fit);                // squared z residual times variance of fit
+    double dev = (*y - *mu);
+    num += *z * dev;
+    absZ = abs_val(*z) * max_abs(fit-m, M-fit);       // largest possible error   
+    if (absZ > maxA) maxA = absZ;                     // largest in this column?
+    // sumB2 = sumB2 + (*z)*(*z) * var(dev,fit);      // squared z residual times variance of fit
   }
-  double rootZDZ (sqrt(sumB2));
+  double rootZDZ (sqrt(gsl_matrix_get(mZZ,0,0)));     // sum B2 \approx gsl_matrix_get(mZZ,0,0)
   double Mz      (maxA/rootZDZ);
-  double tz      (abs_val(gsl_vector_get(mZE,0)/rootZDZ));
+  double tz      (abs_val(num)/rootZDZ);              // num is gsl_vector_get(mZE,0) in usual case
   return std::make_pair(tz, bennett_p_value(tz,Mz));
-  // scale by Z's  SS
-  // double zSS (gsl_matrix_get(mZZ,0,0));
-  // double a   (maxA) ; //  / zSS);
-  // double b   (sqrt(sumB2)) ; //  / zSS);
-  // double betaZ (abs_val(gsl_vector_get(mC,0)));
-  // return std::make_pair(bennett_bound(betaZ, a, b, .05), bennett_p_value(betaZ, a, b));
 }
 
 

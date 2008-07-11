@@ -70,8 +70,8 @@ template <class ModelClass>
 std::pair<ExpertABC*,double>
 Auction<ModelClass>:: collect_bids ()
 {
-  double highBid (0.0);
-  ExpertABC* pHighBidder;
+  ExpertABC* pHighBidder (mExperts[0]);
+  double     highBid     (pHighBidder->place_bid());
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid();
     if (bid > highBid)
@@ -157,6 +157,7 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
   double *x      (new double[n]);                // who manages this space???
   Column* colPtr (new Column(name.c_str(), x, x+n));
   LinearCombinationFeature *f = new LinearCombinationFeature(beta,useFeatures,colPtr);  
+  return f;
 }
 
 
@@ -177,6 +178,7 @@ Auction<ModelClass>::calibration_feature() const
       return mFeatureFactory->make_unary_feature_ptr(mModel.calibration_operator(),
                                                      xb_feature(mModel.calibration_beta()));
     */
+    return 0;
   }
 }
 

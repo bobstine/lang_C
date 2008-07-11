@@ -25,6 +25,7 @@
 #include <set>
 #include <vector>
 
+#include "range.h"
 
 class Column
 {
@@ -60,6 +61,9 @@ private:
   double          element(int i)  const { return *(mBegin+i); }
   double*         begin()         const { return mBegin; }
   double*         end()           const { return mEnd; }
+  range<double*>  writable_range()const { return make_range(begin(), end()); }
+  range<double const*> range()    const { return make_range(begin(), end()); }
+  
   //  double*         memory()        const { return mBegin; }
   
   bool            is_constant()   const { return mUnique == 1; }

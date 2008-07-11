@@ -4,13 +4,13 @@
   Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
   Then execute code as
   
-          auction.test.exec -f filename -p path -r rounds -c calibration_df
+          auction.test -f filename -p path -r rounds -c calibration_df
 
   where
         -r  number of rounds for the auction (default is 50)
         -f  path for input data              (default is est.dat)
-	      -m  path for output model results    (default is model)
-	      -c  calibration df                   (default is no calibration)
+	-m  path for output model results    (default is model)
+	-c  calibration df                   (default is no calibration)
 
   14 Oct 04 ... (dpf) added make_20_geometric bidders
    2 Aug 04 ... Force logistic model to have a spline smooth to calibrate (rather than recommender).
@@ -25,11 +25,14 @@
 #include "range.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
+
 // for constant iterator 
 #include "cyclic_iterator.h"
 
-// from sequential regression 
+// from utils
 #include "column.h"
+
+// from gsl_tools
 #include "gsl_model.h"
 
 
@@ -49,17 +52,8 @@ gslData*
 build_model_data(std::vector<Column> const& y);
  
 
-//  Can also run from this script as a build phase
-/*  
-Shell: 
-/bin/tcsh
-Script:
-$BUILT_PRODUCTS_DIR/auction  --rounds 100 -c 5 -f $SRCROOT/test/bank_post45.dat
-cat $SRCROOT/test/bank_post45.n_rows $SRCROOT/test/bank_post45.rows > $SRCROOT/model/test.dat 
-*/
- 
 int
-main(int argc, char** argv)
+main(int, char**)
 { 
   // build vector of columns from file
   double      total_alpha_to_spend (0.5);
@@ -72,7 +66,7 @@ main(int argc, char** argv)
   std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/02/22 19:39:47 bob Exp $" << std::endl;
 
 	std::cout << "AUCT: Parsing arguments ..." << std::endl;
-  // parse arguments from command line
+  // parse arguments from command line  (pass in at main)
   // parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, df);
   std::cout << "AUCT: Arguments    --input-file=" << columnFileName
     << " --output-path=" << outputPath << " -r "
@@ -92,8 +86,8 @@ main(int argc, char** argv)
   /* 
     Read columns from a file. The file is laid out with one column of values per row.
     The reading is done by a FileColumnStream that allocates the space for the columns
-    as the data are read.  A column is basically a named range of doubles that learns a
-    few properties of the data when it's read in (min, max, unique values). The space used
+    as the data are read.  A column feature provides a named range of doubles that learns a
+    few properties of the data as it's read in (min, max, unique values). The space used
     by columns is allocated on reading in the function FileColumnStream.getNextColumn.
   */
   std::vector<Column> yColumns;
@@ -153,17 +147,17 @@ main(int argc, char** argv)
                                     UniversalBidder(),
                                     make_subspace_stream("Principal components", 
                                                          theAuction.skipped_features(), 
-                                                         20,                                           // bundle size
-                                                         gslPrincipalComponents(0, true)               // num components (0 means use rule), standardize
+                                                         20,                                    // bundle size
+                                                         gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
                                                          ))); 
   
   theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_subspace_stream("RKHS components", 
                                                          theAuction.skipped_features(), 
-                                                         20,                                           // bundle size
-                                                         gslRKHS<RadialKernel>(5, true)                // num components (0 means use rule), standardize
-                                                         )));                                          // WARNING: cannot return more than 25 x's in subspace
+                                                         20,                                    // bundle size
+                                                         gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
+                                                         )));                                   // WARNING: cannot return more than 25 x's in subspace
   
   // run the auction with output to file
   std::ofstream alphaStream (alphaFileName.c_str());
@@ -282,10 +276,10 @@ build_model_data(std::vector<Column> const& y)
   std::cout << "TEST: Y column " << y[0] << " holds " << nRows << " rows.\n";
   if (useSubset)  // use all data for fitting
   { std::cout << "TEST: Using subset of cases defined by " << y[1] << std::endl;
-    return new gslData(y[0].memory(), y[1].memory(), equalWeights, nRows, gslRegression_Max_Q);
+    return new gslData(y[0].begin(), y[1].begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
   else
   { constant_iterator<bool>   noSelection(true);
-    return new gslData(y[0].memory(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
+    return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
