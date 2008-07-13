@@ -15,7 +15,9 @@
   3 Dec 07 ... Handle const vectors, add traits
  26 Jan 04 ... Created
 
- Begin and end functions defined inline in this file.
+ Begin and end functions defined inline in this file to work
+ with ranges.  Code correctly works with a gsl_vector that has
+ been defined from rows and columns of a matrix.
   
 */
 

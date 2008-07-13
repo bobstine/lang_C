@@ -69,18 +69,17 @@ public:
   const int* permutation() const { return mPermute; }
   
   gsl_vector const* Xb()  const { return mXb; }
-  gsl_matrix const* X()   const { return mX; }
+  gsl_matrix const* x()   const { return mX; }
   gsl_vector const* e()   const { return mE; }
   gsl_vector const* y()   const { return mY; }
   gsl_vector const* w()   const { return mWeights; }
-  gsl_matrix const* x()   const { return mX; }
   
   // use these to grab pointers needed for updating
   gsl_vector* live_Xb()      { return mXb;}
+  gsl_matrix* live_x()       { return mX; }
   gsl_vector* live_e()       { return mE; }
   gsl_vector* live_y()       { return mY; }
   gsl_vector* live_w()       { return mWeights; }
-  gsl_matrix* live_x()       { return mX; }
 
   gsl_matrix* temp_mat(int nRows, int nCols);  
   gsl_vector* temp_vec(int j){ return mTempVec[j]; }

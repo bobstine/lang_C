@@ -93,8 +93,8 @@ main (void)
   
   { constant_iterator<bool> noSelection(true);
     
-    // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
-    gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
+    gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
+    // gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
     
     gslRegression< gslData,wlsEngine > regr(&theData);
     std::cout << regr;
@@ -146,7 +146,8 @@ main (void)
     regr.fill_with_diagonal_XtXinv (stdErr.begin());
     std::cout << "TEST: SE are " << stdErr << std::endl;
     
-    { // Add three predictors at once  (Note: y in data has been centered.)
+    /*
+      { // Add three predictors at once  (Note: y in data has been centered.)
       std::cout << "\n\n\n\n =====================\nTEST: Adding all three at once\n";
       gslRegression<gslData,olsEngine> regr(&theData);
       std::cout << regr;
@@ -161,6 +162,7 @@ main (void)
         regr.add_current_predictors();
       std::cout << regr;
     }
+    */
   }
   return 0;
 }

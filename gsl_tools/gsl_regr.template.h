@@ -113,6 +113,22 @@ gslRegression<Data,Engine>::sweep_x_from_z_into_zres()
       gsl_linalg_QR_lssolve (qr, tau, Zj, &vGj.vector, &vZRj.vector);
     }
     gsl_vector_free(Zj);
+    /*
+    { //  check zres properties: <z,1> = 0   <z,x> = 0    (weighted dot norm)
+      double dp (0);
+      gsl_blas_ddot(&gsl_matrix_const_column(zres,0).vector, mEngine.sqrt_wts(), &dp);
+      std::cout << "TESTING: zres . 1 = " << dp << std::endl;
+      gsl_vector *temp (gsl_vector_alloc(mN));
+      for(int j=0; j<mQ; ++j) {
+	gsl_vector *x    (&gsl_matrix_const_column(mpData->x(),j).vector);
+	gsl_vector_memcpy(temp, &gsl_vector_subvector(x,0,mN).vector);
+	gsl_vector_mul(temp, mEngine.sqrt_wts());
+	gsl_blas_ddot(&gsl_matrix_const_column(zres,0).vector, temp, &dp);
+	std::cout << "TESTING: zres . x[" << j << "] = " << dp << std::endl;
+      }
+      gsl_vector_free(temp);
+    }
+    */
   }
 }
 
@@ -323,6 +339,7 @@ void
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)                            // changes the estimates
 {
   gsl_vector *weights  (mEngine.weights());
+  std::cout << "GSLR: Reweighting; initial weights are " << gsl_vector_get(newWeights,0) << " " << gsl_vector_get(newWeights,1) << std::endl;
   gsl_vector_memcpy(weights, newWeights);
   mEngine.weights_have_changed();
   mYBar += center_data_vector(mpData->live_y());       // re-center Y
@@ -532,8 +549,7 @@ template <class Data, class Engine>
   std::pair<double,double>
   gslRegression<Data,Engine>::Bennett_evaluation (double m, double M)
 {
-  compute_fitted_values(mN);                                          // only affects first n
-  const gsl_vector * z0 (&gsl_matrix_const_column(mZResids,0).vector);// include weights
+  const gsl_vector * z0 (&gsl_matrix_const_column(mZResids,0).vector);// include weights^(1/2) as needed
   const double     * pZ (gsl_vector_const_ptr(z0,0));
   const double     * pY (gsl_vector_const_ptr(mpData->y(),0)); 
   const double     *pMu (gsl_vector_const_ptr(mpData->Xb(),0));       // current fit
@@ -548,11 +564,11 @@ template <class Data, class Engine>
     std::cout << "GSLR: Warning. Bennett evaluation for first Z only. \n";
   
   // pick function that computes variance
-  // double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
+  double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
 
   double num   (0.0);
   double maxA  (0.0);
-  //  double sumB2 (0.0);
+  double sumB2 (0.0);
   double absZ  (0.0);
   const double epsilon (1.0E-10);
   for (int i=0; i<mN; ++i, ++z, ++y, ++mu) {
@@ -563,9 +579,9 @@ template <class Data, class Engine>
     num += *z * dev;
     absZ = abs_val(*z) * max_abs(fit-m, M-fit);       // largest possible error   
     if (absZ > maxA) maxA = absZ;                     // largest in this column?
-    // sumB2 = sumB2 + (*z)*(*z) * var(dev,fit);      // squared z residual times variance of fit
+    sumB2 = sumB2 + (*z)*(*z) * var(dev,fit);         // squared z residual times variance of fit
   }
-  double rootZDZ (sqrt(gsl_matrix_get(mZZ,0,0)));     // sum B2 \approx gsl_matrix_get(mZZ,0,0)
+  double rootZDZ (sqrt(sumB2));                       // sum B2 \approx gsl_matrix_get(mZZ,0,0)
   double Mz      (maxA/rootZDZ);
   double tz      (abs_val(num)/rootZDZ);              // num is gsl_vector_get(mZE,0) in usual case
   return std::make_pair(tz, bennett_p_value(tz,Mz));
@@ -623,7 +639,7 @@ gslRegression<Data,Engine>::write_data_to (std::ostream &os) const
   os << std::endl;
   const int* permute (mpData->permutation());
   gsl_vector const* y (mpData->y());
-  gsl_matrix const* X (mpData->X());
+  gsl_matrix const* X (mpData->x());
   gsl_vector const* Xb(mpData->Xb());
   for(int i=0; i<len; ++i)
   { int row = permute[i];

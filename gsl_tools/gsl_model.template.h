@@ -143,32 +143,40 @@ LogisticModel<Data>::add_predictor_if_useful (Iter x, double pToEnter)
   return add_predictors_if_useful(v,pToEnter);
 }
 
+  
+  class Sqrt : public std::unary_function<double,double> {
+  public:
+    double operator()(double x) const { if (x >= 0) return sqrt(x); else return -7.7; }
+  };
+
 
 template <class Data>
 template <class Collection> 
 std::pair<double,double> 
 LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
 {
-  std::pair<double,double> result;
+  std::pair<double,double> result (std::make_pair(0.0,1.0));
   // use bennett to screen before revising likelihood
-  // note that logistic regression has pseudo-y as the response, pseudo-resids as the residuals
-  evaluate_predictors(c);   // leaves centered vars in Z, sweeps X and weights  Zres, and leaves (Zres)'W(Zres) in mZZ
-  // call bennett
+  // logistic regression has pseudo-y as the response, pseudo-resids as the residuals
+  // evaluate_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
+  evaluate_predictors(c);
+  if (GSLR::mZIsSingular) return result;
+  // call bennett using the 
   const double     *pMu (estimated_probability(GSLR::mN));
-  std::cout << "TEST: in adding_predictors_if_useful; pMu[0] = " << pMu[0] << std::endl;
   // need to unweight Z's
-  gsl_vector       *pZv (gsl_vector_alloc(GSLR::mN));
-  gsl_vector const* pZ0 (&gsl_matrix_const_column(GSLR::mZResids,0).vector);// includes weights
-  gsl_vector_memcpy(pZv, pZ0);
-  GSLR::mEngine.unweight(pZv);
-  const double     * pZ (gsl_vector_const_ptr(pZv,0));
-  const double     * pY (gsl_vector_const_ptr(mOriginalY,0));        
-  result = GSLR::Bennett_evaluation(pZ, pY, pMu, 0, 1);                     //  result = GSLR::f_test_evaluation();
+  gsl_vector       *pZ  (gsl_vector_alloc(GSLR::mN));
+  gsl_vector       *pZW (&gsl_matrix_const_column(GSLR::mZResids,0).vector);  // ZW includes weights;
+  gsl_vector_memcpy(pZ, pZW);
+  GSLR::mEngine.unweight(pZ);
+  const double     * z (gsl_vector_const_ptr(pZ,0));
+  const double     * y (gsl_vector_const_ptr(mOriginalY,0));        
+  result = GSLR::Bennett_evaluation(z, y, pMu, 0, 1);                     //  result = GSLR::f_test_evaluation();
   std::cout << "TEST: bennett returns " << result.first << " " << result.second << std::endl;
+  // Insert test code (from below) here
   if (result.second > pToEnter)  { return result;  }
-  std::cout << "LOGM: Predictor passes initial evaluation; p-value " << result.second << " <  3 * " << pToEnter << std::endl;
-  // if passes, then maximize likelihood with it included
-  gslRegressionState state (GSLR::state());                           // save in case need to back out
+  std::cout << "LOGM: Predictor passes initial evaluation; p-value " << result.second << pToEnter << std::endl;
+  // if passes, then maximize likelihood with z included
+  gslRegressionState state (GSLR::state());                              // save in case need to back out
   GSLR::add_current_predictors();
   result = maximize_log_likelihood(1); 
   if (result.second > pToEnter)  
@@ -176,9 +184,33 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
     GSLR::restore_state(state);
   } 
   else std::cout << "LOGM: Predictor improves likelihood; added to model\n";
-  gsl_vector_free(pZv);
+  gsl_vector_free(pZ);
   return result;
 }
+
+// Test code to verify logistic calculations
+  /*
+  // Wts are from *prior* iteration, not current fit in pMu; note that weights != length of sqrt wts
+  for (int i=0; i<5; ++i) {
+  std::cout << "  p(1-p) = " << pMu[i]*(1-pMu[i]) << "    w = " << gsl_vector_get(GSLR::mEngine.weights(),i) << std::endl;
+  }
+  */
+  /*
+  // check that z vector is W-orthogonal to prior X's
+  double dp;
+  gsl_blas_ddot(GSLR::mEngine.sqrt_wts(), pZW, &dp);
+  std::cout << "TEST: z.1 = " <<  dp << std::endl;         // w'z
+  gsl_blas_ddot(                     pZW, pZW, &dp); 
+  std::cout << "TEST: z.z = " <<  dp << std::endl;         // z'wz
+  std::cout << "TEST: z.z = " <<  gsl_matrix_get(GSLR::mZZ,0,0) << std::endl;         // z'wz
+  if (q() > 0) {
+  for (int j=0; j<q(); ++j) {
+  gsl_vector const* col (&gsl_matrix_const_column(GSLR::mpData->x(),j).vector);
+  gsl_vector const* xj  (&gsl_vector_const_subvector(col,0,GSLR::mN).vector);
+  dp = range_ops::weighted_inner_product(make_range(pZW), make_range(xj), make_range(GSLR::mEngine.sqrt_wts()), 0.0);
+  std::cout << "TEST: z.(z[j]) = " <<  dp << std::endl;
+  }    
+  */
 
 
 template <class Data>
@@ -231,7 +263,7 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
     std::cout << std::endl;
     if (mLL1 < log_like_0) 
       std::cout << "LOGM: *** Warning ***  Step did not improve log likelihood; continuing.\n";
-    else if ((mLL1 - log_like_0) < 0.05) break; 
+    else if ((mLL1 - log_like_0) < 0.01) break; 
   }
   if (mLL1 <= saveLL) 
     std::cout << "LOGM: **** Error ****  IRLS did not improve log likelihood.\n";

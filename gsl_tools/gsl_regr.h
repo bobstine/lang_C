@@ -26,7 +26,7 @@
  Fitted values are computed in a lazy fashion when the function
  fitted_values is called.  Otherwise, Xb may not be current.
  
- The calculation evaluate predictors in two stages. When the
+ The calculations evaluate predictors in two stages. When the
  predictors are not in the model (Z), use a fast method based on the
  QR factorization of current model and ratios of sums of
  squares. Bennett testing is possible at this step since the weights
@@ -112,6 +112,8 @@ protected:
   gsl_vector   *mXBar;
   gsl_matrix   *mXtXinv;
   gsl_matrix   *mZResids;                 // residuals after sweeping X from z vector
+  gsl_matrix   *mZZ;        
+  bool          mZIsSingular;             // set when evaluate a predictor
   
 private:
   gsl_matrix *mQR;                        // current QR factorization, centered and weighted as needed
@@ -121,9 +123,8 @@ private:
   gsl_matrix *mGammaZ;                    // slopes for sweeping X from Z, one column for each X
   gsl_matrix *mZ;                         // new predictors Z, held as (mN x mDimZ)
   gsl_vector *mZE;
-  gsl_vector *mZBar;                      // covariances      
-  gsl_matrix *mZZ, *mZX;        
-  bool        mZIsSingular;               // set when evaluate a predictor
+  gsl_vector *mZBar;                      // covariances
+  gsl_matrix *mZX;
  
 public:
   ~gslRegression ();

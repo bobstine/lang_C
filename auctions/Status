@@ -1,22 +1,30 @@
 Need to 
+
         Build smarter streams that look at the X's they are recommending, more careful
         check for which X's make more sense.  More checking before placing bids.
+	At a minimum, use regular expression to avoid dummy variable products.
         EG: add a units, "domain" to the variables to suggest heuristic groups to
         attempt to use in PC analysis (ie, dont combine unless common domain).
 
         Build a fixed bidder that considers the terms left in the input stream, not
         just in the current order that is available.
                 
-        Determine role for bennett, White in logistic?
-        
         Check cross validation for logistic regression.
         
         Get the spline calibration back in place.
         Figure out how to use calibration for logistic regression.
 
 
-*** Subspace methods are all giving pc's that are not well-scaled....
+        *** Subspace methods are all giving pc's that are not well-scaled....
+	Need some type of "unit" analysis to decide which components belong
+	in a pc analysis.
 
+
+------------------------------------------------------------------------------
+13 Jul 08
+
+Trying to run program again.  Want to get back to have ability for auction to
+fit the BR data.
 
 ------------------------------------------------------------------------------
 15 Feb 08
@@ -25,7 +33,7 @@ Plug in the RKHS kernel method as a stream.  Kinda raw.  Should we standardize?
 Which kernel do you use? ...
 
 Subspace methods are all giving pc's that are not well-scaled. These look singular,
-or the decomponsition fails.  It should check to make sure that it has a subspace
+or the decomposition fails.  It should check to make sure that it has a subspace
 to offer before bidding.
 
 ------------------------------------------------------------------------------
@@ -34,7 +42,8 @@ to offer before bidding.
 Have the GSL eigen decompositions working nicely, but need to figure out where
 the space for the eigen vectors that get created should be.  Who manages this
 space?
-        make something like a GSL feature?
+        
+Make something like a GSL feature?
 
 
 ------------------------------------------------------------------------------

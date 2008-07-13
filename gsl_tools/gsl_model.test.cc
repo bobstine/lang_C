@@ -61,7 +61,8 @@ main (void)
   constant_iterator<double> equalWeights (1.0);
   
   // Test adding a sequence of variables to a linear regression
-  if (false)
+  /*
+    if (false)
     { // Start by building the data.  Then add predictors, one at a time.
       gslData  theData(y, b, weights, LEN, gslRegression_Max_Q);            // uses b to subset data
       // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
@@ -123,6 +124,7 @@ main (void)
       regr3.add_predictors_if_useful(predictors, 0.5);
       std::cout << regr3 << std::endl;
     }
+  */
   
   std::cout << "\n\n\n\nTEST: Testing logistic regression: \n";
   
@@ -136,18 +138,12 @@ main (void)
     
     // Evaluate a predictor
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.evaluate_predictor(x1);
-    std::cout << "TEST: " << regr.f_test_evaluation() << std::endl;
-    regr.add_current_predictors();
-    std::cout << "TEST: " << regr.maximize_log_likelihood(1);
+    regr.add_predictor_if_useful(x1,1.1);   // calls evaluate_predictor
     std::cout << regr;
  
     // Evaluate second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.evaluate_predictor(x2);
-    std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
-    regr.add_current_predictors();
-    std::cout << "TEST: " <<regr.maximize_log_likelihood(1);
+    regr.add_predictor_if_useful(x2,1.1);   // calls evaluate_predictor
     std::cout << regr;
     
     // Evaluate third predictor

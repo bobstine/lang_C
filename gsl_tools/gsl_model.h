@@ -52,6 +52,12 @@ private:
 };
 
 
+/*
+  Be aware that the logistic regression predictions are slightly different
+  from those associated with the weights in the underlying IRLS fit; it iterates
+  when the weights are set, so p(1-p) will not quite match the weights. Can
+  make closer by interating further.
+*/
 
 template <class Data>
 class LogisticModel : public gslRegression<Data,wlsEngine> {

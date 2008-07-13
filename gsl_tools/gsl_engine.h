@@ -14,12 +14,17 @@
 #include <iostream>
 
 /*
- A GSL vector engine implements a policy for manipulating vectors in n-space that 
- supports either OLS or WLS regression.  
+ A GSL vector engine implements a policy for manipulating vectors in
+ n-space that supports either OLS or WLS regression.  The engine
+ isolates calculation with weighted dot products from other code used
+ elsewhere in regression.
  
- An engine manipulates n dimensional vectors as declared on creation. External calling
- routine must be sure that the vector or matrix is of this length, such as by making
- a view of a subset of a larger array.
+ An engine manipulates n dimensional vectors as declared on
+ creation. External calling routine must be sure that the vector or
+ matrix is of this length, such as by making a view of a subset of a
+ larger array.  
+
+ A gsl engine also has square root of the weights.
  
   6 Jan 08 ... Push spline calculation down here.
  25 Nov 07 ... Created to support partitioning of gsl routines, weighted least squares.
@@ -71,7 +76,7 @@ class wlsEngine
 protected:
   const int mN;
   gsl_vector *mWeights;  // space is managed by gslData object
-  gsl_vector *mSqrtW;    // frees these on exit
+  gsl_vector *mSqrtW;    // allocate locally; frees these on exit
 
 public:
     ~wlsEngine() { std::cout << "WLSE: Freeing engine.\n"; gsl_vector_free(mSqrtW); }
@@ -80,9 +85,10 @@ public:
   wlsEngine(gslData *data)       : mN(data->n()), mSqrtW(0) { configure(data); }
   
   // accessors
-  int          n ()        const { return mN; }
-  gsl_vector*  weights ()        { return mWeights; } // not const so can set externally
-  void         weights_have_changed ();
+  int               n ()        const { return mN; }
+  gsl_vector      * weights ()        { return mWeights; } // not const so can set externally
+  gsl_vector const* sqrt_wts()  const { return mSqrtW; }   // only computed to length in use; not extended
+  void              weights_have_changed ();
   
   double average         (gsl_vector const* v)              const;
   double sum_of_squares  (gsl_vector const* v, double mean) const;
@@ -99,7 +105,6 @@ public:
   double   smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const;
 
   void   print_header_to (std::ostream& os) const { os << "WLS Engine "; }
-  // void   print_to (std::ostream& os)        const { }; 
 
 private:    
   void configure(gslData *data); 

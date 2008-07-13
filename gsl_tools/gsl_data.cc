@@ -8,6 +8,8 @@
  */
 
 #include "gsl_data.h"
+
+#include <assert.h>
 #include <iostream>
 
 
@@ -27,6 +29,7 @@ gslData::allocate(int nr, int nc, bool wts)
   mE       = gsl_vector_alloc(nr);
   mPermute = new int[nr];
   mX       = gsl_matrix_alloc(nr, nc);
+  assert(mX != 0);
   mY       = gsl_vector_alloc(nr);
   mScratch = new double[gslDataTempSize*gslDataTempSize];
   for (int j=0; j< gslDataTempSize; ++j)

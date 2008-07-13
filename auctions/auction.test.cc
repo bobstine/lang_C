@@ -57,13 +57,13 @@ main(int, char**)
 { 
   // build vector of columns from file
   double      total_alpha_to_spend (0.5);
-  //  std::string columnFileName       ("/Users/bob/C/seq_regr/data/bank_small.dat");   
-  std::string columnFileName       ("/Users/bob/raslisp/stepwise/C/firstfunds/ds2.rows.dat"); 
-  std::string outputPath           ("/Users/bob/C/auctions/test/model/");   // default parameter values
+  std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
+  //  std::string columnFileName       ("/Users/bob/raslisp/stepwise/C/firstfunds/ds2.rows.dat"); 
+  std::string outputPath           ("/Users/bob/C/auctions/test/log/");   // default parameter values
   int         numberRounds         (300); 
   int         useSubset            (1);  // 1 indicates that second variable in data in boolean selector
   int         splineDF             (0);
-  std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/02/22 19:39:47 bob Exp $" << std::endl;
+  std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
 
 	std::cout << "AUCT: Parsing arguments ..." << std::endl;
   // parse arguments from command line  (pass in at main)
@@ -85,6 +85,11 @@ main(int, char**)
 
   /* 
     Read columns from a file. The file is laid out with one column of values per row.
+       Line 1: gives the number of cases
+       Line 2: name of the first variable (the response)
+       Line 3: data for the response
+       Line 4: name of the second variable
+       ...
     The reading is done by a FileColumnStream that allocates the space for the columns
     as the data are read.  A column feature provides a named range of doubles that learns a
     few properties of the data as it's read in (min, max, unique values). The space used
@@ -102,15 +107,19 @@ main(int, char**)
   std::cout << "TEST: Initialization converted " << xColumns.size() << " columns into features.\n";
   std::cout << "TEST: Converted columns to vector... \n " << columnFeatures << std::endl;
   
-  // initialize the model
+  // build data object
   gslData *theData (build_model_data(yColumns));
-  LinearModel <gslData, olsEngine> theRegr(theData);               // LogisticModel <gslData> theRegr(&theData);  
+
+  // build model and associated auction
+  // LinearModel <gslData, olsEngine> theRegr(theData);
+  // Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF);
+
+  LogisticModel <gslData> theRegr(theData);
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
+  
   std::cout << "TEST: Initial model is\n" << theRegr << std::endl;
   
-  // create auction 
-  std::cout << "TEST: Initializing auction "  << std::endl;
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF);
-  
+    
   // build vector of experts that work directly from input variables
   std::cout << "TEST: Creating experts"  << std::endl;
   double alphaShare (total_alpha_to_spend/5);

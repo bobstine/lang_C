@@ -3,9 +3,6 @@ Current Questions
 
    Implement items in the header of the test eigen code
 
-22 Jan 08      Logistic model returns nans and diverges when try to add vector of 
-               predictors at once.  OLS in contrast is OK.  Something wrong in loop.
-  
 Eventually good things
 
 27 Nov 07      Increase the use of GSL iterators, ranges to allow more STL code.
@@ -15,12 +12,30 @@ Eventually good things
 
 
 ----------------------------------------------------------------------------------
+13 Jul 08
+
+Have scalar Bennett now working for logistic regression.  Hard time
+getting it going since there were a few things that I had forgotten:
+
+	(1) Convergence of logistic regression means that mWeights in
+	    the engine never quite match those implied by the current
+	    predictions -- that's the convergence criterion.
+
+	(2) Don't create a view of a vector, then pass that vector
+	    around.  It will die since it expires with the function.
+
+----------------------------------------------------------------------------------
 14 Jan 08
 
 Run into time sink with weirdness around printing.  
 
   Why does the order of the headers matter?
   How can I reuse more of the printing code at the model level?
+
+  Logistic model returns nans and diverges when try to add vector of 
+  predictors at once.  OLS in contrast is OK.  Something wrong in loop.
+  Fixed now.
+  
 
 Inspection of logistic regression and linear regression predictions
 seem correct, both with and without boolean subset selection. Seems ready
