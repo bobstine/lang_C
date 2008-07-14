@@ -214,10 +214,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>C4D4A79D0E133BE50088DBD8</string>
+						<string>C429EA7E0E2BB035007FF0C2</string>
 						<key>history</key>
 						<array>
-							<string>C4D4A7740E1337600088DBD8</string>
+							<string>C4D4A79D0E133BE50088DBD8</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -368,7 +368,7 @@
 										<key>_historyCapacity</key>
 										<integer>10</integer>
 										<key>bookmark</key>
-										<string>C4D4A79A0E133BE50088DBD8</string>
+										<string>C429EA7D0E2BB035007FF0C2</string>
 										<key>history</key>
 										<array>
 											<string>C48695A40D3E71AA0038232B</string>
@@ -380,7 +380,7 @@
 											<string>C4BF584F0E09F962004F8E7F</string>
 											<string>C4BF58610E09FDA8004F8E7F</string>
 											<string>C4B47A430E117A1E0029B081</string>
-											<string>C4D4A7710E1337600088DBD8</string>
+											<string>C4D4A79A0E133BE50088DBD8</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -452,9 +452,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>C4D4A79B0E133BE50088DBD8</string>
+				<string>C429EA7A0E2BAF39007FF0C2</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>C4D4A79C0E133BE50088DBD8</string>
+				<string>C429EA7B0E2BAF39007FF0C2</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -577,7 +577,7 @@
 	<key>ToolbarIsVisible</key>
 	<true/>
 	<key>ToolbarSizeMode</key>
-	<integer>2</integer>
+	<integer>1</integer>
 	<key>Type</key>
 	<string>Perspectives</string>
 	<key>UpdateMessage</key>
