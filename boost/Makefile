@@ -12,7 +12,7 @@ PROJECT_NAME = boost
 
 OPT = -O2 -DNDEBUG
 
-HEADERS = /usr/local/src/boost_1_35_0
+# make sure that boost (with content) is in /usr/local/include
 
 EXTERNAL_USES = boost_regex-mt-1_35
 
@@ -29,14 +29,15 @@ level_1   =
 #
 #            INCLUDING RULES AND DEFINITIONS
 #
-###########################################################################
+############################################################################
 
 hello:	hello.o
-	$(CC) $< $(LDLIBS) -o $@
+	$(CC) $<  $(LDLIBS) -o $@
 	echo 1 2 3 | ./hello
 
 regex: regex.o
 	$(CC) $< $(LDLIBS) -o $@
+	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
 
 ###########################################################################
 

@@ -1,7 +1,7 @@
 // $Id: gsl_utils.h,v 1.9 2008/03/05 22:37:32 bob Exp $
 #ifndef _GSL_UTILS_H_
 #define _GSL_UTILS_H_
-
+ 
 ///
 
 #include "range_ops.h"
