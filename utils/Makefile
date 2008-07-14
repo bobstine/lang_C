@@ -18,7 +18,7 @@ PROJECT_NAME = utils
 
 OPT = -O2 -DNDEBUG
 
-USES = ranges
+# USES = 
 
 EXTERNAL_USES = gsl
 
@@ -30,7 +30,7 @@ EXTERNAL_USES = gsl
 ###########################################################################
 
 level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o
-level_1   = tags.o  column.o
+level_1   = tags.o
 
 ############################################################################
 #
