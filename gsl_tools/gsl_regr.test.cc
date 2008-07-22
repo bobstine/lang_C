@@ -101,7 +101,7 @@ main (void)
     
     // add predictor, check with usual F test and bennett of Z[0]
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.evaluate_predictor(x1);
+    regr.prepare_predictor(x1);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
@@ -110,7 +110,7 @@ main (void)
     
     // add second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.evaluate_predictor(x2);
+    regr.prepare_predictor(x2);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
@@ -119,7 +119,7 @@ main (void)
     
     // add third predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.evaluate_predictor(x3);
+    regr.prepare_predictor(x3);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
@@ -155,7 +155,7 @@ main (void)
       // add predictors
       std::vector<double *> predVec;
       predVec.push_back(x1); predVec.push_back(x2); predVec.push_back(x3);
-      regr.evaluate_predictors(predVec);
+      regr.prepare_predictors(predVec);
       std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
       std::cout << "     White " << regr.White_evaluation()   << std::endl;
       if (eval.first)

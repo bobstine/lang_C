@@ -21,6 +21,12 @@ Need to
 
 
 ------------------------------------------------------------------------------
+22 Jul 08
+
+Auction now scans for singularity of the offered variables, and resets the
+auction to run again if this happens without billing for the variable.
+
+------------------------------------------------------------------------------
 13 Jul 08
 
 Trying to run program again.  Want to get back to have ability for auction to

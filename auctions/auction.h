@@ -68,6 +68,7 @@ private:
   std::pair<ExpertABC*,double> collect_bids();
   FeatureABC *  xb_feature(std::vector<double> const& b)  const;
   FeatureABC *  calibration_feature()                     const;
+  void          print_features(FeatureVector const& fv)   const;
 };
 
 template <class Model>

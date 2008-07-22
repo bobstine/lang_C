@@ -37,19 +37,19 @@ gslRegression<Data, Engine>::initialize()
 
 template<class Data, class Engine>
 template <class Iter>
-void
-gslRegression<Data,Engine>::evaluate_predictor(Iter Z) 
+bool
+gslRegression<Data,Engine>::prepare_predictor(Iter Z) 
 {
   // stuff into vector of iterators and pass along
   std::vector<Iter> vec; 
   vec.push_back(Z); 
-  evaluate_predictors(vec); 
+  return prepare_predictors(vec); 
 }
   
 template<class Data, class Engine>
 template<class C>
-void
-gslRegression<Data,Engine>::evaluate_predictors(C predictor_collection)
+bool
+gslRegression<Data,Engine>::prepare_predictors(C predictor_collection)
 { 
   mDimZ = predictor_collection.size();
   for (int j=0; j<mDimZ; ++j)
@@ -67,10 +67,13 @@ gslRegression<Data,Engine>::evaluate_predictors(C predictor_collection)
   // update statistics for Z matrix 
   sweep_x_from_z_into_zres();
   mZIsSingular = z_appears_singular();
-  if (mZIsSingular)
+  if (mZIsSingular) 
     std::cout << "GSLR: *** Warning ***  Detected singularity when evaluating predictor.\n";
-  compute_cross_products_z();
-  compute_partial_coef_z();    
+  else {
+    compute_cross_products_z();
+    compute_partial_coef_z();
+  }
+  return mZIsSingular;
 }
 
 

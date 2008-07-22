@@ -156,8 +156,8 @@ public:
   
   //  --- Evaluate potential predictors (test stat, p-value) ---
  
-  template<class Iter> void evaluate_predictor(Iter Z);
-  template<class C>    void evaluate_predictors(C predictor_collection);
+  template<class Iter> bool prepare_predictor(Iter Z);                              // returns mZIsSingular indicator
+  template<class C>    bool prepare_predictors(C predictor_collection);
 
   template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;
 

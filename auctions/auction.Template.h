@@ -1,4 +1,4 @@
-/*
+/* -*- c++ -*-
  *  auction.Template.h
  *
  *  Created from prior cc file by Robert Stine on 1/3/08.
@@ -24,43 +24,42 @@ Auction<ModelClass>::auction_next_feature ()
     return false;
   } 
   // extract chosen features
-  Features::FeatureVector features (pHighBidder->features()) ;
+  Features::FeatureVector features  (pHighBidder->features()) ;
   int                     nFeatures (features.size());
   std::cout << "AUCT: Winning expert " << pHighBidder->name() << " bids on ";
   if (0 == nFeatures)
   { std::cout << "no features; this is an *** error ***; should not bid without a variable to offer.\n";
     return false;
   }
-  else if (1==nFeatures) 
-    std::cout << "the feature: " << features[0]->name();
-  else 
-  { std::cout << nFeatures << " features: "; 
-    for (int j=0; j<nFeatures; ++j)  
-      std::cout << features[j]->name() << ", ";
-  }
-  std::cout << std::endl;
+  print_features(features);
   //  test chosen features; accept if p-value < bid
   std::vector<FeatureABC::Iterator> iterators;
   for (int j=0; j<nFeatures; ++j)
     iterators.push_back(features[j]->begin());
   TestResult result (mModel.add_predictors_if_useful (iterators, highBid));
-  bool addedPredictors (result.second < highBid);                  //  test result.second is p-value 
-  std::string message;
-  if (addedPredictors) 
-  { message = "*** Add ***";
-    pHighBidder->payoff(mPayoff);
-  } else 
-  { message = "*** Decline ***";
-    pHighBidder->payoff(-highBid/(1.0-highBid));
+  bool addedPredictors (false);
+  if (result.second > 1.0) {                                       // singularity in predictors
+    pHighBidder->payoff(0.0);
   }
-  for (int j=0; j<nFeatures; ++j)
-  { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
-    if (addedPredictors) 
-      mModelFeatures.push_back(features[j]);
-    else      
-      mSkippedFeatures.push_back(features[j]);
-    std::cout << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
-    std::cout << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
+  else {
+    addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
+    std::string message;
+    if (addedPredictors) {
+      message = "*** Add ***";
+      pHighBidder->payoff(mPayoff);
+    } else {
+      message = "*** Decline ***";
+      pHighBidder->payoff(-highBid/(1.0-highBid));
+    }
+    for (int j=0; j<nFeatures; ++j) {
+      features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
+      if (addedPredictors) 
+	mModelFeatures.push_back(features[j]);
+      else      
+	mSkippedFeatures.push_back(features[j]);
+      std::cout << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
+      std::cout << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
+    }
   }
   return addedPredictors;
 }
@@ -181,6 +180,24 @@ Auction<ModelClass>::calibration_feature() const
     return 0;
   }
 }
+
+
+template <class ModelClass>
+void
+Auction<ModelClass>::print_features(FeatureVector const& features)   const
+{
+  size_t nFeatures (features.size());
+  
+  if (1==nFeatures) 
+    std::cout << "one feature: " << features[0]->name();
+  else 
+  { std::cout << nFeatures << " features: "; 
+    for (size_t j=0; j<nFeatures; ++j)  
+      std::cout << features[j]->name() << ", ";
+  }
+  std::cout << std::endl;
+}
+
 
 template <class ModelClass>
 void

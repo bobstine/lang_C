@@ -14,8 +14,8 @@
 void 
 ExpertABC::payoff (double w)    
 { 
-  mAlpha += w; 
   mBidHistory.append_bid_outcome( (w>0.0) );
+  mAlpha += w; 
   if (mAlpha<0.0)
     std::cout << "XPRT: " << name() << " expert has negative alpha = " << mAlpha << std::endl;
 }

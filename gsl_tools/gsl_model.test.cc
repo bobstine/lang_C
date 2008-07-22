@@ -138,17 +138,22 @@ main (void)
     
     // Evaluate a predictor
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.add_predictor_if_useful(x1,1.1);   // calls evaluate_predictor
+    regr.add_predictor_if_useful(x1,1.1);   // calls prepare_predictor
+    std::cout << regr;
+ 
+    // Check that adding predictor again triggers singularity
+    std::cout << "TEST: about to evaluate redundant predictor.\n";
+    regr.add_predictor_if_useful(x1,1.1);  
     std::cout << regr;
  
     // Evaluate second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.add_predictor_if_useful(x2,1.1);   // calls evaluate_predictor
+    regr.add_predictor_if_useful(x2,1.1);  
     std::cout << regr;
     
     // Evaluate third predictor
     std::cout << "TEST: about to evaluate third predictor.\n";
-    regr.evaluate_predictor(x3);
+    regr.prepare_predictor(x3);
     std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
     regr.add_current_predictors();
     std::cout << "TEST: " <<regr.maximize_log_likelihood(1);

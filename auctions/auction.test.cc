@@ -139,27 +139,23 @@ main(int, char**)
                                     make_cross_product_stream("Used-feature interactions", 
                                                               columnFeatures, 
                                                               theAuction.model_features()  )));
-
   theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_cross_product_stream("Skipped-feature interactions", 
                                                               columnFeatures, 
                                                               theAuction.skipped_features() )));
-  
   theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_polynomial_stream("Skipped-feature polynomial", 
                                                            theAuction.skipped_features(), 
                                                            3)  ));                              // poly degree
-  
   theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_subspace_stream("Principal components", 
                                                          theAuction.skipped_features(), 
                                                          20,                                    // bundle size
                                                          gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
-                                                         ))); 
-  
+                                                         )));
   theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_subspace_stream("RKHS components", 

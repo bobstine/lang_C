@@ -1,3 +1,4 @@
+// -*- c++ -*-
 // $Id: feature_streams.h,v 1.18 2008/02/22 19:39:47 bob Exp $
 
 #ifndef _FEATURE_STREAMS_H_
@@ -11,10 +12,9 @@
  *  Copyright 2008. All rights reserved.
  *
  
- These streams build the features that actually go into the model.
- That happens when an expert makes a call for the next feature from one of
- these streams. In fact, the *only* calls that come down from the expert 
- are calls to
+ These streams build the features that go into the model.  That
+ happens when an expert makes a call for the next feature from a
+ stream.  The *only* calls that come down from the expert are calls to
  
         has_feature()
  
@@ -22,15 +22,27 @@
  
         pop()
  
- which must return a feature vector (or else waste the bid).
- Feature streams are a revised version of the old recommender classes. The 
- pop() operator of the stream must
+ which *must* return a feature vector (or else waste the bid).
+ Feature streams are a revised version of the old recommender
+ classes. The pop() operator of the stream must
         (a) pop off the top element from the stack
         (b) advance indices/whatever keeps track of the status of the stream
- 
- Streams should be lightweight; they will be copied heavily in the auction.  
- Basically act as a stack/queue, a type of iterator really.  The stream 
- itself does not hold data.   
+
+	
+ Streams should be *lightweight*.  They will be copied heavily in the
+ auction.  Basically act as a stack/queue, a type of iterator really.
+ The stream itself does not hold data.
+
+ Flavors
+
+    Finite        chooses variables from a fixed set of columns
+
+    Interaction   interactions from a fixed set
+
+    Cross-product interactions between dynamic and fixed set
+
+    subspace      several variables as a bundle
+
  
  */
 

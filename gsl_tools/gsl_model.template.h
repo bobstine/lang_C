@@ -40,9 +40,11 @@ template <class Collection>
 std::pair<double,double>  
 LinearModel<Data,Engine>::add_predictors_if_useful (Collection c, double pToEnter)
 {
-  std::pair<double,double> result;
+  std::pair<double,double> result (std::make_pair(0.0,1.1));
   // first check to see if pass an initial loose score test with inflated threshold
-  evaluate_predictors(c);
+  // return with p-value larger than 1 if singular predictors
+  prepare_predictors(c);
+  if (GSLR::mZIsSingular) return result;
   result = GSLR::f_test_evaluation();
   if (result.second > 3 * pToEnter)  { return result;  }
   std::cout << "LINM: Predictor passes initial evaluation; p-value " << result.second << " <  3 * " << pToEnter << std::endl;
@@ -155,11 +157,12 @@ template <class Collection>
 std::pair<double,double> 
 LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
 {
-  std::pair<double,double> result (std::make_pair(0.0,1.0));
+  std::pair<double,double> result (std::make_pair(0.0,1.1));
   // use bennett to screen before revising likelihood
   // logistic regression has pseudo-y as the response, pseudo-resids as the residuals
   // evaluate_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
-  evaluate_predictors(c);
+  // return if the model is singular with p-value larger than 1
+  prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
   // call bennett using the 
   const double     *pMu (estimated_probability(GSLR::mN));
