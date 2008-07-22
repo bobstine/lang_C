@@ -84,27 +84,27 @@ clean:
 
 
 test: test.o $(above_infinity)
-	$(CC) -o test $(LDLIBS) test.o $(above_infinity) $(USELIBS) | c++filt
+	$(GCC) -o test $(LDLIBS) test.o $(above_infinity) $(USELIBS) | c++filt
 
 speed.test: speed.test.o $(above_infinity)
-	$(CC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
+	$(GCC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
 
 %.test: %.test.o %.o
 	@echo Includes are: $(INCLUDES)
 	@echo Load libs are: $(LDLIBS)
 	@echo Making executable test program. $@
-	$(CC) $^ $(LDLIBS) -o  $@
+	$(GCC) $^ $(LDLIBS) -o  $@
 
 %.o: %.cc %.h
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) -c $< -o $@ 
 
 # naked version without a header
 %.o: %.cc
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) -c $< -o $@ 
 
 
 %.test.o: %.test.cc  # does not require a .h file
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) -c $< -o $@ 
 
 
 install:  $(INSTALL_PATH)/Include  lib$(PROJECT_NAME).a 
@@ -142,21 +142,21 @@ lib$(PROJECT_NAME).a: $(above_infinity)
 # these work--but the two below are more "modern"
 #
 # %.test.d: %.test.cc %.h
-#	$(CC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
+#	$(GCC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
 #	-rm `ls -lF *.d | grep " 0 " | sed "s/.* //g" | tr "\n" " "`
 #
 # %.d: %.cc %.h
-#	$(CC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
+#	$(GCC) -M $(CPPFLAGS) $< | sed 's/$*\.o/& $@/g' > $@
 #	-rm `ls -lF *.d | grep " 0 " | sed "s/.* //g" | tr "\n" " "`
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 %.dd: %.cc
-	set -e; $(CC) $(CFLAGS) -MM $(CPPFLAGS) $*.cc   \
+	set -e; $(GCC) $(CFLAGS) -MM $(CPPFLAGS) $*.cc   \
         | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
 
 %.test.dd: %.test.cc
-	set -e; $(CC) $(INCLUDES) -MM $(CPPFLAGS) $< \
+	set -e; $(GCC) $(INCLUDES) -MM $(CPPFLAGS) $< \
        | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
 
 
-##	set -e; $(CC) $(INCLUDES) -MM $(CPPFLAGS) $< | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
+##	set -e; $(GCC) $(INCLUDES) -MM $(CPPFLAGS) $< | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@

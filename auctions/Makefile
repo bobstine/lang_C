@@ -59,18 +59,18 @@ c45_parser:
 	cp ../seq_regr/c45_syntax.test.exec c45_parser
 
 validate.o: validate_model.cc $(above_infinity)
-	$(CC) $(CFLAGS) -c validate_model.cc -o $@
+	$(GCC) $(CFLAGS) -c validate_model.cc -o $@
 
 validator: validate.o $(above_infinity)
 	@echo Making executable
-	$(CC) $^ $(LDLIBS) -o  $@
+	$(GCC) $^ $(LDLIBS) -o  $@
 
 estimate.o: estimate_model.cc $(above_infinity)
-	$(CC) $(CFLAGS) -c estimate_model.cc -o $@
+	$(GCC) $(CFLAGS) -c estimate_model.cc -o $@
 
 estimator: estimate.o $(above_infinity)
 	@echo Making executable
-	$(CC) $^ $(LDLIBS) -o  $@
+	$(GCC) $^ $(LDLIBS) -o  $@
 
 #---------------------------------------------
 ### Merged files with common over-sampling

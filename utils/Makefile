@@ -39,17 +39,17 @@ level_1   = tags.o
 ###########################################################################
 
 cols_to_rows: columns_to_rows.o
-	$(CC) columns_to_rows.o $(LDLIBS) -o $@
+	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
 
 transpose: transpose.o column.o 
-	g++ $(CFLAGS) $(INCLUDES) transpose.o column.o -o $@
+	$(GCC) $(CFLAGS) $(INCLUDES) transpose.o column.o -o $@
 
 mands: mands.o
-	$(CC) mands.o $(LDLIBS) -o $@
+	$(GCC) mands.o $(LDLIBS) -o $@
 
 cutt: cutt.o
-	$(CC) cutt.o $(LDLIBS) -o $@
+	$(GCC) cutt.o $(LDLIBS) -o $@
 
 ###########################################################################
 
