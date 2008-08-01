@@ -3,12 +3,23 @@ Current Questions
 
    Implement items in the header of the test eigen code
 
+
 Eventually good things
 
 27 Nov 07      Increase the use of GSL iterators, ranges to allow more STL code.
 
  3 Dec 07      Shark suggests it may make sense to find the Atlas code again.
+       	       So much time is spent in the dot product routines.
 
+
+
+----------------------------------------------------------------------------------
+ 1 Aug 08
+
+ Test CV in OLS and logistic regression. Done by doubling up the data
+ so that the excluded cases are the same as those included (though in
+ a different order). Test results show that SS error matches when the
+ data are matched (in random order).
 
 
 ----------------------------------------------------------------------------------
@@ -38,8 +49,8 @@ Run into time sink with weirdness around printing.
   
 
 Inspection of logistic regression and linear regression predictions
-seem correct, both with and without boolean subset selection. Seems ready
-for doing something more real, like CV.
+seem correct, both with and without boolean subset selection. Seems
+ready for doing something more real, like CV.
 
 
 ----------------------------------------------------------------------------------

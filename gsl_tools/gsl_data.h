@@ -102,7 +102,13 @@ public:
       for(int i=0; i<n; ++i, ++dest)
         *dest = gsl_vector_get(src,mPermute[i]);  }
   
-            
+  template<class Iter> 
+    void
+    permuted_copy_to_iterator  (double const* src, Iter dest, int n) const {
+      for(int i=0; i<n; ++i, ++dest)
+        *dest = src[mPermute[i]];  }
+
+  
 private:
     void allocate(int rows, int cols, bool wts);
     void free();
