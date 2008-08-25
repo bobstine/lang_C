@@ -61,7 +61,7 @@ private:
   void print_to                  (std::ostream& os)       const;
   void print_model_features_to   (std::ostream& os)       const;
   void write_model_to            (std::ostream& os)       const;
-  void write_model_data_to       (std::ostream& os)       const { mModel.write_data_to(os); }
+  void write_model_data_to       (std::ostream& os)       const;
   void write_alphas_to           (std::ostream& os)       const;
 
  private:

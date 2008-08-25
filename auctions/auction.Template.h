@@ -198,6 +198,16 @@ Auction<ModelClass>::print_features(FeatureVector const& features)   const
   std::cout << std::endl;
 }
 
+template <class ModelClass>
+void
+Auction<ModelClass>::write_model_data_to       (std::ostream& os)       const
+{
+  for (unsigned int j=0; j<mModelFeatures.size(); ++j)
+    os << mModelFeatures[j]->name() << "  ";
+  os << std::endl;
+  mModel.write_data_to(os);
+}
+
 
 template <class ModelClass>
 void
