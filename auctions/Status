@@ -1,18 +1,19 @@
 Need to 
 
-        Build smarter streams that look at the X's they are recommending, more careful
-        check for which X's make more sense.  More checking before placing bids.
-	At a minimum, use regular expression to avoid dummy variable products.
-        EG: add a units, "domain" to the variables to suggest heuristic groups to
-        attempt to use in PC analysis (ie, dont combine unless common domain).
+     Get the cross-validation to run for least squares and logistic regression.
 
-        Build a fixed bidder that considers the terms left in the input stream, not
-        just in the current order that is available.
+     Build smarter streams that look at the X's they are recommending, more careful
+     check for which X's make more sense.  More checking before placing bids.
+     At a minimum, use regular expression to avoid dummy variable products.
+     EG: add a units, "domain" to the variables to suggest heuristic groups to
+     attempt to use in PC analysis (ie, dont combine unless common domain).
+
+     Build a fixed bidder that considers the terms left in the input stream, not
+     just in the current order that is available.
                 
-        Check cross validation for logistic regression.
-        
-        Get the spline calibration back in place.
-        Figure out how to use calibration for logistic regression.
+     Get the spline calibration back in place.
+     
+     Figure out how to use calibration for logistic regression.
 
 
         *** Subspace methods are all giving pc's that are not well-scaled....

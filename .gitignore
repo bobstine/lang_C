@@ -4,5 +4,6 @@
 *.o
 *.a
 *~
+\#*\#
 xcodebuild
 a.out

@@ -129,7 +129,7 @@ double *
 LogisticModel<Data>::estimated_probability (int num)
 {
   double      *  xb  (data()->Xb()->data);
-  double      * prob (data()->temp_vec(0)->data);
+  double      * prob (data()->temp_vec(0)->data);                  // note the use of temp
   std::transform(xb, xb+num, prob, Function_Utils::LogisticNeg());
   return prob;
 }
@@ -233,8 +233,9 @@ void
 LogisticModel<Data>::fill_with_predictions(Iter it)
 { 
   int         len    (GSLR::mpData->length());
-  double      *pProb (estimated_probability(len));  // put these in temp vector 0
-  GSLR::mpData->permuted_copy_to_iterator(GSLR::mpData->temp_vec(0), it, len);
+  double      *pProb (estimated_probability(len));  // these are held in temp_vec(0)
+  //  GSLR::mpData->permuted_copy_to_iterator(GSLR::mpData->temp_vec(0), it, len);
+  GSLR::mpData->permuted_copy_to_iterator(pProb, it, len);
 }   
 
 

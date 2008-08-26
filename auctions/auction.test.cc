@@ -4,12 +4,12 @@
   Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
   Then execute code as
   
-          auction.test -f filename -p path -r rounds -c calibration_df
+          auction.test -f filename -o path -r rounds -c calibration_df
 
   where
         -r  number of rounds for the auction (default is 50)
         -f  path for input data              (default is est.dat)
-	-m  path for output model results    (default is model)
+	-o  path for output model results    (default is model)
 	-c  calibration df                   (default is no calibration)
 
   14 Oct 04 ... (dpf) added make_20_geometric bidders
@@ -53,7 +53,7 @@ build_model_data(std::vector<Column> const& y);
  
 
 int
-main(int, char**)
+main(int argc, char** argv)
 { 
   // build vector of columns from file
   double      total_alpha_to_spend (0.5);
@@ -65,9 +65,9 @@ main(int, char**)
   int         splineDF             (0);
   std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
 
-	std::cout << "AUCT: Parsing arguments ..." << std::endl;
+  std::cout << "AUCT: Parsing arguments ..." << std::endl;
   // parse arguments from command line  (pass in at main)
-  // parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, df);
+  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
   std::cout << "AUCT: Arguments    --input-file=" << columnFileName
     << " --output-path=" << outputPath << " -r "
     << numberRounds << " --calibrator-df=" << splineDF<< std::endl;
@@ -111,11 +111,11 @@ main(int, char**)
   gslData *theData (build_model_data(yColumns));
 
   // build model and associated auction
-  // LinearModel <gslData, olsEngine> theRegr(theData);
-  // Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF);
+  LinearModel <gslData, olsEngine> theRegr(theData);
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF);
 
-  LogisticModel <gslData> theRegr(theData);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
+  // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
+  // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
   
   std::cout << "TEST: Initial model is\n" << theRegr << std::endl;
   
@@ -130,21 +130,21 @@ main(int, char**)
                                     FiniteBidder<FStream>(finiteStream), 
                                     finiteStream));
   
-  theAuction.add_expert(make_expert(alphaShare, 
+  theAuction.add_expert(make_expert(alphaShare/2, 
                                     UniversalBidder(), 
                                     make_interaction_stream("Column interactions", 
                                                             columnFeatures)));
-  theAuction.add_expert(make_expert(alphaShare, 
+  theAuction.add_expert(make_expert(alphaShare/2, 
                                     UniversalBidder(), 
                                     make_cross_product_stream("Used-feature interactions", 
                                                               columnFeatures, 
                                                               theAuction.model_features()  )));
-  theAuction.add_expert(make_expert(alphaShare, 
+  theAuction.add_expert(make_expert(alphaShare/4, 
                                     UniversalBidder(),
                                     make_cross_product_stream("Skipped-feature interactions", 
                                                               columnFeatures, 
                                                               theAuction.skipped_features() )));
-  theAuction.add_expert(make_expert(alphaShare, 
+  theAuction.add_expert(make_expert(alphaShare/4, 
                                     UniversalBidder(),
                                     make_polynomial_stream("Skipped-feature polynomial", 
                                                            theAuction.skipped_features(), 
