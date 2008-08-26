@@ -5,3 +5,4 @@
 *.a
 *~
 xcodebuild
+a.out
