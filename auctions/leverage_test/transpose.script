@@ -1,0 +1,5 @@
+#
+# Convert data from columns into sequence of named rows
+#
+rm -f test_rows.dat
+/Users/bob/C/utils/cols_to_rows < test_data.txt > test_rows.dat

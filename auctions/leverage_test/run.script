@@ -1,0 +1,5 @@
+#
+# Convert data from columns into sequence of named rows
+#
+/Users/bob/C/auctions/auction.test -r 100 -f test_rows.dat -o /Users/bob/C/auctions/leverage_test/
+

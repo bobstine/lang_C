@@ -34,8 +34,10 @@ main()
   std::vector< std::vector<double> > theData;
   while (std::cin) {
     std::vector<double> row (nCols);
-    for (int j=0; j<nCols; ++j)
-      std::cin >> row[j];
+    if(std::cin >> row[0]) { // read rest of them
+      for (int j=1; j<nCols; ++j)
+	std::cin >> row[j];
+    } else break;            // at end of file
     theData.push_back(row);
   }
   
