@@ -1,0 +1,19 @@
+
+     Auction    7 bidders with total alpha 0.236662
+      Finite bidder/Columns with alpha=0.0677581 
+      Universal bidder/Column interactions with alpha=0.013545 
+      Universal bidder/Used-feature interactions with alpha=0.0135574 
+      Universal bidder/Skipped-feature interactions with alpha=0.00691692 
+      Universal bidder/Skipped-feature polynomial with alpha=0.00721776 
+      Universal bidder/Principal components with alpha=0.0638336 
+      Universal bidder/RKHS components with alpha=0.0638336 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=10000)     SS 550.778 --> 549.177 R2 = 0.00290619
+      Estimates :    0.058528  0.0126938 
+        SE      :                0.00235 
+         t      :                    5.4 
+         p      :               6.73e-08 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+

@@ -46,7 +46,7 @@ void
 parse_arguments(int argc, char** argv, 
                 std::string& inputDataFile, 
                 std::string& outputPath, 
-                int &nRounds, int &df);
+                int &nRounds, int &df, int &useSubset);
 
 gslData*
 build_model_data(std::vector<Column> const& y);
@@ -55,22 +55,22 @@ build_model_data(std::vector<Column> const& y);
 int
 main(int argc, char** argv)
 { 
-  // build vector of columns from file
+  // build vector of columns from file; set default parameter values
   double      total_alpha_to_spend (0.5);
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
-  //  std::string columnFileName       ("/Users/bob/raslisp/stepwise/C/firstfunds/ds2.rows.dat"); 
-  std::string outputPath           ("/Users/bob/C/auctions/test/log/");   // default parameter values
+  std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         numberRounds         (300); 
-  int         useSubset            (1);  // 1 indicates that second variable in data in boolean selector
+  int         useSubset            (0);
   int         splineDF             (0);
   std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
 
   std::cout << "AUCT: Parsing arguments ..." << std::endl;
   // parse arguments from command line  (pass in at main)
-  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
+  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF, useSubset);
   std::cout << "AUCT: Arguments    --input-file=" << columnFileName
-    << " --output-path=" << outputPath << " -r "
-    << numberRounds << " --calibrator-df=" << splineDF<< std::endl;
+	    << " --output-path=" << outputPath << " -r "
+	    << numberRounds << " --calibrator-df=" << splineDF << " --validate=" << useSubset
+	    << std::endl;
   std::cout << "AUCT: total_alpha_to_spend = " << total_alpha_to_spend << std::endl;
   std::string alphaFileName  (outputPath + "alpha.dat");
   std::string outputFileName (outputPath + "auction.model.pretty_print"); 
@@ -208,7 +208,8 @@ parse_arguments(int argc, char** argv,
 		std::string& inputFile,
 		std::string& outputPath,
 		int & nRounds,
-		int & nDF)
+		int & nDF,
+		int & useSubset)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -216,13 +217,14 @@ parse_arguments(int argc, char** argv,
       int option_index = 0;
       static struct option long_options[] = {
 	  {"calibrator-df",     1, 0, 'c'},  // has arg,
-	  {"input-file",        1, 0, 'f'},  // has	arg,
+	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
+	  {"validate",          0, 0, 'v'},  // no  arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "c:f:o:r:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "c:f:o:r:v:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -250,6 +252,11 @@ parse_arguments(int argc, char** argv,
 	    {
 	      std::istringstream is(optarg);
 	      is >> nRounds;
+	      break;
+	    }
+	  case 'v' :
+	    {
+	      useSubset = 1;
 	      break;
 	    }
 	  case 'h' :
