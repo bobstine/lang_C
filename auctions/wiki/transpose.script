@@ -1,0 +1,10 @@
+#
+# Convert data from columns into sequence of named rows
+#
+rm -f wiki_rows.dat temp.dat
+#
+# First get rid of extra columns
+#
+cut --complement --fields 2-13 wiki_words_a_m.txt > temp.dat 
+/Users/bob/C/utils/cols_to_rows < temp.dat > wiki_rows.dat
+

@@ -11,7 +11,9 @@
         -f  path for input data              (default is est.dat)
 	-o  path for output model results    (default is model)
 	-c  calibration df                   (default is no calibration)
+        -v  treat second var (0/1) as CV indicator
 
+   5 Sep 08 ... Add the validation option.
   14 Oct 04 ... (dpf) added make_20_geometric bidders
    2 Aug 04 ... Force logistic model to have a spline smooth to calibrate (rather than recommender).
   23 Mar 04 ... Revised to use the anonymous ranges and other objects; logistic regression.

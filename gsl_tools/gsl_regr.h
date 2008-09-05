@@ -164,7 +164,7 @@ public:
   typedef typename std::pair<double,double> TestResult;  // test stat, p-value
   
   TestResult  f_test_evaluation () const   { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
-  TestResult  White_evaluation()           { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()      )); }
+  TestResult  White_evaluation()           { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()-mDimZ)); }
  
   TestResult  Bennett_evaluation()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
   TestResult  Bennett_evaluation(double m, double M);                               // response must be of form m <= y <= M       
