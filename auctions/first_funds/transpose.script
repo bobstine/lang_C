@@ -1,5 +1,12 @@
+# Convert data from columns into sequence of named rows Also builds
+# two files, one with the endogenous variables like commission, and
+# then one without.
+rm -f ds1_all_rows.dat 
+/Users/bob/C/utils/cols_to_rows < ds1.ff.alldata.out.txt > ds1_all_rows.dat
 #
-# Convert data from columns into sequence of named rows
+#  get rid of endogenous names
 #
-rm -f ds1_rows.dat
-/Users/bob/C/utils/cols_to_rows < ds1.out.txt > ds1_rows.dat
+rm -f ds1_rows.dat temp.txt
+cut --complement --fields 2-10,35,320,321,323,617 ds1.ff.alldata.out.txt > temp.txt
+/Users/bob/C/utils/cols_to_rows < temp.txt > ds1_rows.dat
+rm -f temp.txt

@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include <cstdio>
+
 int 
 main()
 {
@@ -21,8 +23,17 @@ main()
   if (getline(std::cin, firstLine)) {
     std::istringstream inLine (firstLine);
     std::string name;
-    while (inLine >> name)
+    while(std::getline(inLine,name,'\t')) {  // tab delimited names in first row
+      //std::clog << name << "," ;
+      if ((name[0]=='"') && name[name.size()-2]=='"') {  // quote delimited; remove these
+	// std::clog << "trimming quotes from " << name;
+	name.erase(name.size()-2, name.size()-1);
+	name.erase(0,1);
+	// std::clog << " gives " << name << std::endl;
+      }
       theNames.push_back(name);
+    }
+    //std::clog << std::endl;
   }
   else return 1;
   int nCols (theNames.size());

@@ -1,0 +1,9 @@
+Note that the allnames file has these extra variables that are not in
+the smaller file that avoids these sort of endogenous variables.
+
+{"\"Commission\"", "\"CommissionII\"", "\"CommissionSKEWCORR\"", \
+"\"ContractPercent\"", "\"ExpectedDuration\"", "\"FundAmount\"", \
+"\"FundAmountSKEWCORR\"", "\"HPLeverageFundAvgMthlyProc\"", \
+"\"HPLeverageFundAvgMthlyProcMISSIND\"", "\"Markup\"", \
+"\"PaybackAmount\"", "\"PaybackAmountSKEWCORR\"", "\"POOL\""}
+

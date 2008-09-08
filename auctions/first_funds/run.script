@@ -1,5 +1,5 @@
 #
 # Convert data from columns into sequence of named rows
 #
-/Users/bob/C/auctions/auction.test -r 2000 -f ds1_rows.dat -o /Users/bob/C/auctions/first_funds/
+/Users/bob/C/auctions/auction.test -r 2000 -f ds1_all_rows.dat -o /Users/bob/C/auctions/first_funds/
 
