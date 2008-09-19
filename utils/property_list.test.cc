@@ -8,8 +8,36 @@
 int  main()
 {
   std::cout << "\n\nTEST: Test program is starting... \n\n";
+
+  PropertyEnvelope pd7   ((double) 7.0);
+  PropertyEnvelope pd7too((double) 7.0);
+  PropertyEnvelope pd8   ((double) 8.0);
+  PropertyEnvelope ps    ((std::string)"lkajshdfr");
   
-  PropertyList properties;
+  if (pd7 < pd8)
+    std::cout << "TEST: pd8 is bigger\n";
+  else
+    std::cout << "TEST: pd7 is bigger\n";
+
+  if (pd7 < ps)
+    std::cout << "TEST: ps is bigger\n";
+  else
+    std::cout << "TEST: pd7 is bigger\n";
+
+  if (pd7 == pd7too)
+    std::cout << "TEST: match found\n";
+  else
+    std::cout << "TEST: do not match\n";
+
+  std::cout << pd7    << std::endl;
+  std::cout << pd7too << std::endl;
+  std::cout << ps     << std::endl;
+
+  return 0;
+
+  /*  This part tests tagged properties
+      
+  TaggedPropertyList properties;
 
   std::string key;
   std::string str1 ("string 1");
@@ -42,7 +70,7 @@ int  main()
     extract_value_of_property("DBL1", xx, properties) << std::endl;
 
     {
-    PropertyList::iterator it (properties.find("DBL2"));
+    TaggedPropertyList::iterator it (properties.find("DBL2"));
     if (it != properties.end()) {
       PropertyABC const* p (it->second.property());
       std::cout << "Found ";
@@ -57,6 +85,7 @@ int  main()
     std::cout << "Found\n";
   else
     std::cout << "Property was not found.\n";
+  */
+  
 
-  return 0;
 }
