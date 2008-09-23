@@ -18,7 +18,6 @@
 #include <typeinfo>
 #include <iostream>   // only debug
 
-class PropertyEnvelope;
 
 // Shell base class that supplies common result for clone
 
@@ -29,13 +28,11 @@ class PropertyABC {
   virtual PropertyABC* clone() const = 0;
 
   bool operator<(PropertyABC const* p)    const {
-    std::cout << "Checking for less than\n";
     if (typeid(this).before(typeid(p))) return true;
     if (typeid(p).before(typeid(this))) return false;
     return before(p); }
   
   bool operator==(PropertyABC const* p)    const {
-    std::cout << "Checking for equality\n";
     if (typeid(this).before(typeid(p))) return false;
     if (typeid(p).before(typeid(this))) return false;
     return equal(p); }
@@ -47,8 +44,13 @@ class PropertyABC {
 };
 
 
-// Generic class of properties
-
+// Generic properties, each holding an object of type <T>
+/*
+   Methods before and equal compare properties, *assuming* that the
+   contents are of equal or conformable types.  You get an error
+   message if they are not. Called by ABC class.
+*/
+   
 template<typename T>
 class Property : public PropertyABC {
   
@@ -56,6 +58,8 @@ private:
   T const mValue;
   
 public:
+  typedef T ValueType;
+  
   ~Property() {}
   
   Property (T const& value)    : PropertyABC(), mValue(value) {}
@@ -105,8 +109,7 @@ class PropertyEnvelope {
   PropertyABC* mpProperty;
 
  public:
-  ~PropertyEnvelope() { // std::cout << "PRPE: deleteing property " << mName << std::endl;
-                        if (mpProperty) delete mpProperty; }
+  ~PropertyEnvelope() { if (mpProperty) delete mpProperty; }
   PropertyEnvelope() : mpProperty(0) {}
 
   PropertyEnvelope  (PropertyEnvelope const& pe)  : mpProperty(pe.clone_property()) {}
@@ -114,12 +117,11 @@ class PropertyEnvelope {
 
   template <typename T>
     PropertyEnvelope (T const& value): mpProperty(new Property<T>(value)) {}
-
   
   PropertyABC const* property()               const { return mpProperty; }
 
-  bool operator< (PropertyEnvelope const& pe) const { return mpProperty <  pe.mpProperty; }
-  bool operator==(PropertyEnvelope const& pe) const { return mpProperty == pe.mpProperty; }
+  bool operator< (PropertyEnvelope const& pe) const { std::cout << "<\n"; return mpProperty <  pe.mpProperty; }
+  bool operator==(PropertyEnvelope const& pe) const { std::cout << "==\n"; return mpProperty == pe.mpProperty; }
   
  private:
   PropertyABC* clone_property()              const { return (mpProperty) ? mpProperty->clone() :  0; }
@@ -128,7 +130,7 @@ class PropertyEnvelope {
 std::ostream&
 operator<< (std::ostream &os, PropertyEnvelope const& p)
 {
-  os << "property envelope (";  p.property()->print_to(os);  os << ")  ";
+  os << "PropertyEnvelope [";  p.property()->print_to(os);  os << "]  ";
   return os;
 }
 

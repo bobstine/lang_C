@@ -7,32 +7,55 @@
 
 int  main()
 {
-  std::cout << "\n\nTEST: Test program is starting... \n\n";
+  std::cout << "\n\nTEST: Test program is starting... \n\n\n";
 
-  PropertyEnvelope pd7   ((double) 7.0);
-  PropertyEnvelope pd7too((double) 7.0);
-  PropertyEnvelope pd8   ((double) 8.0);
-  PropertyEnvelope ps    ((std::string)"lkajshdfr");
+  // first test direct envelope comparison
+  PropertyEnvelope p1  ((double) 1.0);
+  PropertyEnvelope p2  ((double) 2.0);
+  PropertyEnvelope ps  ((std::string) "abc");
+  PropertyEnvelope pS  ((std::string) "ABC");
   
-  if (pd7 < pd8)
-    std::cout << "TEST: pd8 is bigger\n";
+  if (p1 < p2)
+    std::cout << "TEST: p1 < p2\n";
+  else 
+    std::cout << "TEST: p1 >= p2\n";
+
+  if (ps < pS)
+    std::cout << "TEST: ps < pS\n";
   else
-    std::cout << "TEST: pd7 is bigger\n";
+    std::cout << "TEST: ps >= pS\n";
 
-  if (pd7 < ps)
-    std::cout << "TEST: ps is bigger\n";
+  if (ps < p1)
+    std::cout << "TEST: ps < p1\n";
   else
-    std::cout << "TEST: pd7 is bigger\n";
+    std::cout << "TEST: ps >= p1\n";
+  
+  // insert into a set
+  std::set<PropertyEnvelope> propSet;
+  propSet.insert(ps);
+  propSet.insert(p1);
+  propSet.insert(pS);
+  propSet.insert(p2);
 
-  if (pd7 == pd7too)
-    std::cout << "TEST: match found\n";
-  else
-    std::cout << "TEST: do not match\n";
+  for(std::set<PropertyEnvelope>::iterator it=propSet.begin(); it != propSet.end(); ++it)
+    std::cout << *it << std::endl;
+  
 
-  std::cout << pd7    << std::endl;
-  std::cout << pd7too << std::endl;
-  std::cout << ps     << std::endl;
-
+  // now insert into a set
+  std::set<PropertyEnvelope> properties;
+  properties.insert( PropertyEnvelope( (std::string) "bb") );
+  properties.insert( PropertyEnvelope( (std::string) "cc") );
+  properties.insert( PropertyEnvelope( (std::string) "aa") );
+  properties.insert( PropertyEnvelope( (double) 7.0) );
+  properties.insert( PropertyEnvelope( (double) 6.0) );
+  properties.insert( PropertyEnvelope( (double) 9.0) );
+  properties.insert( PropertyEnvelope( (double) 10.0) );
+  properties.insert( PropertyEnvelope( (double) 8.0) );
+ 
+  for(std::set<PropertyEnvelope>::iterator it=properties.begin(); it != properties.end(); ++it)
+    std::cout << *it << std::endl;
+ 
+  std::cout << "\n\nTEST: Test program complete.\n";
   return 0;
 
   /*  This part tests tagged properties
