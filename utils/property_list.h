@@ -23,22 +23,22 @@
 
 class PropertyABC {
   
- public:                                                 // protected constructors for envelope only
+ public: 
   virtual ~PropertyABC() {}
   virtual PropertyABC* clone() const = 0;
 
-  bool operator<(PropertyABC const* p)    const {
-    if (typeid(this).before(typeid(p))) return true;
-    if (typeid(p).before(typeid(this))) return false;
+  bool operator<(PropertyABC const& p)    const {
+    if (typeid(*this).before(typeid(p))) return true;
+    if (typeid(p).before(typeid(*this))) return false;
     return before(p); }
   
-  bool operator==(PropertyABC const* p)    const {
+  bool operator==(PropertyABC const& p)    const {
     if (typeid(this).before(typeid(p))) return false;
     if (typeid(p).before(typeid(this))) return false;
     return equal(p); }
 
-  virtual bool before(PropertyABC const* p) const = 0;
-  virtual bool equal (PropertyABC const* p) const = 0;
+  virtual bool before(PropertyABC const& p) const = 0;
+  virtual bool equal (PropertyABC const& p) const = 0;
   
   virtual void print_to (std::ostream&) const = 0;
 };
@@ -67,31 +67,25 @@ public:
   
   virtual PropertyABC*  clone()                   const { return new Property<T>(mValue); }  // whoever *calls* clone resp for delete
 
-  virtual void print_to(std::ostream& os)         const { os << " Type: {" << typeid(mValue).name() << "} = " << mValue << " "; }
+  virtual void print_to(std::ostream& os)         const { os << "Type: {" << typeid(mValue).name() << "} = " << mValue; }
   T            value()                            const { return mValue; }
   
  private:
 
   Property& operator= (Property const&);
   
-  virtual bool before(PropertyABC const* p)       const {
-    Property<T> const* px = dynamic_cast< Property<T> const* > (p);
-    if(px)
-      return mValue < px->mValue;
-    else {
-      std::cout << "ERROR: bad cast in before method of Property\n";
-      return false;
-    }}
-      
-  virtual bool equal(PropertyABC const* p)       const {
-    Property<T> const* px = dynamic_cast< Property<T> const* > (p);
-    if(px)
-      return mValue == px->mValue;
-    else {
-      std::cout << "ERROR: bad cast in equal method of Property\n";
-      return false;
-    }}
-
+  virtual bool before(PropertyABC const& p)       const {
+    // throws an exception if fails
+    Property<T> const& px = dynamic_cast< Property<T> const& > (p);
+    return mValue < px.mValue;
+  }
+  
+  virtual bool equal(PropertyABC const& p)       const {
+    // throwa an exception if fails
+    Property<T> const& px = dynamic_cast< Property<T> const& > (p);
+    return mValue == px.mValue;
+  }
+  
 };
 
 template<typename T>
@@ -106,21 +100,23 @@ operator<< (std::ostream &os, Property<T> const& p)
 
 class PropertyEnvelope {
  private:
-  PropertyABC* mpProperty;
+  PropertyABC const* mpProperty;
 
  public:
   ~PropertyEnvelope() { if (mpProperty) delete mpProperty; }
   PropertyEnvelope() : mpProperty(0) {}
 
   PropertyEnvelope  (PropertyEnvelope const& pe)  : mpProperty(pe.clone_property()) {}
-  PropertyEnvelope& operator= (PropertyEnvelope const& pe) { this->mpProperty=pe.clone_property(); return *this; }
+  PropertyEnvelope& operator= (PropertyEnvelope const& pe) { mpProperty=pe.clone_property(); return *this; }
 
   template <typename T>
     PropertyEnvelope (T const& value): mpProperty(new Property<T>(value)) {}
   
-  PropertyABC const* property()               const { return mpProperty; }
+  PropertyABC const& property()               const { return *mpProperty; }
 
-  bool operator< (PropertyEnvelope const& pe) const { std::cout << "<\n"; return mpProperty <  pe.mpProperty; }
+  bool operator< (PropertyEnvelope const& pe) const { return (*mpProperty) < *(pe.mpProperty); }
+
+  
   bool operator==(PropertyEnvelope const& pe) const { std::cout << "==\n"; return mpProperty == pe.mpProperty; }
   
  private:
@@ -130,7 +126,7 @@ class PropertyEnvelope {
 std::ostream&
 operator<< (std::ostream &os, PropertyEnvelope const& p)
 {
-  os << "PropertyEnvelope [";  p.property()->print_to(os);  os << "]  ";
+  os << "PropertyEnvelope [";  p.property().print_to(os);  os << "]  ";
   return os;
 }
 

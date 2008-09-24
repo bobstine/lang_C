@@ -20,6 +20,11 @@ int  main()
   else 
     std::cout << "TEST: p1 >= p2\n";
 
+  if (p2 < p1)
+    std::cout << "TEST: p2 < p1\n";
+  else 
+    std::cout << "TEST: p2 >= p1\n";
+
   if (ps < pS)
     std::cout << "TEST: ps < pS\n";
   else
@@ -30,17 +35,6 @@ int  main()
   else
     std::cout << "TEST: ps >= p1\n";
   
-  // insert into a set
-  std::set<PropertyEnvelope> propSet;
-  propSet.insert(ps);
-  propSet.insert(p1);
-  propSet.insert(pS);
-  propSet.insert(p2);
-
-  for(std::set<PropertyEnvelope>::iterator it=propSet.begin(); it != propSet.end(); ++it)
-    std::cout << *it << std::endl;
-  
-
   // now insert into a set
   std::set<PropertyEnvelope> properties;
   properties.insert( PropertyEnvelope( (std::string) "bb") );
