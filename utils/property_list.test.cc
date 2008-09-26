@@ -34,8 +34,9 @@ int  main()
     std::cout << "TEST: ps < p1\n";
   else
     std::cout << "TEST: ps >= p1\n";
+  std::cout << std::endl;
   
-  // now insert into a set
+  // insert into a set and print
   std::set<PropertyEnvelope> properties;
   properties.insert( PropertyEnvelope( (std::string) "bb") );
   properties.insert( PropertyEnvelope( (std::string) "cc") );
@@ -48,7 +49,29 @@ int  main()
  
   for(std::set<PropertyEnvelope>::iterator it=properties.begin(); it != properties.end(); ++it)
     std::cout << *it << std::endl;
- 
+  std::cout << std::endl;
+
+  // find items of indicated type and value
+  std::set<PropertyEnvelope>::iterator match (properties.find(p1));  // p1 declared way above
+  if (match != properties.end())
+    std::cout << "TEST: Property p1 match found.\n";
+  else
+    std::cout << "TEST: Property p1 match not found.\n";
+
+  PropertyEnvelope p7  ((double) 7.0);
+  match = properties.find(p7);
+  if (match != properties.end())
+    std::cout << "TEST: Property p7 match found.\n";
+  else
+    std::cout << "TEST: Property p7 match not found.\n";
+
+  // match on class only
+  if (PropertyEnvelopeContentTypeMatches()(p7, typeid((double) 2.2)))
+    std::cout << "TEST: type matches.\n";
+  else
+    std::cout << "TEST: type match fails (error).\n";
+
+  
   std::cout << "\n\nTEST: Test program complete.\n";
   return 0;
 
