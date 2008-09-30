@@ -3,6 +3,7 @@
 #include "property_list.h"
 
 #include <iostream>
+#include <iterator>
 #include <set>
 
 int  main()
@@ -66,10 +67,22 @@ int  main()
     std::cout << "TEST: Property p7 match not found.\n";
 
   // match on class only
-  if (PropertyEnvelopeContentTypeMatches()(p7, typeid((double) 2.2)))
+  if (PropertyEnvelopeContentTypeMatches(typeid((double) 2.2))(p7))
     std::cout << "TEST: type matches.\n";
   else
     std::cout << "TEST: type match fails (error).\n";
+
+  if (Match()(p7, &typeid((double) 2.2)))
+    std::cout << "TEST: type matches.\n";
+  else
+    std::cout << "TEST: type match fails (error).\n";
+
+  //  match for subset
+  std::pair<std::set<PropertyEnvelope>::const_iterator, std::set<PropertyEnvelope>::const_iterator> range
+    = find_matches_of_type(properties, typeid((double)7.7));
+  std::copy(properties.begin(), properties.end(), std::ostream_iterator<PropertyEnvelope>(std::cout));
+  std::cout << "\nTEST: Matches are: " ;
+  std::copy(range.first, range.second, std::ostream_iterator<PropertyEnvelope>(std::cout));
 
   
   std::cout << "\n\nTEST: Test program complete.\n";

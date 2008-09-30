@@ -17,6 +17,7 @@
 #include <string>
 #include <typeinfo>
 #include <utility>
+#include <algorithm>
 #include <set>
 #include <iostream>   // only debug
 
@@ -139,23 +140,51 @@ operator<< (std::ostream &os, PropertyEnvelope const& p)
 
 // Predicate for weak matching of envelopes
 
-class PropertyEnvelopeContentTypeMatches : public std::binary_function<PropertyEnvelope, std::type_info, bool>
+class PropertyEnvelopeContentTypeMatches : public std::unary_function<PropertyEnvelope, bool>
+{
+  std::type_info const* mtp;
+public:
+  PropertyEnvelopeContentTypeMatches(std::type_info const& type) : mtp(&type) {}
+  
+  bool operator()(PropertyEnvelope const& pe) const {
+    // std::cout << "PRPE: Type " << type.name() << " compared to " << pe << std::endl;
+    return ((pe.property()).type_matches(*mtp));
+  }
+};
+
+
+class Match : public std::binary_function<PropertyEnvelope, std::type_info, bool>
 {
 public:
-  bool operator()(PropertyEnvelope const& pe, std::type_info const& type) {
-    // std::cout << "PRPE: Type " << type.name() << " compared to " << pe << std::endl;
+  
+  bool operator()(PropertyEnvelope const& pe, std::type_info const& type) const {
     return ((pe.property()).type_matches(type));
   }
 };
+
+
+std::pair<std::set<PropertyEnvelope>::const_iterator, std::set<PropertyEnvelope>::const_iterator>
+find_matches_of_type (std::set<PropertyEnvelope> const& s, std::type_info const& type)
+{
+  std::set<PropertyEnvelope>::const_iterator fst = find_if(s.begin(), s.end(),
+							   bind2nd(Match(),type));
+  if (fst == s.end()) return std::make_pair(s.end(), s.end()); 
+  std::set<PropertyEnvelope>::const_iterator lst = find_if(fst, s.end(),
+							   not1(bind2nd(Match(),type)));
+  return std::make_pair(fst, lst);
+}
+
+
+
 
 std::pair<std::set<PropertyEnvelope>::const_iterator, std::set<PropertyEnvelope>::const_iterator>
 find_properties_of_type (std::set<PropertyEnvelope> const& s, std::type_info const& type)
 {
   std::set<PropertyEnvelope>::const_iterator fst = find_if(s.begin(), s.end(),
-							   bind2nd(PropertyEnvelopeContentTypeMatches(), type));
-  if (fst == s.end()) return std::make_pair(s.end(), s.end());
-  std::set<PropertyEnvelope>::const_iterator lst = find_if(fst, s.end,
-							   not1(bind2nd(PropertyEnvelopeContentTypeMatches(), type)));
+							   PropertyEnvelopeContentTypeMatches(type));
+  if (fst == s.end()) return std::make_pair(s.end(), s.end()); 
+  std::set<PropertyEnvelope>::const_iterator lst = find_if(fst, s.end(),
+							   not1(PropertyEnvelopeContentTypeMatches(type)));
   return std::make_pair(fst, lst);
 }
 		
