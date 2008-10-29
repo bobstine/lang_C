@@ -1,5 +1,5 @@
 // $Id: auction.test.cc,v 3.28 2008/02/22 19:39:47 bob Exp $
-
+  
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
   Then execute code as
