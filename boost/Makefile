@@ -22,7 +22,7 @@ EXTERNAL_USES = boost_regex-mt-1_35
 #
 ###########################################################################
 
-level_0   =  regex.o
+level_0   =  regex.o  csv_parser.o
 level_1   =
 
 ############################################################################
@@ -38,6 +38,14 @@ hello:	hello.o
 regex: regex.o
 	$(GCC) $< $(LDLIBS) -o $@
 	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
+
+csv_parser_demo: csv_parser_demo.o
+	$(GCC) $< $(LDLIBS) -o $@
+	./csv_parser_demo
+
+csv_parser: csv_parser.o
+	$(GCC) $< $(LDLIBS) -o $@
+	./csv_parser
 
 ###########################################################################
 
