@@ -45,7 +45,8 @@ csv_parser_demo: csv_parser_demo.o
 
 csv_parser: csv_parser.o
 	$(GCC) $< $(LDLIBS) -o $@
-	./csv_parser
+	./csv_parser < test.txt
+
 
 ###########################################################################
 
