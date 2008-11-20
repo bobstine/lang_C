@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <iterator>
 
 #include <sstream>
 #include <cstdio>
@@ -19,130 +20,187 @@ using namespace boost::spirit;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef std::vector< std::vector<std::string> > StringDataMatrix;
+
+///////////////////////////////////////////////////////////////////////////////
+
 class StringCatcher
 {
-  std::vector< std::string > mStrings;
+private:
+  typedef std::vector< std::string > StrVec;
 
-  void operator()(std::string const& s) { mString.push_back(s); }
-}
+  StrVec *mpStrings;
 
+public:
+  StringCatcher (StrVec *pStrings) : mpStrings(pStrings) {}
   
-bool
-parse_variable_names (char const* str, back_insert_iterator< std::vector<std::string> > const& inserter)
+  template <class It>
+  void operator()(It first, It last) const      { std::string s(first, last); mpStrings->push_back(s); }
+};
+
+
+class NumberWriter
 {
-  class InsertOperator {
-    typedef back_insert_iterator< std::vector<std::string> > Iter;
-    InsertOperator (Iter 
-    void operator()(std::string const& s) { *inserter = s; ++ inserter }
-  }
-  
-  rule<phrase_scanner_t> name_rule, name_item, option_item;   // phrase_scanner type allows space_p in parser
+  template <class It>
+  void operator()(It first, It last) const      { std::copy (first, last, std::ostream_iterator<char *>(std::cout)); }
+};
+
+
+template <class Op>
+bool
+parse_variable_names (char const* str, Op f)
+{
+  rule<phrase_scanner_t> name_rule, name_item, option_item;    // phrase_scanner type allows space_p in parser
   
   option_item = confix_p('[', *anychar_p , ']');               // bracketed options in var name
-
   name_item =
      (       
-      (  alpha_p >> *(space_p | alnum_p) >> *option_item)      // char first in name without quotes
+      alpha_p >> *(space_p | alnum_p) >> *option_item          // char first in name without quotes
       |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
      );
-  
-  name_rule =
-    list_p(
-	   name_item[inserter], 
-	   ','
-	   );
+  name_rule = list_p(name_item[f], ',');
 
-  
+  parse_info<> result = parse(str, name_rule, space_p);   // binding 3rd argument produces a phrase scanner  
+  if (result.hit) {
+    cout << "Parsing names from input line: " << endl<< "\t" << str << endl;
+    if (!result.full) {
+      cout << "Incomplete parse ...  Parsing stopped at  " ;
+      char const* s = result.stop;
+      int limit = 10;
+      while(s && limit--)
+	cout << *s++;
+      cout << endl;
+    }
+  }
+  return result.hit;
+}
 
-int main ()
+template <class Op>
+bool
+parse_data_line (char const* str, Op f)
 {
-  // Note: use of template parameter <phrase_scanner> allow for spaces in parsing
-
-
-  // define csv grammar for parsing variable names
-  // no missing names allowed; allow brackets as part of column name for options
-  
-  std::vector< std::string > inputColumnNames;
-
-
-  // define csv grammar for parsing data
-  
   rule<phrase_scanner_t> data_rule, data_item;
-
+  
   data_item =
      (       
-      (alpha_p >> *(space_p | alnum_p))                        // char first in name without quotes
-      |   confix_p('\"', *c_escape_ch_p, '\"')                 // string with quotes around it
-      |   longest_d[real_p | int_p]                            // numbers
-      |   eps_p                                                // no missing values
+      (alpha_p >> *(space_p | alnum_p))                    // char first in name without quotes
+      |   confix_p('\"', *c_escape_ch_p, '\"')             // string with quotes around it
+      |   longest_d[real_p | int_p]                        // numbers
+      |   eps_p                                            // no missing values
       );
+  data_rule =  list_p( ! data_item[f], ',');               // ! matches 0 or 1 of the following  ... Why do we need it?
+
+  parse_info<> result = parse(str, data_rule, space_p);    // binding 3rd argument produces a phrase scanner  
+  if (result.hit) {
+    cout << "Parsing data row: " << endl << "\t" << str << endl;
+    if (!result.full) {
+      cout << "Incomplete data parse ...  Parsing stopped at  " ;
+      char const* s = result.stop;
+      int limit = 10;
+      while(s && limit--)
+	  cout << *s++;
+      cout << endl;
+    }
+  }
+  return result.hit;
+}
+
+bool
+can_parse_number (std::string const& str)
+{
+  parse_info<> result = parse(str.c_str(), real_p);
+  return result.hit;
+}
+
+void
+write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
+			   std::vector<int> const& missing, std::vector<int> const& numeric,
+			   std::ostream& output)
+// writes columns in streaming fashion
+// output will contain at least as many cols as input due to categorical and missing expansion
+{
+  int nVars (varNames.size());
+  int nObs  (data.size());
+  for (int col=0; col<nVars; ++col) {
+    if (missing[col]==0 && numeric[col]==nObs) { // case is complete and numeric
+      output << varNames[col] << endl;
+      for (int i=0; i<nObs; ++i) {
+	output << data[i][col].c_str() << " ";
+      }
+      output << endl;
+    }
+    else std::cout << " *** Cannot write column " << varNames[col] << " *** " << endl;
+  }
+}
   
-  std::vector< std::string > inputData;
+////////////////////////////////////////////////////////////////////////////////
 
-  data_rule =
-    list_p(
-	   ! data_item[push_back_a(inputData)],     // ! matches 0 or 1 of the following  ... Why do we need it?
-	   ','
-	   );
+int main ()
 
-
-  // open input file and read lines
-  // next line is a test line
-  //   char const *inputString = "\"string\",\"string with an embedded \\\"\"," "12345,spaced name, 0.12345e4,, 2 ,noSpace,";
+////////////////////////////////////////////////////////////////////////////////
+{
   std::string inputLine;
 
-  // parse names of variables first
+  // parse names of variables from first input line
+  std::vector< std::string > inputColumnNames;
   if (getline(std::cin, inputLine)) {
-    parse_info<> result = parse(inputLine.c_str(), name_rule, space_p);   // binding 3rd argument produces a phrase scanner
-    cout << "-----------------------------------------------------------------" << endl;
-    if (result.hit) {
-      cout
-	<< "Parsing names: " << endl
-	<< "\t" << inputLine << endl;
-      if (!result.full) {
-	cout << "Incomplete parse ...  Parsing stopped at  " ;
-	char const* s = result.stop;
-	int limit = 10;
-	while(s && limit--)
-	  cout << *s++;
-	cout << endl;
-      }
-      cout <<  "\nVariable names from the item parser:" << endl;
+    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) )) {
+      cout <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)  {
 	cout << " |" << *it << "| " << endl;
       }
     }
-    else cout << "Failed to parse CSV list!" << endl;
-  }
+    else cout << "Parser: Failed to parse CSV variable names.\n" << endl;
+  }    
+  else cout << "Parser: Not able to read input data for names.\n " << endl;
+  cout << "\n\n-----------------------------------------------------------------\n\n" << endl;
 
-  // iterate through remaining lines of data
+  // set up vectors to count types of data in columns
+  int nVars (inputColumnNames.size());
+  std::vector< int > numeric;
+  std::vector< int > missing;
+  for (int i=0; i<nVars; ++i) {
+    numeric.push_back(0);
+    missing.push_back(0);
+  }
+  
+  // iterate through remaining lines of data (matrix of strings)
+  StringDataMatrix dataMatrix;
+  int lineNumber (0);
   while (getline(std::cin, inputLine)) {
-    inputData.clear();
-    parse_info<> result = parse(inputLine.c_str(), data_rule, space_p);
-    cout << "-----------------------------------------------------------------" << endl;
-    if (result.hit) {
-      cout
-	<< "Parsing data row: " << endl
-	<< "\t" << inputLine << endl;
-      if (!result.full) {
-	cout << "Incomplete data parse ...  Parsing stopped at  " ;
-	char const* s = result.stop;
-	int limit = 10;
-	while(s && limit--)
-	  cout << *s++;
-	cout << endl;
-      }
+    ++lineNumber;
+    std::vector<std::string> inputData;
+    if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData ))) {
       cout <<  "\nData from the item parser:" << endl;
       for (std::vector<std::string>::iterator it = inputData.begin(); it != inputData.end(); ++it)  {
 	cout << " |" << *it << "| " << endl;
       }
+      if ((int)inputData.size() == nVars) {
+	dataMatrix.push_back(inputData);
+	for(int i=0; i<nVars; ++i) {
+	  if(inputData[i].size() == 0)              ++missing[i];
+	  else if (can_parse_number(inputData[i]))  ++numeric[i];
+	}
+	cout
+	  << "Parser: Line " << lineNumber
+	  << ". Number of data elements (" << inputData.size()
+	  << ") unequal to number of variables (" << nVars << ").\n\t" << inputLine << endl;
+      }
+      else cout << "Parser: Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
     }
-    else cout << "Failed to parse CSV list!" << endl;
   }
   
-  cout << endl;
-
-
+  cout << "-----------------------------------------------------------------" << endl;
+  cout << "Parser: Summary \n\t nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
+  cout << "       #Numeric: " ;
+  for (int i = 0; i<nVars; ++i)
+    cout << numeric[i] << " ";
+  cout << "\n       #Missing: " ;
+  for (int i = 0; i<nVars; ++i)
+    cout << missing[i] << " ";
+  
+  write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, std::cout);
+  
   return 0;
 }
 
