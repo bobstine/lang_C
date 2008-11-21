@@ -1,0 +1,6 @@
+"string","string with an embedded \"",v12345,spaced name,vvvv,noSpaceName,asddkj,nomizz
+"string","string with an embedded \"",12345,spaced name, 0.12345e4,, 2,noSpace,
+123,    a b c, w3e443, w34, XXX[type=3],3434[x=2]
+1.111   , 22, three, 4444, five, 666, 7.7777 ,  888
+1, 2.2 ,2 , 3.3   ,4.44444   ,5.0e-6,  10e10,   
+1,   1,2,2,3, 3   , ,4
