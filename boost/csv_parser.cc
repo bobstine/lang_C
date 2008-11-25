@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <set>
 #include <iterator>
 
 #include <sstream>
@@ -112,24 +113,79 @@ can_parse_number (std::string const& str)
   return result.hit;
 }
 
+
+
+
+double
+parse_double (std::string const& str)
+{
+  double x;
+  std::istringstream ss (str);
+  ss >> x;
+  return x;
+}
+
+
 void
 write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
-			   std::vector<int> const& missing, std::vector<int> const& numeric,
+			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
 // writes columns in streaming fashion
 // output will contain at least as many cols as input due to categorical and missing expansion
 {
   int nVars (varNames.size());
   int nObs  (data.size());
-  for (int col=0; col<nVars; ++col) {
-    if (missing[col]==0 && numeric[col]==nObs) { // case is complete and numeric
-      output << varNames[col] << endl;
-      for (int i=0; i<nObs; ++i) {
-	output << data[i][col].c_str() << " ";
+  
+  for (int column=0; column<nVars; ++column) {
+    output << varNames[column] << endl;
+    if (varNumericCount[column]+varMissingCount[column]==nObs) {
+      // if none are missing and data is numerical, then copy numbers to output
+      if (varMissingCount[column]==0)
+	for(int i=0; i<nObs; ++i)
+	  output << data[i][column].c_str() << " ";
+      // figure out the mean, insert into the numerical data, then write it along with missing indicator
+      else {
+	double sum (0.0);
+	std::vector< int  > missingPos;
+	for(int i=0; i<nObs; ++i) {
+	  if (data[i][column].size() > 0) {
+	    sum += parse_double(data[i][column]);
+	  } else {
+	    missingPos.push_back(i);
+	  }
+	}
+	double mean (sum/(nObs-varMissingCount[column]));
+	for(int i=0, j=0; i<nObs; ++i) {
+	  if(missingPos[j]>i)
+	    output << data[i][column].c_str() << " ";
+	  else {
+	    output << mean << " ";
+	    ++j;
+	  }
+	}
+	// write missing indicator
+	output << endl << varNames[column] << "[missing]" << endl;
+	for(int i = 0, j=0; i<nObs; ++i) {
+	  if (missingPos[j]>i)
+	    output << "0 " ;
+	  else {
+	    output << "1 ";
+	    ++j;
+	  }
+	}
       }
       output << endl;
     }
-    else std::cout << " *** Cannot write column " << varNames[col] << " *** " << endl;
+    else { // its categorical
+      // find the collection of unique values
+      std::set< std::string > uniqueValues;
+      for (int i=0; i<nObs; ++i) {
+	if (data[i][column].size() > 0) { // not missing
+	  uniqueValues.insert(data[i][column]);
+	}
+      }
+    }
+    else std::cout << " *** Cannot write column " << varNames[column] << " *** " << endl;
   }
 }
   
@@ -164,8 +220,9 @@ int main ()
     missing.push_back(0);
   }
   
-  // iterate through remaining lines of data (matrix of strings)
+  // iterate through remaining lines of data in order to build the matrix of strings
   StringDataMatrix dataMatrix;
+
   int lineNumber (0);
   while (getline(std::cin, inputLine)) {
     ++lineNumber;
