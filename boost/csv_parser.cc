@@ -1,23 +1,29 @@
+#include <cassert>
+
 #include <string>
 #include <iostream>
-#include <cassert>
-#include <vector>
-#include <set>
-#include <iterator>
-
 #include <sstream>
 #include <cstdio>
 
+#include <vector>
+#include <set>
+
+#include <iterator>
+#include <algorithm>
+#include <numeric>
 
 #include <boost/spirit/core.hpp>
 #include <boost/spirit/utility/confix.hpp>
 #include <boost/spirit/utility/lists.hpp>
 #include <boost/spirit/utility/escape_char.hpp>
 
+#include <boost/lambda/lambda.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace std;
 using namespace boost::spirit;
+using namespace boost::lambda;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -115,16 +121,40 @@ can_parse_number (std::string const& str)
 
 
 
-
 double
-parse_double (std::string const& str)
+parse_double (std::string str)
 {
-  double x;
-  std::istringstream ss (str);
-  ss >> x;
-  return x;
+  if (str.size() == 0)
+    return 0.0;
+  else {
+    double x;
+    std::istringstream ss (str);
+    ss >> x;
+    return x;
+  }
+}
+double
+parse_double (std::vector<std::string> const& sVec, int position)
+{
+  return parse_double(sVec[position]);
 }
 
+
+class ParseDoubleAtPosition
+{
+private:
+  int mPosition;
+public:
+  ParseDoubleAtPosition(int position) : mPosition(position) {}
+
+  double operator()(std::vector<std::string> const& svec) { return parse_double(svec,mPosition); }
+};
+
+int
+string_length (std::vector<std::string> const& sVec, int position)
+{
+  return sVec[position].size();
+}
 
 void
 write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
@@ -140,12 +170,15 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
     output << varNames[column] << endl;
     if (varNumericCount[column]+varMissingCount[column]==nObs) {
       // if none are missing and data is numerical, then copy numbers to output
-      if (varMissingCount[column]==0)
+      if (varMissingCount[column]==0) {
 	for(int i=0; i<nObs; ++i)
 	  output << data[i][column].c_str() << " ";
       // figure out the mean, insert into the numerical data, then write it along with missing indicator
-      else {
-	double sum (0.0);
+      } else {
+	double sum = std::accumulate(data.begin(), data.end(),
+				     0.0,
+				     ParseDoubleAtPosition(column)
+				     );
 	std::vector< int  > missingPos;
 	for(int i=0; i<nObs; ++i) {
 	  if (data[i][column].size() > 0) {
@@ -166,8 +199,7 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
 	// write missing indicator
 	output << endl << varNames[column] << "[missing]" << endl;
 	for(int i = 0, j=0; i<nObs; ++i) {
-	  if (missingPos[j]>i)
-	    output << "0 " ;
+	  if (missingPos[j]>i)     output << "0 " ;
 	  else {
 	    output << "1 ";
 	    ++j;
@@ -180,12 +212,10 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
       // find the collection of unique values
       std::set< std::string > uniqueValues;
       for (int i=0; i<nObs; ++i) {
-	if (data[i][column].size() > 0) { // not missing
-	  uniqueValues.insert(data[i][column]);
-	}
+	if (data[i][column].size() > 0)
+	  uniqueValues.insert(data[i][column]);  // not missing
       }
     }
-    else std::cout << " *** Cannot write column " << varNames[column] << " *** " << endl;
   }
 }
   
