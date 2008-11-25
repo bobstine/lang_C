@@ -35,6 +35,10 @@ hello:	hello.o
 	$(GCC) $<  -o $@
 	echo 1 2 3 | ./hello
 
+lambda:	lambda.o
+	$(GCC) $<  -o $@
+	./lambda 
+
 regex: regex.o
 	$(GCC) $< $(LDLIBS) -o $@
 	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
