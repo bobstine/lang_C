@@ -1,5 +1,3 @@
-// $Id: range.test.cc,v 1.38 2003/12/02 20:20:36 bob Exp $    
-  
 #include "range.h"
 
 #include <iostream>
@@ -33,11 +31,11 @@ int main()
   std::cout << "\n Direct access to ends: " << *begin(iz) << " -- " << *(end(iz)-1) << std::endl;
   std::cout << "\n Direct access to ends: " << *begin(&iz) << " -- " << *(end(&iz)-1) << std::endl;
   std::cout << "\n Length of range      : " << end(rng)-begin(rng) << std::endl;
-  std::cout << "\nTest with 5 doubles  :  " << rng;
-  std::cout << "\nTest with 5 doubles  :  " << make_range(rng);
-  std::cout << "\nTest with 5 doubles  :  " << make_range(iz);
-  std::cout << "\nTest with 5 doubles  :  " << make_range(make_pair(iz.begin(),iz.end()));
-  std::cout << "\nTest with 5 doubles  :  " << make_range(iz.begin(),iz.end());
+  std::cout << "\n Test with 5 doubles  :  " << rng;
+  std::cout << "\n Test with 5 doubles  :  " << make_range(rng);
+  std::cout << "\n Test with 5 doubles  :  " << make_range(iz);
+  std::cout << "\n Test with 5 doubles  :  " << make_range(make_pair(iz.begin(),iz.end()));
+  std::cout << "\n Test with 5 doubles  :  " << make_range(iz.begin(),iz.end());
 
   {
     std::cout << "\nTest assignment to range" << std::endl;

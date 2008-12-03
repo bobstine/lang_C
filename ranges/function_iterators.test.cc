@@ -1,5 +1,5 @@
 // $Id: function_iterators.test.cc,v 1.11 2004/08/25 14:47:08 bob Exp $    
-  
+
 #include "function_utils.h"
 #include "function_iterators.h"
 #include "range_traits.h"
@@ -7,6 +7,36 @@
 
 #include "composer.h"
 #include "evaluator.h"
+
+#include <boost/lambda/lambda.hpp>
+////
+using namespace boost::lambda;
+////
+
+/* cannot see how to do it this way since don't know the signigure for lambda function
+
+   template <class Op>
+class function_traits {
+  typedef void result_type;
+};
+
+template <class Op>
+*/
+  
+  
+/*
+namespace boost {
+  namespace lambda {
+
+    template<class Act, class X, class Y>
+    struct plain_return_type_2<Act, X, Y> {
+      typedef Z type;
+    };
+
+  }
+}
+*/
+
 
 #include <iostream>
 #include <vector>
@@ -57,7 +87,6 @@ class Simple_square : public std::unary_function<double,double>
  public:
    double operator()(double x){return x * x;}
 };
-
 
 class Shifter : public std::unary_function<double,double>
  {
@@ -242,7 +271,13 @@ int main()
   { // use unary ranges
     std::cout << std::endl;
     std::cout << "  shifted vector:           "
-	      << make_range(make_unary_iterator(Operator(6.6), iz.begin()), make_unary_iterator(Operator(6.6), iz.end()));
+	      << make_range(
+			    make_unary_iterator(
+						_1 + 6.6,  // lambda function
+						iz.begin()),
+			    make_unary_iterator(
+						Operator(6.6),
+						iz.end()));
     std::cout << "  shifted vector:           "
 	      << make_unary_range(Shifter(6.6), make_unary_range(Shifter(6.6),iz) );
     
