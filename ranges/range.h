@@ -7,7 +7,7 @@
 
   Begin and end support three things
 
-    (a) containers
+          (a) containers
 	  (b) pairs of iterators
 	  (c) ranges
 
@@ -194,7 +194,7 @@ end(range<Iter> r)
   return r.mEnd;
 }
 
-}  // namespace ranges
+} // namespace ranges
 
 using namespace Ranges;
 

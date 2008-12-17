@@ -9,34 +9,10 @@
 #include "evaluator.h"
 
 #include <boost/lambda/lambda.hpp>
+
 ////
 using namespace boost::lambda;
 ////
-
-/* cannot see how to do it this way since don't know the signigure for lambda function
-
-   template <class Op>
-class function_traits {
-  typedef void result_type;
-};
-
-template <class Op>
-*/
-  
-  
-/*
-namespace boost {
-  namespace lambda {
-
-    template<class Act, class X, class Y>
-    struct plain_return_type_2<Act, X, Y> {
-      typedef Z type;
-    };
-
-  }
-}
-*/
-
 
 #include <iostream>
 #include <vector>
@@ -273,13 +249,16 @@ int main()
     std::cout << "  shifted vector:           "
 	      << make_range(
 			    make_unary_iterator(
-						_1 + 6.6,  // lambda function
+						Operator(6.6),  // lambda function
 						iz.begin()),
 			    make_unary_iterator(
 						Operator(6.6),
 						iz.end()));
     std::cout << "  shifted vector:           "
-	      << make_unary_range(Shifter(6.6), make_unary_range(Shifter(6.6),iz) );
+	      << make_unary_range(Shifter(6.6),iz) << std::endl;
+    
+    std::cout << "  lambda function:          "
+	      << make_unary_range(ret<double>(_1 + 6.6), iz) << std::endl;
     
     std::cout << "  direct shifter:           "
 	      << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
@@ -304,18 +283,21 @@ int main()
     //    std::cout << "  range + 200   :           " << make_binary_range(std::plus<double>(), make_range(iz), 200.);
   }
 
-  std::list< Shifter > f;
-  f.push_back(Shifter(1.0));  f.push_back(Shifter(2.0)); 
-  f.push_back(Shifter(3.0));  f.push_back(Shifter(4.0));
-  
-  {
+  /*   
+  { 
     std::cout << std::endl << "Test of function ranges (and evaluator)" << std::endl;
+    std::list< Shifter > f;
+    f.push_back(Shifter(1.0));  f.push_back(Shifter(2.0)); 
+    f.push_back(Shifter(3.0));  f.push_back(Shifter(4.0));
+
     double x (0.0);
     // here are two styles that reverse the order of evaulation in operator*
     std::cout << "Range of shifter functions evaluated at 0: " << make_function_range(x,f);
     std::cout << "                                         : " << make_unary_range(evaluator<Shifter>(x),f);
-    
-    
+   } 
+  */
+  
+   {
     // Checking basic iterators using ranges
     std::list<double> iz;
     for(int i=0; i<10; ++i)
@@ -323,8 +305,8 @@ int main()
     test_bidirectional_iterator(begin(make_unary_range(Shifter(6.6),iz)));
     test_bidirectional_iterator(begin(make_unary_range(std::bind1st(std::plus<double>(),6.6),iz)));
     test_bidirectional_iterator(begin(make_binary_range(Adder(100.0), make_range(iz),make_range(iz))));
-    test_bidirectional_iterator(begin(make_function_range(x,f)));
-    test_bidirectional_iterator(begin(make_unary_range(evaluator<Shifter>(x),f)));
+    // test_bidirectional_iterator(begin(make_function_range(x,f)));
+    // test_bidirectional_iterator(begin(make_unary_range(evaluator<Shifter>(x),f)));
   }
 
   {
@@ -347,10 +329,10 @@ int main()
   }
 
   {
-    std::cout << std::endl << "Test of table iterators" << std::endl;
-    std::cout << " " << make_unary_range( make_unary_range<Shifter>(iz), f);
-    std::cout << "--- and now transposed ---" << std::endl;
-    std::cout << " " << make_unary_range(make_function_range<double>(f), iz);
+    // std::cout << std::endl << "Test of table iterators" << std::endl;
+    // std::cout << " " << make_unary_range( make_unary_range<Shifter>(iz), f);
+    // std::cout << "--- and now transposed ---" << std::endl;
+    // std::cout << " " << make_unary_range(make_function_range<double>(f), iz);
   }
   
   {
