@@ -20,7 +20,7 @@ class function_result_type
 
 
 template <class X, class Y>
-  class function_result_type< std::unary_function<X,Y> >
+class function_result_type< std::unary_function<X,Y> >
 {
  public:
   typedef Y type;
@@ -28,7 +28,7 @@ template <class X, class Y>
 
 
 template <class X1, class X2, class Y>
-  class function_result_type< std::binary_function<X1,X2,Y> >
+class function_result_type< std::binary_function<X1,X2,Y> >
 {
  public:
   typedef Y type;
@@ -36,10 +36,11 @@ template <class X1, class X2, class Y>
 
 
 template <class Action, class Args>
-  class function_result_type< boost::lambda::lambda_functor<boost::lambda::lambda_functor_base<Action,Args> > >
+class function_result_type< boost::lambda::lambda_functor<boost::lambda::lambda_functor_base<Action,Args> > >
 {
  public:
   typedef typename boost::lambda::lambda_functor_base<Action,Args>::template sig<Args>::type type;
 };
+
 
 #endif

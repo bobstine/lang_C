@@ -2,7 +2,6 @@
 
 #include "function_utils.h"
 #include "function_iterators.h"
-#include "function_result_type.h"
 #include "range_traits.h"
 #include "range.h"
 
@@ -10,7 +9,6 @@
 #include "evaluator.h"
 
 #include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/tuple/tuple.hpp>
 
 ////
@@ -135,47 +133,24 @@ Shifter::Shifter(const Shifter& s)
 
 
 
-
-template <class F>
-class tuple_binary_function
+class TupleAdder: public std::unary_function<boost::tuple<double,double>, double>
 {
-  F mF;
-  
- public:
-  typedef          tuple_binary_function<F>             type;
-  typedef typename function_result_type<F>::type result_type;
-  
- tuple_binary_function(F f) : mF(f) {}
-
-  result_type operator()(typename boost::tuple<double,double> const& tup) const {    return mF(tup.get<0>(),tup.get<1>());    }
-  /* either works if not a template
-     double operator()(typename boost::tuple<double,double> const& tup) const {    return mF(tup.get<0>(),tup.get<1>());    }
-
-     result_type operator()(typename boost::tuple<double,double> const& tup) const {    return mF(tup.get<0>(),tup.get<1>());    }
-
-     // these formulations die with the "expected primary expression" error
-
-     template <class Tuple>
-     result_type operator()(Tuple const& tup) const {    return mF(tup.get<0>(),tup.get<1>());    }
-
-     template<class X, class Y>
-     result_type operator()(boost::tuple<X,Y> const& tup) const {    return mF(tup.get<0>(),tup.get<1>());    }
-
-  */
-  
+public:
+  double operator()(boost::tuple<double,double> tup) const;
 };
+
+double
+TupleAdder::operator()(boost::tuple<double,double> tup) const { return tup.get<0>() + tup.get<1>(); }
+
 
 
 
 class Adder : public std::binary_function<double,double,double> {
   double mConstant;
 public:
-  Adder()                : mConstant(0.0) { }
   Adder(double constant) : mConstant(constant) { }
   double operator()(const double x, const double y) const { return x + y + mConstant; }
 };
-
-
 
  template <class I, class Pred>
  int
@@ -185,6 +160,72 @@ public:
  }
 
 
+
+/*
+  the following three functions check that basic functions of iterators work.
+  I think every function of an iterator is called at least once.  (Or more accurately,
+  every one we implement, which hopefully is all the ones that should exist.)
+*/
+
+template <class Iter>
+ inline
+ void
+ test_forward_iterator(Iter i)
+ {
+   assert(i == i);
+   Iter j = i;
+   assert(i == j);
+   assert((*i) == (*j));
+   j++;
+   assert(i != j);
+   ++i;
+   assert(i == j);
+   assert((*i) == (*j));
+ }
+
+ template <class Iter>
+ inline
+ void
+ test_bidirectional_iterator(Iter i)
+ {
+   test_forward_iterator(i);
+   Iter j = i;
+   j++;
+   i++;
+   assert(i == j);
+   j--;
+   assert(i != j);
+   --i;
+   assert(i == j);
+ }
+
+ template <class Iter>
+ inline
+ void
+ test_random_access_iterator(Iter i)
+ {
+   test_bidirectional_iterator(i);
+   assert(!(i < i));
+   assert(!(i > i));
+
+   Iter big = i + 3;
+   assert(i < big);
+   assert(big > i);
+   assert(i <= big);
+   assert(big >= i);
+   assert(big - i == 3);
+
+   Iter j = big - 3;
+   assert(i == j);
+   i += 1;
+   assert(i != j);
+   j = j + 1;
+   assert(i == j);
+   i -= 1;
+   assert(i != j);
+   j = j - 1;
+   assert(i == j);
+ }
 
 
 template<class range>
@@ -213,7 +254,6 @@ operator<<(std::ostream& os, const range<Iter>& r)
 
 int main()
 {
-
   std::vector<double> iz;
   for(int i=0; i<5; ++i)
     iz.push_back(10 * i);
@@ -221,11 +261,38 @@ int main()
   range<std::vector<double>::const_iterator> rng(iz.begin(),iz.end());
   std::cout << "\n Direct access to ends: " << *begin(rng) << " -- " << *(end(rng)-1) << std::endl;
   std::cout << "\n Length of range      : " << end(rng)-begin(rng) << std::endl;
+
   
+  {
+    std::cout << "Check bidrectional iterator traversal using ranges.\n";
+    std::list<double> iz;
+    for(int i=0; i<10; ++i)
+      iz.push_back(10 * i);
+    test_bidirectional_iterator(begin(make_unary_range(Shifter(6.6),iz)));
+    test_bidirectional_iterator(begin(make_unary_range(std::bind1st(std::plus<double>(),6.6),iz)));
+    test_bidirectional_iterator(begin(make_binary_range(TupleAdder(), make_range(iz),make_range(iz))));
+    // test_bidirectional_iterator(begin(make_function_range(x,f)));
+    // test_bidirectional_iterator(begin(make_unary_range(evaluator<Shifter>(x),f)));
+  }
+  {
+    std::cout << "Check random-access iterator traversal using ranges.\n";
+    std::vector<double> iz;
+    for(int i=0; i<10; ++i)
+      iz.push_back(10 * i);
+    test_random_access_iterator(begin(make_unary_range(Shifter(6.6),iz)));
+    test_random_access_iterator(begin(make_unary_range(std::bind1st(std::plus<double>(),6.6),iz)));
+    // test_random_access_iterator(begin(make_binary_range(Adder(100.0), make_range(iz),make_range(iz))));
+  }
+
+  
+  { // simple test printing a range of numbers
+    std::cout << "\nTest printing a range with 5 doubles  :  " << rng;
+  }
+
   
   { // use unary ranges
     std::cout << "  shifted vector:           " << make_unary_range(Shifter(6.6),iz) << std::endl;
-    std::cout << "  lambda function:          " << make_unary_range(ret<double>(_1 + 6.6), iz) << std::endl;
+    // std::cout << "  lambda function:          " << make_unary_range(ret<double>(_1 + 6.6), iz) << std::endl;
     std::cout << "  direct shifter:           " << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
     std::cout << "  begin of shifted vector:  " << *begin(make_unary_range(Shifter(6.6), make_range(iz))) << std::endl;
     std::cout << std::endl;
@@ -237,40 +304,15 @@ int main()
 	      << make_unary_range(s1, iz) << std::endl;
   }
   
-  {
-    
-    std::cout << "\nTest of binary iterators...  These must operate on the tuples made by boost\n";
-    boost::tuple<double,double> tuplePair = boost::make_tuple(3.3,3.3);
-
-    std::cout << "    First apply a function for a tuple to a tuple    " << TupleSum()(tuplePair) << std::endl;  // defined in function_iterators.h
-
-    std::cout << "iz + iz         :           " << make_binary_range(TupleAdder(), make_range(iz),make_range(iz));
-
-    //  Now use a binary function converted into a tuple function in some manner
-
-    //  This fails since Adder is a binary function
-    // std::cout << "iz + iz         :           " << make_binary_range(Adder(), make_range(iz),make_range(iz));     
-    //  This fails since the function operators on tuples (ie, the pair is bundled into a zip)
-    // std::cout << "iz + iz   lam   :           " << make_binary_range(ret<double>(_1+_2), make_range(iz),make_range(iz));
-
-    std::cout << "    Then adapt a binary function to a paired tuple;       scalar sum =  ";
-    std::cout << tuple_binary_function<Adder>(Adder())(tuplePair) << std::endl;
-    std::cout << " iz+iz          :   " << make_binary_range(tuple_binary_function<Adder>(Adder()), make_range(iz), make_range(iz)) << std::endl;
-    
-    //  boost cannot find 'get'?
-    //  std::cout << "iz+iz via bind  :           " << make_binary_range(ret<double>(boost::lambda::bind(boost::tuples::get<0>(),_1)), make_range(iz), make_range(iz));
-    
-    // this fails since lambda functions cannot use _1. and the like
-    // std::cout << "iz+iz via tuple :           " << make_binary_range(ret<double>(_1.get<0>() + _1.get<1>()), make_range(iz), make_range(iz));
-    // std::cout << "iz+iz via tuple :           " << make_binary_range(ret<double>(boost::lambda::bind(boost::tuples::get<0>,_1)), make_range(iz), make_range(iz));
-
-    
+  /*
+    {
+    std::cout << "\nTest of binary iterators...\n";
+    std::cout << "  100 + iz + iz :           " << make_binary_range(Adder(100.0), make_range(iz),make_range(iz));
+    // Not working for constants...
+    //    std::cout << "  100 + range   :           " << make_binary_range(std::plus<double>(), 100.0, make_range(iz));
+    //    std::cout << "  range + 200   :           " << make_binary_range(std::plus<double>(), make_range(iz), 200.);
   }
-
-
-  { std::cout << "Speed test of the binary iterator versus use of addition\n" ;
-  }
-  
+  */
   /*   
   { 
     std::cout << std::endl << "Test of function ranges (and evaluator)" << std::endl;
@@ -285,7 +327,7 @@ int main()
    } 
   */
 
-  
+  /*
   
   {
     std::cout << std::endl << "Test of composition functions" << std::endl;
@@ -296,15 +338,14 @@ int main()
     std::cout << "                 Squares of 1+iz         : " << make_unary_range(make_composer(s)(shift1), iz);
   }
 
-  /*
-    {
+  {
     // std::cout << std::endl << "Test of table iterators" << std::endl;
     // std::cout << " " << make_unary_range( make_unary_range<Shifter>(iz), f);
     // std::cout << "--- and now transposed ---" << std::endl;
     // std::cout << " " << make_unary_range(make_function_range<double>(f), iz);
-    }
-    
-    {
+  }
+  
+  {
     std::list<Employee> staff;
     staff.push_back( Employee("Fred", 110) );
     staff.push_back( Employee("Barney", 90) );
@@ -312,11 +353,11 @@ int main()
     staff.push_back( Employee("Betty", 105) );
     staff.push_back( Employee("Dino", 5) );
     std::cout << "\n\nEmployee illustrations\n";
-    
+
     std::cout << "Salaries are "
-    << make_unary_range(std::mem_fun_ref(&Employee::salary), staff)
-    << std::endl;
-    }
+	      << make_unary_range(std::mem_fun_ref(&Employee::salary), staff)
+	      << std::endl;
+  }
   */
   std::cout << std::endl << "DONE." << std::endl;
   return 0;

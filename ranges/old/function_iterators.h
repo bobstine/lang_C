@@ -1,4 +1,11 @@
 // $Id: function_iterators.h,v 1.19 2003/11/26 04:03:15 bob Exp $
+/*
+  The host class represents an implementation of the curiously
+  recurring template pattern of cop lien.  In order to have the
+  iterator cooperate with the function evaluation, it is necessary
+  to separate the two concepts --- traversal and access are totally
+  messed up in iterators.
+*/
 
 #ifndef _FUNCTION_ITERATORS_H_
 #define _FUNCTION_ITERATORS_H_

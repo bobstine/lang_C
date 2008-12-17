@@ -1,6 +1,8 @@
 // $Id: range_ops.test.cc,v 1.42 2004/08/30 19:03:17 bob Exp $  
 
-#include "sparse_iterator.h"
+//#include "sparse_iterator.h"
+
+#include "range.h"
 #include "range_ops.h"
 
 #include "function_utils.h"
@@ -118,15 +120,19 @@ int main()
 
 
   { // accumulate
-    std::cout << std::endl << "Test of function iterators f_i(x)" << std::endl;
-    std::cout << "Shifts applied to 0: " << make_function_range(0.0, f);
-    double sum = accumulate(make_function_range(0.0,f), 0.0);    
-    std::cout << "Sum of shifts      = " << sum << std::endl;
+    /*
+      std::cout << std::endl << "Test of function iterators f_i(x)" << std::endl;
+      std::cout << "Shifts applied to 0: " << make_function_range(0.0, f);
+      double sum = accumulate(make_function_range(0.0,f), 0.0);    
+      std::cout << "Sum of shifts      = " << sum << std::endl;
+    */
   }
 
   { // arithmetic
+    /*
     std::cout << " Sum     of two ranges " << make_range(X) - make_range(Y) << std::endl;
     std::cout << " Product of two ranges " << make_range(X) * make_range(Y) << std::endl;
+    */
   }
 
   { // product of vector with scalar
@@ -137,7 +143,7 @@ int main()
     vecOfRanges.push_back(make_range(X));
     vecOfRanges.push_back(make_range(Y));
     vecOfRanges.push_back(make_range(Z));
-    std::cout << "  mat as raw output  \n " <<  make_range(vecOfRanges) << std::endl;
+    // std::cout << "  mat as raw output  \n " <<  make_range(vecOfRanges) << std::endl;
 
     std::vector< double > y(3);
     for (int i=0; i<3; ++i) y[i] = i;
@@ -187,7 +193,8 @@ int main()
     m.push_back(std::make_pair(18,180.));
     m.push_back(std::make_pair(25,0));   // must be a sentinel for the last valid position.
 
-    const_sparse_iterator<int,double> j(m,0);
+    /*
+      const_sparse_iterator<int,double> j(m,0);
     {
 
       std::cout << "strat of base vector:       ";
@@ -197,7 +204,7 @@ int main()
       std::cout << "  shifted vector:           ";
       print_it(20, make_unary_iterator (Operator(6.6), j));
 
-      /*  sparse not working yet
+        sparse not working yet
 	  
       std::cout << "Incorrect accumulation:     "
 		<< accumulate(make_unary_range(Operator(6.6), make_sparse_range(m)),0.0)
@@ -211,18 +218,19 @@ int main()
 		<< accumulate(make_binary_range(std::plus<double>(), make_sparse_range(m), make_sparse_range(m)),0.0)
 		<< " = 2 * " << accumulate(make_sparse_range(m),0.0)
 		<< std::endl ;
-      */
+      
 
 		
-      /*    typedef binary_iterator< std::plus<double>,
+          typedef binary_iterator< std::plus<double>,
 	    std::vector<double>::iterator,std::vector<double>::iterator> Iter;
 	    Iter b = make_binary_iterator(std::plus<double>(), iz.begin(), iz.begin());
 	    Iter e = make_binary_iterator(std::plus<double>(), iz.end(), iz.end());
 	    for(; b != e; ++b)
 	    std::cout << *b << " ";
 	    std::cout << std::endl;
-      */
+      
     }
+    */
 
   }  
   std::cout << "\n\nDONE." << std::endl; 

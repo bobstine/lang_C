@@ -12,7 +12,7 @@ class range_traits : public std::iterator_traits<typename Container::const_itera
 {
 public:
   typedef typename Container::const_iterator const_iterator;
-  typedef range<const_iterator>              range;
+  typedef          range<const_iterator>              range;
 };
 
 

@@ -302,7 +302,7 @@ template <class F, class BaseIter>
 class unary_iterator<F,BaseIter,std::forward_iterator_tag>
   :  private F
   ,  public extensible_unary_iterator<unary_iterator<F,BaseIter,std::forward_iterator_tag>, BaseIter, std::forward_iterator_tag>
-  //  ,  public std::iterator<std::forward_iterator_tag, typename F::result_type>
+  ,  public std::iterator<std::forward_iterator_tag, typename F::result_type>
 {
   typedef unary_iterator<F, BaseIter, std::forward_iterator_tag>                       type_of_this;
   typedef extensible_unary_iterator<type_of_this, BaseIter, std::forward_iterator_tag> extensible_iterator;
@@ -319,7 +319,6 @@ public:
   typename F::result_type
   operator*() const
   { return operator()(extensible_iterator::value()); }   // apply F's operator() to underlying ex_iter's value
-
   
   typename std::iterator_traits<BaseIter>::difference_type
     operator-(const type_of_this& it) const {

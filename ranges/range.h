@@ -48,7 +48,7 @@ protected:
   Iter mEnd;
 
 public:
-//  range ()
+  //  range ()
   //  : mBegin(0), mEnd(0) { }
   
   range (Iter begin, Iter end)
@@ -138,35 +138,6 @@ begin(range<Iter> r)
   return r.mBegin;
 }
 
-/*
- 
- namespace Ranges {
-   
-   template<class Container>
-   inline
-   typename Container::const_iterator
-   begin(const Container& container)
- {
-     return container.begin();
- }
-   
-   template<class Container>
-   inline
-   typename Container::iterator
-   begin(Container* container)
- {
-     return container->begin();
- }
-   
-   template<class Iter>
-   inline
-   Iter
-   begin(range<Iter> r)
- {
-     return r.mBegin;
- }
- }  
-*/ 
 
 // END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END 
 

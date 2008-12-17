@@ -19,6 +19,18 @@ struct sparse_iterator_tag: public std::random_access_iterator_tag {};
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace std
+{
+  template <class Func, class Iter, class Cat>
+  class iterator_traits<unary_iterator<Func,Iter,Cat> >
+  {
+    typedef typename iterator_traits<Iter>::iterator_category   iterator_category;
+    typedef typename function_value_type<F>::type               value_type;
+    typedef typename iterator_traits<Iter>::difference_type     difference_type;
+    typedef typename &value_type                                reference;
+  }
+}
+
 
 // UNARY_RANGE_TRAITS  UNARY_RANGE_TRAITS  UNARY_RANGE_TRAITS  UNARY_RANGE_TRAITS
 
@@ -59,20 +71,19 @@ public:
 // UNARY_ITERATOR     UNARY_ITERATOR     UNARY_ITERATOR     UNARY_ITERATOR     UNARY_ITERATOR     UNARY_ITERATOR     
 
 template<class F, class I>
-class unary_iterator<F,I,std::forward_iterator_tag> : public std::iterator<std::forward_iterator_tag, typename function_result_type<F>::type>
+class unary_iterator<F, I, std::forward_iterator_tag>
 {
-protected:   // random access need to define difference and so must access this slot
+protected:
   F mF;
   I mIter;
   
 public:  
-  typedef unary_iterator<F,I,class std::forward_iterator_tag> type;
-  
+  typedef unary_iterator<F,I,std::forward_iterator_tag> type;
+
   unary_iterator(F const& f, I const& it)
     : mF(f), mIter(it)  {  }
 
   type& operator++()                    { ++mIter; return (*this); }
-
   type operator++(int)                  { type result(*this); ++mIter; return result; }
 
   bool operator!=(const type& it) const { return mIter != it.mIter; }
@@ -89,7 +100,6 @@ public:
 
 template<class F, class I>
 class unary_iterator<F,I,std::bidirectional_iterator_tag> : public unary_iterator<F,I,std::forward_iterator_tag>
-                                                          , public std::iterator<std::bidirectional_iterator_tag, typename function_result_type<F>::type>
 {
  public:
   typedef unary_iterator<F,I,std::bidirectional_iterator_tag> type;
@@ -103,9 +113,9 @@ class unary_iterator<F,I,std::bidirectional_iterator_tag> : public unary_iterato
 };
 
 
+
 template<class F, class I>
 class unary_iterator<F, I, std::random_access_iterator_tag> : public unary_iterator<F,I,std::bidirectional_iterator_tag>
-                                                            , public std::iterator<std::random_access_iterator_tag, typename function_result_type<F>::type>
 {
  public:
 

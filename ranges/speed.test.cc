@@ -6,6 +6,9 @@
 
 #include "random.h"
 #include "function_utils.h"
+#include "function_iterators.h"
+
+#include <boost/tuple/tuple.hpp>
 
 #include <vector>
 #include <list>
@@ -228,9 +231,9 @@ time_calculation_of_s2(const F& f, char *label, RandomGenerator& rand)          
 
 //////////////////////////////  Inner Products  //////////////////////////////
 
-class IteratorIP2{
+class ForLoopIP2{
   public:
-  std::string class_name() const{return "ip ITERATOR";};
+  std::string class_name() const{return "ip FOR LOOP";};
 
   double operator()(const std::vector<double>& x,
 		    const std::vector<double>& y) const
@@ -256,19 +259,21 @@ class IP2{
     }
 };
 
+
 class AccumIP2 {
   public:
-  std::string class_name() const{return "ip RANGE_IP (not unrolled)";};
+  std::string class_name() const{return "ip Accum BIN_RANGE_IP (not unrolled)";};
 
   double operator()(const std::vector<double>& x,
 		    const std::vector<double>& y) const
   {
-    return range_ops::simple_accumulate (make_binary_range(std::multiplies<double>(),
+    return range_ops::simple_accumulate (make_binary_range(TupleSum(),
 							   make_range(y),
 							   make_range(x)  ),
 					 0.0);
   }
 };
+
 
 template <class F>
 void
@@ -313,7 +318,7 @@ int main()
 {
   using namespace range_ops;
   const int factor=10;
-  RandomGenerator rand(12342);
+  RandomGenerator rand(12742);
 
   std::cout << "\nSpeed tests for computing s2\n\n";
   time_calculation_of_s2(DoNothing(),           "NOTHING",   rand);
@@ -328,7 +333,7 @@ int main()
   
   std::cout << "\n\n Inner product loops... \n\n";
   time_calculation_of_inner_product (AccumIP2()    , "RANGE_IP (not unrolled)", rand);
-  time_calculation_of_inner_product (IteratorIP2() , "ITERATOR"  , rand);
+  time_calculation_of_inner_product (ForLoopIP2()  , "FOR LOOP"  , rand);
   time_calculation_of_inner_product (IP2()         , "STL_IP"    , rand);
 
 
@@ -364,7 +369,7 @@ int main()
       clock_t start = clock();
       for (int j=0; j < nReps; ++j) {
 	generate(y.begin(), y.end(), GenOp(rand));
-	dp += accumulate(make_binary_range(std::multiplies<double>(),
+	dp += accumulate(make_binary_range(TupleProduct(),
 					   make_range(x),
 					   make_range(y)),
 			 0.0);
