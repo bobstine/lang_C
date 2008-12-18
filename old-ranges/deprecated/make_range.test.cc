@@ -1,12 +1,10 @@
-// $Id: function_iterators.test.cc,v 1.11 2004/08/25 14:47:08 bob Exp $    
+// $Id: make_range.test.cc,v 1.1 2003/11/26 14:11:50 bob Exp $    
   
 #include "function_utils.h"
-#include "function_iterators.h"
+
 #include "range_traits.h"
 #include "range.h"
-
-#include "composer.h"
-#include "evaluator.h"
+#include "make_range.h"
 
 #include <iostream>
 #include <vector>
@@ -210,20 +208,6 @@ foo(const range& r)
   std::cout << v << std::endl;
 };
 
-//  OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT OUTPUT
-
-template <class Iter>
-inline std::ostream&
-operator<<(std::ostream& os, const range<Iter>& r)
-{
-  typedef typename std::iterator_traits<Iter>::value_type local_type;
-  std::copy( begin(r), end(r),  std::ostream_iterator<local_type>(os, " "));
-  os << std::endl;
-  return os;
-}
-
-
-//  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  MAIN  
 
 int main()
 {
@@ -231,50 +215,91 @@ int main()
   for(int i=0; i<5; ++i)
     iz.push_back(10 * i);
   
-  range<std::vector<double>::const_iterator> rng(iz.begin(),iz.end());
+  range<std::vector<double>::const_iterator> rng =  make_range(iz);
   std::cout << "\n Direct access to ends: " << *begin(rng) << " -- " << *(end(rng)-1) << std::endl;
   std::cout << "\n Length of range      : " << end(rng)-begin(rng) << std::endl;
   
   { // simple test printing a range of numbers
-    std::cout << "\nTest with 5 doubles  :  " << rng;
+    std::cout << "\nTest with 5 doubles  :  " << make_range(iz);
   }
   
   { // use unary ranges
     std::cout << std::endl;
-    std::cout << "  shifted vector:           "
-	      << make_range(make_unary_iterator(Operator(6.6), iz.begin()), make_unary_iterator(Operator(6.6), iz.end()));
-    std::cout << "  shifted vector:           "
-	      << make_unary_range(Shifter(6.6), make_unary_range(Shifter(6.6),iz) );
+    std::cout << "  shifted vector:           " << make_unary_range(Operator(6.6), iz);
+    std::cout << "  shifted vector:           " << make_unary_range(
+								    Shifter(6.6),
+								    make_unary_range(
+										     Shifter(6.6),
+										     iz)
+								    );
     
-    std::cout << "  direct shifter:           "
-	      << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
+    std::cout << "  direct shifter:           " << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
     
-    std::cout << "  begin of shifted vector:  "
-	      << *begin(make_unary_range(Shifter(6.6), make_range(iz))) << std::endl;
-
+    // apply function style                        ____  defines a range object ___________ __ call op() __
+    std::cout << "  shifted vector:           " << make_unary_range<Shifter>(iz)(Shifter(6.6));
+    std::cout << std::endl;
+    std::cout << "  begin of shifted vector:  " << *begin(make_unary_range(Shifter(6.6), make_range(iz))) << std::endl;
+    std::cout << "  begin of shifted vector:  " << *begin(make_unary_range<Shifter>(make_range(iz))(Shifter(6.6))) << std::endl;
     std::cout << std::endl;
   }
 
-  { // Make the operator first
-    Shifter s1(1.0);
-    std::cout << "  shifted range is ... "
-	      << make_unary_range(s1, iz) << std::endl;
+  { // use recursive unary ranges
+    std::vector<double> row1;
+    std::vector<double> row2;
+    std::vector<double> row3;
+    for(int i = 1; i < 8; ++i)
+      {
+	row1.push_back(10 * i + 1);
+	row2.push_back(10 * i + 2);
+	row3.push_back(10 * i + 3);
+      }
+    std::vector<range_traits<std::vector<double> >::range> vector_of_ranges;
+    vector_of_ranges.push_back(make_range(row1));
+    vector_of_ranges.push_back(make_range(row2));
+    vector_of_ranges.push_back(make_range(row3));
+
+    std::vector<std::vector<double> > vector_of_vectors;
+    vector_of_vectors.push_back(row1);
+    vector_of_vectors.push_back(row2);
+    vector_of_vectors.push_back(row3);
+
+    std::cout << std::endl;
+    std::cout << "  squared vector:\n " << make_stateless_unary_range<Simple_square>(make_range(row1));
+    std::cout << "base vector_of_ranges:\n " << make_range(vector_of_ranges);
+
+    std::cout << "squared vector_of_ranges:\n " << make_stateless_unary_range<Simple_square>(make_range(vector_of_ranges));
+
+    std::cout << "squared vector_of_vector:\n " << make_stateless_unary_range<Simple_square>(vector_of_vectors);
+    
+    std::vector<std::vector<std::vector<double> > > vvv;
+    vvv.push_back(vector_of_vectors);
+    vvv.push_back(vector_of_vectors);
+
+    // All of the following three lines crash at run time.  Why, I have no idea.
+    *begin(*begin(*begin(make_stateless_unary_range<Simple_square>(vvv))));
+    std::cout << *begin(*begin(*begin(make_stateless_unary_range<Simple_square>(vvv)))) << std::endl;
+    std::cout << "squared vector_of_vector:\n " << make_stateless_unary_range<Simple_square>(vvv);
+    
+    std::cout << std::endl;
   }
-  
+
+
+
+
+  /*  
   {
     std::cout << "\nTest of binary iterators...\n";
     std::cout << "  100 + iz + iz :           " << make_binary_range(Adder(100.0), make_range(iz),make_range(iz));
-    // Not working for constants...
-    //    std::cout << "  100 + range   :           " << make_binary_range(std::plus<double>(), 100.0, make_range(iz));
-    //    std::cout << "  range + 200   :           " << make_binary_range(std::plus<double>(), make_range(iz), 200.);
+    std::cout << "  100 + range   :           " << make_binary_range(std::plus<double>(), 100.0, make_range(iz));
+    std::cout << "  range + 200   :           " << make_binary_range(std::plus<double>(), make_range(iz), 200.);
   }
-
+  
   std::list< Shifter > f;
   f.push_back(Shifter(1.0));  f.push_back(Shifter(2.0)); 
   f.push_back(Shifter(3.0));  f.push_back(Shifter(4.0));
   
   {
-    std::cout << std::endl << "Test of function ranges (and evaluator)" << std::endl;
+    std::cout << std::endl << "Test of evaluation ranges (function ranges)" << std::endl;
     double x (0.0);
     // here are two styles that reverse the order of evaulation in operator*
     std::cout << "Range of shifter functions evaluated at 0: " << make_function_range(x,f);
@@ -290,10 +315,11 @@ int main()
     test_bidirectional_iterator(begin(make_binary_range(Adder(100.0), make_range(iz),make_range(iz))));
     test_bidirectional_iterator(begin(make_function_range(x,f)));
     test_bidirectional_iterator(begin(make_unary_range(evaluator<Shifter>(x),f)));
+    // obsolete test    foo(make_unary_range(evaluator<Shifter>(x),f));
   }
 
   {
-    // Check basic iterations for random access iterators
+    // Checking basic iterations for random access iterators
     std::vector<double> iz;
     for(int i=0; i<10; ++i)
       iz.push_back(10 * i);
@@ -301,7 +327,7 @@ int main()
     test_random_access_iterator(begin(make_unary_range(std::bind1st(std::plus<double>(),6.6),iz)));
     test_random_access_iterator(begin(make_binary_range(Adder(100.0), make_range(iz),make_range(iz))));
   }
-  
+
   {
     std::cout << std::endl << "Test of composition functions" << std::endl;
     Shifter shift1(1.0);
@@ -313,11 +339,12 @@ int main()
 
   {
     std::cout << std::endl << "Test of table iterators" << std::endl;
-    std::cout << " " << make_unary_range( make_unary_range<Shifter>(iz), f);
+    std::cout << std::endl;
+    std::cout << " " << make_unary_range(make_unary_range<Shifter>(iz),f);  
     std::cout << "--- and now transposed ---" << std::endl;
     std::cout << " " << make_unary_range(make_function_range<double>(f), iz);
   }
-  
+
   {
     std::list<Employee> staff;
     staff.push_back( Employee("Fred", 110) );
@@ -332,6 +359,7 @@ int main()
 	      << std::endl;
   }
 
+  */
   std::cout << std::endl << "DONE." << std::endl;
   return 0;
 }

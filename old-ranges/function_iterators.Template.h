@@ -4,7 +4,6 @@
 #define _FUNCTION_ITERATORS_TEMPLATE_H_
 
 #include <iterator>
-#include "function_result_type.h"
 
 /*
   Extensible iterators basically embody the iterator properties of our
@@ -53,7 +52,7 @@ protected:
 
 public:
   typedef          unary_iterator<F, const_base_iterator, base_category> const_iterator;
-  typedef          range<const_iterator>                                 range;
+  typedef          range<const_iterator> range;
 };
 
 
@@ -190,7 +189,7 @@ class extensible_unary_iterator<Host, I, std::random_access_iterator_tag>
  public:
 
   typedef extensible_unary_iterator<Host, I,std::random_access_iterator_tag> type_of_this;
-  typedef extensible_unary_iterator<Host,I,std::bidirectional_iterator_tag>  parent_type;
+  typedef extensible_unary_iterator<Host,I,std::bidirectional_iterator_tag> parent_type;
   
   extensible_unary_iterator(const I& it)
     : parent_type(it) { }
@@ -238,11 +237,11 @@ class extensible_unary_iterator<Host, I, std::random_access_iterator_tag>
     operator>=(const type_of_this& it) const {
       return parent_type::mIter >= it.mIter; }
 
-  /*  
+  
   typename std::iterator_traits<I>::difference_type
     operator-(const type_of_this& it) const {
       return parent_type::mIter - it.mIter; }
-  */
+
 };
 
 
@@ -254,7 +253,6 @@ class extensible_unary_iterator<Host, I, sparse_iterator_tag>
  public:
 
   typedef extensible_unary_iterator<Host, I,sparse_iterator_tag> type_of_this;
-
   extensible_unary_iterator(const I& it)
     : extensible_unary_iterator<Host,I,std::random_access_iterator_tag>(it) { }
 
@@ -300,12 +298,13 @@ class extensible_unary_iterator<Host, I, sparse_iterator_tag>
 
 template <class F, class BaseIter>
 class unary_iterator<F,BaseIter,std::forward_iterator_tag>
-  :  private F
-  ,  public extensible_unary_iterator<unary_iterator<F,BaseIter,std::forward_iterator_tag>, BaseIter, std::forward_iterator_tag>
-  ,  public std::iterator<std::forward_iterator_tag, typename F::result_type>
+  :  private F,
+     public extensible_unary_iterator<unary_iterator<F,BaseIter,std::forward_iterator_tag>,
+				      BaseIter, std::forward_iterator_tag>,
+     public std::iterator<std::forward_iterator_tag, typename F::result_type>
 {
-  typedef unary_iterator<F, BaseIter, std::forward_iterator_tag>                       type_of_this;
-  typedef extensible_unary_iterator<type_of_this, BaseIter, std::forward_iterator_tag> extensible_iterator;
+  typedef unary_iterator<F, BaseIter, std::forward_iterator_tag>               Host; 
+  typedef extensible_unary_iterator<Host, BaseIter, std::forward_iterator_tag> extensible_iterator;
 
 public:
   
@@ -318,12 +317,7 @@ public:
 
   typename F::result_type
   operator*() const
-  { return operator()(extensible_iterator::value()); }   // apply F's operator() to underlying ex_iter's value
-  
-  typename std::iterator_traits<BaseIter>::difference_type
-    operator-(const type_of_this& it) const {
-      return extensible_iterator::mIter - it.mIter; }
-
+  { return operator()(extensible_iterator::value()); }                        // apply F's operator() to underlying ex_iter's value
 
   using F::operator();
   
@@ -368,7 +362,7 @@ class unary_iterator<F,BaseIter,std::random_access_iterator_tag>
   :  private F,
      public extensible_unary_iterator<unary_iterator<F,BaseIter,std::random_access_iterator_tag>,
 				      BaseIter, std::random_access_iterator_tag>,
-     public std::iterator<std::random_access_iterator_tag, typename function_result_type<F>::type>
+     public std::iterator<std::random_access_iterator_tag, typename F::result_type>
 {
   typedef unary_iterator<F, BaseIter, std::random_access_iterator_tag>               Host; 
   typedef extensible_unary_iterator<Host, BaseIter, std::random_access_iterator_tag> extensible_iterator;
@@ -377,11 +371,11 @@ public:
   unary_iterator(const F& f, const BaseIter& it)
     : F(f), extensible_iterator(it) { }          
 
-  typename function_result_type<F>::type
+  typename F::result_type
   operator*()
   { return operator()(extensible_iterator::value()); }
 
-  typename function_result_type<F>::type
+  typename F::result_type
   operator*() const
   { return operator()(extensible_iterator::value()); }
 
@@ -652,8 +646,7 @@ class binary_iterator :
   public extensible_binary_iterator<binary_iterator<F,BaseIter1,BaseIter2>,
 				    BaseIter1, BaseIter2,
 				    typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category>,
-  public std::iterator<typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category,
-		       typename function_result_type<F>::type >
+  public std::iterator<typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category, typename F::result_type>
 {
 public:
   typedef          binary_iterator<F,BaseIter1,BaseIter2> Host;

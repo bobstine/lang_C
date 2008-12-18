@@ -1,0 +1,82 @@
+pcd ~/C/ranges/
+make -k speed.test.exec; speed.test.exec
+/opt/ibmcmp/vacpp/6.0/bin/gxlc++  -I. -I/Users/bob/C//utils -I/Users/bob/C//random -I- -L/Users/bob/C//utils -L/Users/bob/C//random -O3  -DNDEBUG -c speed.test.cc -o speed.test.o 
+/opt/ibmcmp/vacpp/6.0/bin/gxlc++: 1501-257 Option -I- is not recognized.  Option will be ignored.
+    1500-029: (W) WARNING: subprogram std::__copy_ni2<const double *,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(const double *, const double *, __normal_iterator<double *,std::vector<double,std::allocator<double> > >, __true_type) could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_ni1<__gnu_cxx::__normal_iterator<const double *,std::vector<double,std::allocator<double> > >,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(__normal_iterator<const double *,std::vector<double,std::allocat could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_ni2<double *,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(double *, double *, __normal_iterator<double *,std::vector<double,std::allocator<double> > >, __true_type) could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_ni1<__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > >,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(__normal_iterator<double *,std::vector<double,std::allocator<double> > could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_backward<std::vector<double,std::allocator<double> > *,std::vector<double,std::allocator<double> > *>(vector<double,std::allocator<double> > *, vector<double,std::allocator<double> > *, vector<double,std::allocator<double> > *, random_access_it could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_backward_input_normal_iterator<__gnu_cxx::__normal_iterator<std::vector<double,std::allocator<double> > *,std::vector<std::vector<double,std::allocator<double> >,std::allocator<std::vector<double,std::allocator<double> > > > >,__gnu_cxx::__norm could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__uninitialized_copy_aux<__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > >,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(__normal_iterator<double *,std::vector<double,std::alloc could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__copy_backward_input_normal_iterator<__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > >,__gnu_cxx::__normal_iterator<double *,std::vector<double,std::allocator<double> > > >(__normal_iterator<double *,std::vector<doub could not be inlined.
+    1500-029: (W) WARNING: subprogram std::__destroy_aux<__gnu_cxx::__normal_iterator<std::vector<double,std::allocator<double> > *,std::vector<std::vector<double,std::allocator<double> >,std::allocator<std::vector<double,std::allocator<double> > > > > >(__normal_iterator<std::vector<double,st could not be inlined.
+    1501-201: (W) Maximum number of common component diagnostics, 10  has been exceeded.
+/opt/ibmcmp/vacpp/6.0/bin/gxlc++  -I. -I/Users/bob/C//utils -I/Users/bob/C//random -I- -L/Users/bob/C//utils -L/Users/bob/C//random speed.test.o range.o                               composer.o evaluator.o      range_traits.o sparse_iterator.o     function_iterators.o      range_ops.o   -lm -lutils -lrandom -o speed.test.exec
+/opt/ibmcmp/vacpp/6.0/bin/gxlc++: 1501-257 Option -I- is not recognized.  Option will be ignored.
+
+Speed tests for computing s2
+
+ NOTHING: Time for length 200 was 0
+ NOTHING: Time for length 2000 was 0
+ NOTHING: Time for length 20000 was 0
+
+ FOR[i]: Time for length 200 was 0.25
+ FOR[i]: Time for length 2000 was 0.19
+ FOR[i]: Time for length 20000 was 0.16
+
+ FOR */idx: Time for length 200 was 0.34
+ FOR */idx: Time for length 2000 was 0.33
+ FOR */idx: Time for length 20000 was 0.36
+
+ RANGE: Time for length 200 was 0.35
+ RANGE: Time for length 2000 was 0.26
+ RANGE: Time for length 20000 was 0.27
+
+ FOR * : Time for length 200 was 0.3
+ FOR * : Time for length 2000 was 0.3
+ FOR * : Time for length 20000 was 0.28
+
+ FOR *4: Time for length 200 was 0.23
+ FOR *4: Time for length 2000 was 0.22
+ FOR *4: Time for length 20000 was 0.23
+
+ FOR *10: Time for length 200 was 0.22
+ FOR *10: Time for length 2000 was 0.23
+ FOR *10: Time for length 20000 was 0.25
+
+ FOR_EACH: Time for length 200 was 0.3
+ FOR_EACH: Time for length 2000 was 0.27
+ FOR_EACH: Time for length 20000 was 0.3
+
+ TRANSFORM: Time for length 200 was 0.78
+ TRANSFORM: Time for length 2000 was 1.8
+ TRANSFORM: Time for length 20000 was 1.9
+
+
+
+ Inner product loops... 
+
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 200 was 0.57 giving avg 49.7435
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 2000 was 1.76 giving avg 500.208
+ip RANGE_IP (not unrolled) RANGE_IP (not unrolled): Time for length 20000 was 1.78 giving avg 4995.05
+
+ip ITERATOR ITERATOR: Time for length 200 was 0.39 giving avg 50.1542
+ip ITERATOR ITERATOR: Time for length 2000 was 1.72 giving avg 500.343
+ip ITERATOR ITERATOR: Time for length 20000 was 1.72 giving avg 4997.81
+
+ip STL_IP STL_IP: Time for length 200 was 0.39 giving avg 49.9879
+ip STL_IP STL_IP: Time for length 2000 was 1.69 giving avg 501.228
+ip STL_IP STL_IP: Time for length 20000 was 1.71 giving avg 4999.91
+
+
+
+ Dot product for pair of vectors comparison 
+Dot prod via INNER_PRODUCT: Time for length 100 was 8
+Dot prod via INNER_PRODUCT: Time for length 1000 was 9
+Dot prod via INNER_PRODUCT: Time for length 10000 was 8
+Dot prod via RANGE: Time for length 100 was 9
+Dot prod via RANGE: Time for length 1000 was 10
+Dot prod via RANGE: Time for length 10000 was 9
+
+Compilation finished at Sun Mar 21 17:50:42
