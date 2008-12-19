@@ -1,5 +1,55 @@
 // $Id: function_iterators.h,v 1.19 2003/11/26 04:03:15 bob Exp $
 
+/*
+  Function iterators have to deal with a the big problem with stl type
+  iterators, namely the linkage between traversal and referencing (ie,
+  operator*. The problem occurs if you try to write a sequence of
+  progressive iterators (forward -> bidirectional -> random access) as
+  well as override the operator* function. The inheritance messes up
+  C++ compilers ability to figure out which method to call.  Its a
+  real mess.  Hence, we could not change the behavior of operator*
+  *and* have the natural inheritance that you want to provide for
+  traversal.
+
+  An example of what goes wrong is in the function iterator files that
+  are in the old subdirectory. It shows what happens if you try to
+  glue these into one common hierarchy.
+
+  To deal with that problem, we define extensible iterators.
+  Extensible iterators define the behaviors needed for traversal but
+  do not define operator*.  Operator * is defined by the 'host' class
+  that is built into the traversal iterator, using the 'curiously
+  recurring template pattern'.  That in turn leads to a lot of casting
+  in order to get the right type for operators like operator++ and the
+  like.
+
+  Hence, we have two types of iterators that are organized like this:
+
+         Extensible iterator                      Function iterator
+	----------------------                  -------------------------
+	forward_iterator_tag           -->       forward_iterator_tag
+	       |
+	       V
+        bidirectional_iterator_tag     -->     bidirectional_iterator_tag
+	       |
+	       V
+        random_access_iterator_tag     -->     random_access_iterator_tag
+	
+  The inheritance of types happens all on the left, but *not* on the
+  right. A random access function iterator is not descended from a
+  bidirectional function interator.  That way the compiler can figure
+  out which method to use.
+	
+  For some reason, we decided to implement the referencing by having
+  the object inherit from the function.  That seems wrong-headed in
+  retrospect.  There's no sense in the iterator 'being' a function
+  object (unless we had been able to define an 'apl-like' syntax of
+  mapping a function over a range, as in f/x.  We did not.).
+
+  19 Dec 2008  Revision to allow lambda functions, more const, store f rather than be f
+  
+*/
+  
 #ifndef _FUNCTION_ITERATORS_H_
 #define _FUNCTION_ITERATORS_H_
 
@@ -44,13 +94,13 @@ make_unary_iterator (F f, Iter iter)
   return unary_iterator<F, Iter, typename std::iterator_traits<Iter>::iterator_category>(f, iter);
 }
 
-template <typename F, class Range>
+template <class F, class Range>
 inline
 range<unary_iterator<F, typename range_traits<Range>::const_iterator, typename range_traits<Range>::iterator_category> >
-make_unary_range (F item, Range r)
+make_unary_range (F f, Range r)
 {
-  return make_range(make_unary_iterator(item, begin(r)),
-		    make_unary_iterator(item, end(r))    );
+  return make_range(make_unary_iterator(f, begin(r)),
+		    make_unary_iterator(f, end(r))    );
 };
 
 

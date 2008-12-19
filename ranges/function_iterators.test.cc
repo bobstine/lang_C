@@ -8,6 +8,10 @@
 #include "composer.h"
 #include "evaluator.h"
 
+#include "test_iterator.h"
+
+#include <boost/lambda/lambda.hpp>
+
 #include <iostream>
 #include <vector>
 #include <list>
@@ -17,6 +21,7 @@
 #include <numeric>
 #include <functional>
 
+using namespace boost::lambda;
 
 class Employee  {
   std::string mName;
@@ -138,69 +143,6 @@ class Shifter : public std::unary_function<double,double>
    return count_if(range.first, range.second, pred);
  }
 
- // the following three functions check that basic functions of iterators work.
- // I think every function of an iterator is called at least once.  (Or more accurately,
- // everyone we implement, which hopefully is all the ones that should exist.)
- template <class Iter>
- inline
- void
- test_forward_iterator(Iter i)
- {
-   assert(i == i);
-   Iter j = i;
-   assert(i == j);
-   assert((*i) == (*j));
-   j++;
-   assert(i != j);
-   ++i;
-   assert(i == j);
-   assert((*i) == (*j));
- }
-
- template <class Iter>
- inline
- void
- test_bidirectional_iterator(Iter i)
- {
-   test_forward_iterator(i);
-   Iter j = i;
-   j++;
-   i++;
-   assert(i == j);
-   j--;
-   assert(i != j);
-   --i;
-   assert(i == j);
- }
-
- template <class Iter>
- inline
- void
- test_random_access_iterator(Iter i)
- {
-   test_bidirectional_iterator(i);
-   assert(!(i < i));
-   assert(!(i > i));
-
-   Iter big = i + 3;
-   assert(i < big);
-   assert(big > i);
-   assert(i <= big);
-   assert(big >= i);
-   assert(big - i == 3);
-
-   Iter j = big - 3;
-   assert(i == j);
-   i += 1;
-   assert(i != j);
-   j = j + 1;
-   assert(i == j);
-   i -= 1;
-   assert(i != j);
-   j = j - 1;
-   assert(i == j);
- }
-
 
 template<class range>
 void
@@ -214,7 +156,7 @@ foo(const range& r)
 
 template <class Iter>
 inline std::ostream&
-operator<<(std::ostream& os, const range<Iter>& r)
+operator<<(std::ostream& os, range<Iter> const& r)
 {
   typedef typename std::iterator_traits<Iter>::value_type local_type;
   std::copy( begin(r), end(r),  std::ostream_iterator<local_type>(os, " "));
@@ -243,14 +185,17 @@ int main()
     std::cout << std::endl;
     std::cout << "  shifted vector:           "
 	      << make_range(make_unary_iterator(Operator(6.6), iz.begin()), make_unary_iterator(Operator(6.6), iz.end()));
-    std::cout << "  shifted vector:           "
+    std::cout << "  doubly shifted vector:    "
 	      << make_unary_range(Shifter(6.6), make_unary_range(Shifter(6.6),iz) );
-    
     std::cout << "  direct shifter:           "
 	      << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
-    
+    std::cout << "  lambda function:          "
+	      << make_unary_range(ret<double>(_1+6.6),iz) << std::endl;
     std::cout << "  begin of shifted vector:  "
 	      << *begin(make_unary_range(Shifter(6.6), make_range(iz))) << std::endl;
+    std::cout << "  from a saved range        ";
+    range< unary_iterator<Shifter,std::vector<double>::const_iterator,std::random_access_iterator_tag> > rng = make_unary_range(Shifter(7.7),iz);
+    std::cout << rng << std::endl;
 
     std::cout << std::endl;
   }
@@ -278,7 +223,7 @@ int main()
     double x (0.0);
     // here are two styles that reverse the order of evaulation in operator*
     std::cout << "Range of shifter functions evaluated at 0: " << make_function_range(x,f);
-    std::cout << "                                         : " << make_unary_range(evaluator<Shifter>(x),f);
+    // std::cout << "                                         : " << make_unary_range(evaluator<Shifter>(x),f);  // requires non-const operator to change
     
     
     // Checking basic iterators using ranges
