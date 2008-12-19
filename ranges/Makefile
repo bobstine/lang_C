@@ -26,7 +26,7 @@ USES = utils random
 
 #           TESTED					UNTESTED
 level_0   = range.o                               composer.o evaluator.o 
-level_1   = range_traits.o sparse_iterator.o column.o
+level_1   = range_traits.o column.o # ysparse_iterator.o 
 level_2   = function_iterators.o 
 level_3   = range_ops.o
 level_4   = range_stats.o anonymous_iterator.o

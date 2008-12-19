@@ -47,13 +47,6 @@ public:
   }
 };
 
-class Shifter : public std::unary_function<double,double> {
-  double mShift;
-public:
-  Shifter() { }
-  Shifter(double s) : mShift(s) { }
-  double operator()(const double x) const { return x + mShift; }
-};
 
 
 class DoNothing {
@@ -267,7 +260,7 @@ class AccumIP2 {
   double operator()(const std::vector<double>& x,
 		    const std::vector<double>& y) const
   {
-    return range_ops::simple_accumulate (make_binary_range(TupleSum(),
+    return range_ops::simple_accumulate (make_binary_range(std::multiplies<double>(),
 							   make_range(y),
 							   make_range(x)  ),
 					 0.0);
@@ -304,7 +297,7 @@ time_calculation_of_inner_product(const F& f, char *label, RandomGenerator& rand
 	  ip += f(x, y);
 	}
       std::cout << f.class_name() << " " << label << ": Time for length " << length << " was "
-		<< double(clock() - start)/CLOCKS_PER_SEC << " giving avg " << ip/nReps << std::endl;
+ 		<< double(clock() - start)/CLOCKS_PER_SEC << " giving avg " << ip/nReps << std::endl;
       length *= factor;
       nReps  /= factor;
     }     
@@ -369,7 +362,7 @@ int main()
       clock_t start = clock();
       for (int j=0; j < nReps; ++j) {
 	generate(y.begin(), y.end(), GenOp(rand));
-	dp += accumulate(make_binary_range(TupleProduct(),
+	dp += accumulate(make_binary_range(std::plus<double>(),
 					   make_range(x),
 					   make_range(y)),
 			 0.0);
