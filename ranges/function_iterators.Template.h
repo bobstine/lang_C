@@ -297,16 +297,16 @@ class extensible_unary_iterator<Host, I, sparse_iterator_tag>
   result_type of F.
 */
 
-
 template <class F, class BaseIter>
-class unary_iterator<F,BaseIter,std::forward_iterator_tag>
+class unary_iterator<F,BaseIter,typename std::iterator_traits<BaseIter>::iterator_category>
   :  
-     public extensible_unary_iterator<unary_iterator<F,BaseIter,std::forward_iterator_tag>,
-				      BaseIter, std::forward_iterator_tag>,
-     public std::iterator<std::forward_iterator_tag, typename function_result_type<F>::type>
+  public extensible_unary_iterator<unary_iterator<F,BaseIter,typename std::iterator_traits<BaseIter>::iterator_category>,
+				   BaseIter, typename std::iterator_traits<BaseIter>::iterator_category> ,
+  public std::iterator<typename std::iterator_traits<BaseIter>::iterator_category, typename function_result_type<F>::type>
 {
-  typedef unary_iterator<F, BaseIter, std::forward_iterator_tag>               Host; 
-  typedef extensible_unary_iterator<Host, BaseIter, std::forward_iterator_tag> extensible_iterator;
+  typedef typename std::iterator_traits<BaseIter>::iterator_category     Category;
+  typedef          unary_iterator<F, BaseIter, Category>                 Host; 
+  typedef          extensible_unary_iterator<Host, BaseIter, Category>   extensible_iterator;
 
   F mF;
 
@@ -322,72 +322,20 @@ public:
   
   extensible_iterator::operator==;                       // Identify whose == to call
   extensible_iterator::operator!=;               
+  
+  // Should these be here also? If so, then need to specialize the template for random access iterator.
+  // extensible_iterator::operator<;
+  // extensible_iterator::operator>;                
+  // extensible_iterator::operator<=;
+  // extensible_iterator::operator>=;                
 
 };
 
-
-
-template <class F, class BaseIter>
-class unary_iterator<F,BaseIter,std::bidirectional_iterator_tag>
-  :  
-     public extensible_unary_iterator<unary_iterator<F,BaseIter,std::bidirectional_iterator_tag>,
-				      BaseIter, std::bidirectional_iterator_tag>,
-     public std::iterator<std::bidirectional_iterator_tag, typename function_result_type<F>::type>
-{
-  typedef unary_iterator<F, BaseIter, std::bidirectional_iterator_tag>               Host; 
-  typedef extensible_unary_iterator<Host, BaseIter, std::bidirectional_iterator_tag> extensible_iterator;
-
-  F mF;
-  
-public:
-  
-  unary_iterator(const F& f, const BaseIter& it)
-    : extensible_iterator(it), mF(f) { }
-  
-  typedef typename function_result_type<F>::type    value_type;
-
-  // value_type   operator*()        { return mF(extensible_iterator::value()); }
-  value_type   operator*() const  { return mF(extensible_iterator::value()); }
-  
-  extensible_iterator::operator==;               
-  extensible_iterator::operator!=;
-};
-
-
-template <class F, class BaseIter>
-class unary_iterator<F,BaseIter,std::random_access_iterator_tag>
-  : 
-     public extensible_unary_iterator<unary_iterator<F,BaseIter,std::random_access_iterator_tag>,
-				      BaseIter, std::random_access_iterator_tag>,
-     public std::iterator<std::random_access_iterator_tag, typename function_result_type<F>::type>
-{
-  F mF;
-  
-  typedef unary_iterator<F, BaseIter, std::random_access_iterator_tag>               Host; 
-  typedef extensible_unary_iterator<Host, BaseIter, std::random_access_iterator_tag> extensible_iterator;
-
-public:
-  
-  unary_iterator(const F& f, const BaseIter& it)
-    : extensible_iterator(it), mF(f) { }
-  
-  typedef typename function_result_type<F>::type    value_type;
-
-  // value_type   operator*()        { return mF(extensible_iterator::value()); }
-  value_type   operator*() const  { return mF(extensible_iterator::value()); }
-
-  extensible_iterator::operator<;
-  extensible_iterator::operator>;                
-  extensible_iterator::operator<=;
-  extensible_iterator::operator>=;                
-  extensible_iterator::operator==;               
-  extensible_iterator::operator!=;
-};
 
 
 template <class F, class BaseIter>
 class unary_iterator<F,BaseIter,sparse_iterator_tag>
-  : private F,
+  : 
     public extensible_unary_iterator<unary_iterator<F,BaseIter,sparse_iterator_tag>,
 				     BaseIter, sparse_iterator_tag>,
     public std::iterator<sparse_iterator_tag, typename function_result_type<F>::type>
@@ -395,9 +343,11 @@ class unary_iterator<F,BaseIter,sparse_iterator_tag>
   typedef unary_iterator<F,BaseIter,sparse_iterator_tag> Host;
   typedef extensible_unary_iterator<Host,BaseIter,sparse_iterator_tag> extensible_iterator;
 
+  F mF;
+  
 public:
   unary_iterator(const F& f, const BaseIter& it)
-    : F(f), extensible_iterator(it) { }              // copy construct F and extensible iterator properties
+    : extensible_iterator(it), mF(f) { }              // copy construct F and extensible iterator properties
 
   typedef typename function_result_type<F>::type    value_type;
 
@@ -634,27 +584,26 @@ class extensible_binary_iterator<Host,I1,I2,sparse_iterator_tag>
 
 template <class F, class BaseIter1, class BaseIter2>
 class binary_iterator :
-  protected F,
   public extensible_binary_iterator<binary_iterator<F,BaseIter1,BaseIter2>,
 				    BaseIter1, BaseIter2,
 				    typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category>,
-  public std::iterator<typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category, typename F::result_type>
+  public std::iterator<typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category, typename function_result_type<F>::type>
 {
-public:
+  F mF;
+  
+public
+:
   typedef          binary_iterator<F,BaseIter1,BaseIter2> Host;
   typedef typename two_iterator_traits<BaseIter1,BaseIter2>::iterator_category iterator_category;
   typedef          extensible_binary_iterator<Host,BaseIter1,BaseIter2,iterator_category> extensible_iterator;
   
   binary_iterator(const F& f, const BaseIter1& it1, const BaseIter2& it2)
-    : F(f), extensible_iterator(it1, it2) { }
+    : extensible_iterator(it1, it2), mF(f) { }
+  
+  typedef typename function_result_type<F>::type    value_type;
 
-  typename F::result_type
-  operator*()
-  { return operator()(extensible_iterator::first(), extensible_iterator::second()); }
-
-  typename F::result_type
-  operator*() const
-  { return operator()(extensible_iterator::first(), extensible_iterator::second()); }
+  //  value_type  operator*()        { return mF(extensible_iterator::first(), extensible_iterator::second()); }
+  value_type  operator*() const  { return mF(extensible_iterator::first(), extensible_iterator::second()); }
 
   extensible_iterator::operator==;
   extensible_iterator::operator!=;

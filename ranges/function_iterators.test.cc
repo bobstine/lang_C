@@ -8,7 +8,7 @@
 #include "composer.h"
 #include "evaluator.h"
 
-#include "test_iterator.h"
+#include "../utils/test_iterator.h"
 
 #include <boost/lambda/lambda.hpp>
 
@@ -132,7 +132,9 @@ class Shifter : public std::unary_function<double,double>
  class Adder : public std::binary_function<double,double,double> {
    double mConstant;
  public:
-   Adder(double constant) : mConstant(constant) { }
+   Adder() : mConstant(0.0) {}
+   Adder(Adder const& a) : mConstant(a.mConstant) {}
+   Adder(double constant) : mConstant(constant) {}
    double operator()(const double x, const double y) const { return x + y + mConstant; }
  };
 
@@ -208,7 +210,9 @@ int main()
   
   {
     std::cout << "\nTest of binary iterators...\n";
-    std::cout << "  100 + iz + iz :           " << make_binary_range(Adder(100.0), make_range(iz),make_range(iz));
+    std::cout << "  100 + iz + iz :             " << make_binary_range(Adder(100.0), make_range(iz),make_range(iz));
+    std::cout << "  with binary lambda function " << make_binary_range(ret<double>(_1+_2), make_range(iz), make_range(iz));
+    
     // Not working for constants...
     //    std::cout << "  100 + range   :           " << make_binary_range(std::plus<double>(), 100.0, make_range(iz));
     //    std::cout << "  range + 200   :           " << make_binary_range(std::plus<double>(), make_range(iz), 200.);
