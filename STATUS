@@ -3,6 +3,13 @@ Status of C...
 
 TODO
 
+* Get auction to take advantage of the use of options in the names of variables, so 
+  that it will be able to block the categorical variables and recognize that these
+  are a 'bundle' and not try to interact them and so that it will know about missing
+  indicators.
+
+* Get auction to be able to open multiple files.
+
 * Convert data from column form to row form (opposite of the transpose function).
 
 * Implement sequential version of batch selection.  Make an external recommender that can

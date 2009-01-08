@@ -2,8 +2,6 @@
 
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
    
-   NEEDS: test the missing numerical mean filling.  That's not right.
-
    
    This program uses boost's BNF spirit engine to parse the information in a csv
    file.  The program converts the columns in that file into *numerical*
@@ -56,6 +54,7 @@
    Assuming these the only 3 cases. Missing data is denoted by an empty field.
 
    
+    7 Jan 09 ... Debug, formatting, better messages and comments.
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
 
 */
