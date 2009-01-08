@@ -1,5 +1,7 @@
 /* -*-c++-*-
 
+   MAKE:  make -d csv_parser  # also runs with input from test-data.csv
+   
    NEEDS: test the missing numerical mean filling.  That's not right.
 
    
@@ -9,8 +11,12 @@
    that have missing data are expanded into a mean-filled column along with an
    indicator that shows which of the columns were missing. Naming conventions
    denote the columns so that you can recognize the indicators and such and
-   perhaps process them as a block.
+   perhaps process them as a block.  Bracketed terms in the names of output
+   variables identify variables generated during processing (e.g., V1[missing]
+   or Location[SC].
 
+
+   Input
    
    The input data should have the style of named columns. Names can consist of
    characters, numbers, and the symbols ".", "_", and "/".  Others might ought
@@ -22,13 +28,25 @@
        3, 4, 5
        a,  , 5
 
-   The presence of a non-numerical symbol (here, the a) in the data for Var1
-   converts Var1 into a categorical variable. Every unique value found in this
-   columns will lead the software to generate an indicator (so, you'll get a lot
-   of these if this was an accident and the column really is numerical). In this
-   case, you'd get an output column called Var1[1],Var1[3],Var1[a].  For the
-   second column, the presence of a missing value means that you'd get the two
-   output variables  (the mean is 3)
+       
+   Output
+
+   The first line of output give n and k, the number of cases and the number of
+   variables to be written
+   
+   The remaining output is written one column at a time, so the data is written
+   out in streaming style, with a variable name on a line followed by data on
+   the next line.  The output consists of at least as many columns as in the
+   input due to the expansion caused by missing values and categorical
+   indicators.
+
+   The presence of a non-numerical symbol (here, the 'a' in the 3rd row) in the
+   data for Var1 converts Var1 into a categorical variable. Every unique value
+   found in this columns will lead the software to generate an indicator (so,
+   you'll get a lot of these if this was an accident and the column really is
+   numerical). In this case, you'd get an output column called
+   Var1[1],Var1[3],Var1[a].  For the second column, the presence of a missing
+   value means that you'd get the two output variables (the mean is 3)
   
       a/b
       2 4 3 
@@ -37,11 +55,6 @@
 
    Assuming these the only 3 cases. Missing data is denoted by an empty field.
 
-
-   Output data is generated one column at a time, so the data is written out in
-   streaming style, with a variable name on a line followed by data on the next
-   line.  The output consists of at least as many columns as in the input due to
-   the expansion caused by missing values and categorical indicators.
    
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
 
@@ -110,9 +123,9 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
 
   parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
   if (result.hit)
-  { cout << "Parsing names from input line: " << endl<< "\t" << str << endl;
+  { cout << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
-    { cout << "Incomplete parse ...  Parsing stopped at  " ;
+    { cout << "ERROR: Incomplete parse ...  Parsing stopped at  " ;
       char const* s = result.stop;
       int limit = 10;
       while(s && limit--)
@@ -141,7 +154,7 @@ parse_data_line (char const* str, Op f)
 
   parse_info<> result = parse(str, data_rule, space_p);    // binding 3rd argument produces a phrase scanner  
   if (!result.full) {
-    cout << "Incomplete data parse ...  Parsing stopped at  " ;
+    cout << "ERROR: Incomplete data parse ...  Parsing stopped at  " ;
     char const* s = result.stop;
     int limit = 10;
     while(s && limit--)
@@ -198,28 +211,30 @@ void
 write_numerical_column  (std::vector<std::string> const& varNames, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
+  // start by writing the undecorated name to output
   output << varNames[column] << endl;
+  // now write the observed data, with any missing value inserted
   int nObs (data.size());
-  if (0 == numberMissing)  // copy directly to output
+  if (0 == numberMissing)                                // write directly to output
     for(int i=0; i<nObs; ++i)
       output << data[i][column] << " ";
-  else { // insert mean value
+  else {                                                 // insert mean value in missing locations
     double sum (0.0);
     std::vector< int  > missingPos;
-    for(int i=0; i<nObs; ++i) {
-      if (data[i][column].size() > 0) {
+    for(int i=0; i<nObs; ++i)
+    { if (data[i][column].size() > 0)                    // row i is not missing, so include in the sum
 	sum += parse_double(data[i][column]);
-      } else {
+      else
 	missingPos.push_back(i);
-      }
-    }
-    assert(numberMissing == (int)missingPos.size());
+    } 
+    assert((numberMissing == (int)missingPos.size()));   // verify number missing found here match those found during scanning
+    missingPos.push_back(nObs);                          // sentinel at the end
     double mean (sum/(nObs-numberMissing));
     for(int i=0, j=0; i<nObs; ++i) {
       if(missingPos[j]>i)
 	output << data[i][column] << " ";
-      else {
-	output << mean << " ";
+      else
+      {	output << mean << " ";
 	++j;
       }
     }
@@ -257,14 +272,18 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
 {
   int nVars (varNames.size());
   int nObs  (data.size());
-  
-  for (int column=0; column<nVars; ++column) {
-    if ((varNumericCount[column]+varMissingCount[column])==nObs) {
+
+  output << nObs << " " << nVars << endl;
+  for (int column=0; column<nVars; ++column)
+  { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
+    { 
       write_numerical_column (varNames, data, column, varMissingCount[column], output);
-    } else {
+    } else
+    {
       write_categorical_column (varNames, data, column, output);
     }
-    if (varMissingCount[column] > 0) {
+    if (varMissingCount[column] > 0)
+    {
       write_missing_column (varNames, data, column, output);
     }
   }
@@ -281,15 +300,14 @@ int main ()
   // parse names of variables from first input line
   std::vector< std::string > inputColumnNames;
   if (getline(std::cin, inputLine))
-  { if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) ))
+  {
+    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) ))
     { cout <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	cout << " |" << *it << "| " << endl;
     }
     else cout << "Parser: Failed to parse CSV variable names.\n" << endl;
-  }    
-  else cout << "Parser: Not able to read input data.\n " << endl;
-  cout << "\n\n-----------------------------------------------------------------\n\n" << endl;
+  } else cout << "Parser: Not able to read input data.\n " << endl;
   
   // set up vectors to count types of data in columns
   int nVars (inputColumnNames.size());
@@ -317,7 +335,8 @@ int main ()
 	{ if(inputData[i].size() == 0)              ++missing[i];
 	  else if (can_parse_number(inputData[i]))  ++numeric[i];
 	}
-      } else
+      }
+      else
       { cout
 	  << "Parser: Line " << lineNumber
 	  << ". Number of data elements (" << inputData.size()
@@ -327,16 +346,15 @@ int main ()
     else cout << "Parser: Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
   }
   
-  cout << "\n -----------------------------------------------------------------" << endl;
-  cout << "Parser: Summary \n\t nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
-  cout << "       #Numeric: " ;
+  cout << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
+  cout << "Parser: #Numeric: " ;
   for (int i = 0; i<nVars; ++i)
     cout << numeric[i] << " ";
-  cout << "\n       #Missing: " ;
+  cout << "\nParser: #Missing: " ;
   for (int i = 0; i<nVars; ++i)
     cout << missing[i] << " ";
-  
-  cout << "\n -----------------------------------------------------------------" << endl;
+  cout << endl;
+    
   write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, std::cout);
   
   return 0;

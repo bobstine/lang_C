@@ -10,7 +10,7 @@ include ../c_flags
 
 PROJECT_NAME = boost
 
-OPT = -O2 -DNDEBUG
+OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
 # make sure that boost (with content) is in /usr/local/include
 

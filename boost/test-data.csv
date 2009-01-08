@@ -1,7 +1,7 @@
 location,region,site,dtc,age,years.exper,specialty,sex,subscribe,hospitals,conference,practice.size,visits,program,details.nosorr,details.paenex,details.other,mentions.nosorr,minutes.nosorr,samples.nosorr,samples.paenex,samples.other,nrx.nosorr,nrx.paenex,nrx.other,therapy.days.nosorr,therapy.days.paenex,therapy.days.other,NRx/Visit
- ,e,urban,,36,13,RH,male,No,2,Yes,7,225,No,3,4,7,13,32,46,103,50,26,182,160,528,3253,3381,0.11555556
-Allentown,e,urban,0.56,56,36,RH,male,No,0,No,6,179,No,13,2,3,42,91,259,37,20,50,95,101,875,1835,1930,0.27932961
-Allentown,e,urban,0.56,34,5,PD,female,No,2,No,4,67,No,2,1,1,6,19,54,10,1,7,19,18,36,98,107,0.10447761
+         ,e,urban,    ,36,13,RH,male,No,2,Yes,7,225,No,3,4,7,13,32,46,103,50,26,182,160,528,3253,3381,0.11555556
+         ,e,urban,0.56,56,36,RH,male,No,0,No,6,179,No,13,2,3,42,91,259,37,20,50,95,101,875,1835,1930,0.27932961
+         ,e,urban,0.56,34,5,PD,female,No,2,No,4,67,No,2,1,1,6,19,54,10,1,7,19,18,36,98,107,0.10447761
 Allentown,e,urban,0.56,52,23,PD,female,No,6,Yes,5,86,Yes,1,1,1,5,11,32,13,28,8,24,30,54,103,191,0.09302326
 Allentown,e,urban,0.56,57,32,PD,male,No,2,No,2,65,No,3,3,1,10,23,39,51,6,8,23,14,39,136,72,0.12307692
 Allentown,e,urban,0.56,42,17,PD,male,Yes,7,Yes,6,71,Yes,3,3,2,15,37,31,76,9,5,19,17,34,81,78,0.07042254
