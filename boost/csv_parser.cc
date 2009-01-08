@@ -1,3 +1,52 @@
+/* -*-c++-*-
+
+   NEEDS: test the missing numerical mean filling.  That's not right.
+
+   
+   This program uses boost's BNF spirit engine to parse the information in a csv
+   file.  The program converts the columns in that file into *numerical*
+   columns. Categorical data is converted into indicators, and numerical columns
+   that have missing data are expanded into a mean-filled column along with an
+   indicator that shows which of the columns were missing. Naming conventions
+   denote the columns so that you can recognize the indicators and such and
+   perhaps process them as a block.
+
+   
+   The input data should have the style of named columns. Names can consist of
+   characters, numbers, and the symbols ".", "_", and "/".  Others might ought
+   to be added to aid in later parsing of variables. For example, an input csv
+   file with 3 variables might begin as in
+
+      Var1, a/b, Var.3
+       1, 2, 3
+       3, 4, 5
+       a,  , 5
+
+   The presence of a non-numerical symbol (here, the a) in the data for Var1
+   converts Var1 into a categorical variable. Every unique value found in this
+   columns will lead the software to generate an indicator (so, you'll get a lot
+   of these if this was an accident and the column really is numerical). In this
+   case, you'd get an output column called Var1[1],Var1[3],Var1[a].  For the
+   second column, the presence of a missing value means that you'd get the two
+   output variables  (the mean is 3)
+  
+      a/b
+      2 4 3 
+      a/b[missing]
+      0 0 1
+
+   Assuming these the only 3 cases. Missing data is denoted by an empty field.
+
+
+   Output data is generated one column at a time, so the data is written out in
+   streaming style, with a variable name on a line followed by data on the next
+   line.  The output consists of at least as many columns as in the input due to
+   the expansion caused by missing values and categorical indicators.
+   
+   16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
+
+*/
+
 #include <cassert>
 
 #include <string>
@@ -16,7 +65,6 @@
 #include <boost/spirit/utility/confix.hpp>
 #include <boost/spirit/utility/lists.hpp>
 #include <boost/spirit/utility/escape_char.hpp>
-
 #include <boost/lambda/lambda.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,13 +106,13 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
       alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/')) >> *option_item 
       |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
      );
-  name_rule = list_p(name_item[f], ',');
+  name_rule = list_p(name_item[f], ',');                       // call the operator f for each parsed string
 
-  parse_info<> result = parse(str, name_rule, space_p);   // binding 3rd argument produces a phrase scanner  
-  if (result.hit) {
-    cout << "Parsing names from input line: " << endl<< "\t" << str << endl;
-    if (!result.full) {
-      cout << "Incomplete parse ...  Parsing stopped at  " ;
+  parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
+  if (result.hit)
+  { cout << "Parsing names from input line: " << endl<< "\t" << str << endl;
+    if (!result.full)
+    { cout << "Incomplete parse ...  Parsing stopped at  " ;
       char const* s = result.stop;
       int limit = 10;
       while(s && limit--)
@@ -103,6 +151,8 @@ parse_data_line (char const* str, Op f)
   return result.hit;
 }
 
+
+
 bool
 can_parse_number (std::string const& str)
 {
@@ -117,8 +167,8 @@ parse_double (std::string str)
 {
   if (str.size() == 0)
     return 0.0;
-  else {
-    double x;
+  else
+  { double x;
     std::istringstream ss (str);
     ss >> x;
     return x;
@@ -204,7 +254,6 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
 // writes columns in streaming fashion
-// output contains at least as many cols as input due to categorical and missing expansion
 {
   int nVars (varNames.size());
   int nObs  (data.size());
