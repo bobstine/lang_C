@@ -14,7 +14,22 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
 # make sure that boost (with content) is in /usr/local/include
 
-EXTERNAL_USES = boost_regex-mt-1_35
+#####################
+#
+# To build boost (it takes quite a few minutes to build)
+#
+#	cd /usr/local/src/boost.latest.version
+#   	sudo ./configure
+#   	sudo make install
+#
+# These build quite a few libraries in /usr/local/lib.  Access these libraries
+# as shown below by setting the appropriate EXTERNAL_USES names. 
+#
+#####################
+
+# Use this for boost files that need compilation
+
+EXTERNAL_USES = boost_regex-xgcc40-mt-1_37
 
 ###########################################################################
 #
@@ -22,7 +37,7 @@ EXTERNAL_USES = boost_regex-mt-1_35
 #
 ###########################################################################
 
-level_0   = csv_parser.o # regex.o
+level_0   = csv_parser.o  regex.o
 level_1   =
 
 ############################################################################

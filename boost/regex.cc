@@ -20,15 +20,19 @@ trim_string(std::string const& str)
 int main()
 {
   std::string line;
-  boost::regex pat( "^Subject: (Re: |Aw: )*(.*)" );
+  boost::regex pat( "^(.*)Subject: (Re: |Aw: )*(.*)" );
 
-  if(false)
+  // Test the fancy e-mail pattern
+  if(true)
     while (std::cin)
     {
       std::getline(std::cin, line);
+      std::cout << "Pattern match: Input string [" << line << "]  ";
       boost::smatch matches;
       if (boost::regex_match(line, matches, pat))
-	std::cout << matches[2] << std::endl;
+	std::cout << " matches with matches[2] = " << matches[2] << std::endl;
+      else
+	std::cout << " does not match pattern.\n";
     }
 
   std::cout << "\n\nTEST:\n";
