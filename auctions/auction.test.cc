@@ -73,6 +73,13 @@ main(int argc, char** argv)
 	    << " --output-path=" << outputPath << " -r "
 	    << numberRounds << " --calibrator-df=" << splineDF << " --validate=" << useSubset
 	    << std::endl;
+
+  // need to fix issues surrouding the calibration adjustment
+  if (splineDF != 0)
+  { splineDF = 0;
+    std::cout << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
+  }
+  
   std::cout << "AUCT: total_alpha_to_spend = " << total_alpha_to_spend << std::endl;
   std::string alphaFileName  (outputPath + "alpha.dat");
   std::string outputFileName (outputPath + "auction.model.pretty_print"); 
@@ -91,6 +98,8 @@ main(int argc, char** argv)
        Line 2: name of the first variable (the response)
        Line 3: data for the response
        Line 4: name of the second variable
+       Line 5: data for the second variable
+       Line 6: name of the third variable
        ...
     The reading is done by a FileColumnStream that allocates the space for the columns
     as the data are read.  A column feature provides a named range of doubles that learns a
@@ -151,7 +160,8 @@ main(int argc, char** argv)
                                     make_polynomial_stream("Skipped-feature polynomial", 
                                                            theAuction.skipped_features(), 
                                                            3)  ));                              // poly degree
-  theAuction.add_expert(make_expert(alphaShare, 
+  /*  Principle component type features are temp turned off
+    theAuction.add_expert(make_expert(alphaShare, 
                                     UniversalBidder(),
                                     make_subspace_stream("Principal components", 
                                                          theAuction.skipped_features(), 
@@ -165,7 +175,7 @@ main(int argc, char** argv)
                                                          20,                                    // bundle size
                                                          gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
                                                          )));                                   // WARNING: cannot return more than 25 x's in subspace
-  
+  */
   // run the auction with output to file
   std::ofstream alphaStream (alphaFileName.c_str());
   for (int round=0; round<numberRounds && theAuction.has_active_expert(); ++round)

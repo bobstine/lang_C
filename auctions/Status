@@ -11,7 +11,9 @@ Need to
      Build a fixed bidder that considers the terms left in the input stream, not
      just in the current order that is available.
                 
-     Get the spline calibration back in place.
+     Get the spline calibration back in place.  It will add them, but gets
+     confused about putting the calibration back.  This might belong elsewhere,
+     such as pushed down into the model itself.
      
      Figure out how to use calibration for logistic regression.
 

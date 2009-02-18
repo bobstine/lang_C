@@ -637,9 +637,11 @@ gslRegression<Data,Engine>::write_data_to (std::ostream &os) const
 {
   int len (mpData->length());
   std::cout << "GSLR: Writing " << len << " rows to output with " << mQ << " columns of X.\n";
-  os << "b err fit Y";
+  // header information in output file for reading into spreadsheet
+  os << "estimation.sample error fit Y";
   for (int j=1; j<=mQ; ++j) os << " X_" << j;
   os << std::endl;
+  // need to restore the data to the order read in initially
   const int* permute (mpData->permutation());
   gsl_vector const* y (mpData->y());
   gsl_matrix const* X (mpData->x());

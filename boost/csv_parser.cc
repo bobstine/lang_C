@@ -29,7 +29,7 @@
        
    Output
 
-   The first line of output give n and k, the number of cases and the number of
+   The first line of output gives n and k, the number of cases and the number of
    variables to be written
    
    The remaining output is written one column at a time, so the data is written

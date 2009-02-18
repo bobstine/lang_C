@@ -43,7 +43,7 @@ include ../rules_for_makefiles
 auction_test: model/costs
 
 quick_test: auction.test
-	./auction.test -f test/bank_post45.dat,test2.dat -r 100 -c 5
+	./auction.test -f test/bank_post45.dat -r 100 -c 5
 	cat test/bank_post45.n_rows test/bank_post45.rows > model/test.dat
 
 model/costs: model/test.dat model/auction.model estimator validator
