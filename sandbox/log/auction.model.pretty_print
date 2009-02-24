@@ -1,0 +1,24 @@
+
+     Auction    6 bidders with total alpha 0.0163602
+      Finite bidder/Columns with alpha=-4.76275e-05 
+      Finite bidder/Column interactions with alpha=-4.95889e-08 
+      Universal bidder/Column interactions with alpha=0.00271262 
+      Universal bidder/Used-feature interactions with alpha=0.00535675 
+      Universal bidder/Skipped-feature interactions with alpha=0.00270803 
+      Universal bidder/Skipped-feature polynomial with alpha=0.00563048 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=104)     SS 13608.7 --> 11090 R2 = 0.185086
+             Model has 2 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                         Summary of Estimates
+        Name                   Estimate            SE          t         p
+                Intercept           37.5709 
+                 Units[u]       -0.00681683    0.00194       -3.5    0.00045
+      Material_Cost_[$/u]           2.54823      0.803       3.17    0.00151
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+

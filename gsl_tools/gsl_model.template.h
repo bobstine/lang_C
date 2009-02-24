@@ -28,12 +28,13 @@
 template <class Data, class Engine>
 template <class Iter> 
 std::pair<double,double> 
-LinearModel<Data,Engine>::add_predictor_if_useful (Iter x, double pToEnter)
+LinearModel<Data,Engine>::add_predictor_if_useful (std::string const& name, Iter x, double pToEnter)
 {
-  std::vector<Iter> v;
-  v.push_back(x);
+  std::vector< std::pair<std::string, Iter> >v;
+  v.push_back( std::make_pair(name, x));
   return add_predictors_if_useful(v,pToEnter);
 }  
+
 
 template <class Data, class Engine>
 template <class Collection> 
@@ -94,7 +95,7 @@ template <class Data, class Engine>
 void 
 LinearModel<Data,Engine>::print_gof_to(std::ostream& os) const
 {
-  os << "    SS " << GSLR::mTSS  << " --> " << GSLR::mRSS  << " R2 = " << 1.0-GSLR::mRSS/GSLR::mTSS << std::endl;
+  os << "    SS " << GSLR::mTSS  << " --> " << GSLR::mRSS  << " R2 = " << 1.0-GSLR::mRSS/GSLR::mTSS;
 }
 
 
@@ -102,21 +103,29 @@ template <class Data, class Engine>
 void 
 LinearModel<Data,Engine>::print_to    (std::ostream& os) const
 {
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-  os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os);
+  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+  os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
   if (0 == GSLR::mQ)
-    os << "      Model has no explanatory variables.\n";
+    os << "             Model has no explanatory variables.\n";
   else 
-  { gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
+  { os << "             Model has " << GSLR::mQ << " explanatory variables.\n";
+    // model does not hold intercept, so have to get this part separately
+    gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
     GSLR::fill_with_beta(++begin(b));
     gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
+    // no se for intercept; skip over this element
     gsl_vector_set (se,0,0.0);
-    fill_with_se (begin(se), 1);  // skip intercept
-    print_stat_summary_table (1+GSLR::mQ, begin(b), begin(se), os);
+    fill_with_se (begin(se), 1);
+    // add "intercept" name to output names
+    std::vector< std::string > predictorNames;
+    predictorNames.push_back("Intercept");
+    for (int i=0; i<GSLR::mQ; ++i)
+      predictorNames.push_back(GSLR::mpData->x_names()[i]);
+    print_stat_summary_table (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se), os);
     gsl_vector_free(se);   
   }
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
 }
 
 
@@ -138,10 +147,10 @@ LogisticModel<Data>::estimated_probability (int num)
 template <class Data>
 template <class Iter> 
 std::pair<double,double> 
-LogisticModel<Data>::add_predictor_if_useful (Iter x, double pToEnter)
+LogisticModel<Data>::add_predictor_if_useful (std::string const& name, Iter x, double pToEnter)
 {
-  std::vector<Iter> v;
-  v.push_back(x);
+  std::vector< std::pair<std::string, Iter> > v;
+  v.push_back( std::make_pair(name,x) );
   return add_predictors_if_useful(v,pToEnter);
 }
 
@@ -162,7 +171,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   // logistic regression has pseudo-y as the response, pseudo-resids as the residuals
   // evaluate_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
   // return if the model is singular with p-value larger than 1
-  prepare_predictors(c);
+  GSLR::prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
   // call bennett using the 
   const double     *pMu (estimated_probability(GSLR::mN));
@@ -334,7 +343,7 @@ void
 LogisticModel<Data>::print_to    (std::ostream& os) const
 {
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-  os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os);
+  os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
   if (0 == GSLR::mQ)
     os << "      Model has no explanatory variables.\n";
   else 
@@ -344,7 +353,7 @@ LogisticModel<Data>::print_to    (std::ostream& os) const
     gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set (se,0,0.0);
     fill_with_se (begin(se), 1);  // skip intercept
-    print_stat_summary_table (1+GSLR::mQ, begin(b), begin(se), os);
+    print_stat_summary_table (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
     gsl_vector_free(se);   
     os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
   }
@@ -355,7 +364,7 @@ template <class Data>
 void 
 LogisticModel<Data>::print_gof_to(std::ostream& os) const
 {
-  os << " -2 LL " << -2.0 * mLL0 << " --> " << -2.0 * mLL1 << " G2 = " << (mLL0-mLL1)/mLL0 << std::endl;
+  os << " -2 LL " << -2.0 * mLL0 << " --> " << -2.0 * mLL1 << " G2 = " << (mLL0-mLL1)/mLL0;
 }
 
 

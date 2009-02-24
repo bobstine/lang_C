@@ -38,11 +38,11 @@ gslRegression<Data, Engine>::initialize()
 template<class Data, class Engine>
 template <class Iter>
 bool
-gslRegression<Data,Engine>::prepare_predictor(Iter Z) 
+gslRegression<Data,Engine>::prepare_predictor(std::string const& name, Iter Z) 
 {
   // stuff into vector of iterators and pass along
-  std::vector<Iter> vec; 
-  vec.push_back(Z); 
+  std::vector< std::pair<std::string, Iter> > vec; 
+  vec.push_back( make_pair(name, Z) ); 
   return prepare_predictors(vec); 
 }
   
@@ -56,7 +56,8 @@ gslRegression<Data,Engine>::prepare_predictors(C predictor_collection)
   { // save centered new predictors into X without increasing mQ in case need later
     int qj = mQ + j;                                               // offset from current model predictors
     gsl_vector_view vXj (gsl_matrix_column(mpData->live_x(),qj));
-    mpData->permuted_copy_from_iterator(predictor_collection[j], &vXj.vector);
+    mpData->set_name_of_predictor(predictor_collection[j].first, qj);
+    mpData->permuted_copy_from_iterator(predictor_collection[j].second, &vXj.vector);
     // centers *all* mLen cases using mean from first n
     gsl_vector_set(mXBar,qj, center_data_vector( &vXj.vector ));
     // move n rows into Z where data gets weighted as needed
@@ -636,10 +637,10 @@ void
 gslRegression<Data,Engine>::write_data_to (std::ostream &os) const
 {
   int len (mpData->length());
-  std::cout << "GSLR: Writing " << len << " rows to output with " << mQ << " columns of X.\n";
-  // header information in output file for reading into spreadsheet
-  os << "estimation.sample error fit Y";
-  for (int j=1; j<=mQ; ++j) os << " X_" << j;
+  std::clog << "GSLR: Writing " << len << " rows to output with " << mQ << " columns of X.\n";
+  // header information in output file for reading into spreadsheet; names of first 4 columns are
+  os << "Included Error Fit Y ";
+  for (int j=0; j<mQ; ++j) os << mpData->x_names()[j] << " ";
   os << std::endl;
   // need to restore the data to the order read in initially
   const int* permute (mpData->permutation());

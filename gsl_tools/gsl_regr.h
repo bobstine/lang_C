@@ -155,20 +155,26 @@ public:
 
   
   //  --- Evaluate potential predictors (test stat, p-value) ---
+  //      Pass in predictor at this step, then call routines to evaluate these predictors
+  //      Each predictor is a pair<string, begin iterator> 
  
-  template<class Iter> bool prepare_predictor(Iter Z);                              // returns mZIsSingular indicator
+  template<class Iter> bool prepare_predictor(std::string const& name, Iter Z);                         // returns mZIsSingular indicator
   template<class C>    bool prepare_predictors(C predictor_collection);
 
-  template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;
+  
+  template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;  // get std error
 
+  
   typedef typename std::pair<double,double> TestResult;  // test stat, p-value
   
   TestResult  f_test_evaluation () const   { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
-  TestResult  White_evaluation()           { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()-mDimZ)); }
- 
-  TestResult  Bennett_evaluation()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
-  TestResult  Bennett_evaluation(double m, double M);                               // response must be of form m <= y <= M       
+  TestResult  White_evaluation ()          { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()-mDimZ)); }
+  
+  TestResult  Bennett_evaluation ()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
+  TestResult  Bennett_evaluation (double m, double M);                               // response must be of form m <= y <= M       
   TestResult  Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M); // num is dot of z'(y-mu)
+
+  
   int add_current_predictors ();                                                    // return size of expanded model
   
   //  save and restore state

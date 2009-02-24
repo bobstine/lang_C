@@ -1,6 +1,8 @@
 /* -*-c++-*-
 
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
+
+   EXECUTE:  csv_parser -o output-file-name < input.csv
    
    
    This program uses boost's BNF spirit engine to parse the information in a csv
@@ -63,6 +65,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <cstdio>
 
@@ -72,6 +75,7 @@
 #include <iterator>
 #include <algorithm>
 #include <numeric>
+#include <getopt.h>
 
 #include <boost/spirit/core.hpp>
 #include <boost/spirit/utility/confix.hpp>
@@ -287,26 +291,26 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
     }
   }
 }
-  
-////////////////////////////////////////////////////////////////////////////////
 
-int main ()
 
-////////////////////////////////////////////////////////////////////////////////
+// return number of obs, number of vars written
+std::pair<int, int>
+csv_parser(std::istream& input, std::ostream& output)
 {
+  // read from input into this string
   std::string inputLine;
-
+  
   // parse names of variables from first input line
   std::vector< std::string > inputColumnNames;
-  if (getline(std::cin, inputLine))
+  if (getline(input, inputLine))
   {
     if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) ))
-    { cout <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
+    { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
-	cout << " |" << *it << "| " << endl;
+	std::clog << " |" << *it << "| " << endl;
     }
-    else cout << "Parser: Failed to parse CSV variable names.\n" << endl;
-  } else cout << "Parser: Not able to read input data.\n " << endl;
+    else std::clog<< "Parser: Failed to parse CSV variable names.\n" << endl;
+  } else std::clog << "Parser: Not able to read input data.\n " << endl;
   
   // set up vectors to count types of data in columns
   int nVars (inputColumnNames.size());
@@ -321,7 +325,7 @@ int main ()
   StringDataMatrix dataMatrix;
 
   int lineNumber (0);
-  while (getline(std::cin, inputLine))
+  while (getline(input, inputLine))
   { ++lineNumber;
     std::vector<std::string> inputData;
     if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData ))) {
@@ -336,27 +340,127 @@ int main ()
 	}
       }
       else
-      { cout
-	  << "Parser: Line " << lineNumber
+      { std::cerr
+	  << "Parser: Error. Line " << lineNumber
 	  << ". Number of data elements (" << inputData.size()
 	  << ") unequal to number of variables (" << nVars << ").\n\t" << inputLine << endl;
       }
     }
-    else cout << "Parser: Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
+    else std::cerr << "Parser: Error. Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
   }
   
-  cout << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
-  cout << "Parser: #Numeric: " ;
+  std::clog << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
+  std::clog << "Parser: #Numeric: " ;
   for (int i = 0; i<nVars; ++i)
-    cout << numeric[i] << " ";
-  cout << "\nParser: #Missing: " ;
+    std::clog << numeric[i] << " ";
+  std::clog << "\nParser: #Missing: " ;
   for (int i = 0; i<nVars; ++i)
-    cout << missing[i] << " ";
-  cout << endl;
+    std::clog << missing[i] << " ";
+  std::clog << endl;
     
-  write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, std::cout);
+  write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, output);
   
+  return std::make_pair(dataMatrix.size(), nVars);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+void
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile );
+
+
+int
+main (int argc, char** argv)
+{
+  //  set default parameter values
+  std::string inputFileName     ("");
+  std::string outputFileName    ("");
+
+  // parse arguments from command line
+  parse_arguments(argc, argv, inputFileName, outputFileName);
+  std::clog << "CSVP: Arguments    --input-file=" << inputFileName
+	    << " --output-file=" << outputFileName
+	    << std::endl;
+
+  // 4 call variations
+  if (inputFileName.size() == 0)
+  { if (outputFileName.size() == 0)
+      csv_parser(std::cin, std::cout);                // A
+    else
+    { std::ofstream output (outputFileName.c_str());
+      if (!output)
+      { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
+	return 1;
+      }
+      csv_parser(std::cin, output);                  // B
+    }
+  }
+  else
+  { std::ifstream input (inputFileName.c_str());
+    if (!input)
+    { std::cerr << "CSVP: Error. Cannot open input file " << inputFileName << std::endl;
+      return 2;
+    }
+    if (outputFileName.size() == 0)
+      csv_parser(input, std::cout);                   // C
+    else
+    { std::ofstream output (outputFileName.c_str());
+      if (!output)
+      { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
+	return 3;
+      }
+      csv_parser(input, output);                      // D
+    }
+  }
   return 0;
 }
 
 
+
+void
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile)
+{
+  int key;
+  while (1)                                  // read until empty key causes break
+    {
+      int option_index = 0;
+      static struct option long_options[] = {
+	  {"input-file",        1, 0, 'f'},  // has arg,
+	  {"output-file",       1, 0, 'o'},  // has arg,
+	  {"help",              0, 0, 'h'},  // no  arg, 
+	  {0, 0, 0, 0}                       // terminator 
+	};
+	key = getopt_long (argc, argv, "f:o:h", long_options, &option_index);
+	if (key == -1)
+	  break;
+	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
+	switch (key)
+	  {
+	  case 'f' :                                    
+	    {
+	      std::string name(optarg);
+	      inputFile = name;
+	      break;
+	    }
+	  case 'o' :  
+	    {
+	      std::string name(optarg);
+	      outputFile = optarg;
+	      break;
+	    }
+	  case 'h' :
+	    {
+	      std::cout << "switches:" << std::endl << std::endl;
+	      std::cout << "      --input-file=foo       input file" << std::endl;
+	      std::cout << "      -ifoo" << std::endl << std::endl;
+	      std::cout << "      --output-file=out      output file" << std::endl;
+	      std::cout << "      -oout" << std::endl << std::endl;
+	      std::cout << "      --help      generates this message" << std::endl;
+	      std::cout << "      -h" << std::endl << std::endl;
+	      exit(0);
+	      break;
+	    }
+	  }
+    }
+}

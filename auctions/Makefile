@@ -10,14 +10,11 @@ include ../c_flags
 
 PROJECT_NAME = auction
 
-all: $(PROJECT_NAME).test validator
-
 OPT      = -O2 -DNDEBUG
 
 USES = gsl_tools spline ranges random utils 
 
 EXTERNAL_USES = gsl gslcblas
-
 
 ###########################################################################
 #
@@ -31,20 +28,18 @@ level_2   = adapter.o          feature_streams.o
 level_3   = experts.o
 level_4   = auction.o
 
-
 ############################################################################
 #
 #            INCLUDING RULES AND DEFINITIONS
 #
 ############################################################################
-
 include ../rules_for_makefiles
+
 
 auction_test: model/costs
 
 quick_test: auction.test
 	./auction.test -f test/bank_post45.dat -r 100 -c 5
-	cat test/bank_post45.n_rows test/bank_post45.rows > model/test.dat
 
 model/costs: model/test.dat model/auction.model estimator validator
 	./estimator -f test/test.dat est2.dat -n test/bank_post45.names -m model/auction.model -o model/refit.model

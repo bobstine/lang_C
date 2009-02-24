@@ -33,10 +33,12 @@ Auction<ModelClass>::auction_next_feature ()
   }
   print_features(features);
   //  test chosen features; accept if p-value < bid
-  std::vector<FeatureABC::Iterator> iterators;
-  for (int j=0; j<nFeatures; ++j)
-    iterators.push_back(features[j]->begin());
-  TestResult result (mModel.add_predictors_if_useful (iterators, highBid));
+  std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
+  for (int j=0; j<nFeatures; ++j) 
+  { // only pass in name and the being iterator of feature's data, STL style
+    namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
+  }
+  TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
   bool addedPredictors (false);
   if (result.second > 1.0) {                                       // singularity in predictors
     pHighBidder->payoff(0.0);
@@ -44,15 +46,16 @@ Auction<ModelClass>::auction_next_feature ()
   else {
     addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
     std::string message;
-    if (addedPredictors) {
-      message = "*** Add ***";
+    if (addedPredictors)
+    { message = "*** Add ***";
       pHighBidder->payoff(mPayoff);
-    } else {
-      message = "*** Decline ***";
+    }
+    else
+    { message = "*** Decline ***";
       pHighBidder->payoff(-highBid/(1.0-highBid));
     }
-    for (int j=0; j<nFeatures; ++j) {
-      features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
+    for (int j=0; j<nFeatures; ++j)
+    { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
       if (addedPredictors) 
 	mModelFeatures.push_back(features[j]);
       else      
@@ -69,9 +72,9 @@ template <class ModelClass>
 std::pair<ExpertABC*,double>
 Auction<ModelClass>:: collect_bids ()
 {
-  ExpertABC* pHighBidder (mExperts[0]);
+  ExpertABC* pHighBidder (mExperts[0]);                                     // initialize from first
   double     highBid     (pHighBidder->place_bid());
-  for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
+  for(ExpertIterator it = ++mExperts.begin(); it != mExperts.end(); ++it)   // loop over the other experts
   { double bid = (*it)->place_bid();
     if (bid > highBid)
     { highBid = bid;
@@ -202,9 +205,6 @@ template <class ModelClass>
 void
 Auction<ModelClass>::write_model_data_to       (std::ostream& os)       const
 {
-  for (unsigned int j=0; j<mModelFeatures.size(); ++j)
-    os << mModelFeatures[j]->name() << "  ";
-  os << std::endl;
   mModel.write_data_to(os);
 }
 

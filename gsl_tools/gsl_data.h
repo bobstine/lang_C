@@ -5,8 +5,7 @@
  
  The vectors in gsl data objects are set up to support cross validation.  
  The first n rows are active in the sense that these are the rows intended
- for the estimation sample, with the remaining len-n intented for validation.
- 
+ for the estimation sample, with the remaining len-n intented for validation. 
  
  Created by Robert Stine on 12/4/07. Copyright 2007. All rights reserved.
 */
@@ -15,6 +14,7 @@
 
 #include <gsl/gsl_matrix.h>
 #include <vector>
+#include <string>
 
 static const int gslDataTempSize (25);
 
@@ -29,6 +29,8 @@ private:
   gsl_vector *mWeights;
   int        *mPermute;        // permute the input for 0/1 compression
   
+  std::vector <std::string> mNames;  // names of predictor columns
+  
   double *         mScratch;         // hold temporary calculations
   gsl_matrix_view  mTempMatView;
   std::vector<gsl_vector *> mTempVec;
@@ -39,7 +41,7 @@ public:
   gslData() : mN(0), mY(0), mX(0) { }
 
   template<class Iter, class BIter>                        // no weights
-    gslData(Iter Y, BIter B, int len, int maxQ) : mN(0) {
+    gslData(Iter Y, BIter B, int len, int maxQ) : mN(0), mNames(1+maxQ) {
       allocate(len, maxQ, false);
       int k (len);
       for(int i=0; i<len; ++i, ++Y, ++B) {
@@ -50,7 +52,7 @@ public:
       }}
   
   template<class Iter, class BIter, class WIter>            // weights
-    gslData(Iter Y, BIter B, WIter W, int len, int maxQ) : mN(0) {
+    gslData(Iter Y, BIter B, WIter W, int len, int maxQ) : mN(0), mNames(1+maxQ) {
       allocate(len,maxQ, true);
       int k (len);
       for(int i=0; i<len; ++i, ++Y, ++B, ++W){ 
@@ -73,6 +75,9 @@ public:
   gsl_vector const* e()   const { return mE; }
   gsl_vector const* y()   const { return mY; }
   gsl_vector const* w()   const { return mWeights; }
+
+  std::vector< std::string > const& x_names() const { return mNames; }
+
   
   // use these to grab pointers needed for updating
   gsl_vector* live_Xb()      { return mXb;}
@@ -81,6 +86,8 @@ public:
   gsl_vector* live_y()       { return mY; }
   gsl_vector* live_w()       { return mWeights; }
 
+  void set_name_of_predictor(std::string const& name, int index) { mNames[index] = name; }
+      
   gsl_matrix* temp_mat(int nRows, int nCols);  
   gsl_vector* temp_vec(int j){ return mTempVec[j]; }
   

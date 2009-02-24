@@ -22,41 +22,44 @@
 
 ////////////////////////  Stat Tabular Summary  //////////////////
 
-template <class Iter>
+
+// First iterator gives the names of the elements, next two give the estimates and SEs
+
+template <class SIter, class Iter>
 void
-print_stat_summary_table (int k, Iter est, Iter se, std::ostream &os)
+  print_stat_summary_table (int k, SIter name, Iter est, Iter se, std::ostream &os)
 {
-  os << "      Estimates :  ";
-  
-  for (int i=0; i<k; ++i) 
-  { double x (est.operator[](i));
-    os << std::setw(10) << x << " ";
+  const unsigned int maxString (25);
+
+  os << "\n - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+  os << "                         Summary of Estimates\n";
+  os << "        Name                   Estimate            SE          t         p\n";
+  // print the names in the first column, then est   se   t  p-val
+  for (int i=0; i<k; ++i)
+  { std::string aName (name[i]);
+    if (aName.size() > maxString)
+      aName = aName.substr(0,maxString);
+    os << std::setw(25) << aName  << "   ";
+    os << std::setw(15) << est[i] << " ";
+    // reduce precision for se, t values, p-values
+    os.precision(3);
+    // skip over rest of elements if  se <= 0
+    if (se[i] > 0)
+    { os << std::setw(10) <<    se[i]      << " ";
+      // round z to 2 decimals
+      double z (est[i]/se[i]);
+      int zInt (100 * z);
+      os << std::setw(10) << double(zInt)/100.0  << " ";
+      // output 2-sided z-values
+      if (z < 0) z = -z;
+      double p (2.0*gsl_cdf_ugaussian_Q(z));
+      if (p < 0.00001) p = 0;
+      os << std::setw(10) << p;
+    }
+    os << std::endl;
+    os.precision(6);
   }
-  os << std::endl;
-  // reduce precision for se, t values, p-values
-  os.precision(3);
-  // skip over first element if first se is 0
-  int i0 (0);
-  std::string padding ("");
-  if (*se == 0) {
-    i0 = 1; 
-    padding = "           "; }
-  // output SE
-  os << "        SE      :  " << padding ;
-  for (int i=i0; i<k; ++i) os << std::setw(10) << se[i]  << " ";
-  os << std::endl;
-  // output t stats
-  os << "         t      :  " << padding;
-  for (int i=i0; i<k; ++i) os << std::setw(10) << est[i]/se[i]  << " ";
-  os << std::endl;
-  // output 2-sided z-values
-  os << "         p      :  " << padding;
-  for (int i=i0; i<k; ++i) 
-  { double z ((est[i] > 0.0) ? est[i]/se[i] : -est[i]/se[i]);
-    os << std::setw(10) << (2.0*gsl_cdf_ugaussian_Q(z)) << " ";  
-  }
-  os << std::endl;
-  os.precision(6);
+  os << " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n";
 }
 
 ////////////////////////  Line Printer  /////////////////////

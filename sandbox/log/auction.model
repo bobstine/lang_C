@@ -1,0 +1,17 @@
+Auction Model: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=104)     SS 13608.7 --> 11090 R2 = 0.185086
+             Model has 2 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                         Summary of Estimates
+        Name                   Estimate            SE          t         p
+                Intercept           37.5709 
+                 Units[u]       -0.00681683    0.00194       -3.5    0.00045
+      Material_Cost_[$/u]           2.54823      0.803       3.17    0.00151
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ColumnFeature Units[u]
+FeatureABC 0 1 1 0.00237846
+ColumnFeature Material_Cost_[$/u]
+FeatureABC 0 1 1 0.00279555

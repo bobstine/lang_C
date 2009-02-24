@@ -1,6 +1,13 @@
 Need to 
 
+     Many variables in the block example pass the initial screen, but then
+     fail at the second stage.  Why is this happening?  More should be able
+     to make the cut.  Are there outliers, other issues?
+     
+
      Get the cross-validation to run for least squares and logistic regression.
+     The leave out subset works, but it is not plugged into any further.
+
 
      Build smarter streams that look at the X's they are recommending, more careful
      check for which X's make more sense.  More checking before placing bids.
@@ -10,7 +17,8 @@ Need to
 
      Build a fixed bidder that considers the terms left in the input stream, not
      just in the current order that is available.
-                
+
+
      Get the spline calibration back in place.  It will add them, but gets
      confused about putting the calibration back.  This might belong elsewhere,
      such as pushed down into the model itself.
@@ -24,41 +32,53 @@ Need to
 
 
 ------------------------------------------------------------------------------
+22 Feb 09
+
+   Improve the name placement in output to show the explanatory variables more 
+   clearly in the tabular summary of the model.
+
+   Debug fixed feature streams that were not fully spending all of their alpha.
+   Bug was in bidders that stored the initial finite stream (bidders.h).
+
+   Write some basic instructions on running the model executables.
+
+
+------------------------------------------------------------------------------
 22 Jul 08
 
-Auction now scans for singularity of the offered variables, and resets the
-auction to run again if this happens without billing for the variable.
+   Auction now scans for singularity of the offered variables, and resets the
+   auction to run again if this happens without billing for the variable.
 
 ------------------------------------------------------------------------------
 13 Jul 08
 
-Trying to run program again.  Want to get back to have ability for auction to
-fit the BR data.
+   Trying to run program again.  Want to get back to have ability for auction to
+   fit the BR data.
 
 ------------------------------------------------------------------------------
 15 Feb 08
 
-Plug in the RKHS kernel method as a stream.  Kinda raw.  Should we standardize?  
-Which kernel do you use? ...
+   Plug in the RKHS kernel method as a stream.  Kinda raw.  Should we standardize?  
+   Which kernel do you use? ...
 
-Subspace methods are all giving pc's that are not well-scaled. These look singular,
-or the decomposition fails.  It should check to make sure that it has a subspace
-to offer before bidding.
+   Subspace methods are all giving pc's that are not well-scaled. These look singular,
+   or the decomposition fails.  It should check to make sure that it has a subspace
+   to offer before bidding.
 
 ------------------------------------------------------------------------------
 29 Jan 08
 
-Have the GSL eigen decompositions working nicely, but need to figure out where
-the space for the eigen vectors that get created should be.  Who manages this
-space?
+   Have the GSL eigen decompositions working nicely, but need to
+   figure out where the space for the eigen vectors that get created
+   should be.  Who manages this space?
         
-Make something like a GSL feature?
+   Make something like a GSL feature?
 
 
 ------------------------------------------------------------------------------
 28 Jan 08
 
-Start working on framework for adding principle component type stream.
+   Start working on framework for adding principle component type stream.
 	Bundle Streams
 	Eigen tools in gsl library
 

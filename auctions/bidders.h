@@ -59,23 +59,26 @@ public:
 template <class Stream>  // source must be able to tell it the number remaining
 class FiniteBidder
 {
-  Stream const& mStream;
   
 public:
   
-  FiniteBidder (Stream const& stream)
-  : mStream(stream) { }
-  
   std::string name() const { return "Finite bidder"; }
   
-  double bid (double alpha, BidHistory const&) const { return alpha/mStream.number_remaining(); }
+  double bid (double alpha, Stream const& stream, BidHistory const&) const       { return alpha/stream.number_remaining(); }
   
 }; 
 
+template <class Stream>
+FiniteBidder<Stream>
+make_finite_bidder(Stream& stream)
+{
+  return FiniteBidder<Stream>(stream);
+}
 
 
 ////  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder
 
+template <class Stream>
 class GeometricBidder
 {
   const double mRate;
@@ -87,7 +90,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (double alpha, BidHistory const&) const { return alpha * mRate; }
+  double bid (double alpha, Stream const&, BidHistory const&) const { return alpha * mRate; }
 
 };
 
@@ -95,6 +98,7 @@ class GeometricBidder
 
 ////  UniversalBidder  UniversalBidder  UniversalBidder  UniversalBidder  UniversalBidder  UniversalBidder
 
+template <class Stream>
 class UniversalBidder
 {
  
@@ -103,7 +107,7 @@ public:
   
   std::string name() const { return "Universal bidder"; }
 
-  double bid (double alpha, BidHistory const& history) const { int n (history.number_bids_since_last_sucess()); return alpha * universalPDF(n); }
+  double bid (double alpha, Stream const&, BidHistory const& history) const { int n (history.number_bids_since_last_sucess()); return alpha * universalPDF(n); }
 };
 
 

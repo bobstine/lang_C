@@ -64,12 +64,12 @@ main(int argc, char** argv)
   int         numberRounds         (300); 
   int         useSubset            (0);
   int         splineDF             (0);
-  std::cout << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
+  std::clog << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
 
-  std::cout << "AUCT: Parsing arguments ..." << std::endl;
+  std::clog << "AUCT: Parsing arguments ..." << std::endl;
   // parse arguments from command line  (pass in at main)
   parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF, useSubset);
-  std::cout << "AUCT: Arguments    --input-file=" << columnFileName
+  std::clog << "AUCT: Arguments    --input-file=" << columnFileName
 	    << " --output-path=" << outputPath << " -r "
 	    << numberRounds << " --calibrator-df=" << splineDF << " --validate=" << useSubset
 	    << std::endl;
@@ -77,20 +77,20 @@ main(int argc, char** argv)
   // need to fix issues surrouding the calibration adjustment
   if (splineDF != 0)
   { splineDF = 0;
-    std::cout << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
+    std::clog << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
   }
   
-  std::cout << "AUCT: total_alpha_to_spend = " << total_alpha_to_spend << std::endl;
+  std::clog << "AUCT: total_alpha_to_spend = " << total_alpha_to_spend << std::endl;
   std::string alphaFileName  (outputPath + "alpha.dat");
   std::string outputFileName (outputPath + "auction.model.pretty_print"); 
   std::string modelFileName  (outputPath + "auction.model"); 
   std::string dataFileName   (outputPath + "auction.model.txt");
 
-  std::cout << "AUCT Output going to:" << std::endl;
-  std::cout << "           alpha  --> " << alphaFileName << std::endl;
-  std::cout << "           output --> " << outputFileName << std::endl;
-  std::cout << "           model  --> " << modelFileName << std::endl;
-  std::cout << "        model.txt --> " << dataFileName << std::endl;
+  std::clog << "AUCT Output going to:" << std::endl;
+  std::clog << "           alpha  --> " << alphaFileName << std::endl;
+  std::clog << "           output --> " << outputFileName << std::endl;
+  std::clog << "           model  --> " << modelFileName << std::endl;
+  std::clog << "        model.txt --> " << dataFileName << std::endl;
 
   /* 
     Read columns from a file. The file is laid out with one column of values per row.
@@ -109,14 +109,14 @@ main(int argc, char** argv)
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, 1+useSubset, back_inserter(yColumns), back_inserter(xColumns));
-  std::cout << "TEST: Data file " << columnFileName << " produced vector of " << xColumns.size() << " x columns.\n";
+  std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << yColumns.size() << " Y columns.\n";
+  std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << xColumns.size() << " X columns.\n";
   
   // form column features
   std::vector<FeatureABC*> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     columnFeatures.push_back(new ColumnFeature(*it));
-  std::cout << "TEST: Initialization converted " << xColumns.size() << " columns into features.\n";
-  std::cout << "TEST: Converted columns to vector... \n " << columnFeatures << std::endl;
+  std::clog << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
   
   // build data object
   gslData *theData (build_model_data(yColumns));
@@ -128,89 +128,119 @@ main(int argc, char** argv)
   // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
   
-  std::cout << "TEST: Initial model is\n" << theRegr << std::endl;
+  std::clog << "TEST: Initial model is\n" << theRegr << std::endl;
   
     
   // build vector of experts that work directly from input variables
-  std::cout << "TEST: Creating experts"  << std::endl;
+  std::clog << "TEST: Creating experts"  << std::endl;
   double alphaShare (total_alpha_to_spend/5);
 
-  typedef  FiniteStream< std::vector<FeatureABC*> >      FStream;
-  FStream finiteStream (make_finite_stream("Columns", columnFeatures));
-  theAuction.add_expert(make_expert(alphaShare, 
-                                    FiniteBidder<FStream>(finiteStream), 
-                                    finiteStream));
+  typedef  FiniteStream      < std::vector<FeatureABC*> >      FStream;
+  typedef  InteractionStream < std::vector<FeatureABC*> > IStream;
+  typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
+  typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
   
-  theAuction.add_expert(make_expert(alphaShare/2, 
-                                    UniversalBidder(), 
-                                    make_interaction_stream("Column interactions", 
-                                                            columnFeatures)));
-  theAuction.add_expert(make_expert(alphaShare/2, 
-                                    UniversalBidder(), 
-                                    make_cross_product_stream("Used-feature interactions", 
-                                                              columnFeatures, 
-                                                              theAuction.model_features()  )));
-  theAuction.add_expert(make_expert(alphaShare/4, 
-                                    UniversalBidder(),
-                                    make_cross_product_stream("Skipped-feature interactions", 
-                                                              columnFeatures, 
-                                                              theAuction.skipped_features() )));
-  theAuction.add_expert(make_expert(alphaShare/4, 
-                                    UniversalBidder(),
-                                    make_polynomial_stream("Skipped-feature polynomial", 
-                                                           theAuction.skipped_features(), 
-                                                           3)  ));                              // poly degree
-  /*  Principle component type features are temp turned off
-    theAuction.add_expert(make_expert(alphaShare, 
-                                    UniversalBidder(),
-                                    make_subspace_stream("Principal components", 
-                                                         theAuction.skipped_features(), 
-                                                         20,                                    // bundle size
-                                                         gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
-                                                         )));
+  // main column expert
   theAuction.add_expert(make_expert(alphaShare, 
-                                    UniversalBidder(),
-                                    make_subspace_stream("RKHS components", 
-                                                         theAuction.skipped_features(), 
-                                                         20,                                    // bundle size
-                                                         gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
-                                                         )));                                   // WARNING: cannot return more than 25 x's in subspace
+                                    FiniteBidder<FStream>(), 
+                                    make_finite_stream("Columns", columnFeatures)
+				    ));
+
+  // two bidders on the main collection of interactions
+  theAuction.add_expert(make_expert(alphaShare, 
+                                    FiniteBidder<IStream>(),
+                                    make_interaction_stream("Column interactions", columnFeatures)
+				    ));
+  
+  theAuction.add_expert(make_expert(alphaShare/10, 
+                                    UniversalBidder<IStream>(), 
+                                    make_interaction_stream("Column interactions", columnFeatures)
+				    ));
+
+  // parasitic experts betting on winners
+  theAuction.add_expert(make_expert(alphaShare/5,
+				    UniversalBidder<CPStream>(),
+				    make_cross_product_stream("Used-feature interactions", columnFeatures, theAuction.model_features())
+				    ));
+                           
+  theAuction.add_expert(make_expert(alphaShare/10, 
+                                    UniversalBidder<CPStream>(),
+                                    make_cross_product_stream("Skipped-feature interactions", columnFeatures, theAuction.skipped_features())
+				    ));
+  
+  theAuction.add_expert(make_expert(alphaShare/5, 
+                                    UniversalBidder<PolyStream>(),
+                                    make_polynomial_stream("Skipped-feature polynomial", theAuction.skipped_features(), 3)     // poly degree
+				    ));
+  
+  /*
+    Principle component type features are temp turned off
+    theAuction.add_expert(make_expert(alphaShare, 
+    UniversalBidder(),
+    make_subspace_stream("Principal components", 
+    theAuction.skipped_features(), 
+    20,                                    // bundle size
+    gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
+    )));
+    theAuction.add_expert(make_expert(alphaShare, 
+    UniversalBidder(),
+    make_subspace_stream("RKHS components", 
+    theAuction.skipped_features(), 
+    20,                                    // bundle size
+    gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
+    )));                                   // WARNING: cannot return more than 25 x's in subspace
   */
+  
   // run the auction with output to file
   std::ofstream alphaStream (alphaFileName.c_str());
+  if (!alphaStream)
+  { std::cerr << "AUCT: Cannot open output file for alpha stream " << alphaFileName << std::endl;
+    return -1;
+  }
   for (int round=0; round<numberRounds && theAuction.has_active_expert(); ++round)
   { double result (theAuction.auction_next_feature());
     theAuction.write_alphas_to(alphaStream);
     if (result)
-    { std::cout << "TEST: @@@ Auction adds predictor @@@" << std::endl;
-      std::cout << theAuction << std::endl;
+    { std::clog << "TEST: @@@ Auction adds predictor @@@" << std::endl;
+      std::clog << theAuction << std::endl;
     }
-    // theAuction.print_features_to(std::cout);
-    std::cout << std::endl;
+    // theAuction.print_features_to(std::clog);
+    std::clog << std::endl;
   }
-  std::cout << "\n         ------- Auction Completed ------ \n\n" << theAuction << std::endl;
+  std::clog << "\n         ------- Auction Completed ------ \n\n" << theAuction << std::endl;
   
-  { // pretty print model to a file
+  // pretty print model to a file
+  {
     std::ofstream output (outputFileName.c_str());
     output << theAuction << std::endl;
     output.close();
   }
-
-  { // write model to a file
-    std::cout << "TEST: Writing model to file " << modelFileName << std::endl;
+  
+  // write model to a file
+  {
+    std::clog << "TEST: Writing model to file " << modelFileName << std::endl;
     std::ofstream output (modelFileName.c_str());
+    if (! output)
+    { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
+      return 1;
+    }
     theAuction.write_model_to(output);
     output.close();
   }
-  
-  { // write model data to file
-    std::cout << "TEST: Writing data to file " << dataFileName << std::endl;
-    std::ofstream dataOut (dataFileName.c_str());
-    theAuction.write_model_data_to(dataOut);
-    dataOut.close();
-  }
 
-  std::cout << "TEST: Done; disposing objects.\n";
+  // write model data to file
+  {
+    std::clog << "TEST: Writing data to file " << dataFileName << std::endl;
+    std::ofstream output (dataFileName.c_str());
+    if (! output)
+    { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
+      return 2;
+    }
+    theAuction.write_model_data_to(output);
+    output.close();
+  }
+  
+  std::clog << "TEST: Done; disposing objects.\n";
   return 0;  
 }
 
@@ -294,16 +324,20 @@ parse_arguments(int argc, char** argv,
 gslData*
 build_model_data(std::vector<Column> const& y)
 {
-  bool useSubset (y.size() == 2);
+  bool                      useSubset (y.size() == 2);
   constant_iterator<double> equalWeights (1.0);  
-  int nRows (end(y[0].range())-begin(y[0].range()));
-  std::cout << "TEST: Y column " << y[0] << " holds " << nRows << " rows.\n";
-  if (useSubset)  // use all data for fitting
-  { std::cout << "TEST: Using subset of cases defined by " << y[1] << std::endl;
-    return new gslData(y[0].begin(), y[1].begin(), equalWeights, nRows, gslRegression_Max_Q);
+  int                       nRows (end(y[0].range())-begin(y[0].range()));
+  
+  std::clog << "AUCT: Response has " << nRows << " rows.\n";
+  if (useSubset)  // leading column is indicator
+  {
+    std::clog << "AUCT: Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
+    return new gslData(y[1].begin(), y[0].begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
-  else
-  { constant_iterator<bool>   noSelection(true);
+  else            // use all data for fitting
+  {
+    constant_iterator<bool>   noSelection(true);
+    std::clog << "AUCT: Response variable is " << y[1] << std::endl;
     return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }

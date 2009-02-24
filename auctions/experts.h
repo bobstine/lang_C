@@ -117,13 +117,14 @@ template<class Bidder, class Stream>
 double 
 Expert<Bidder, Stream>::get_new_bid () 
 { 
-  std::cout << "XPRT: " << name() << " getting new bid, mAlpha = " << mAlpha 
-  << "; stream has " << mStream.number_remaining() << " elements left.\n";
+  std::clog << "XPRT: " << name() << " getting new bid, mAlpha = " << mAlpha 
+	    << "; stream has " << mStream.number_remaining() << " elements left.\n";
   if (mStream.has_feature())
-  { double b (mBidder.bid(mAlpha, mBidHistory)); 
+  { double b (mBidder.bid(mAlpha, mStream, mBidHistory)); 
     double m (max_bid()); 
     return (b<m) ? b:m;
-  } else
+  }
+  else
     return 0.0;
 }
 

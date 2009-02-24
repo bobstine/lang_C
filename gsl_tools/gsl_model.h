@@ -37,7 +37,7 @@ public:
   inline int      q() const { return GSLR::mQ; }
   inline double  s2() const { return GSLR::mRSS/(n()-(1+q())); }  
   
-  template <class Iter>       TestResult add_predictor_if_useful (Iter it, double pToEnter);
+  template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);
   TestResult  check_calibration(int df = 5) const;
 
@@ -89,7 +89,7 @@ public:
   double     calc_initial_log_likelihood() const ;
   TestResult     maximize_log_likelihood(int df, int max_iterations = 10);   // returns change in log-like, p-value
 
-  template <class Iter>       TestResult add_predictor_if_useful (Iter it, double pToEnter);
+  template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);
                               TestResult check_calibration(int df = 5) const;
     

@@ -29,7 +29,8 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
 # Use this for boost files that need compilation
 
-EXTERNAL_USES = boost_regex-xgcc40-mt-1_37
+# EXTERNAL_USES = boost_regex-xgcc40-mt-1_37
+EXTERNAL_USES = boost_regex-xgcc40-mt-1_38
 
 ###########################################################################
 #
@@ -64,7 +65,7 @@ csv_parser_demo: csv_parser_demo.o
 
 csv_parser: csv_parser.o test-data.csv
 	$(GCC) $< $(LDLIBS) -o $@
-	./csv_parser < test-data.csv
+	./csv_parser -o model.dat -f test-data.csv
 
 
 ###########################################################################
