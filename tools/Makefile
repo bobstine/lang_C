@@ -13,25 +13,16 @@ include ../c_flags
 # 
 ###########################################################################
 
-INSTALL_PATH = ../utils
 
-PROJECT_NAME = utils
+PROJECT_NAME = tools
 
 OPT = -O2 -DNDEBUG
 
-# USES = 
+USES = ranges utils random
 
 EXTERNAL_USES = gsl
 
-
-###########################################################################
-#
-#	Objects ... objects are listed in order of precedence
-#
-###########################################################################
-
-level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o
-level_1   = tags.o
+level_0 = dummy.o
 
 ############################################################################
 #
@@ -43,12 +34,9 @@ cols_to_rows: columns_to_rows.o
 	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
 
-insert_columns: insert_columns.o
-	$(GCC) $(CFLAGS) $(INCLUDES) insert_columns.o $(LDLIBS) -o $@
-	cp -f $@ ~/bin/ctor
-
-transpose: transpose.o column.o 
-	$(GCC) $(CFLAGS) $(INCLUDES) transpose.o column.o -o $@
+insert_column: insert_column.o
+	$(GCC) $(CFLAGS) $(INCLUDES) insert_column.o $(LDLIBS) -o $@
+	cp -f $@ ~/bin/insert_column
 
 mands: mands.o
 	$(GCC) mands.o $(LDLIBS) -o $@

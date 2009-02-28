@@ -42,74 +42,12 @@
 #include <numeric>
 #include <getopt.h>
 
-#include <boost/spirit/core.hpp>
-#include <boost/spirit/utility/confix.hpp>
-#include <boost/spirit/utility/lists.hpp>
-#include <boost/spirit/utility/escape_char.hpp>
-#include <boost/lambda/lambda.hpp>
+#include "range_ops.h"
+#include "range_stats.h"
+#include "random.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-void
-write_numerical_column  (std::vector<std::string> const& varNames, StringDataMatrix const& data,
-			  int column, int numberMissing, std::ostream& output)
-{
-  // start by writing the undecorated name to output
-  output << varNames[column] << endl;
-  // now write the observed data, with any missing value inserted
-  int nObs (data.size());
-  if (0 == numberMissing)                                // write directly to output
-    for(int i=0; i<nObs; ++i)
-      output << data[i][column] << " ";
-  else {                                                 // insert mean value in missing locations
-    double sum (0.0);
-    std::vector< int  > missingPos;
-    for(int i=0; i<nObs; ++i)
-    { if (data[i][column].size() > 0)                    // row i is not missing, so include in the sum
-	sum += parse_double(data[i][column]);
-      else
-	missingPos.push_back(i);
-    } 
-    assert((numberMissing == (int)missingPos.size()));   // verify number missing found here match those found during scanning
-    missingPos.push_back(nObs);                          // sentinel at the end
-    double mean (sum/(nObs-numberMissing));
-    for(int i=0, j=0; i<nObs; ++i) {
-      if(missingPos[j]>i)
-	output << data[i][column] << " ";
-      else
-      {	output << mean << " ";
-	++j;
-      }
-    }
-  }
-  output << endl;
-}
-
-void
-write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
-			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
-			   std::ostream& output)
-// writes columns in streaming fashion
-{
-  int nVars (varNames.size());
-  int nObs  (data.size());
-
-  output << nObs << " " << nVars << endl;
-  for (int column=0; column<nVars; ++column)
-  { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
-    { 
-      write_numerical_column (varNames, data, column, varMissingCount[column], output);
-    } else
-    {
-      write_categorical_column (varNames, data, column, output);
-    }
-    if (varMissingCount[column] > 0)
-    {
-      write_missing_column (varNames, data, column, output);
-    }
-  }
-}
 
 
 // return number of obs, number of vars written
@@ -124,77 +62,51 @@ insert_column(double corr, int index, std::istream& input, std::ostream& output)
   
   // read from input into this string and numbers into this vector
   std::string inputLine;
-  std::vector< double > data (nRows);
+  std::vector< double > y (nRows);
   std::vector< double > noise (nRows);
   
   // read the response
   std::string responseName;
+  double yBar = 0.0;
   getline(input, responseName);
   std::cout << "INSC: Response variable is " << responseName << std::endl;
   getline(input, inputLine);
   std::stringstream ss(inputLine);
-  for(int i=0; i<nRows; ++i) 
-  double sd = standard_deviation(make_range(
-
-					    b = sqrt((1-rho^2)/
-{
-    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) ))
-    { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
-      for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
-	std::clog << " |" << *it << "| " << endl;
-    }
-    else std::clog<< "Parser: Failed to parse CSV variable names.\n" << endl;
-  } else std::clog << "Parser: Not able to read input data.\n " << endl;
-  
-  // set up vectors to count types of data in columns
-  int nVars (inputColumnNames.size());
-  std::vector< int > numeric (nVars);
-  std::vector< int > missing (nVars);
-  for (int i=0; i<nVars; ++i)
-  { numeric.push_back(0);
-    missing.push_back(0);
+  for(int i=0; i<nRows; ++i)
+  { ss >> y[i];
+    yBar += y[i];
   }
-  
-  // iterate through remaining lines of data in order to build the matrix of strings
-  StringDataMatrix dataMatrix;
+  yBar = yBar/nRows;
+  double sd = range_stats::standard_deviation(make_range(y),yBar,nRows-1);
 
-  int lineNumber (0);
+  // generate new column with corr with y
+  RandomGenerator rand(253);
+  double r2 = corr * corr;
+  double b = sd * sqrt((1-r2)/r2);
+  for(int i=0; i<nRows; ++i)
+    noise[i] = y[i] + b * rand.normal();
+
+  // copy over columns until hit position of new one
+  output << nRows << " " << nCols+1 << std::endl;  // add another column
+  // write y back out
+  output << responseName << std::endl;
+  std::copy(y.begin(), y.end(), std::ostream_iterator<double>(output));
+  output << std::endl;
+  // insert new column into data
+  unsigned int atVariable = 1;
   while (getline(input, inputLine))
-  { ++lineNumber;
-    std::vector<std::string> inputData;
-    if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData ))) {
-      // cout <<  "\nData from the item parser:" << endl;
-      // for (std::vector<std::string>::iterator it = inputData.begin(); it != inputData.end(); ++it)  {
-      // cout << " |" << *it << "| " << endl; 
-      if ((int)inputData.size() == nVars)
-      { dataMatrix.push_back(inputData);
-	for(int i=0; i<nVars; ++i)
-	{ if(inputData[i].size() == 0)              ++missing[i];
-	  else if (can_parse_number(inputData[i]))  ++numeric[i];
-	}
-      }
-      else
-      { std::cerr
-	  << "Parser: Error. Line " << lineNumber
-	  << ". Number of data elements (" << inputData.size()
-	  << ") unequal to number of variables (" << nVars << ").\n\t" << inputLine << endl;
-      }
+    { if ((int)atVariable == index) // insert added column into output stream
+    { output << "CorrelatedVariable\n";
+      std::copy(noise.begin(), noise.end(), std::ostream_iterator<double> (output));
+      output << std::endl;
     }
-    else std::cerr << "Parser: Error. Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
+    output << inputLine;
+    getline(input, inputLine);
+    output << inputLine;
+    ++atVariable;
   }
-  
-  std::clog << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
-  std::clog << "Parser: #Numeric: " ;
-  for (int i = 0; i<nVars; ++i)
-    std::clog << numeric[i] << " ";
-  std::clog << "\nParser: #Missing: " ;
-  for (int i = 0; i<nVars; ++i)
-    std::clog << missing[i] << " ";
-  std::clog << endl;
-    
-  write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, output);
-  
-  return std::make_pair(dataMatrix.size(), nVars);
+  std::cout << "INSC: Wrote expanded file with total of " << atVariable+2 << " " << nCols+1 << " columns to output.\n";
+  return std::make_pair(nRows, nCols+1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -211,7 +123,7 @@ main (int argc, char** argv)
   std::string inputFileName     ("");
   std::string outputFileName    ("");
   int index = 1;
-  double  = 0.0;
+  double corr = 0.0;
   
   // parse arguments from command line
   parse_arguments(argc, argv, corr, index, inputFileName, outputFileName);
@@ -229,7 +141,7 @@ main (int argc, char** argv)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 1;
       }
-      csv_parser(std::cin, output);                  // B
+      insert_column(corr, index, std::cin, output);                  // B
     }
   }
   else
@@ -239,14 +151,14 @@ main (int argc, char** argv)
       return 2;
     }
     if (outputFileName.size() == 0)
-      csv_parser(input, std::cout);                   // C
+      insert_column(corr, index, input, std::cout);                   // C
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      csv_parser(input, output);                      // D
+      insert_column(corr, index, input, output);                      // D
     }
   }
   return 0;
