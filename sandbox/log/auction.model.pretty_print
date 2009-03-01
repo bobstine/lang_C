@@ -1,11 +1,11 @@
 
-     Auction    6 bidders with total alpha 0.0163602
-      Finite bidder/Columns with alpha=-4.76275e-05 
-      Finite bidder/Column interactions with alpha=-4.95889e-08 
-      Universal bidder/Column interactions with alpha=0.00271262 
-      Universal bidder/Used-feature interactions with alpha=0.00535675 
-      Universal bidder/Skipped-feature interactions with alpha=0.00270803 
-      Universal bidder/Skipped-feature polynomial with alpha=0.00563048 
+     Auction    6 bidders with total alpha 0.0163736
+      Finite bidder/Columns with alpha=-4.5688e-05 
+      Finite bidder/Column interactions with alpha=-4.33991e-08 
+      Universal bidder/Column interactions with alpha=0.00271919 
+      Universal bidder/Used-feature interactions with alpha=0.00537165 
+      Universal bidder/Skipped-feature interactions with alpha=0.00271714 
+      Universal bidder/Skipped-feature polynomial with alpha=0.00561137 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Linear Model: (n=104)     SS 13608.7 --> 11090 R2 = 0.185086

@@ -91,10 +91,12 @@ using namespace boost::lambda;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// holds every line of input file
 typedef std::vector< std::vector<std::string> > StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// operator used by parse engine
 class StringCatcher
 {
 private:
@@ -267,6 +269,42 @@ write_categorical_column (std::vector<std::string> const& varNames, StringDataMa
   }
 }
 
+
+int
+number_output_columns(StringDataMatrix const& data,
+		      std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount)
+{
+  int nInputCols (varMissingCount.size()); 
+  int nObs       (data.size());
+  // number of missing indicators
+  int nColsWithMissing (0);
+  for (int j=0; j<nInputCols; ++j)
+    if(varMissingCount[j]>0) ++nColsWithMissing;
+  // number of categories in those that are not numeric
+  int nColsForCategorical (0);
+  std::clog << "Parser: #Categories: ";
+  for (int j=0; j<nInputCols; ++j)
+  { if(varNumericCount[j]+varMissingCount[j]==nObs)   // numeric
+      std::clog << "0 ";
+    else // categorical
+    { std::set< std::string > uniqueValues;
+      for (int i=0; i<nObs; ++i) {
+	if (data[i][j].size() > 0)                   // empty -> missing
+	  uniqueValues.insert(data[i][j]);
+      }
+      int nCats (uniqueValues.size());
+      std::clog << nCats << " ";
+      --nCats;   // already counted 1 for input
+      nColsForCategorical += nCats;
+    }
+  }
+  std::clog << "\nParser: Output " << nInputCols << " input cols + " << nColsWithMissing << " missing indicators + "
+	    << nColsForCategorical << " columns for indicators.\n";
+  return nInputCols + nColsWithMissing + nColsForCategorical;
+}
+
+
+
 void
 write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
@@ -276,7 +314,6 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
   int nVars (varNames.size());
   int nObs  (data.size());
 
-  output << nObs << " " << nVars << endl;
   for (int column=0; column<nVars; ++column)
   { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
@@ -309,17 +346,13 @@ csv_parser(std::istream& input, std::ostream& output)
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
     }
-    else std::clog<< "Parser: Failed to parse CSV variable names.\n" << endl;
-  } else std::clog << "Parser: Not able to read input data.\n " << endl;
+    else std::cerr<< "Parser: ERROR. Failed to parse CSV variable names.\n" << endl;
+  } else std::cerr << "Parser: ERROR. Not able to read input data.\n " << endl;
   
-  // set up vectors to count types of data in columns
+  // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
   int nVars (inputColumnNames.size());
   std::vector< int > numeric (nVars);
   std::vector< int > missing (nVars);
-  for (int i=0; i<nVars; ++i)
-  { numeric.push_back(0);
-    missing.push_back(0);
-  }
   
   // iterate through remaining lines of data in order to build the matrix of strings
   StringDataMatrix dataMatrix;
@@ -350,14 +383,19 @@ csv_parser(std::istream& input, std::ostream& output)
   }
   
   std::clog << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
-  std::clog << "Parser: #Numeric: " ;
+  std::clog << "Parser: #Numeric   : " ;
   for (int i = 0; i<nVars; ++i)
     std::clog << numeric[i] << " ";
-  std::clog << "\nParser: #Missing: " ;
+  std::clog << "\nParser: #Missing   : " ;
   for (int i = 0; i<nVars; ++i)
     std::clog << missing[i] << " ";
   std::clog << endl;
-    
+  int nToWrite = number_output_columns(dataMatrix, missing, numeric);
+  std::clog << "Parser: Writing " << nToWrite << " column streams to output file.\n";
+  
+  // write leading header with number of obs, number of cols
+  output << dataMatrix.size() << " " << nToWrite << endl;
+  // write data
   write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, output);
   
   return std::make_pair(dataMatrix.size(), nVars);

@@ -52,60 +52,74 @@
 
 // return number of obs, number of vars written
 std::pair<int, int>
-insert_column(double corr, int index, std::istream& input, std::ostream& output)
+insert_column(double corr, int yIndex, int xIndex, std::istream& input, std::ostream& output)
 {
   // read nRows and nCols from input source
-  int nRows, nCols;
+  unsigned int nRows, nCols;
 
   input >> nRows >> nCols;
-  std::clog << "TEST: read nRows = " << nRows << " and nCols " << nCols << std::endl;
+  std::clog << "TEST: Streaming file input header claims nRows (# obs) = " << nRows << " and nCols (# vars) = " << nCols << std::endl;
   
   // read from input into this string and numbers into this vector
   std::string inputLine;
   std::vector< double > y (nRows);
   std::vector< double > noise (nRows);
-  
+
+  // echo columns until get to y position
+  getline(input, inputLine);     // empty the input line after nRows nCols
+  int atVariable = 0;
+  output << nRows << " " << nCols+1 << std::endl;  // add another column
+  while (atVariable < yIndex)
+  { getline(input, inputLine);   // name
+    output << inputLine << std::endl;
+    getline(input, inputLine);   // data
+    output << inputLine << std::endl;
+    ++atVariable;
+  }
+
   // read the response
   std::string responseName;
-  double yBar = 0.0;
-  getline(input, responseName);
+  getline(input, responseName); // read the name
   std::cout << "INSC: Response variable is " << responseName << std::endl;
-  getline(input, inputLine);
-  std::stringstream ss(inputLine);
-  for(int i=0; i<nRows; ++i)
-  { ss >> y[i];
+  double yBar = 0.0;
+  for(unsigned int i=0; i<nRows; ++i)
+  { input >> y[i];
     yBar += y[i];
   }
+  getline(input, inputLine);     // empty the input line
   yBar = yBar/nRows;
   double sd = range_stats::standard_deviation(make_range(y),yBar,nRows-1);
 
   // generate new column with corr with y
-  RandomGenerator rand(253);
+  RandomGenerator rand(22253);
   double r2 = corr * corr;
   double b = sd * sqrt((1-r2)/r2);
-  for(int i=0; i<nRows; ++i)
+  std::clog << "TEST: Correlation=" << corr << "  r2=" << r2 << "  b=" << b << std::endl;
+  for(unsigned int i=0; i<nRows; ++i)
     noise[i] = y[i] + b * rand.normal();
 
-  // copy over columns until hit position of new one
-  output << nRows << " " << nCols+1 << std::endl;  // add another column
   // write y back out
   output << responseName << std::endl;
-  std::copy(y.begin(), y.end(), std::ostream_iterator<double>(output));
+  std::copy(y.begin(), y.end(), std::ostream_iterator<double>(output, " "));
   output << std::endl;
+  ++atVariable;
+
   // insert new column into data
-  unsigned int atVariable = 1;
   while (getline(input, inputLine))
-    { if ((int)atVariable == index) // insert added column into output stream
-    { output << "CorrelatedVariable\n";
-      std::copy(noise.begin(), noise.end(), std::ostream_iterator<double> (output));
+  { if (atVariable == xIndex) // insert added column into output stream
+    { output << "InsertedVariable\n";
+      std::copy(noise.begin(), noise.end(), std::ostream_iterator<double> (output, " "));
       output << std::endl;
     }
-    output << inputLine;
-    getline(input, inputLine);
-    output << inputLine;
+    // write variable name
+    output << inputLine << std::endl;
+    // echo data, increment counter
+    getline(input, inputLine);    output << inputLine << std::endl;
     ++atVariable;
   }
-  std::cout << "INSC: Wrote expanded file with total of " << atVariable+2 << " " << nCols+1 << " columns to output.\n";
+  if (atVariable != (int)nCols)
+    std::cout << "INSC: Number of columns written (" << atVariable+1
+	      << ") is not consistent with claimed initial size (" << nCols << "+1).\n";
   return std::make_pair(nRows, nCols+1);
 }
 
@@ -113,7 +127,7 @@ insert_column(double corr, int index, std::istream& input, std::ostream& output)
 
 
 void
-parse_arguments(int argc, char** argv, double &corr, int &index, std::string& inputFile, std::string& outputFile );
+parse_arguments(int argc, char** argv, double &corr, int &yIndex, int &xIndex, std::string& inputFile, std::string& outputFile );
 
 
 int
@@ -122,26 +136,27 @@ main (int argc, char** argv)
   //  set default parameter values
   std::string inputFileName     ("");
   std::string outputFileName    ("");
-  int index = 1;
+  int yIndex = 0;
+  int xIndex = 1;
   double corr = 0.0;
   
   // parse arguments from command line
-  parse_arguments(argc, argv, corr, index, inputFileName, outputFileName);
-  std::clog << "INSC: Arguments   --corr=" << corr << " --index=" << index 
+  parse_arguments(argc, argv, corr, yIndex, xIndex, inputFileName, outputFileName);
+  std::clog << "INSC: Arguments   --corr=" << corr << " --yindex=" << yIndex << " --xindex=" << xIndex 
 	    << " --input-file=" << inputFileName << " --output-file=" << outputFileName
 	    << std::endl;
 
   // 4 call variations
   if (inputFileName.size() == 0)
   { if (outputFileName.size() == 0)
-      insert_column(corr, index, std::cin, std::cout);                // A
+      insert_column(corr, yIndex, xIndex, std::cin, std::cout);                // A
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 1;
       }
-      insert_column(corr, index, std::cin, output);                  // B
+      insert_column(corr, yIndex, xIndex, std::cin, output);                  // B
     }
   }
   else
@@ -151,14 +166,14 @@ main (int argc, char** argv)
       return 2;
     }
     if (outputFileName.size() == 0)
-      insert_column(corr, index, input, std::cout);                   // C
+      insert_column(corr, yIndex, xIndex, input, std::cout);                   // C
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      insert_column(corr, index, input, output);                      // D
+      insert_column(corr, yIndex, xIndex, input, output);                      // D
     }
   }
   return 0;
@@ -167,7 +182,7 @@ main (int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv, double &corr, int &index, std::string& inputFile, std::string& outputFile)
+parse_arguments(int argc, char** argv, double &corr, int &yIndex, int &xIndex, std::string& inputFile, std::string& outputFile)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -177,11 +192,12 @@ parse_arguments(int argc, char** argv, double &corr, int &index, std::string& in
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-file",       1, 0, 'o'},  // has arg,
 	  {"corr",              1, 0, 'r'},  // has arg,
-	  {"index",             1, 0, 'j'},  // has arg,
+	  {"xindex",            1, 0, 'x'},  // has arg,
+	  {"yindex",            1, 0, 'y'},  // has arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:o:r:j:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:o:r:x:y:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -205,10 +221,16 @@ parse_arguments(int argc, char** argv, double &corr, int &index, std::string& in
 	      is >> corr;
 	      break;
 	    }
-          case 'j' :
+          case 'x' :
 	    {
 	      std::istringstream is(optarg);
-	      is >> index;
+	      is >> xIndex;
+	      break;
+	    }
+          case 'y' :
+	    {
+	      std::istringstream is(optarg);
+	      is >> yIndex;
 	      break;
 	    }
 	  case 'h' :
@@ -220,8 +242,10 @@ parse_arguments(int argc, char** argv, double &corr, int &index, std::string& in
 	      std::cout << "      -oout" << std::endl << std::endl;
 	      std::cout << "      --corr=#      correlation with response" << std::endl;
 	      std::cout << "      -r#" << std::endl << std::endl;
-	      std::cout << "      --index=#     position in output" << std::endl;
-	      std::cout << "      -j#" << std::endl << std::endl;
+	      std::cout << "      --xindex=#     position in output" << std::endl;
+	      std::cout << "      -x#" << std::endl << std::endl;
+	      std::cout << "      --yindex=#     position in output" << std::endl;
+	      std::cout << "      -y#" << std::endl << std::endl;
 	      std::cout << "      --help      generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);

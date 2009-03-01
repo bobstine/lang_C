@@ -34,9 +34,17 @@ cols_to_rows: columns_to_rows.o
 	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
 
+rows_to_cols: rows_to_columns.o
+	$(GCC) rows_to_columns.o $(LDLIBS) -o $@
+	cp -f $@ ~/bin/rtoc
+
 insert_column: insert_column.o
 	$(GCC) $(CFLAGS) $(INCLUDES) insert_column.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/insert_column
+
+insert_column.test: insert_column test_data/test_stream.dat
+	./insert_column -ftest_data/test_stream.dat  -o test_data/test_added.dat -y0 -x2 -r0.8
+	cat test_data/test_added.dat
 
 mands: mands.o
 	$(GCC) mands.o $(LDLIBS) -o $@

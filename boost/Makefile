@@ -29,7 +29,6 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
 # Use this for boost files that need compilation
 
-# EXTERNAL_USES = boost_regex-xgcc40-mt-1_37
 EXTERNAL_USES = boost_regex-xgcc40-mt-1_38
 
 ###########################################################################
