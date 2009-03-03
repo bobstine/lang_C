@@ -1,7 +1,37 @@
-These instructions show how to use the executable components of the
-model selection code to select and estimate a regression-type
+These instructions show how to build the executable programs.
+
+
+In order to build these, you will need to have installed the following
+application libraries:
+
+	boost	(www.boost.org, version 1.38)
+	gsl     (gnu scientific library, www.gnu.org/software/gsl/)
+
+These are referenced in the Makefile that builds the executables and
+must be in the search path used by the compiler (I use gcc).
+
+
+Once these libraries are installed, use the supplied Makefile:
+
+	make csv_parser
+	make build_model
+
+Instructions in the following section describe how to use these
+executables to prepare the data (converting from csv to a streaming,
+internal format) and then build a model.
+
+
+
+###################################################################
+
+
+
+
+The following instructions show how to use the executable components
+of the model selection code to select and estimate a regression-type
 model. The model can also be used to fit the estimation data as well
 as predict other cases not used in estimation.
+
 
 
 *** Step 1.  Arrange input data variables as columns in a CSV file.
@@ -22,14 +52,15 @@ will not be used in the fitting procedure, but will receive a
 predicted value after the modeling is completed.  If all of the cases
 are to be used in the fitting, this column may be excluded.
 
-The next column of the CSV file holds the variable that is to be the
-response in the regression modeling.  The remaining columns define
-predictors for the regression modeling. These may include categorical
-variables (columns with non-numerical data, such as 'male'/'female',
-or group identifiers such as 'g1', 'g2', ..., 'gk'). Missing data is
-denoted by an empty cell in the table.  No missing values are allowed
-in the response column or the first column. (If the model is to be
-used to predict values for the response that are not known, simply
+The next column of the CSV file (after the inclusion/exclustion
+indicator, if present) holds the variable that is to be the response
+in the regression modeling.  The remaining columns define predictors
+for the regression modeling. These may include categorical variables
+(columns with non-numerical data, such as 'male'/'female', or group
+identifiers such as 'g1', 'g2', ..., 'gk'). Missing data is denoted by
+an empty cell in the table.  No missing values are allowed in the
+response column or the inclusion/exclusion column. (If the model is to
+be used to predict values for the response that are not known, simply
 fill this column with 0 or some other value.)
 
 Hence, a CSV file will resemble the following layout (which has 3
@@ -66,13 +97,17 @@ standard input and written to standard output.
 *** Step 3.  Run the model building and fitting procedure
 
 Pass in the name of the data file constructed in Step 2.  Supply a
-path for the output files.  The number of rounds controls the number
-of variables that the method will try.  The number depends on the size
-of the data set. For a data set with k explanatory variables, the
-number of rounds should be on the order of several multiples of k, up
-to about k^2.
+path (including the terminating separator) for the output files.  The
+number of rounds controls the number of variables that the method will
+try.  The size limit should depend on the size of the data set. For a
+data set with k explanatory variables, the number of rounds should be
+on the order of several multiples of k, up to about k^2. In the
+following example, the model-building program reads data from the
+input file model.dat and write output into the path log/.  The
+procedure runs for 800 rounds and expects to find a binary first
+column indicating which columns to use in estimation.
 
-  build_model --input-file model.data -output-path path -r rounds -v
+	build_model --input-file model.dat --output-path log/ -r 800 -v 1
 
 The final option (-v) implies that the data file includes cases that
 are excluded from the fit, but are to be used.  The indicator variable
@@ -100,3 +135,16 @@ variables as constructed and used in the modeling. Any explanatory
 variables used in the regression are here, including copies of any
 input variables as well as variables such as interactions formed as
 part of the modeling.
+
+
+
+*** Comments
+
+At this moment, the model selects variables 'cautiously', only
+including variables that are demonstrably useful for out-of-sample
+prediction. This conservative approach may lead to a smaller, less
+predictive model than expected.
+
+
+
+

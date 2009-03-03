@@ -44,6 +44,7 @@ build_model : $(utils) $(random) $(spline) $(ranges) $(gsl) $(auction)
 
 
 # h option tars the files rather than the symbolic links
-auction.tgz: *.h *.cc
-	rm -f auction.tgz
-	tar -cvzhf auction.tgz *.h *.cc
+build_model.tgz: *.h *.cc README.txt
+	rm -f build_model.tgz
+	tar -cvzhf build_model.tgz *.h *.cc *.txt Makefile
+

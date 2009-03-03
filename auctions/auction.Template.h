@@ -35,7 +35,7 @@ Auction<ModelClass>::auction_next_feature ()
   //  test chosen features; accept if p-value < bid
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
   for (int j=0; j<nFeatures; ++j) 
-  { // only pass in name and the being iterator of feature's data, STL style
+  { // only pass in name and the begin iterator of feature's data, STL style
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   }
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));

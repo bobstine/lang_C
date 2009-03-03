@@ -4,7 +4,10 @@
  *
  *  Created by Robert Stine on 3/1/2009.
  *  Copyright 2009. All rights reserved.
- *
+
+
+ Use tabs for delimiters to make it easier for JMP, Excel to import data
+ 
  */
 
 #include <iostream>
@@ -43,11 +46,11 @@ main()
   }
 
   // write data back to standard output
-  std::copy(varNames.begin(), varNames.end(), std::ostream_iterator< std::string >(std::cout," "));
+  std::copy(varNames.begin(), varNames.end(), std::ostream_iterator< std::string >(std::cout,"\t"));
   std::cout << std::endl;
   for (int row=0; row<nRow; ++row)
   { for (int col=0; col<nCol; ++col)
-      std::cout << data[col][row] << " ";
+      std::cout << data[col][row] << "\t";
     std::cout << std::endl;
   }
   return 0;
