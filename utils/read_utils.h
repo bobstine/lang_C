@@ -100,3 +100,4 @@ fill_vector_from_file(FILE* inputFile, int n, std::vector<double>::iterator xit)
 
 
 #endif
+

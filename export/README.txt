@@ -4,7 +4,7 @@ These instructions show how to build the executable programs.
 In order to build these, you will need to have installed the following
 application libraries:
 
-	boost	(www.boost.org, version 1.38)
+	boost	(www.boost.org,  version 1.37+)
 	gsl     (gnu scientific library, www.gnu.org/software/gsl/)
 
 These are referenced in the Makefile that builds the executables and
@@ -13,8 +13,9 @@ must be in the search path used by the compiler (I use gcc).
 
 Once these libraries are installed, use the supplied Makefile:
 
-	make csv_parser
-	make build_model
+	make
+
+which will build two executables: build_model and csv_parser.
 
 Instructions in the following section describe how to use these
 executables to prepare the data (converting from csv to a streaming,

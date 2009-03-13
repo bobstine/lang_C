@@ -13,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = ranges
 
-OPT      =  -O4  -DNDEBUG
+OPT      =  -O4 -DNDEBUG -Wconversion
 
 USES = utils random
 

@@ -278,7 +278,6 @@ public:
 
 // This class is a wrapper that converts features into the gsl items and back for doing
 // principal components and RKHS.
-#pragma mark SubspaceBasis
 
 
 template<class Method>

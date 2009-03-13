@@ -120,7 +120,6 @@ LinearCombinationFeature::write_to (std::ostream& os) const
 
 
 //  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  
-#pragma mark GSL Vector Feature
 
 void
 gslVectorFeature::initialize()   // analogous to init_fields of column

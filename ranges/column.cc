@@ -240,7 +240,7 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   char name[maxNameLength];
   while (read_name(name, maxNameLength, nameFile))
   { std::string nameStr(name);
-    if (name != "")
+    if (strlen(name) > 0)
     { names.push_back(nameStr);
       double *x = new double [nRows];
       if (x)

@@ -2,8 +2,6 @@
 
 #include "adapter.h"
 
-#pragma mark Finite Streams
-
 
 template<class Source>
 bool
@@ -27,7 +25,6 @@ FiniteStream<Source>::pop()
 
 
 ///////////////  Iteraction Streams
-#pragma mark Interaction Streams
 
 template<class Source>
 bool
@@ -78,7 +75,6 @@ InteractionStream<Source>::pop()
 
 
 ///  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  
-#pragma mark Cross-product Streams
 
 
 template<class Source1, class Source2>
@@ -117,7 +113,6 @@ CrossProductStream<Source1, Source2>::pop()
 
 
 ///  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   
-#pragma mark Polynomial Streams
 
 
 template<class Source>
@@ -172,7 +167,6 @@ PolynomialStream<Source>::feature_meets_conditions(FeatureABC const* feature) co
 
 
 ///  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   
-#pragma mark Bundle Streams
 
 
 template<class Source, class Pred, class Trans>

@@ -103,7 +103,7 @@ public:
   virtual type_of_this&
     operator-=(int n)  = 0;
 
-  virtual int   // this "int" should be difference type
+  virtual typename std::iterator_traits<type_of_this>::difference_type   // this "int" should be difference type
     operator-(const type_of_this& it) const = 0;
 
   virtual bool
@@ -335,7 +335,7 @@ public:
       return *this;
     }
 
-  int
+  typename std::iterator_traits< type_of_this >::difference_type
     operator-(const type_of_this& it) const
     {
       return (*mp_imple) - (*it.mp_imple);

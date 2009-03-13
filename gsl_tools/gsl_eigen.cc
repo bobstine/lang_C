@@ -25,7 +25,7 @@
 void
 gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix* eVecs)
 {
-  const int nRows (gram->size1);
+  const unsigned int nRows (gram->size1);
   assert (nRows == gram->size2);
   assert (nRows == eVals->size);
   gsl_eigen_symmv_workspace *scratch (gsl_eigen_symmv_alloc(nRows));

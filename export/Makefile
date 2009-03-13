@@ -35,6 +35,10 @@ gsl = gsl_utils.o gsl_eigen.o gsl_engine.o gsl_iterator.o gsl_regr.o gsl_data.o 
 
 auction = featureABC.o feature_streams.o my_features.o experts.o bidders.o adapter.o build_model.o auction.o
 
+
+all: csv_parser build_model
+
+
 csv_parser: csv_parser.cc
 	g++ -I.  -I /usr/local/include -g -Wall -USINGLE -W -Woverloaded-virtual -O2 -fmessage-length=0 -c csv_parser.cc -o csv_parser.o 
 	g++ csv_parser.o  -lboost_regex-xgcc40-mt-1_38 -lm  -o csv_parser

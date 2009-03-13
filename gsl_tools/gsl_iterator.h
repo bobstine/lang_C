@@ -23,10 +23,11 @@
 
 namespace GSL {
   
-class gsl_vector_iterator: public std::iterator<std::random_access_iterator_tag,double,int>
+class gsl_vector_iterator: public std::iterator<std::random_access_iterator_tag,double>
 {
   gsl_vector *mV;
   int         mPosition;
+  
 public:
   gsl_vector_iterator(gsl_vector *v)
     : mV(v), mPosition(0) { }
@@ -54,12 +55,13 @@ public:
   bool   operator!=(gsl_vector_iterator const& it) const { return mV != it.mV || mPosition != it.mPosition; }
   bool   operator==(gsl_vector_iterator const& it) const { return mV == it.mV && mPosition == it.mPosition; }
 
-  int    operator- (gsl_vector_iterator const& it) const { return mPosition - it.mPosition; }
+  std::iterator_traits< gsl_vector_iterator >::difference_type
+    operator- (gsl_vector_iterator const& it) const { return mPosition - it.mPosition; }
 };
 
 
 
-class gsl_vector_const_iterator: public std::iterator<std::random_access_iterator_tag,double,int>
+class gsl_vector_const_iterator: public std::iterator<std::random_access_iterator_tag,double>
 {
   gsl_vector const* mV;
   int               mPosition;
@@ -90,7 +92,8 @@ public:
   bool   operator!=(gsl_vector_const_iterator const& it) const { return mV != it.mV || mPosition != it.mPosition; }
   bool   operator==(gsl_vector_const_iterator const& it) const { return mV == it.mV && mPosition == it.mPosition; }
   
-  int    operator- (gsl_vector_const_iterator const& it) const { return mPosition - it.mPosition; }
+  std::iterator_traits< gsl_vector_const_iterator >::difference_type
+    operator- (gsl_vector_const_iterator const& it) const { return mPosition - it.mPosition; }
 };
 
 // Begin and end functions

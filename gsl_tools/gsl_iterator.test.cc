@@ -66,7 +66,7 @@ int main()
   gsl_vector_const_view     colView (gsl_matrix_const_column(mat,1));
   gsl_vector_const_iterator colIter (&colView.vector);
   std::cout << "column 1: \n" ;
-    for (unsigned int i=0; i<nRows; ++i, ++colIter)    // use make_range if import ranges
+  for (int i=0; i<nRows; ++i, ++colIter)    // use make_range if import ranges
     std::cout << "colIter[i]   : v[" << i << "] = " << colIter[i] << std::endl;
   std::cout << std::endl;
 
