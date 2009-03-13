@@ -22,7 +22,6 @@ operator<<(std::ostream& os, gsl_vector const* v)
   os << "[" << v->size << "] ";
   for(size_t i=0; i<v->size; ++i)
     os << std::setw(6) << gsl_vector_get(v,i) << " " ;
-  os << std::endl;
   os.flush();
   return os;
 }

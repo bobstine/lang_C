@@ -128,14 +128,14 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
 
   parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
   if (result.hit)
-  { cout << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
+  { clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
-    { cout << "ERROR: Incomplete parse ...  Parsing stopped at  " ;
+    { cerr << "ERROR: Incomplete parse ...  Parsing stopped at  " ;
       char const* s = result.stop;
       int limit = 10;
       while(s && limit--)
-	cout << *s++;
-      cout << endl;
+	clog << *s++;
+      clog << endl;
     }
   }
   return result.hit;

@@ -128,11 +128,11 @@ main(int argc, char** argv)
   // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
   
-  std::clog << "TEST: Initial model is\n" << theRegr << std::endl;
+  std::clog << "AUCT: Initial model is\n" << theRegr << std::endl;
   
     
   // build vector of experts that work directly from input variables
-  std::clog << "TEST: Creating experts"  << std::endl;
+  std::clog << "AUCT: Creating experts"  << std::endl;
   double alphaShare (total_alpha_to_spend/5);
 
   typedef  FiniteStream      < std::vector<FeatureABC*> >      FStream;
@@ -201,7 +201,7 @@ main(int argc, char** argv)
   { double result (theAuction.auction_next_feature());
     theAuction.write_alphas_to(alphaStream);
     if (result)
-    { std::clog << "TEST: @@@ Auction adds predictor @@@" << std::endl;
+    { std::clog << "AUCT: @@@ Auction adds predictor @@@" << std::endl;
       std::clog << theAuction << std::endl;
     }
     // theAuction.print_features_to(std::clog);
@@ -218,7 +218,7 @@ main(int argc, char** argv)
   
   // write model to a file
   {
-    std::clog << "TEST: Writing model to file " << modelFileName << std::endl;
+    std::clog << "AUCT: Writing model to file " << modelFileName << std::endl;
     std::ofstream output (modelFileName.c_str());
     if (! output)
     { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
@@ -230,7 +230,7 @@ main(int argc, char** argv)
 
   // write model data to file
   {
-    std::clog << "TEST: Writing data to file " << dataFileName << std::endl;
+    std::clog << "AUCT: Writing data to file " << dataFileName << std::endl;
     std::ofstream output (dataFileName.c_str());
     if (! output)
     { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
@@ -240,7 +240,7 @@ main(int argc, char** argv)
     output.close();
   }
   
-  std::clog << "TEST: Done; disposing objects.\n";
+  std::clog << "AUCT: Done; disposing objects.\n";
   return 0;  
 }
 
@@ -321,12 +321,13 @@ parse_arguments(int argc, char** argv,
     }
 }
 
+// reads in response, initialized data object
 gslData*
 build_model_data(std::vector<Column> const& y)
 {
-  bool                      useSubset (y.size() == 2);
+  bool                      useSubset    (y.size() == 2);
   constant_iterator<double> equalWeights (1.0);  
-  int                       nRows (end(y[0].range())-begin(y[0].range()));
+  int                       nRows        (y[0].end()-y[0].begin());
   
   std::clog << "AUCT: Response has " << nRows << " rows.\n";
   if (useSubset)  // leading column is indicator
@@ -337,7 +338,7 @@ build_model_data(std::vector<Column> const& y)
   else            // use all data for fitting
   {
     constant_iterator<bool>   noSelection(true);
-    std::clog << "AUCT: Response variable is " << y[1] << std::endl;
+    std::clog << "AUCT: Response variable is " << y[0] << std::endl;
     return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }

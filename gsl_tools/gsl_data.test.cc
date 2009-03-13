@@ -12,9 +12,7 @@
 
 // for printing vector
 #include "gsl_utils.h"
-
 #include "column.h"
-
 #include "random.h"
 #include "print_utils.h"
 
@@ -38,13 +36,11 @@ main (void)
   for (int i=0; i<LEN; ++i)
     b[i]=true;
   b[0] = b[1] = b[5] = b[LEN-1] = false;
-  int n (LEN - 3);
   
   // make response related to first predictor; echo data file to output
   std::cout << "TEST: Making a uniform generator \n";
   MarsagliaGenerator uni1(17);
   MarsagliaGenerator uni2(3837);
-  double x1[LEN], x2[LEN], x3[LEN];
   double *y (new double[LEN]);
   double weights[LEN];
   for (int i=0; i<LEN; ++i)
@@ -75,8 +71,10 @@ main (void)
   // y is begin of an anonymous range is fine     theData(begin(yRange),...)
   // y is memory from a column                    theData(yCol.memory(),...
   gslData  empty;
-  gslData  theData(columns[0].memory(), noSelection, noWeights, LEN, 100); 
-    
+  gslData  theData(columns[0].begin(), noSelection, noWeights, LEN, 100); 
+
+  // add a bunch of columns
+  
   // extract a column
   std::cout << "TEST: y from the data set is " << theData.y() << std::endl;
   
@@ -88,7 +86,7 @@ main (void)
     for (int j=0; j<dim; ++j)
       gsl_matrix_set (mat,i,j,i*j);
   for (int j=0; j<dim; ++j)
-    std::cout << "TEST: column " << j << ": " << &gsl_matrix_column(mat,j).vector << std::endl;
+    std::cout << "TEST: Matrix col " << j << ": " << &gsl_matrix_column(mat,j).vector << std::endl;
   
   return 0;
 }
