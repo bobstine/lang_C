@@ -4,7 +4,7 @@
   Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
   Then execute code as
   
-          auction.test -f filename -o path -r rounds -c calibration_df
+          auction.test -f filename -o path -r rounds -c calibration_df -v
 
   where
         -r  number of rounds for the auction (default is 50)
@@ -48,30 +48,32 @@ void
 parse_arguments(int argc, char** argv, 
                 std::string& inputDataFile, 
                 std::string& outputPath, 
-                int &nRounds, int &df, int &useSubset);
+                int &nRounds, int &df);
 
 gslData*
 build_model_data(std::vector<Column> const& y);
- 
+
+bool
+data_has_selector(std::string const& dataFileName);
+
 
 int
 main(int argc, char** argv)
-{ 
+{
+  // open file stream for all log information
+  
   // build vector of columns from file; set default parameter values
   double      total_alpha_to_spend (0.5);
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         numberRounds         (300); 
-  int         useSubset            (0);
   int         splineDF             (0);
   std::clog << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
-
   std::clog << "AUCT: Parsing arguments ..." << std::endl;
   // parse arguments from command line  (pass in at main)
-  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF, useSubset);
-  std::clog << "AUCT: Arguments    --input-file=" << columnFileName
-	    << " --output-path=" << outputPath << " -r "
-	    << numberRounds << " --calibrator-df=" << splineDF << " --validate=" << useSubset
+  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
+  std::clog << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
+	    << " -r " << numberRounds << " --calibrator-df=" << splineDF
 	    << std::endl;
 
   // need to fix issues surrouding the calibration adjustment
@@ -97,18 +99,21 @@ main(int argc, char** argv)
        Line 1: gives the number of cases
        Line 2: name of the first variable (the response)
        Line 3: data for the response
-       Line 4: name of the second variable
+       Line 4: name of the second variable  (X_1)
        Line 5: data for the second variable
-       Line 6: name of the third variable
+       Line 6: name of the third variable (X_2) 
        ...
     The reading is done by a FileColumnStream that allocates the space for the columns
     as the data are read.  A column feature provides a named range of doubles that learns a
     few properties of the data as it's read in (min, max, unique values). The space used
     by columns is allocated on reading in the function FileColumnStream.getNextColumn.
   */
+  int numberYColumns = 1;
+  if (data_has_selector(dataFileName))
+    numberYColumns = 2;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
-  insert_columns_from_file(columnFileName, 1+useSubset, back_inserter(yColumns), back_inserter(xColumns));
+  insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << yColumns.size() << " Y columns.\n";
   std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << xColumns.size() << " X columns.\n";
   
@@ -230,10 +235,10 @@ main(int argc, char** argv)
 
   // write model data to file
   {
-    std::clog << "AUCT: Writing data to file " << dataFileName << std::endl;
+    std::clog << "AUCT: Writing model data to file " << dataFileName << std::endl;
     std::ofstream output (dataFileName.c_str());
     if (! output)
-    { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
+    { std::cerr << "AUCT: Cannot open output file for model data " << modelFileName << std::endl;
       return 2;
     }
     theAuction.write_model_data_to(output);
@@ -250,8 +255,7 @@ parse_arguments(int argc, char** argv,
 		std::string& inputFile,
 		std::string& outputPath,
 		int & nRounds,
-		int & nDF,
-		int & useSubset)
+		int & nDF)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -262,7 +266,6 @@ parse_arguments(int argc, char** argv,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
-	  {"validate",          0, 0, 'v'},  // no  arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
@@ -296,11 +299,6 @@ parse_arguments(int argc, char** argv,
 	      is >> nRounds;
 	      break;
 	    }
-	  case 'v' :
-	    {
-	      useSubset = 1;
-	      break;
-	    }
 	  case 'h' :
 	    {
 	      std::cout << "switches:" << std::endl << std::endl;
@@ -330,7 +328,7 @@ build_model_data(std::vector<Column> const& y)
   int                       nRows        (y[0].end()-y[0].begin());
   
   std::clog << "AUCT: Response has " << nRows << " rows.\n";
-  if (useSubset)  // leading column is indicator
+  if (useSubset)  // leading column is indicator of which cases to use in fitting
   {
     std::clog << "AUCT: Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
     return new gslData(y[1].begin(), y[0].begin(), equalWeights, nRows, gslRegression_Max_Q);
@@ -341,4 +339,15 @@ build_model_data(std::vector<Column> const& y)
     std::clog << "AUCT: Response variable is " << y[0] << std::endl;
     return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
+}
+
+
+bool
+data_has_selector(std::string const& dataFileName)
+{
+  std::ifstream input (dataFileName.c_str());
+  int i,j;
+  std::string firstVarName;
+  input >> i >> j >> firstVarName;
+  return (firstVarName == "[in/out][in]");
 }

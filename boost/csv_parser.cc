@@ -28,7 +28,13 @@
        3, 4, 5
        a,  , 5
 
-       
+   If the first input column is a list of names, "in"/"out", then the parser will treat
+   this column differently; it will treat this column as an indicator of which cases are
+   to be used in subsequent analysis.  Rather than generate 2 indicators, it will only
+   generate 1 and this single boolean variable will be placed first in the file sent to
+   the auction.
+
+   
    Output
 
    The first line of output gives n and k, the number of cases and the number of
@@ -66,8 +72,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <cstdio>
+#include <cstdlib> // strtod
 
 #include <vector>
 #include <set>
@@ -82,6 +88,7 @@
 #include <boost/spirit/utility/lists.hpp>
 #include <boost/spirit/utility/escape_char.hpp>
 #include <boost/lambda/lambda.hpp>
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,7 +137,7 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
   if (result.hit)
   { clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
-    { cerr << "ERROR: Incomplete parse ...  Parsing stopped at  " ;
+    { cerr << "ERROR: Incomplete parse in list of variable names.  Parsing stopped at  " ;
       char const* s = result.stop;
       int limit = 10;
       while(s && limit--)
@@ -160,11 +167,13 @@ parse_data_line (char const* str, Op f)
   parse_info<> result = parse(str, data_rule, space_p);    // binding 3rd argument produces a phrase scanner  
   if (!result.full) {
     cout << "ERROR: Incomplete data parse ...  Parsing stopped at  " ;
-    char const* s = result.stop;
-    int limit = 10;
-    while(s && limit--)
-      cout << *s++;
-    cout << endl;
+    return false;
+    /* char const* s = result.stop;
+       int limit = 10;
+       while(s && limit--)
+       cout << *s++;
+       cout << endl;
+    */
   }
   return result.hit;
 }
@@ -186,25 +195,23 @@ parse_double (std::string str)
   if (str.size() == 0)
     return 0.0;
   else
-  { double x;
-    std::istringstream ss (str);
-    ss >> x;
-    return x;
-  }
+    return std::strtod(str.c_str(), NULL);
 }
 
 
+
 /*
-  These functions write the output data in streaming style, with name on one
-  line and the data on the following long line.
+  These functions write the output data in streaming style, with
+       - name of the variable on current line
+       - data for the variable as a following line (which can be long)
 */
 
 void
-write_missing_column (std::vector<std::string> const& varNames, StringDataMatrix const& data,
+write_missing_column (std::string const& varName, StringDataMatrix const& data,
 		      int column, std::ostream& output)
 {
   int nObs (data.size());
-  output << varNames[column] << "[missing]" << endl;
+  output << varName << "[missing]" << endl;
   for(int i=0; i<nObs; ++i) {
     if (data[i][column].size()==0)     output << "1 ";
     else                               output << "0 ";
@@ -213,11 +220,11 @@ write_missing_column (std::vector<std::string> const& varNames, StringDataMatrix
 }  
 
 void
-write_numerical_column  (std::vector<std::string> const& varNames, StringDataMatrix const& data,
+write_numerical_column  (std::string const& varName, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
   // start by writing the undecorated name to output
-  output << varNames[column] << endl;
+  output << varName << endl;
   // now write the observed data, with any missing value inserted
   int nObs (data.size());
   if (0 == numberMissing)                                // write directly to output
@@ -247,21 +254,51 @@ write_numerical_column  (std::vector<std::string> const& varNames, StringDataMat
   output << endl;
 }
 
+
+
+// result is whether the column identifies a leave-out-cases selector
+bool
+data_has_selection_indicator(StringDataMatrix const& data)
+{
+  // find the collection of unique values in first column
+  int nObs (data.size());
+  std::set< std::string > uniqueLabels;
+  for (int i=0; i<nObs; ++i)
+  { if (data[i][0].size() > 0)
+      uniqueLabels.insert(data[i][0]);
+  }
+  if (uniqueLabels.size() != 2)
+    return false;
+  else  // check if names match in/out
+  { std::set<std::string>::const_iterator iter (uniqueLabels.begin());
+    std::string l1 (*iter);     ++iter;
+    std::string l2 (*iter);
+    // put both in lower case
+    std::transform(l1.begin(), l1.end(), l1.begin(), ::tolower);
+    std::transform(l2.begin(), l2.end(), l2.begin(), ::tolower);
+    return (((l1 == "in")&&(l2 == "out")) || ((l2 == "in")&&(l1=="out")));
+  }
+}
   
+
+
 void
-write_categorical_column (std::vector<std::string> const& varNames, StringDataMatrix const& data,
-			  int column, std::ostream& output)
+write_categorical_column (std::string const& varName, StringDataMatrix const& data,
+			  int column, bool dropLastLabel, std::ostream& output)
 {
   // find the collection of unique values
   int nObs (data.size());
   std::set< std::string > uniqueValues;
-  for (int i=0; i<nObs; ++i) {
-    if (data[i][column].size() > 0)
+  for (int i=0; i<nObs; ++i)
+  { if (data[i][column].size() > 0)
       uniqueValues.insert(data[i][column]);
   }
-  // write indicators for each label
-  for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != uniqueValues.end(); ++it) {
-    output << varNames[column] << "[" << *it << "]" << endl;
+  // avoid last label if indicated
+  std::set<std::string>::const_iterator last (uniqueValues.end());
+  if (dropLastLabel) --last;
+  // write data for each label
+  for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
+  { output << varName << "[" << *it << "]" << endl;
     for (int i=0; i<nObs; ++i)
       if (data[i][column] == *it)   output << "1 ";
       else                          output << "0 ";
@@ -270,8 +307,9 @@ write_categorical_column (std::vector<std::string> const& varNames, StringDataMa
 }
 
 
+
 int
-number_output_columns(StringDataMatrix const& data,
+number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 		      std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount)
 {
   int nInputCols (varMissingCount.size()); 
@@ -298,15 +336,21 @@ number_output_columns(StringDataMatrix const& data,
       nColsForCategorical += nCats;
     }
   }
+  int nOutputCols (nInputCols + nColsWithMissing + nColsForCategorical);
   std::clog << "\nParser: Output " << nInputCols << " input cols + " << nColsWithMissing << " missing indicators + "
 	    << nColsForCategorical << " columns for indicators.\n";
-  return nInputCols + nColsWithMissing + nColsForCategorical;
+  if (hasSubsetSelector)
+  { std::clog << "Parser: One column dropped since data have selector.\n";
+    -- nOutputCols;
+  }
+  return nOutputCols;
 }
 
 
 
 void
 write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
+			   bool hasSelector,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
 // writes columns in streaming fashion
@@ -314,17 +358,23 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
   int nVars (varNames.size());
   int nObs  (data.size());
 
-  for (int column=0; column<nVars; ++column)
+  int column = 0;
+  if (hasSelector)
+  { write_categorical_column("[in/out]", data, column, true, output);  // true = drop last label
+    ++column;
+  }
+  for (; column<nVars; ++column)
   { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
-      write_numerical_column (varNames, data, column, varMissingCount[column], output);
-    } else
+      write_numerical_column (varNames[column], data, column, varMissingCount[column], output);
+    }
+    else
     {
-      write_categorical_column (varNames, data, column, output);
+      write_categorical_column (varNames[column], data, column, false,output); // false = use all labels
     }
     if (varMissingCount[column] > 0)
     {
-      write_missing_column (varNames, data, column, output);
+      write_missing_column (varNames[column], data, column, output);
     }
   }
 }
@@ -374,12 +424,13 @@ csv_parser(std::istream& input, std::ostream& output)
       }
       else
       { std::cerr
-	  << "Parser: Error. Line " << lineNumber
+	  << "Parser: Error parsing data in line " << lineNumber
 	  << ". Number of data elements (" << inputData.size()
 	  << ") unequal to number of variables (" << nVars << ").\n\t" << inputLine << endl;
       }
     }
-    else std::cerr << "Parser: Error. Line " << lineNumber << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
+    else std::cerr << "Parser: Error parsing data in line " << lineNumber
+		   << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
   }
   
   std::clog << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
@@ -390,13 +441,15 @@ csv_parser(std::istream& input, std::ostream& output)
   for (int i = 0; i<nVars; ++i)
     std::clog << missing[i] << " ";
   std::clog << endl;
-  int nToWrite = number_output_columns(dataMatrix, missing, numeric);
+
+  bool hasSelector = data_has_selection_indicator(dataMatrix);
+  int nToWrite = number_output_columns(dataMatrix, hasSelector, missing, numeric);
   std::clog << "Parser: Writing " << nToWrite << " column streams to output file.\n";
   
   // write leading header with number of obs, number of cols
   output << dataMatrix.size() << " " << nToWrite << endl;
   // write data
-  write_numerical_data_file (inputColumnNames, dataMatrix, missing, numeric, output);
+  write_numerical_data_file (inputColumnNames, dataMatrix, hasSelector, missing, numeric, output);
   
   return std::make_pair(dataMatrix.size(), nVars);
 }

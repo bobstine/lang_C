@@ -12,9 +12,9 @@
 #define _PRINT_UTILS_H_
 
 #include <iostream>
+#include <iomanip>
 #include <iterator>
 #include <vector>
-#include <iomanip>
 
 // p-value for tabular summary
 #include <gsl/gsl_cdf.h>
@@ -22,6 +22,13 @@
 
 ////////////////////////  Stat Tabular Summary  //////////////////
 
+/*
+namespace pu {
+
+  debug_os = std::cout;
+
+}
+*/
 
 // First iterator gives the names of the elements, next two give the estimates and SEs
 
@@ -51,16 +58,71 @@ void
       int zInt (100 * z);
       os << std::setw(10) << double(zInt)/100.0  << " ";
       // output 2-sided z-values
+      os << std::setiosflags(std::ios::left);
       if (z < 0) z = -z;
       double p (2.0*gsl_cdf_ugaussian_Q(z));
-      if (p < 0.00001) p = 0;
-      os << std::setw(10) << p;
+      if (p < 0.0000001) p = 0.0;
+      os << std::setw(10)  << p;
+      os << std::setiosflags(std::ios::right);
     }
     os << std::endl;
     os.precision(6);
   }
   os << " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n";
 }
+
+template <class SIter, class Iter>
+void
+  print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, Iter pv, std::ostream &os)
+{
+  const unsigned int maxAllowedNameLength (35);
+
+  // find the length of the longest name; use that length unless bigger than max
+  unsigned int maxLen = 0;
+  for (int i=0; i<k; ++i)
+  { if (name[i].size() > maxLen)
+      maxLen = name[i].size();
+  }
+  if (maxLen > maxAllowedNameLength)
+    maxLen = maxAllowedNameLength;
+  
+  os << "\n<TABLE BORDER CELLSPACING=10 CELLPADDING=10 WIDTH=\"80%\">\n";
+  os << " <CAPTION> Summary of Statistical Estimates </CAPTION>\n";
+  os << "<TR> <TH SCOPE=\"column\"> Name </TH> "
+     << "<TH SCOPE=\"column\"> Estimate </TH>"
+     << "<TH SCOPE=\"column\"> Std Error </TH>"
+     << "<TH SCOPE=\"column\"> t-statistic </TH>"
+     << "<TH SCOPE=\"column\"> p-value </TH>  </TR>\n";
+    
+  // print the names in the first column, then est   se   t  p-val
+  for (int i=0; i<k; ++i, ++name,++est,++se,++pv)
+  { // trim names to allowed size
+    os << "<TR> ";
+    std::string aName (*name);
+    if (aName.size() > maxLen)
+      aName = aName.substr(0,maxLen);
+    os <<  "<TD>" << aName << "</TD> ";
+    os <<  "<TD>" << *est  << "</TD> ";
+    // reduce precision for se, t values, p-values
+    os.precision(3);
+    // skip over rest of elements if  se <= 0
+    if (*se <= 0)
+      os <<  "<TD> na </TD>   <TD> </TD>    <TD> </TD>";
+    {
+      os <<  "<TD>" << *se  << "</TD> ";
+      // round z to 2 decimals
+      double z (*est / *se);
+      int zInt (100 * z);
+      os <<  "<TD>" << double(zInt)/100.  << "</TD> ";
+      // output p-values
+      os <<  "<TD>" << *pv  << "</TD>";
+    }
+    os << "</TR>\n";
+    os.precision(6);
+  }
+  os << "</TABLE>\n";
+}
+
 
 ////////////////////////  Line Printer  /////////////////////
 
