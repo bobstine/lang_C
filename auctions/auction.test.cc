@@ -1,5 +1,3 @@
-// $Id: auction.test.cc,v 3.28 2008/02/22 19:39:47 bob Exp $
-  
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
   Then execute code as
@@ -11,8 +9,8 @@
         -f  path for input data              (default is est.dat)
 	-o  path for output model results    (default is model)
 	-c  calibration df                   (default is no calibration)
-        -v  treat second var (0/1) as CV indicator
 
+  22 Mar 09 ... Remove validation option by recognizing file pattern; add debugging from Dean
    5 Sep 08 ... Add the validation option.
   14 Oct 04 ... (dpf) added make_20_geometric bidders
    2 Aug 04 ... Force logistic model to have a spline smooth to calibrate (rather than recommender).
@@ -31,8 +29,9 @@
 // for constant iterator 
 #include "cyclic_iterator.h"
 
-// from utils
+// from utils; debug has the printing facility
 #include "column.h"
+#include "debug.h"
 
 // from gsl_tools
 #include "gsl_model.h"
@@ -45,54 +44,66 @@
 
 
 void
-parse_arguments(int argc, char** argv, 
+parse_arguments(int argc, char** argv,
                 std::string& inputDataFile, 
                 std::string& outputPath, 
                 int &nRounds, int &df);
 
 gslData*
-build_model_data(std::vector<Column> const& y);
+build_model_data(std::vector<Column> const& y, std::ostream&);
 
 bool
-data_has_selector(std::string const& dataFileName);
+data_has_selector(std::string const& dataFileName, std::ostream&);
 
 
 int
 main(int argc, char** argv)
 {
-  // open file stream for all log information
-  
   // build vector of columns from file; set default parameter values
   double      total_alpha_to_spend (0.5);
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         numberRounds         (300); 
   int         splineDF             (0);
-  std::clog << "AUCT: $Id: auction.test.cc,v 3.28 2008/08/13 bob Exp $" << std::endl;
-  std::clog << "AUCT: Parsing arguments ..." << std::endl;
-  // parse arguments from command line  (pass in at main)
+  
+  // parse arguments from command line  (pass in at main, open file for printing messages)
   parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
-  std::clog << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
-	    << " -r " << numberRounds << " --calibrator-df=" << splineDF
-	    << std::endl;
+
+  // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
+  using namespace debugging;
+  std::string   debugFileName (outputPath + "progress.log");
+  std::ofstream logStream     (debugFileName.c_str());
+#ifdef NDEBUG
+  debugging::debug_init(logStream, -1);
+#else
+  debugging::debug_init(std::clog, -1);
+#endif
+
+  // echo startup options to log file
+  debug("AUCT",3) << "Version build 0.50 (23 Mar 09)\n";
+  debug("AUCT",3) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
+		  << " -r " << numberRounds << " --calibrator-df=" << splineDF
+		  << std::endl;
+  debug("AUCT",3) << " Total alpha available to spend in auction is " << total_alpha_to_spend << std::endl;
 
   // need to fix issues surrouding the calibration adjustment
   if (splineDF != 0)
   { splineDF = 0;
-    std::clog << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
-  }
-  
-  std::clog << "AUCT: total_alpha_to_spend = " << total_alpha_to_spend << std::endl;
-  std::string alphaFileName  (outputPath + "alpha.dat");
-  std::string outputFileName (outputPath + "auction.model.pretty_print"); 
-  std::string modelFileName  (outputPath + "auction.model"); 
-  std::string dataFileName   (outputPath + "auction.model.txt");
+    debug("AUCT",-1) << "Calibration DF set to 0 in current implementation to avoid problems\n";
+  }  
 
-  std::clog << "AUCT Output going to:" << std::endl;
-  std::clog << "           alpha  --> " << alphaFileName << std::endl;
-  std::clog << "           output --> " << outputFileName << std::endl;
-  std::clog << "           model  --> " << modelFileName << std::endl;
-  std::clog << "        model.txt --> " << dataFileName << std::endl;
+  // open additional files for output
+  std::string alphaFileName      (outputPath + "alpha.dat");
+  std::string modelHTMLFileName  (outputPath + "model.html"); 
+  std::string modelTextFileName  (outputPath + "model.txt"); 
+  std::string modelDataFileName  (outputPath + "model_data.csv");
+  debug("AUCT",-1) << "AUCT Output going to:\n"
+		   << "           alpha  --> " << alphaFileName  << std::endl
+#ifdef NDEBUG
+                   << "             log  --> " << debugFileName  << std::endl
+#endif
+		   << "      model data  --> " << modelDataFileName << std::endl
+		   << "       model.txt  --> " << modelTextFileName << std::endl;
 
   /* 
     Read columns from a file. The file is laid out with one column of values per row.
@@ -109,38 +120,36 @@ main(int argc, char** argv)
     by columns is allocated on reading in the function FileColumnStream.getNextColumn.
   */
   int numberYColumns = 1;
-  if (data_has_selector(dataFileName))
+  if (data_has_selector(columnFileName, debug("AUCT",0)))
     numberYColumns = 2;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << yColumns.size() << " Y columns.\n";
-  std::clog << "AUCT: Data file " << columnFileName << " produced vector of " << xColumns.size() << " X columns.\n";
+  debug("AUCT",0) << "Data file " << columnFileName << " produced " << yColumns.size() << " Y columns and "
+		  << xColumns.size() << " X columns.\n";
   
   // form column features
   std::vector<FeatureABC*> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     columnFeatures.push_back(new ColumnFeature(*it));
-  std::clog << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
+  debug("AUCT",0) << "Initialization converted " << xColumns.size() << " columns into features.\n";
   
   // build data object
-  gslData *theData (build_model_data(yColumns));
+  gslData *theData (build_model_data(yColumns, debug("AUCT",1)));
 
-  // build model and associated auction
+  // build model and initialize auction with stream for log
   LinearModel <gslData, olsEngine> theRegr(theData);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF);
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF, debug(0));
 
   // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
-  
-  std::clog << "AUCT: Initial model is\n" << theRegr << std::endl;
+  debug("AUCT",0) << "Initial model in the auction is\n" << theRegr << std::endl;
   
     
   // build vector of experts that work directly from input variables
-  std::clog << "AUCT: Creating experts"  << std::endl;
+  debug("AUCT",-1) << "Creating experts"  << std::endl;
   double alphaShare (total_alpha_to_spend/5);
-
-  typedef  FiniteStream      < std::vector<FeatureABC*> >      FStream;
+  typedef  FiniteStream      < std::vector<FeatureABC*> > FStream;
   typedef  InteractionStream < std::vector<FeatureABC*> > IStream;
   typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
   typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
@@ -206,46 +215,49 @@ main(int argc, char** argv)
   { double result (theAuction.auction_next_feature());
     theAuction.write_alphas_to(alphaStream);
     if (result)
-    { std::clog << "AUCT: @@@ Auction adds predictor @@@" << std::endl;
-      std::clog << theAuction << std::endl;
+    { debug("AUCT",3) << "@@@ Auction adds predictor @@@" << std::endl
+		      << theAuction << std::endl << std::endl;
     }
     // theAuction.print_features_to(std::clog);
-    std::clog << std::endl;
   }
-  std::clog << "\n         ------- Auction Completed ------ \n\n" << theAuction << std::endl;
+  debug("AUCT",3) << "\n         ------- Auction Completed ------ \n\n" << theAuction << std::endl;
   
-  // pretty print model to a file
+  // write model in HTML to a file
   {
-    std::ofstream output (outputFileName.c_str());
-    output << theAuction << std::endl;
+    std::ofstream output (modelHTMLFileName.c_str());
+    if (! output)
+    { std::cerr << "AUCT: Cannot open output HTML file for writing model " << modelHTMLFileName << std::endl;
+      return 1;
+    }
+    theAuction.write_html_model_to(output);
     output.close();
   }
   
   // write model to a file
   {
-    std::clog << "AUCT: Writing model to file " << modelFileName << std::endl;
-    std::ofstream output (modelFileName.c_str());
+    debug("AUCT",0) << "Writing model to file " << modelTextFileName << std::endl;
+    std::ofstream output (modelTextFileName.c_str());
     if (! output)
-    { std::cerr << "AUCT: Cannot open output file for model " << modelFileName << std::endl;
+    { std::cerr << "AUCT: Cannot open output text file for writing model " << modelTextFileName << std::endl;
       return 1;
     }
     theAuction.write_model_to(output);
     output.close();
   }
-
+  
   // write model data to file
   {
-    std::clog << "AUCT: Writing model data to file " << dataFileName << std::endl;
-    std::ofstream output (dataFileName.c_str());
+    debug("AUCT",0) << "Writing model data to file " << modelDataFileName << std::endl;
+    std::ofstream output (modelDataFileName.c_str());
     if (! output)
-    { std::cerr << "AUCT: Cannot open output file for model data " << modelFileName << std::endl;
+    { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
     }
     theAuction.write_model_data_to(output);
     output.close();
   }
   
-  std::clog << "AUCT: Done; disposing objects.\n";
+  debug("AUCT",-1) << "Done; disposing objects.\n";
   return 0;  
 }
 
@@ -272,7 +284,7 @@ parse_arguments(int argc, char** argv,
 	key = getopt_long (argc, argv, "c:f:o:r:v:h", long_options, &option_index);
 	if (key == -1)
 	  break;
-	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
+	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
 	switch (key)
 	  {
 	  case 'c' : 
@@ -284,7 +296,7 @@ parse_arguments(int argc, char** argv,
 	  case 'f' :                                    
 	    {
 	      std::string name(optarg);
-				std::cout << "Read name from optional args..." << name << std::endl;
+	      // std::cout << "Read name from optional args..." << name << std::endl;
 	      inputFile = name;
 	      break;
 	    }
@@ -321,33 +333,41 @@ parse_arguments(int argc, char** argv,
 
 // reads in response, initialized data object
 gslData*
-build_model_data(std::vector<Column> const& y)
+build_model_data(std::vector<Column> const& y, std::ostream& os)
 {
   bool                      useSubset    (y.size() == 2);
   constant_iterator<double> equalWeights (1.0);  
   int                       nRows        (y[0].end()-y[0].begin());
   
-  std::clog << "AUCT: Response has " << nRows << " rows.\n";
+  os << " Response has " << nRows << " rows.\n";
   if (useSubset)  // leading column is indicator of which cases to use in fitting
   {
-    std::clog << "AUCT: Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
+    os << " Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
     return new gslData(y[1].begin(), y[0].begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting
   {
     constant_iterator<bool>   noSelection(true);
-    std::clog << "AUCT: Response variable is " << y[0] << std::endl;
+    os << " Response variable is " << y[0] << std::endl;
     return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
 
 
 bool
-data_has_selector(std::string const& dataFileName)
+data_has_selector(std::string const& dataFileName, std::ostream& os)
 {
   std::ifstream input (dataFileName.c_str());
-  int i,j;
-  std::string firstVarName;
-  input >> i >> j >> firstVarName;
-  return (firstVarName == "[in/out][in]");
+  if (input)
+  { os << "Peeking at data file  " << dataFileName << " finds ";
+    int i,j;
+    std::string firstVarName;
+    input >> i >> j >> firstVarName;
+    os << "nrow=" << i << " ncol=" << j <<". Name of first variable is " << firstVarName << std::endl;
+    return (firstVarName == "[in/out][in]");
+  }
+  else
+  { std::cerr << "AUCT: *** Error ***  Could not open data file " << dataFileName << std::endl;
+    return false;
+  }
 }

@@ -14,7 +14,7 @@ Auction<ModelClass>::auction_next_feature ()
   const time_t tmp_time (time(0));
   std::string print_time (asctime(localtime(&tmp_time)));
   ++mRound;
-  std::cout << "AUCT: Beginning auction round #" << mRound << " (" << print_time.substr(0,print_time.size() - 1) << ")" << std::endl;
+  mLogStream << "AUCT: Beginning auction round #" << mRound << " (" << print_time.substr(0,print_time.size() - 1) << ")" << std::endl;
   // identify expert with highest total bid
   std::pair<ExpertABC*,double> winner (collect_bids());
   ExpertABC* pHighBidder = winner.first;
@@ -26,9 +26,9 @@ Auction<ModelClass>::auction_next_feature ()
   // extract chosen features
   Features::FeatureVector features  (pHighBidder->features()) ;
   int                     nFeatures (features.size());
-  std::cout << "AUCT: Winning expert " << pHighBidder->name() << " bids on ";
+  mLogStream << "AUCT: Winning expert  " << pHighBidder->name() << "  bids on ";
   if (0 == nFeatures)
-  { std::cout << "no features; this is an *** error ***; should not bid without a variable to offer.\n";
+  { std::cerr << "AUCT: *** ERROR **** No features to consider; expert should not bid without a variable to offer.\n";
     return false;
   }
   print_features(features);
@@ -60,8 +60,8 @@ Auction<ModelClass>::auction_next_feature ()
 	mModelFeatures.push_back(features[j]);
       else      
 	mSkippedFeatures.push_back(features[j]);
-      std::cout << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
-      std::cout << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
+      mLogStream << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
+      mLogStream << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
     }
   }
   return addedPredictors;
@@ -168,14 +168,14 @@ FeatureABC*
 Auction<ModelClass>::calibration_feature() const
 {
   if (not calibrated())
-  { std::cout << "AUCT: *** Error *** Attempt to extract calibrator from uncalibrated model.\n";
+  { std::cerr << "AUCT: *** ERROR *** Attempt to extract calibrator from uncalibrated model.\n";
     return 0;
   }
   else
   { int q (mModel.q()-1);   // dont count calibrator
     std::ostringstream oss;
     oss << q;
-    std::cout << "AUCT: Need to deal with output of a calibration feature.\n" ;
+    mLogStream << "AUCT: Need to deal with output of a calibration feature.\n" ;
     /* std::string name ("Cal_" + oss.str());     // Name ought to be used
       return mFeatureFactory->make_unary_feature_ptr(mModel.calibration_operator(),
                                                      xb_feature(mModel.calibration_beta()));
@@ -192,13 +192,13 @@ Auction<ModelClass>::print_features(FeatureVector const& features)   const
   size_t nFeatures (features.size());
   
   if (1==nFeatures) 
-    std::cout << "one feature: " << features[0]->name();
+    mLogStream << "one feature: " << features[0]->name();
   else 
-  { std::cout << nFeatures << " features: "; 
+  { mLogStream << nFeatures << " features: "; 
     for (size_t j=0; j<nFeatures; ++j)  
-      std::cout << features[j]->name() << ", ";
+      mLogStream << features[j]->name() << ", ";
   }
-  std::cout << std::endl;
+  mLogStream << std::endl;
 }
 
 template <class ModelClass>
@@ -211,24 +211,31 @@ Auction<ModelClass>::write_model_data_to       (std::ostream& os)       const
 
 template <class ModelClass>
 void
+Auction<ModelClass>::write_html_model_to  (std::ostream& os) const
+{
+  mModel.write_html_to(os);
+}
+
+template <class ModelClass>
+void
 Auction<ModelClass>::write_model_to  (std::ostream& os) const
 {
   os << "Auction Model: ";
   mModel.print_to(os);
   // feature list has <= q items; does not include combinations based on prior predictor
   for (int j=0; j<int(mModelFeatures.size()); ++j)      
-  { std::cout << "AUCT: Writing model feature " << mModelFeatures[j]->name()
-    << " (" << j << " / " << mModelFeatures.size() << ")" 
-    << " with range " << mModelFeatures[j]->range() << std::endl;
-    std::cout << "       center = " << mModelFeatures[j]->center()
-    << "    scale = " << mModelFeatures[j]->scale() << std::endl;
+  { mLogStream << "AUCT: Writing model feature " << mModelFeatures[j]->name()
+	       << " (" << j << " / " << mModelFeatures.size() << ")" 
+	       << " with range " << mModelFeatures[j]->range() << std::endl;
+    mLogStream << "       center = " << mModelFeatures[j]->center()
+	       << "    scale = " << mModelFeatures[j]->scale() << std::endl;
     mModelFeatures[j]->write_to(os);
   }
   if (calibrated())
   { FeatureABC* cb (calibration_feature());
     cb->write_to(os);
-    std::cout << "AUCT: Writing calibration feature " << cb->name() << " with range " << cb->range() << std::endl;
-    std::cout << "       center = " << cb->center()       << "    scale = " << cb->scale() << std::endl;
+    mLogStream << "AUCT: Writing calibration feature " << cb->name() << " with range " << cb->range() << std::endl;
+    mLogStream << "       center = " << cb->center()       << "    scale = " << cb->scale() << std::endl;
     delete cb;
   }
 }

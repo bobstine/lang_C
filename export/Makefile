@@ -2,8 +2,8 @@
 
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 CFLAGS = -g -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0
-GCC = g++ $(INCLUDES) $(LDFLAGS) 
-CC  = g++ $(INCLUDES) $(LDFLAGS)
+GCC = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS) 
+CC  = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS)
 
 %.o: %.cc %.h
 	$(GCC) $(CFLAGS) -c $< -o $@ 
@@ -23,7 +23,7 @@ LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm
 
 ####################
 
-utils = read_utils.o stat_utils.o function_utils.o print_utils.o operator_traits.o file_utils.o data_registry.o bennett.o coding.o cyclic_iterator.o
+utils = debug.o read_utils.o stat_utils.o function_utils.o print_utils.o operator_traits.o file_utils.o data_registry.o bennett.o coding.o cyclic_iterator.o
 
 random = random.o
 
@@ -46,9 +46,14 @@ csv_parser: csv_parser.cc
 build_model : $(utils) $(random) $(spline) $(ranges) $(gsl) $(auction) 
 	$(GCC) $^ $(LDLIBS) -o  $@
 
+test: csv_parser build_model
+	./csv_parser --input-file test/input_data.csv --output-file test/model.dat
+	mkdir -p test/log
+	./build_model --input-file test/model.dat --output-path test/log/ -r 200
+
 
 # h option tars the files rather than the symbolic links
-build_model.tgz: *.h *.cc README.txt
+build_model.tgz: *.h *.cc README.txt test/input_data.csv
 	rm -f build_model.tgz
-	tar -cvzhf build_model.tgz *.h *.cc *.txt Makefile
+	tar -cvzhf build_model.tgz *.h *.cc README.txt test/input_data.csv Makefile
 

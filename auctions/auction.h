@@ -36,13 +36,15 @@ private:
   int               mCalibrationDF;     // use calibration if positive
   ExpertVector      mExperts;
   Model&            mModel;
-  FeatureVector     mModelFeatures;     // Only those in the model.
-  FeatureVector     mSkippedFeatures;   // Those tried and not used.
+  FeatureVector     mModelFeatures;     // Only those in the model
+  FeatureVector     mSkippedFeatures;   // Those tried and not used
+  std::ostream&     mLogStream;         // log messages
 
   
  public:
-  Auction (Model& m, int calibrationDF)
-    : mHasActiveExpert(true), mRound(0), mPayoff(0.05), mCalibrationDF(calibrationDF), mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures() { }
+  Auction (Model& m, int calibrationDF, std::ostream& logStream)
+    : mHasActiveExpert(true), mRound(0), mPayoff(0.05), mCalibrationDF(calibrationDF),
+    mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
   
   double                 total_expert_alpha ()      const;
   bool                   has_active_expert()        const { return mHasActiveExpert; }
@@ -61,6 +63,7 @@ private:
   void print_to                  (std::ostream& os)       const;
   void print_model_features_to   (std::ostream& os)       const;
   void write_model_to            (std::ostream& os)       const;
+  void write_html_model_to       (std::ostream& os)       const;
   void write_model_data_to       (std::ostream& os)       const;
   void write_alphas_to           (std::ostream& os)       const;
 

@@ -639,8 +639,8 @@ gslRegression<Data,Engine>::write_data_to (std::ostream &os) const
   int len (mpData->length());
   std::clog << "GSLR: Writing " << len << " rows to output with " << mQ << " columns of X.\n";
   // header information in output file for reading into spreadsheet; names of first 4 columns are
-  os << "Included Error Fit Y ";
-  for (int j=0; j<mQ; ++j) os << mpData->x_names()[j] << " ";
+  os << "Included,Error,Fit,Y";
+  for (int j=0; j<mQ; ++j) os << "," << mpData->x_names()[j];
   os << std::endl;
   // need to restore the data to the order read in initially
   const int* permute (mpData->permutation());
@@ -650,14 +650,14 @@ gslRegression<Data,Engine>::write_data_to (std::ostream &os) const
   for(int i=0; i<len; ++i)
   { int row = permute[i];
     if (row < mN)
-      os << "1 ";  // estimation sample
+      os << " in, ";  // estimation sample
     else
-      os << "0 ";  // validation
+      os << "out, ";  // validation
     double yHat (gsl_vector_get(Xb,row));
     double yObs (gsl_vector_get(y,row) + mYBar);
-    os << (yObs - yHat) << " " << yHat << " " << yObs << " " ;
+    os << (yObs - yHat) << "," << yHat << "," << yObs;
     for(int j=0; j<mQ; ++j)
-      os << gsl_matrix_get(X,row,j) + gsl_vector_get(mXBar,j) << " ";   // add back the mean
+      os << "," << gsl_matrix_get(X,row,j) + gsl_vector_get(mXBar,j);   // add back the mean
     os << std::endl;
   }
 }

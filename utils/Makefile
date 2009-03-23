@@ -1,4 +1,3 @@
-
 # $Id: Makefile,v 1.24 2008/01/04 14:32:29 bob Exp $
 
 include ../c_flags
@@ -17,7 +16,10 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-OPT = -O2 -DNDEBUG
+# use this version (or higher optimization) to hide more debugging
+# OPT = -O2 -DNDEBUG
+
+OPT = -O2
 
 # USES = 
 
@@ -30,8 +32,9 @@ EXTERNAL_USES = gsl
 #
 ###########################################################################
 
-level_0   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o
-level_1   = tags.o
+level_0   = debug.o
+level_1   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o cyclic_iterator.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o
+level_2   = tags.o
 
 ############################################################################
 #

@@ -10,7 +10,8 @@ include ../c_flags
 
 PROJECT_NAME = auction
 
-OPT      = -O2 -DNDEBUG
+# OPT      = -O2 -DNDEBUG
+OPT      = -O2
 
 USES = gsl_tools spline ranges random utils 
 
