@@ -211,10 +211,11 @@ Auction<ModelClass>::write_model_data_to       (std::ostream& os)       const
 
 template <class ModelClass>
 void
-Auction<ModelClass>::write_html_model_to  (std::ostream& os) const
+Auction<ModelClass>::print_model_to  (std::ostream& os, bool useHTML) const
 {
-  mModel.write_html_to(os);
+  mModel.print_to(os, useHTML);
 }
+
 
 template <class ModelClass>
 void

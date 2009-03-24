@@ -229,7 +229,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output HTML file for writing model " << modelHTMLFileName << std::endl;
       return 1;
     }
-    theAuction.write_html_model_to(output);
+    theAuction.print_model_to(output, true);  // true -> use HTML
     output.close();
   }
   
@@ -241,7 +241,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output text file for writing model " << modelTextFileName << std::endl;
       return 1;
     }
-    theAuction.write_model_to(output);
+    theAuction.print_model_to(output);
     output.close();
   }
   

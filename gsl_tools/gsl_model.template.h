@@ -101,19 +101,30 @@ LinearModel<Data,Engine>::print_gof_to(std::ostream& os) const
 
 template <class Data, class Engine>
 void 
-LinearModel<Data,Engine>::print_to    (std::ostream& os) const
+LinearModel<Data,Engine>::print_to    (std::ostream& os, bool useHTML) const
 {
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-  os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
-  if (0 == GSLR::mQ)
-    os << "             Model has no explanatory variables.\n";
-  else 
-  { os << "             Model has " << GSLR::mQ << " explanatory variables.\n";
-    // model does not hold intercept, so have to get this part separately
+  if (useHTML)
+  { os << "<HR><P>\n";
+    os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << "<br>\n";
+    if (0 == GSLR::mQ)
+      os << "             Model has no explanatory variables.<br>\n";
+    else 
+      os << "             Model has " << GSLR::mQ << " explanatory variables.<br>\n";
+  }
+  else
+  { os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+    os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
+    if (0 == GSLR::mQ)
+      os << "             Model has no explanatory variables.\n";
+    else 
+      os << "             Model has " << GSLR::mQ << " explanatory variables.\n";
+  }
+  if (GSLR::mQ > 0)
+  { // model does not hold intercept, so have to get this part separately
     gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
+    gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
     GSLR::fill_with_beta(++begin(b));
-    gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     // no se for intercept; skip over this element
     gsl_vector_set (se,0,0.0);
     fill_with_se (begin(se), 1);
@@ -122,13 +133,18 @@ LinearModel<Data,Engine>::print_to    (std::ostream& os) const
     predictorNames.push_back("Intercept");
     for (int i=0; i<GSLR::mQ; ++i)
       predictorNames.push_back(GSLR::mpData->x_names()[i]);
-    print_stat_summary_table (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se), os);
-    gsl_vector_free(se);   
+    if (useHTML)
+    { print_stat_summary_table_in_html (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se), os);
+      os << "<HR>\n";
+    }
+    else
+    { print_stat_summary_table (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se),  os);
+      os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+    }
+    gsl_vector_free(b);   
+    gsl_vector_free(se);
   }
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
 }
-
-
 
 
 //////////  Logistic     Logistic     Logistic     Logistic     Logistic     Logistic     Logistic     
@@ -340,22 +356,41 @@ LogisticModel<Data>::check_calibration(int df) const
                                                    
 template <class Data>
 void 
-LogisticModel<Data>::print_to    (std::ostream& os) const
+LogisticModel<Data>::print_to    (std::ostream& os, bool useHTML) const
 {
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-  os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
-  if (0 == GSLR::mQ)
-    os << "      Model has no explanatory variables.\n";
-  else 
+  if (useHTML)
+  { os << "<HR><P>\n";
+    os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << "<br>\n";
+    if (0 == GSLR::mQ)
+      os << "             Model has no explanatory variables.<br>\n";
+    else 
+      os << "             Model has " << GSLR::mQ << " explanatory variables.<br>\n";
+  }
+  else
+  { os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+    os << "Logistic Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << std::endl;
+    if (0 == GSLR::mQ)
+      os << "      Model has no explanatory variables.\n";
+    else
+      os << "             Model has " << GSLR::mQ << " explanatory variables.<br>\n";
+  }
+  if (GSLR::mQ > 0)
   { gsl_vector *b  (gsl_vector_alloc(1+GSLR::mQ));
+    gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
     GSLR::fill_with_beta(++begin(b));
-    gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set (se,0,0.0);
     fill_with_se (begin(se), 1);  // skip intercept
-    print_stat_summary_table (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
-    gsl_vector_free(se);   
-    os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+    if (useHTML)
+    { print_stat_summary_table_in_html (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
+      os << "<HR>\n";
+    }
+    else
+    { print_stat_summary_table (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
+      os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+    }
+    gsl_vector_free(b);
+    gsl_vector_free(se);
   }
 }
 
@@ -366,6 +401,5 @@ LogisticModel<Data>::print_gof_to(std::ostream& os) const
 {
   os << " -2 LL " << -2.0 * mLL0 << " --> " << -2.0 * mLL1 << " G2 = " << (mLL0-mLL1)/mLL0;
 }
-
 
 

@@ -44,7 +44,7 @@ public:
   template <class Iter> void fill_with_se(Iter begin, int origin) const;
   template <class Iter> void fill_with_predictions(Iter it) const { GSLR::fill_with_fitted_values (it); } // export tracks 0/1 compression
 
-  void   print_to    (std::ostream& os) const;
+  void   print_to    (std::ostream& os, bool useHTML=false) const;
   void   print_gof_to(std::ostream& os) const;
   
 private:
@@ -96,7 +96,7 @@ public:
   template <class Iter> void fill_with_se(Iter begin, int origin) const; 
   template <class Iter> void fill_with_predictions(Iter it);                 // export tracks 0/1 compression
 
-  void   print_to    (std::ostream& os) const;
+  void   print_to    (std::ostream& os, bool useHTML=false) const;
   void   print_gof_to(std::ostream& os) const;
 
 private:

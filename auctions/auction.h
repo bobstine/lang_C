@@ -60,12 +60,12 @@ private:
   bool                   calibrated()               const { return (mCalibrationDF>0); }
   bool                   auction_next_feature ();  
 
-  void print_to                  (std::ostream& os)       const;
-  void print_model_features_to   (std::ostream& os)       const;
-  void write_model_to            (std::ostream& os)       const;
-  void write_html_model_to       (std::ostream& os)       const;
-  void write_model_data_to       (std::ostream& os)       const;
-  void write_alphas_to           (std::ostream& os)       const;
+  void print_to                  (std::ostream& os)                      const;
+  void print_model_features_to   (std::ostream& os)                      const;
+  void print_model_to            (std::ostream& os, bool useHTML=false)  const;
+  void write_model_to            (std::ostream& os)                      const;
+  void write_model_data_to       (std::ostream& os)                      const;
+  void write_alphas_to           (std::ostream& os)                      const;
 
  private:
   std::pair<ExpertABC*,double> collect_bids();

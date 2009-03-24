@@ -73,7 +73,7 @@ void
 
 template <class SIter, class Iter>
 void
-  print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, Iter pv, std::ostream &os)
+  print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, std::ostream &os)
 {
   const unsigned int maxAllowedNameLength (35);
 
@@ -95,7 +95,7 @@ void
      << "<TH SCOPE=\"column\"> p-value </TH>  </TR>\n";
     
   // print the names in the first column, then est   se   t  p-val
-  for (int i=0; i<k; ++i, ++name,++est,++se,++pv)
+  for (int i=0; i<k; ++i, ++name,++est,++se)
   { // trim names to allowed size
     os << "<TR> ";
     std::string aName (*name);
@@ -108,14 +108,17 @@ void
     // skip over rest of elements if  se <= 0
     if (*se <= 0)
       os <<  "<TD> na </TD>   <TD> </TD>    <TD> </TD>";
-    {
-      os <<  "<TD>" << *se  << "</TD> ";
+    else
+    { os <<  "<TD>" << *se  << "</TD> ";
       // round z to 2 decimals
       double z (*est / *se);
       int zInt (100 * z);
       os <<  "<TD>" << double(zInt)/100.  << "</TD> ";
       // output p-values
-      os <<  "<TD>" << *pv  << "</TD>";
+      if (z < 0) z = -z;
+      double p (2.0*gsl_cdf_ugaussian_Q(z));
+      if (p < 0.0000001) p = 0.0;
+      os <<  "<TD>" << p  << "</TD>";
     }
     os << "</TR>\n";
     os.precision(6);

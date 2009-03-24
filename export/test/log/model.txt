@@ -1,4 +1,4 @@
-Auction Model: - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Linear Model: (n=202)     SS 3.21848e+08 --> 8.82478e+07 R2 = 0.725809
              Model has 9 explanatory variables.
 
@@ -18,25 +18,3 @@ Linear Model: (n=202)     SS 3.21848e+08 --> 8.82478e+07 R2 = 0.725809
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-ColumnFeature x1
-FeatureABC 0 1 1 0.000383775
-ColumnFeature x2
-FeatureABC 0 1 1 0.00132017
-ColumnFeature x3
-FeatureABC 0 1 1 1.21437e-10
-ColumnFeature x6
-FeatureABC 0 1 1 0.0126566
-ColumnFeature x7
-FeatureABC 0 1 1 0.00519869
-ColumnFeature x10
-FeatureABC 0 1 1 0.0155931
-ColumnFeature x13
-FeatureABC 0 1 1 2.70818e-09
-ColumnFeature x15
-FeatureABC 0 1 1 1.71934e-06
-InteractionFeature
-ColumnFeature x10
-FeatureABC 0 1 1 0.0155931
-ColumnFeature x13
-FeatureABC 0 1 1 2.70818e-09
-FeatureABC 0 1 1 0.000240101
