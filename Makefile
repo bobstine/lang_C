@@ -19,9 +19,8 @@ libs:
 	-$(MAKE) -sC random        lib
 	-$(MAKE) -sC ranges        lib
 	-$(MAKE) -sC spline        lib
-	-$(MAKE) -sC auctions      lib
-	-$(MAKE) -sC seq_regr      lib
-#	$(MAKE) -sC calibrate     lib
+	-$(MAKE) -sC gsl_tools     lib
+#	-$(MAKE) -sC auctions      lib
 
 details: 
 	-$(MAKE) -C utils         lib
