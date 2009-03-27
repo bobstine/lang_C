@@ -55,10 +55,11 @@ build_model_data(std::vector<Column> const& y, std::ostream&);
 bool
 data_has_selector(std::string const& dataFileName, std::ostream&);
 
-
 int
 main(int argc, char** argv)
 {
+  using namespace debugging;
+
   // build vector of columns from file; set default parameter values
   double      total_alpha_to_spend (0.5);
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
@@ -70,7 +71,6 @@ main(int argc, char** argv)
   parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
 
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
-  using namespace debugging;
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG

@@ -42,10 +42,12 @@
 //        If you use the above rule, then DEBUG0, DEBUG1 are the same
 //        These are the only two that I use.
 
+
+// I have this at -1 either way for the time being... RAS
 #ifndef NDEBUG
 #define DEBUG_LOWER_BOUND -1
 #else
-#define DEBUG_LOWER_BOUND 2
+#define DEBUG_LOWER_BOUND -1   
 #endif
 
 
@@ -106,13 +108,13 @@ namespace debugging
   void     debug_prefix(const std::string &);
 
   std::string   debug_prefix(int level);  // prefix used for level of debugging
-  std::ostream& debug();                // continues with last level of debugging
-  std::ostream& debug(int);             // prefix used for appropiate level
-  std::ostream& debug(int);             // prefix used for appropiate level
+  std::ostream& debug();                              // continues with last level of debugging
+  std::ostream& debug(int);                           // prefix used for appropiate level
+  std::ostream& debug(int);                           // prefix used for appropiate level
   std::ostream& debug(const std::string&, int level); // debug("prefix",level) << "message." << std::endl;
-  void     debug_init(std::ostream&,int level);  // sets stream and minimum level to print at
-  int     debug_level();                // returns the current level (i.e. minimal print level)
-  void panic();            // called when something bad has happened.  Get low level debugging for the next 1000 rounds
+  void     debug_init(std::ostream&,int level);       // sets stream and minimum level to print at
+  int     debug_level();                              // returns the current level (i.e. minimal print level)
+  void panic();                                       // called when something bad has happened.  Get low level debugging for the next 1000 rounds
   void panic(const std::string&);
 
   /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

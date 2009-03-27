@@ -78,7 +78,7 @@ gslRegressionState::copy_vector (gsl_vector const* v, int n)
 void 
 gslRegressionState::free()
 {
-  std::cout << "GSLR: Freeing state object.\n";
+  debug("GSLR",0) << "GSLR: Freeing state object.\n";
   if (mY) gsl_vector_free (mY);
   if (mRes) gsl_vector_free (mRes);
   if (mWts) gsl_vector_free (mWts);

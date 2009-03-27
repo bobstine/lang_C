@@ -1,10 +1,8 @@
-// $Id: gsl_regr.test.cc,v 1.31 2008/01/16 03:28:08 bob Exp $
-
-
 #include "gsl_regr.h"
 #include "gsl_data.h"
 #include "gsl_engine.h"
 
+// #include "debug.h"
 #include "random.h"
 #include "print_utils.h"
 
@@ -21,6 +19,7 @@
 
 #define LEN 120
  
+
 double
 avg(double *x, bool *b)
 {
@@ -91,7 +90,10 @@ main (void)
   // Start by building the data.  Then add predictors, one at a time.
   // In the second block, add the variables all at once.
   
-  { constant_iterator<bool> noSelection(true);
+  { //using namespace debugging;
+    // debug_init(std::cout,0);
+    
+    constant_iterator<bool> noSelection(true);
     
     gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
     // gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
@@ -101,7 +103,7 @@ main (void)
     
     // add predictor, check with usual F test and bennett of Z[0]
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.prepare_predictor(x1);
+    regr.prepare_predictor("X1",x1);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
@@ -110,7 +112,7 @@ main (void)
     
     // add second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.prepare_predictor(x2);
+    regr.prepare_predictor("X2",x2);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
@@ -119,7 +121,7 @@ main (void)
     
     // add third predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.prepare_predictor(x3);
+    regr.prepare_predictor("X3",x3);
     std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
     std::cout << "     White " << regr.White_evaluation()   << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;

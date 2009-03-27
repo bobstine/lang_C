@@ -8,6 +8,7 @@
  */
 
 #include "gsl_data.h"
+#include "debug.h"
 
 #include <assert.h>
 #include <iostream>
@@ -24,7 +25,7 @@ gslData::temp_mat(int nRows, int nCols)
 void
 gslData::allocate(int nr, int nc, bool wts)
 {
-  std::clog << "GSLD: Allocating " << nr << " rows and " << nc << " columns.\n";
+  debugging::debug(0) << "GSLD: Allocating " << nr << " rows and " << nc << " columns.\n";
   mXb      = gsl_vector_alloc(nr);
   mE       = gsl_vector_alloc(nr);
   mPermute = new int[nr];
@@ -37,7 +38,7 @@ gslData::allocate(int nr, int nc, bool wts)
     if (v)
       mTempVec.push_back(v);
     else
-      std::cerr << "GSLD: Error.  Cannot allocate vector for data.\n";
+      std::cerr << "GSLD: Error.  Cannot allocate vector to hold data.\n";
   }
   if (wts) mWeights = gsl_vector_alloc(nr);
   else     mWeights = 0;
@@ -46,7 +47,7 @@ gslData::allocate(int nr, int nc, bool wts)
 void
 gslData::free()
 {
-  std::clog << "GSLD: Freeing memory.\n" ;
+  debugging::debug(0) << "GSLD: Freeing memory.\n" ;
   if (mXb)      gsl_vector_free(mXb);
   if (mE)       gsl_vector_free(mE);
   if (mPermute) delete(mPermute);
