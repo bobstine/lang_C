@@ -42,13 +42,15 @@ auction_test: model/costs
 quick_test: auction.test
 	./auction.test -f test/bank_post45.dat -r 100 -c 5
 
-data/baseball.dat: data/baseball.csv
-	rm -rf data/baseball.dat
-	../boost/csv_parser < data/baseball.csv > data/baseball.dat
+data/%.dat: data/%.csv
+	rm -rf $@
+	/Users/bob/C/boost/csv_parser < $<  > $@
 
 baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -r 100 -c 0
 
+crunch_test: auction.test data/crunch.dat
+	./auction.test -f data/crunch.dat -r 100 -a 10.0 -c 0
 
 model/costs: model/test.dat model/auction.model estimator validator
 	./estimator -f test/test.dat est2.dat -n test/bank_post45.names -m model/auction.model -o model/refit.model

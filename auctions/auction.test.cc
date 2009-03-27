@@ -47,7 +47,7 @@ void
 parse_arguments(int argc, char** argv,
                 std::string& inputDataFile, 
                 std::string& outputPath, 
-                int &nRounds, int &df);
+                int &nRounds, double &totalAlpha, int &df);
 
 gslData*
 build_model_data(std::vector<Column> const& y, std::ostream&);
@@ -61,14 +61,14 @@ main(int argc, char** argv)
   using namespace debugging;
 
   // build vector of columns from file; set default parameter values
-  double      total_alpha_to_spend (0.5);
+  double      totalAlphaToSpend    (0.5);
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         numberRounds         (300); 
   int         splineDF             (0);
   
   // parse arguments from command line  (pass in at main, open file for printing messages)
-  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, splineDF);
+  parse_arguments(argc,argv, columnFileName, outputPath, numberRounds, totalAlphaToSpend, splineDF);
 
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -82,9 +82,8 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",3) << "Version build 0.50 (23 Mar 09)\n";
   debug("AUCT",3) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
-		  << " -r " << numberRounds << " --calibrator-df=" << splineDF
+		  << " --rounds=" << numberRounds << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
 		  << std::endl;
-  debug("AUCT",3) << " Total alpha available to spend in auction is " << total_alpha_to_spend << std::endl;
 
   // need to fix issues surrouding the calibration adjustment
   if (splineDF != 0)
@@ -148,7 +147,7 @@ main(int argc, char** argv)
     
   // build vector of experts that work directly from input variables
   debug("AUCT",-1) << "Creating experts"  << std::endl;
-  double alphaShare (total_alpha_to_spend/5);
+  double alphaShare (totalAlphaToSpend/5);
   typedef  FiniteStream      < std::vector<FeatureABC*> > FStream;
   typedef  InteractionStream < std::vector<FeatureABC*> > IStream;
   typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
@@ -266,14 +265,16 @@ void
 parse_arguments(int argc, char** argv,
 		std::string& inputFile,
 		std::string& outputPath,
-		int & nRounds,
-		int & nDF)
+		int    &nRounds,
+		double &totalAlpha,
+		int    &nDF)
 {
   int key;
   while (1)                                  // read until empty key causes break
     {
       int option_index = 0;
       static struct option long_options[] = {
+	  {"alpha",             1, 0, 'a'},  // has arg,
 	  {"calibrator-df",     1, 0, 'c'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
@@ -281,12 +282,18 @@ parse_arguments(int argc, char** argv,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "c:f:o:r:v:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:c:f:o:r:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
 	switch (key)
 	  {
+	  case 'a' : 
+	    {
+	      std::istringstream is(optarg);
+	      is >> totalAlpha;
+	      break;
+	    }
 	  case 'c' : 
 	    {
 	      std::istringstream is(optarg);
@@ -314,15 +321,17 @@ parse_arguments(int argc, char** argv,
 	  case 'h' :
 	    {
 	      std::cout << "switches:" << std::endl << std::endl;
-	      std::cout << "      --calibrator-df=#    degrees of freedom in spline calibrator" << std::endl;
-	      std::cout << "      -c4" << std::endl << std::endl;
-	      std::cout << "      --input-file=foo       input file" << std::endl;
+	      std::cout << "      --calibrator-df=#        degrees of freedom in spline calibrator" << std::endl;
+	      std::cout << "      -c4" << std::endl <<  std::endl;
+	      std::cout << "      --input-file=foo         input file" << std::endl;
 	      std::cout << "      -ifoo" << std::endl << std::endl;
-	      std::cout << "      --output-path=/home/.../   path for output files" << std::endl;
+	      std::cout << "      --output-path=/home/.../ path for output files" << std::endl;
 	      std::cout << "      -o/home/.../" << std::endl << std::endl;
-	      std::cout << "      --rounds=#      maximum number of rounds of auction" << std::endl;
+	      std::cout << "      --alpha=#                total alpha for experts " << std::endl;
+	      std::cout << "      -a0.5" << std::endl << std::endl;
+	      std::cout << "      --rounds=#               maximum number of rounds of auction" << std::endl;
 	      std::cout << "      -r#" << std::endl << std::endl;
-	      std::cout << "      --help      generates this message" << std::endl;
+	      std::cout << "      --help                   generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);
 	      break;
