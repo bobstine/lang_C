@@ -32,6 +32,16 @@ Need to
 
 
 ------------------------------------------------------------------------------
+23 Mar 09
+
+   Improve output of the state of the auction by writing more information to
+   progress.csv file in place of the old alpha file.
+
+   Fixed negative sign bug in setting max bid that was causing expert
+   to think it could not bid once its alpha exceeded 1.
+
+
+------------------------------------------------------------------------------
 22 Feb 09
 
    Improve the name placement in output to show the explanatory variables more 

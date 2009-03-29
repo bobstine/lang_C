@@ -80,24 +80,22 @@ main(int argc, char** argv)
 #endif
 
   // echo startup options to log file
-  debug("AUCT",3) << "Version build 0.50 (23 Mar 09)\n";
-  debug("AUCT",3) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
+  debug(3) << "AUCT: Version build 0.50 (23 Mar 09)\n";
+  debug(3) << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
 		  << " --rounds=" << numberRounds << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
 		  << std::endl;
 
   // need to fix issues surrouding the calibration adjustment
   if (splineDF != 0)
   { splineDF = 0;
-    debug("AUCT",-1) << "Calibration DF set to 0 in current implementation to avoid problems\n";
+    debug(0) << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
   }  
 
   // open additional files for output
-  std::string alphaFileName      (outputPath + "alpha.dat");
   std::string modelHTMLFileName  (outputPath + "model.html"); 
-  std::string modelTextFileName  (outputPath + "model.txt"); 
+  std::string modelTextFileName  (outputPath + "model.txt");
   std::string modelDataFileName  (outputPath + "model_data.csv");
-  debug("AUCT",-1) << "AUCT Output going to:\n"
-		   << "           alpha  --> " << alphaFileName  << std::endl
+  debug(0) << "AUCT: Output going to:\n"
 #ifdef NDEBUG
                    << "             log  --> " << debugFileName  << std::endl
 #endif
@@ -124,14 +122,14 @@ main(int argc, char** argv)
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  debug("AUCT",0) << "Data file " << columnFileName << " produced " << yColumns.size() << " Y columns and "
+  debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Y columns and "
 		  << xColumns.size() << " X columns.\n";
   
   // form column features
   std::vector<FeatureABC*> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     columnFeatures.push_back(new ColumnFeature(*it));
-  debug("AUCT",0) << "Initialization converted " << xColumns.size() << " columns into features.\n";
+  debug(0) << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
   
   // build data object
   gslData *theData (build_model_data(yColumns, debug("AUCT",1)));
@@ -142,11 +140,11 @@ main(int argc, char** argv)
 
   // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
-  debug("AUCT",0) << "Initial model in the auction is\n" << theRegr << std::endl;
+  debug(0) << "AUCT: Initial model in the auction is\n" << theRegr << std::endl;
   
     
   // build vector of experts that work directly from input variables
-  debug("AUCT",-1) << "Creating experts"  << std::endl;
+  debug(0) << "AUCT: Assembling experts"  << std::endl;
   double alphaShare (totalAlphaToSpend/5);
   typedef  FiniteStream      < std::vector<FeatureABC*> > FStream;
   typedef  InteractionStream < std::vector<FeatureABC*> > IStream;
@@ -204,28 +202,34 @@ main(int argc, char** argv)
     )));                                   // WARNING: cannot return more than 25 x's in subspace
   */
   
-  // run the auction with output to file
-  std::ofstream alphaStream (alphaFileName.c_str());
-  if (!alphaStream)
-  { std::cerr << "AUCT: Cannot open output file for alpha stream " << alphaFileName << std::endl;
+  // set up file for writing state of auction
+  std::string progressCSVFileName (outputPath + "progress.csv");
+  std::ofstream progressStream (progressCSVFileName.c_str());
+  if (!progressStream)
+  { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
     return -1;
   }
-  for (int round=0; round<numberRounds && theAuction.has_active_expert(); ++round)
-  { double result (theAuction.auction_next_feature());
-    theAuction.write_alphas_to(alphaStream);
-    if (result)
-    { debug("AUCT",3) << "@@@ Auction adds predictor @@@" << std::endl
-		      << theAuction << std::endl << std::endl;
+
+  // run the auction with output to file
+  {
+    int round = 0;
+    theAuction.write_csv_header_to (progressStream);
+    while(round<numberRounds && theAuction.has_active_expert())
+    {
+      ++round;
+      if (theAuction.auction_next_feature(progressStream)) // true if adds predictor
+      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl
+		 << theAuction << std::endl << std::endl;
+      }
     }
-    // theAuction.print_features_to(std::clog);
+    debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
-  debug("AUCT",3) << "\n         ------- Auction Completed ------ \n\n" << theAuction << std::endl;
   
   // write model in HTML to a file
   {
     std::ofstream output (modelHTMLFileName.c_str());
     if (! output)
-    { std::cerr << "AUCT: Cannot open output HTML file for writing model " << modelHTMLFileName << std::endl;
+    { std::cerr << "AUCT: Cannot open output HTML file for writing final model " << modelHTMLFileName << std::endl;
       return 1;
     }
     theAuction.print_model_to(output, true);  // true -> use HTML

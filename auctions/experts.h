@@ -45,6 +45,7 @@ public:
     : mAlpha(alpha), mCurrentBid(0.0), mBidHistory() { }
   
   double                alpha()        const { return mAlpha; }
+  double                current_bid()  const { return mCurrentBid; }
   std::pair<int,int>    performance()  const { return mBidHistory.bid_results_summary(); }
   double                place_bid ()         { if ((0.0 == mCurrentBid) && (mAlpha>0.0)) mCurrentBid = get_new_bid(); return mCurrentBid; }
   void                  bid_accepted()       { mCurrentBid = 0.0; }
@@ -52,6 +53,7 @@ public:
   void                  payoff (double w);     /* negative means rejected, zero means predictor was conditionally singular  */
   
   virtual std::string             name()         const = 0;
+  virtual std::string             feature_name()       = 0;
   virtual Features::FeatureVector features()           = 0;
   virtual double                  get_new_bid()        = 0;
 };
@@ -75,11 +77,12 @@ public:
   Stream const&       stream()       const { return mStream; }
   std::string         name()         const { return mBidder.name() + "/" + mStream.name(); }
   
-  Features::FeatureVector       features()           { return mStream.pop(); }   // pop must return feature *vector*
-  double                        get_new_bid ();
+  std::string               feature_name()       { return mStream.feature_name(); }
+  Features::FeatureVector   features()           { return mStream.pop(); }   // pop must return feature *vector*
+  double                    get_new_bid ();
 
 protected:
-  double              max_bid ()     const { return mAlpha/(1.0-mAlpha); }
+  double              max_bid ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
 };
 
 

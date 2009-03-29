@@ -1,5 +1,7 @@
 // $Id: feature_streams.Template.h,v 1.14 2008/02/22 19:39:47 bob Exp $
 
+#include "debug.h"
+
 #include "adapter.h"
 
 
@@ -12,6 +14,17 @@ FiniteStream<Source>::has_feature ()
     ++mPosition;
   return (mPosition < n);
 }
+
+template<class Source>
+std::string
+FiniteStream<Source>::feature_name()                            
+{
+  if (has_feature())
+    return mSource[mPosition]->name();
+  else
+    return "";
+}
+
 
 template<class Source>
 typename Features::FeatureVector
@@ -31,6 +44,17 @@ bool
 InteractionStream<Source>::has_feature() const
 {
   return (mPos2 < (int)mSource.size());
+}
+
+
+template<class Source>
+std::string
+InteractionStream<Source>::feature_name() const
+{
+  if (has_feature())
+    return mSource[mPos1]->name()+"*"+mSource[mPos2]->name();
+  else
+    return "";
 }
 
 
@@ -93,10 +117,21 @@ CrossProductStream<Source1, Source2>::increment_position()
 
 
 template<class Source1, class Source2>
+std::string
+CrossProductStream<Source1,Source2>::feature_name() const
+{
+  if (has_feature())
+    return mFixedSource[mFixedPos]->name()+"*"+mDynSource[mDynPos]->name();
+  else
+    return "";
+}
+
+
+template<class Source1, class Source2>
 typename Features::FeatureVector
 CrossProductStream<Source1, Source2>::pop()
 {
-  std::cout << "SCPS: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
+  debugging::debug(0) << "SCPS: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
   while ( (mFixedSource[mFixedPos]->is_constant()) ||
           (mDynSource[mDynPos]->is_constant()) )
   {
@@ -130,6 +165,16 @@ PolynomialStream<Source>::has_feature()
 
 
 template<class Source>
+std::string
+PolynomialStream<Source>::feature_name()                            
+{
+  if (has_feature())
+    return mSource[mPos]->name();
+  else
+    return "";
+}
+
+template<class Source>
 void
 PolynomialStream<Source>::increment_position()
 {
@@ -146,7 +191,7 @@ typename Features::FeatureVector
 PolynomialStream<Source>::pop()
 {
   FeatureABC *x  (mSource[mPos]);
-  std::cout << "PLYS: " << name() << " stream making polynomial subspace from feature " <<  x->name() << std::endl;
+  debugging::debug(0) << "PLYS: " << name() << " stream making polynomial subspace from feature " <<  x->name() << std::endl;
   ++mPos; // do not revisit this one
   std::vector<FeatureABC*> result;
   result.push_back(make_unary_feature(Function_Utils::Square(), x));

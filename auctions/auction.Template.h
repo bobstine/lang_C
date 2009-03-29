@@ -7,20 +7,38 @@
  */
 
 
+template <class Model>
+void
+Auction<Model>::write_csv_header_to(std::ostream& os) const
+{
+  os << "Round, Time, Goodness of Fit, Total Alpha  ";
+  for (int b=0; b<number_of_experts(); ++b)
+    os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
+  os << ", Winning Expert, High Bid, p-value, Outcome, Payoff\n";
+}
+
 template <class ModelClass>
 bool
-Auction<ModelClass>::auction_next_feature ()
-{  
-  const time_t tmp_time (time(0));
-  std::string print_time (asctime(localtime(&tmp_time)));
+Auction<ModelClass>::auction_next_feature (std::ostream& os)
+{
+  // get time, summary of experts
+  const time_t tmpTime (time(0));
+  std::string timeStr (asctime(localtime(&tmpTime)));
   ++mRound;
-  mLogStream << "AUCT: Beginning auction round #" << mRound << " (" << print_time.substr(0,print_time.size() - 1) << ")" << std::endl;
-  // identify expert with highest total bid
-  std::pair<ExpertABC*,double> winner (collect_bids());
+  debugging::debug(0) << "AUCT: Beginning auction round #" << mRound << " (" << timeStr.substr(0,timeStr.size() - 1) << ")" << std::endl;
+  if(os)
+    os << mRound << ", " << timeStr.substr(0,timeStr.size()-5) << ", "
+       << model_goodness_of_fit() << ", "
+       << total_expert_alpha();
+  // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
+  std::pair<ExpertABC*,double> winner (collect_bids(os));  
   ExpertABC* pHighBidder = winner.first;
   double      highBid    = winner.second;
+  if(os)
+    os << ", " << pHighBidder->name() << ", " << highBid;
   if (0.0 == highBid) 
   { mHasActiveExpert = false;
+    if (os) os << std::endl;
     return false;
   } 
   // extract chosen features
@@ -29,6 +47,7 @@ Auction<ModelClass>::auction_next_feature ()
   mLogStream << "AUCT: Winning expert  " << pHighBidder->name() << "  bids on ";
   if (0 == nFeatures)
   { std::cerr << "AUCT: *** ERROR **** No features to consider; expert should not bid without a variable to offer.\n";
+    if (os) os << std::endl;
     return false;
   }
   print_features(features);
@@ -39,9 +58,12 @@ Auction<ModelClass>::auction_next_feature ()
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   }
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
+  if (os)
+    os << ", " << result.second;
   bool addedPredictors (false);
   if (result.second > 1.0) {                                       // singularity in predictors
     pHighBidder->payoff(0.0);
+    if (os) os << ", Singular " << std::endl;
   }
   else {
     addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
@@ -49,10 +71,13 @@ Auction<ModelClass>::auction_next_feature ()
     if (addedPredictors)
     { message = "*** Add ***";
       pHighBidder->payoff(mPayoff);
+      if (os) os << ", Add, " << mPayoff << std::endl;
     }
     else
     { message = "*** Decline ***";
-      pHighBidder->payoff(-highBid/(1.0-highBid));
+      double cost = -highBid/(1.0-highBid);
+      pHighBidder->payoff(cost);
+      if (os) os << ", Decline, " << cost << std::endl;
     }
     for (int j=0; j<nFeatures; ++j)
     { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
@@ -70,12 +95,14 @@ Auction<ModelClass>::auction_next_feature ()
 
 template <class ModelClass>
 std::pair<ExpertABC*,double>
-Auction<ModelClass>:: collect_bids ()
+Auction<ModelClass>:: collect_bids (std::ostream& os)
 {
-  ExpertABC* pHighBidder (mExperts[0]);                                     // initialize from first
-  double     highBid     (pHighBidder->place_bid());
-  for(ExpertIterator it = ++mExperts.begin(); it != mExperts.end(); ++it)   // loop over the other experts
+  ExpertABC* pHighBidder (mExperts[0]); 
+  double     highBid     (-7.7);     
+  for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid();
+    if (os)
+      os << ", " << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
       pHighBidder = *it;
@@ -261,20 +288,8 @@ Auction<ModelClass>::write_model_to  (std::ostream& os) const
  }
  */
 
-template <class Model>
-void
-Auction<Model>::write_alphas_to (std::ostream& os) const
-{
-  double total (0.0);
-  for (int b=0; b<number_of_experts(); ++b)
-  { double alpha (mExperts[b]->alpha());
-    total += alpha;
-    os << alpha << " ";
-  }
-  os << " " << total << " "; 
-  mModel.print_gof_to(os) ;
-  os << std::endl;
-}
+
+
 
 template <class ModelClass>
 std::ostream&

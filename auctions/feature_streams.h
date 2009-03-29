@@ -80,6 +80,7 @@ public:
   std::string name()  const { return mName; }
   
   bool                    has_feature();
+  std::string             feature_name();
   Features::FeatureVector pop();            // pops the top off
   
   int                     number_remaining()                  const { return mSource.size() - mPosition; }
@@ -113,8 +114,9 @@ public:
   
   std::string name()                        const { return mName; }
   
-  bool                     has_feature()                       const;
-  Features::FeatureVector  pop();                      
+  bool                    has_feature()                        const;
+  std::string             feature_name()                       const;
+  Features::FeatureVector pop();                      
   
   int                      number_remaining()                  const;
   void                     print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
@@ -149,6 +151,7 @@ public:
   std::string name()  const { return mName; }
   
   bool                    has_feature()                       const { return (number_remaining() > 0); }
+  std::string             feature_name()                      const;
   Features::FeatureVector pop();                      
   
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
@@ -192,6 +195,7 @@ public:
   std::string name()  const { return mName; }
   
   bool                    has_feature();
+  std::string             feature_name();
   Features::FeatureVector pop();                      
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
@@ -249,6 +253,7 @@ public:
   std::string name()  const { return mName; }
   
   bool                    has_feature();
+  std::string             feature_name()               const;
   Features::FeatureVector pop()                              { mPopped=true; return mTransformation(mBundle); }
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }

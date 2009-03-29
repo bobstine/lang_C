@@ -95,7 +95,7 @@ template <class Data, class Engine>
 void 
 LinearModel<Data,Engine>::print_gof_to(std::ostream& os) const
 {
-  os << "    SS " << GSLR::mTSS  << " --> " << GSLR::mRSS  << " R2 = " << 1.0-GSLR::mRSS/GSLR::mTSS;
+  os << "    SS " << GSLR::mTSS  << " --> " << GSLR::mRSS  << " R2 = " << gof();
 }
 
 
@@ -399,7 +399,7 @@ template <class Data>
 void 
 LogisticModel<Data>::print_gof_to(std::ostream& os) const
 {
-  os << " -2 LL " << -2.0 * mLL0 << " --> " << -2.0 * mLL1 << " G2 = " << (mLL0-mLL1)/mLL0;
+  os << " -2 LL " << -2.0 * mLL0 << " --> " << -2.0 * mLL1 << " G2 = " << gof();
 }
 
 

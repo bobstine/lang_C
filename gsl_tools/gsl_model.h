@@ -36,6 +36,7 @@ public:
   inline int      n() const { return GSLR::mN; }
   inline int      q() const { return GSLR::mQ; }
   inline double  s2() const { return GSLR::mRSS/(n()-(1+q())); }  
+  inline double gof() const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
   
   template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);
@@ -82,6 +83,7 @@ public:
   inline Data *data()       { return GSLR::mpData; }
   inline int      n() const { return GSLR::mN; }
   inline int      q() const { return GSLR::mQ; }
+  inline double gof() const { return (mLL0-mLL1)/mLL0; }  // G2 for linear
   
   double          initial_log_likelihood() const { return mLL0; }
   double          current_log_likelihood() const { return mLL1; }

@@ -55,5 +55,4 @@ test: csv_parser build_model
 # h option tars the files rather than the symbolic links
 build_model.tgz: *.h *.cc README.txt test/input_data.csv
 	rm -f build_model.tgz
-	tar -cvzhf build_model.tgz *.h *.cc README.txt test/input_data.csv Makefile
-
+	tar --transform 's,^,auction/,' -cvzhf build_model.tgz *.h *.cc README.txt test/input_data.csv Makefile

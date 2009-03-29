@@ -64,7 +64,14 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const&) const       { return alpha/stream.number_remaining(); }
+  double bid (double alpha, Stream const& stream, BidHistory const&) const
+  {
+    int n (stream.number_remaining());
+    if (n>0)
+      return alpha/stream.number_remaining();
+    else
+      return 0.0;
+  }
   
 }; 
 

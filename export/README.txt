@@ -176,7 +176,9 @@ Linear Model: (n=202)     SS 3.21848e+08 --> 8.82478e+07 R2 = 0.725809
                  x10*x13            12.1808       3.04          4   6.31e-05
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-You can use the data in the first model_data.csv to explore the model.
+You can use the data in the first model_data.csv to explore the
+model. The files progress.csv and progress.log have information that
+describes the progress of the search for variables.
 
 
 
