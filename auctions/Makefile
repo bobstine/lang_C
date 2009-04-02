@@ -50,7 +50,7 @@ baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -r 100 -c 0
 
 crunch_test: auction.test data/crunch.dat
-	./auction.test -f data/crunch.dat -r 100 -a 10.0 -c 0
+	./auction.test -f data/crunch.dat -r 10000 -a 10.0 -c 0
 
 model/costs: model/test.dat model/auction.model estimator validator
 	./estimator -f test/test.dat est2.dat -n test/bank_post45.names -m model/auction.model -o model/refit.model

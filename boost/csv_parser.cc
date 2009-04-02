@@ -135,7 +135,7 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
 
   parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
   if (result.hit)
-  { clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
+  { // clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
     { cerr << "ERROR: Incomplete parse in list of variable names.  Parsing stopped at  " ;
       char const* s = result.stop;
