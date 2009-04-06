@@ -103,9 +103,10 @@ main (void)
     
     // add predictor, check with usual F test and bennett of Z[0]
     std::cout << "TEST: about to evaluate first predictor.\n";
+    bool useTSS (true);
     regr.prepare_predictor("X1",x1);
-    std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
-    std::cout << "     White " << regr.White_evaluation()   << std::endl;
+    std::cout << "         F " << regr.f_test_evaluation()     << std::endl;
+    std::cout << "     White " << regr.White_evaluation(useTSS)<< std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
@@ -113,18 +114,18 @@ main (void)
     // add second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
     regr.prepare_predictor("X2",x2);
-    std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
-    std::cout << "     White " << regr.White_evaluation()   << std::endl;
-    std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
+    std::cout << "         F " << regr.f_test_evaluation()      << std::endl;
+    std::cout << "     White " << regr.White_evaluation(useTSS) << std::endl;
+    std::cout << "   Bennett " << regr.Bennett_evaluation(0,1)  << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
     
     // add third predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
     regr.prepare_predictor("X3",x3);
-    std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
-    std::cout << "     White " << regr.White_evaluation()   << std::endl;
-    std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
+    std::cout << "         F " << regr.f_test_evaluation()      << std::endl;
+    std::cout << "     White " << regr.White_evaluation(useTSS) << std::endl;
+    std::cout << "   Bennett " << regr.Bennett_evaluation(0,1)  << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
     

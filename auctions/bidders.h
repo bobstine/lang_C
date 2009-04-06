@@ -68,7 +68,7 @@ public:
   {
     int n (stream.number_remaining());
     if (n>0)
-      return alpha/stream.number_remaining();
+      return alpha/n;
     else
       return 0.0;
   }
@@ -97,8 +97,14 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (double alpha, Stream const&, BidHistory const&) const { return alpha * mRate; }
-
+  double bid (double alpha, Stream const& stream, BidHistory const&) const
+  {
+    if (stream.number_remaining()>0)
+      return alpha * mRate; 
+    else
+      return 0.0;
+  }
+  
 };
 
 
@@ -113,8 +119,15 @@ public:
   UniversalBidder () {}    
   
   std::string name() const { return "Universal bidder"; }
+  
+  double bid (double alpha, Stream const& stream, BidHistory const& history) const
+  {
+    if (stream.number_remaining()>0)
+      return alpha * universalPDF(history.number_bids_since_last_sucess());
+    else
+      return 0.0;
+  }
 
-  double bid (double alpha, Stream const&, BidHistory const& history) const { int n (history.number_bids_since_last_sucess()); return alpha * universalPDF(n); }
 };
 
 

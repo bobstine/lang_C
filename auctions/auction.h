@@ -47,7 +47,7 @@ private:
     mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
-  
+
   int                    number_of_experts ()       const { return mExperts.size(); }
   int                    add_expert(ExpertABC* e)         { mExperts.push_back(e); return mExperts.size(); }
   double                 total_expert_alpha ()      const;  

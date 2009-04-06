@@ -25,6 +25,7 @@
 
 ////////   Linear    Linear    Linear    Linear    Linear    Linear    Linear    
 
+// wraps single argument as a vector to call general routine
 template <class Data, class Engine>
 template <class Iter> 
 std::pair<double,double> 
@@ -36,6 +37,13 @@ LinearModel<Data,Engine>::add_predictor_if_useful (std::string const& name, Iter
 }  
 
 
+/* Protection levels
+   0  none, use Gaussian p-values
+   1  white variance, relative to TSS-RegrSS
+   2  white variance, relative to TSS
+   3  2 + conservative p-value  (not yet implemented)
+*/
+
 template <class Data, class Engine>
 template <class Collection> 
 std::pair<double,double>  
@@ -46,14 +54,23 @@ LinearModel<Data,Engine>::add_predictors_if_useful (Collection c, double pToEnte
   // return with p-value larger than 1 if singular predictors
   prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
+  // if no protection, return raw p-value; otherwise exit if looks too poor
   result = GSLR::f_test_evaluation();
-  if (result.second > 3 * pToEnter)  { return result;  }
-  std::cout << "LINM: Predictor passes initial evaluation; p-value " << result.second << " <  3 * " << pToEnter << std::endl;
-  // if passes, then do more expensive bennett or white test before adding
-  result = GSLR::White_evaluation();
-  if (result.second > pToEnter)  { return result;  }
-  std::cout << "LINM: Predictor passes second evaluation;  p-value " << result.second << " <      " << pToEnter << std::endl;
-  // add them to the model
+  // further testing if higher protection
+  if (protection() == 0)
+  { if (result.second > pToEnter) return result;        // exit
+    std::cout << "LINM: Predictor passes standard evaluation; p-value " << result.second << " < " << pToEnter << std::endl;
+  }
+  else
+  { if (result.second > 2 * pToEnter)   return result;  // exit
+    // do more computational bennett or white test before adding
+    std::cout << "LINM: Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
+    bool useTSS (protection() > 1);
+    result = GSLR::White_evaluation(useTSS);
+    if (result.second > pToEnter)   return result;  
+    std::cout << "LINM: Predictor passes second evaluation;  p-value " << result.second << " <  " << pToEnter << std::endl;
+  }
+  // add them to the model for those that get this far
   GSLR::add_current_predictors();
   return result;
 }
@@ -105,7 +122,7 @@ LinearModel<Data,Engine>::print_to    (std::ostream& os, bool useHTML) const
 {
   if (useHTML)
   { os << "<HR><P>\n";
-    os << "Linear Model: (n=" << GSLR::mN << ") "; print_gof_to(os); os << "<br>\n";
+    os << "Linear Model: (n=" << GSLR::mN << ", protection=" << protection() <<") "; print_gof_to(os); os << "<br>\n";
     if (0 == GSLR::mQ)
       os << "             Model has no explanatory variables.<br>\n";
     else 

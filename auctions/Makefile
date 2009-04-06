@@ -47,7 +47,7 @@ data/%.dat: data/%.csv
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
 baseball_test: auction.test data/baseball.dat
-	./auction.test -f data/baseball.dat -r 100 -c 0
+	./auction.test -f data/baseball.dat -p 0 -r 100 -c 0
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 10000 -a 10.0 -c 0

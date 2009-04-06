@@ -105,6 +105,8 @@ class gslRegression
 protected:
   Engine        mEngine;                  // Model speclializes certain matrix arithmetic on n dim vectors, goodness of fit   
   Data   *const mpData;                   // See interface of gslData for example of necessary policy
+  const int     mProtection;
+  
   int           mN, mQ, mMaxQ, mDimZ;     
   double        mTSS, mRSS;
   gsl_vector   *mBeta;                    // logistic fit modifies beta, so this is only protected
@@ -130,7 +132,7 @@ public:
   ~gslRegression ();
 
   //  --- Initialize ---
-  gslRegression (gslData *data) : mEngine(data), mpData(data) { initialize(); }
+  gslRegression (gslData *data, int protection) : mEngine(data), mpData(data), mProtection(protection) { initialize(); }
   
   //  --- Change weights ---
   void reweight(gsl_vector const* w);
@@ -167,8 +169,9 @@ public:
   
   typedef typename std::pair<double,double> TestResult;  // test stat, p-value
   
-  TestResult  f_test_evaluation () const   { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
-  TestResult  White_evaluation ()          { double drss(white_change_in_rss()); return(f_test(drss, mDimZ, mRSS     , df_residual()-mDimZ)); }
+  TestResult  f_test_evaluation() const     { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
+  TestResult  White_evaluation (bool useTSS){ double drss(white_change_in_rss());
+                                              double den (useTSS?mRSS:mRSS-drss); return(f_test(drss, mDimZ, den      , df_residual()-mDimZ)); }
   
   TestResult  Bennett_evaluation ()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
   TestResult  Bennett_evaluation (double m, double M);                               // response must be of form m <= y <= M       

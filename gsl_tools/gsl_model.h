@@ -30,13 +30,14 @@ public:
 
   ~LinearModel() { } 
   
-  LinearModel (gslData *data) : gslRegression<Data,Engine>(data) { }
-  
-  inline Data *data() const { return GSLR::mpData; }
-  inline int      n() const { return GSLR::mN; }
-  inline int      q() const { return GSLR::mQ; }
-  inline double  s2() const { return GSLR::mRSS/(n()-(1+q())); }  
-  inline double gof() const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
+  LinearModel (gslData *data, int protection) : gslRegression<Data,Engine>(data, protection) { }
+
+  inline Data  *data()       const { return GSLR::mpData; }
+  inline int    protection() const { return GSLR::mProtection; }
+  inline int        n()      const { return GSLR::mN; }
+  inline int        q()      const { return GSLR::mQ; }
+  inline double    s2()      const { return GSLR::mRSS/(n()-(1+q())); }  
+  inline double   gof()      const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
   
   template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);
@@ -73,17 +74,18 @@ public:
 
   ~LogisticModel() { free(); }
   
-  LogisticModel (gslData *data) : gslRegression<Data,wlsEngine>(data), mLL0(0), mLL1(0)   
+  LogisticModel (gslData *data, int protection) : gslRegression<Data,wlsEngine>(data, protection), mLL0(0), mLL1(0)   
   { allocate();
     gsl_vector_memcpy(mOriginalY, &(gsl_vector_const_subvector(GSLR::mpData->y(),0,n()).vector));
     gsl_vector_add_constant(mOriginalY, GSLR::mYBar);                        // Yuk ... have to add back ???
     mLL0 = mLL1 = calc_initial_log_likelihood();                             // Sets xb = log(n1/n0)
   }
   
-  inline Data *data()       { return GSLR::mpData; }
-  inline int      n() const { return GSLR::mN; }
-  inline int      q() const { return GSLR::mQ; }
-  inline double gof() const { return (mLL0-mLL1)/mLL0; }  // G2 for linear
+  inline Data  *data()       { return GSLR::mpData; }
+  inline int    protection() const { return GSLR::mProtection; }
+  inline int    n()          const { return GSLR::mN; }
+  inline int    q()          const { return GSLR::mQ; }
+  inline double gof()        const { return (mLL0-mLL1)/mLL0; }  // G2 for linear
   
   double          initial_log_likelihood() const { return mLL0; }
   double          current_log_likelihood() const { return mLL1; }

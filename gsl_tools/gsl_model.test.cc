@@ -91,7 +91,8 @@ main (void)
     // Start by building the data.  Then add predictors, one at a time.
     gslData  theData(y, b, weights, LEN, gslRegression_Max_Q);            // uses b to subset data
     // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
-    LinearModel <gslData, olsEngine> regr(&theData);
+    bool protection (3);
+    LinearModel <gslData, olsEngine> regr(&theData, protection);
     std::cout << regr;
       
     // add predictor, check with usual F test and bennett of Z[0]
