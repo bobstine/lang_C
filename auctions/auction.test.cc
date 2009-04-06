@@ -219,7 +219,6 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
       return -1;
     }
-  
   // run the auction with output to file
   {
     int round = 0;
@@ -227,14 +226,11 @@ main(int argc, char** argv)
     while(round<numberRounds && theAuction.has_active_expert())
     {
       ++round;
-      if (theAuction.auction_next_feature(progressStream)) // true if adds predictor
-      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl
-		 << theAuction << std::endl << std::endl;
-      }
+      if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
+	debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
     }
     debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
-  
   // write model in HTML to a file
   {
     std::ofstream output (modelHTMLFileName.c_str());

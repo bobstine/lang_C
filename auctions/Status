@@ -16,7 +16,9 @@ Need to
      attempt to use in PC analysis (ie, dont combine unless common domain).
 
      Build a fixed bidder that considers the terms left in the input stream, not
-     just in the current order that is available.
+     just in the current order that is available.  Recylces through those not yet
+     used, perhaps marking them with a boolean as cycles past to remove those that
+     become constant (as in the old variable selection code used in BR model).
 
      Build a bidder that's both Universal + Fixed alpha hybrid.  Several streams
      now have two bidders.
@@ -43,7 +45,10 @@ Need to
    Add a second bidder on the file stream, using a universal bidder rather
    in addition to the fixed alpha bidder.
 
-   BUG:  Hangs with the universal bidder on the finite stream?
+   Fixed bug that hangs with the universal bidder on the finite stream
+   when reached the end but still tried to see what it had as a
+   feature. Put in a test for has_feature before poping the feature stream.
+
 
 ------------------------------------------------------------------------------
 23 Mar 09

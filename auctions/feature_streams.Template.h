@@ -12,6 +12,7 @@ FiniteStream<Source>::has_feature ()
   int n (mSource.size());
   while( (mPosition < n) && (mSource[mPosition]->was_tried_in_model() || mSource[mPosition]->is_constant()) )
     ++mPosition;
+  //  std::cout << "FINITE_STREAM: has_feature... size=" << n << " with mPosition=" << mPosition;
   return (mPosition < n);
 }
 
@@ -29,11 +30,15 @@ FiniteStream<Source>::feature_name()
 template<class Source>
 typename Features::FeatureVector
 FiniteStream<Source>::pop()                            
-{ 
-  Features::FeatureVector result (1);
-  result[0] = mSource[mPosition]; 
-  ++mPosition; 
-  return result; 
+{
+  if (has_feature())
+  { Features::FeatureVector result (1);
+    result[0] = mSource[mPosition]; 
+    ++mPosition; 
+    return result;
+  }
+  else
+    return Features::FeatureVector(0);
 }
 
 
@@ -84,17 +89,21 @@ template<class Source>
 typename Features::FeatureVector
 InteractionStream<Source>::pop()
 {
-  while ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())  ||
-          (mSource[mPos1]->is_constant())  ||
-          (mSource[mPos2]->is_constant())  )
+  if (has_feature())
+  { while ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())  ||
+	    (mSource[mPos1]->is_constant())  ||
+	    (mSource[mPos2]->is_constant())  )
       increment_position();
-  std::cout << "SINT: " << name() << " stream making interaction from #"<< mPos1 << " x #" << mPos2 << ".\n";
-  FeatureABC* x1 (mSource[mPos1]);
-  FeatureABC* x2 (mSource[mPos2]);
-  increment_position();
-  Features::FeatureVector result;
-  result.push_back(new InteractionFeature(x1,x2));
-  return result;
+    std::cout << "SINT: " << name() << " stream making interaction from #"<< mPos1 << " x #" << mPos2 << ".\n";
+    FeatureABC* x1 (mSource[mPos1]);
+    FeatureABC* x2 (mSource[mPos2]);
+    increment_position();
+    Features::FeatureVector result;
+    result.push_back(new InteractionFeature(x1,x2));
+    return result;
+  }
+  else
+    return Features::FeatureVector(0);
 }
 
 

@@ -44,9 +44,10 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   // extract chosen features
   Features::FeatureVector features  (pHighBidder->features()) ;
   int                     nFeatures (features.size());
-  mLogStream << "AUCT: Winning expert  " << pHighBidder->name() << "  bids on ";
+  mLogStream << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
   if (0 == nFeatures)
-  { std::cerr << "AUCT: *** ERROR **** No features to consider; expert should not bid without a variable to offer.\n";
+  { debugging::debug(3) << "AUCT: *** ERROR **** No feature offered; expert " << pHighBidder->name()
+			<< " should not bid without a variable to offer.\n";
     if (os) os << std::endl;
     return false;
   }
