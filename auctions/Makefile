@@ -47,10 +47,10 @@ data/%.dat: data/%.csv
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
 baseball_test: auction.test data/baseball.dat
-	./auction.test -f data/baseball.dat -p 0 -r 100 -c 0
+	./auction.test -f data/baseball.dat -p 1 -r 100 -c 0
 
 crunch_test: auction.test data/crunch.dat
-	./auction.test -f data/crunch.dat -r 10000 -a 10.0 -c 0
+	./auction.test -f data/crunch.dat -r 1000 -a 6 -p 0 -c 0
 
 model/costs: model/test.dat model/auction.model estimator validator
 	./estimator -f test/test.dat est2.dat -n test/bank_post45.names -m model/auction.model -o model/refit.model
