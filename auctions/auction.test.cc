@@ -179,17 +179,17 @@ main(int argc, char** argv)
 				    ));
   
   // parasitic experts betting on winners
-  theAuction.add_expert(make_expert(alphaShare/2,
+  theAuction.add_expert(make_expert(alphaShare,
 				    UniversalBidder<CPStream>(),
 				    make_cross_product_stream("Used-feature interactions", columnFeatures, theAuction.model_features())
 				    ));
   
-  theAuction.add_expert(make_expert(alphaShare/10, 
+  theAuction.add_expert(make_expert(alphaShare/2, 
 				    UniversalBidder<CPStream>(),
 				    make_cross_product_stream("Skipped-feature interactions", columnFeatures, theAuction.skipped_features())
 				    ));
   
-  theAuction.add_expert(make_expert(alphaShare/5, 
+  theAuction.add_expert(make_expert(alphaShare/2, 
 				    UniversalBidder<PolyStream>(),
 				    make_polynomial_stream("Skipped-feature polynomial", theAuction.skipped_features(), 3)     // poly degree
 				    ));

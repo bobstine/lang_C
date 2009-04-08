@@ -1,7 +1,7 @@
 # preliminaries
 
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
-CFLAGS = -g -O2 -Wall -USINGLE -W -Woverloaded-virtual -fmessage-length=0
+CFLAGS = -g -O3 -Wall -USINGLE -W -Woverloaded-virtual -fmessage-length=0
 GCC = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS) 
 CC  = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS)
 
@@ -50,6 +50,14 @@ test: csv_parser build_model
 	./csv_parser --input-file test/input_data.csv --output-file test/model.dat
 	mkdir -p test/log
 	./build_model --input-file test/model.dat --output-path test/log/ -r 200 -p 0 -a 0.05
+
+
+crunch/model.dat: csv_parser crunch/input.csv
+	./csv_parser --input-file crunch/input.csv --output-file crunch/model.dat
+
+crunch: build_model crunch/model.dat
+	mkdir -p crunch/log
+	./build_model --input-file crunch/model.dat --output-path crunch/log/ -r 10000 -p 0 -a 5
 
 
 # h option tars the files rather than the symbolic links
