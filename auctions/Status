@@ -1,40 +1,42 @@
 Need to 
 
-     Many variables in the block example pass the initial screen, but then
-     fail at the second stage.  Why is this happening?  More should be able
-     to make the cut.  Are there outliers, other issues?
+     Streams
+	Multiple input files, with a file associated with a bidder.
+
+        Build smarter streams that look at the X's they are recommending, more careful
+        check for which X's make more sense.  More checking before placing bids.
+        At a minimum, use regular expression to avoid dummy variable products.
+        EG: add a units, "domain" to the variables to suggest heuristic groups to
+        attempt to use in PC analysis (ie, dont combine unless common domain).
+
+
+     Experts
+        Build a fixed bidder that considers the terms left in the input stream, not
+        just in the current order that is available.  Recyclces through those not yet
+        used, perhaps marking them with a boolean as cycles past to remove those that
+        become constant (as in the old variable selection code used in BR model).
+
+        Build a bidder that's both Universal + Fixed alpha hybrid.  Several streams
+        now have two bidders.
+
+
+     Logistic regression
+     	Get the cross-validation to run for least squares and logistic regression.
+        Leave out subset works, but it is not plugged into any further.
+
+        Need to implement protection levels in logistic regression.
+
+        Figure out how to use calibration for logistic regression.
      
 
-     Get the cross-validation to run for least squares and logistic regression.
-     The leave out subset works, but it is not plugged into any further.
-
-
-     Build smarter streams that look at the X's they are recommending, more careful
-     check for which X's make more sense.  More checking before placing bids.
-     At a minimum, use regular expression to avoid dummy variable products.
-     EG: add a units, "domain" to the variables to suggest heuristic groups to
-     attempt to use in PC analysis (ie, dont combine unless common domain).
-
-     Build a fixed bidder that considers the terms left in the input stream, not
-     just in the current order that is available.  Recylces through those not yet
-     used, perhaps marking them with a boolean as cycles past to remove those that
-     become constant (as in the old variable selection code used in BR model).
-
-     Build a bidder that's both Universal + Fixed alpha hybrid.  Several streams
-     now have two bidders.
-
-     Need to implement protection levels in logistic regression.
 
      Get the spline calibration back in place.  It will add them, but gets
      confused about putting the calibration back.  This might belong elsewhere,
      such as pushed down into the model itself.
      
-     Figure out how to use calibration for logistic regression.
-
-
-        *** Subspace methods are all giving pc's that are not well-scaled....
-	Need some type of "unit" analysis to decide which components belong
-	in a pc analysis.
+     *** Subspace methods are all giving pc's that are not well-scaled....
+     Need some type of "unit" analysis to decide which components belong
+     in a pc analysis.
 
 
 ------------------------------------------------------------------------------

@@ -26,6 +26,9 @@ then it pops the feature off of the stream.
 #define _EXPERTS_H_
 
 
+#include <assert.h>
+#include "debug.h"
+
 #include "feature_streams.h"
 #include "bidders.h"
 
@@ -36,29 +39,38 @@ class ExpertABC
 protected:
   double      mAlpha;
   double      mCurrentBid;
+  bool        mLastBidAccepted;
   BidHistory  mBidHistory;
   
 public:
+  typedef Features::FeatureVector FeatureVector;
+  
   virtual ~ExpertABC () { }
   
  ExpertABC(double alpha)
-    : mAlpha(alpha), mCurrentBid(0.0), mBidHistory() { }
+   : mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() { }
   
-  double                alpha()        const { return mAlpha; }
-  double                current_bid()  const { return mCurrentBid; }
-  std::pair<int,int>    performance()  const { return mBidHistory.bid_results_summary(); }
-  double                place_bid ()         { if ((0.0 == mCurrentBid) && (mAlpha>0.0)) mCurrentBid = get_new_bid(); return mCurrentBid; }
-  void                  bid_accepted()       { mCurrentBid = 0.0; }
-  void                  bid_declined()       { /* do nothing at this point */ }
-  void                  payoff (double w);     /* negative means rejected, zero means predictor was conditionally singular  */
+  double                 alpha()        const { return mAlpha; }
+  double                 current_bid()  const { return mCurrentBid; }
+  std::pair<int,int>     performance()  const { return mBidHistory.bid_results_summary(); }
+
+  double                 place_bid (FeatureVector const& used, FeatureVector const& skipped);
+  void                   bid_accepted()       { mLastBidAccepted = true; }
+  void                   bid_declined()       { mLastBidAccepted = false; }
   
-  virtual std::string             name()         const = 0;
-  virtual std::string             feature_name()       = 0;
-  virtual Features::FeatureVector features()           = 0;
-  virtual double                  get_new_bid()        = 0;
+  void                   payoff (double w);     /* negative means rejected, zero means predictor was conditionally singular  */
+  
+  virtual std::string    name()         const = 0;
+  virtual std::string    feature_name()       = 0;
+  virtual FeatureVector  feature_vector()     = 0;
+
+ protected:
+  double                 max_bid    ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
+  virtual bool           has_feature (FeatureVector const& used, FeatureVector const& skipped) = 0;
 };
 
-  
+
+
 template <class Bidder, class Stream> 
 class Expert : public ExpertABC
 {
@@ -73,16 +85,15 @@ public:
   Expert (double alpha, Bidder b, Stream s)
     : ExpertABC(alpha), mBidder(b), mStream(s) { }
   
-  Bidder const&       bidder()       const { return mBidder; }
-  Stream const&       stream()       const { return mStream; }
-  std::string         name()         const { return mBidder.name() + "/" + mStream.name(); }
+  Bidder const&    bidder()       const { return mBidder; }
+  Stream const&    stream()       const { return mStream; }
+  std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
   
-  std::string               feature_name()       { return mStream.feature_name(); }
-  Features::FeatureVector   features()           { return mStream.pop(); }   // pop must return feature *vector*
-  double                    get_new_bid ();
+  std::string      feature_name()       { return mStream.feature_name(); }       
+  FeatureVector    feature_vector()     { return mStream.pop(); }                // stream pop must return feature *vector*
 
-protected:
-  double              max_bid ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
+ protected:
+  bool             has_feature(FeatureVector const& used, FeatureVector const& skipped) { return mStream.has_feature(used, skipped); }
 };
 
 
@@ -103,8 +114,6 @@ operator<< (std::ostream& os, std::vector<ExpertABC*> const& experts)
   return os;
 }
 
-
-
 template<class Bidder, class Stream>
 inline
 Expert<Bidder,Stream>*
@@ -114,21 +123,20 @@ make_expert(double alpha, Bidder b, Stream s)
 }
 
 
+////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE 
 // .Template is here since so little
 
-template<class Bidder, class Stream>
-double 
-Expert<Bidder, Stream>::get_new_bid () 
-{ 
-  std::clog << "XPRT: " << name() << " getting new bid, mAlpha = " << mAlpha 
-	    << "; stream has " << mStream.number_remaining() << " elements left.\n";
-  if (mStream.has_feature())
+double
+ExpertABC::place_bid (FeatureVector const& used, FeatureVector const& skipped)
+{
+  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
+  if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
   { double b (mBidder.bid(mAlpha, mStream, mBidHistory)); 
     double m (max_bid()); 
-    return (b<m) ? b:m;
-  }
+    mCurrentBid = (b<m) ? b:m;
+  }    
   else
-    return 0.0;
+    mCurrentBid = 0.0;  return mCurrentBid;
 }
 
 

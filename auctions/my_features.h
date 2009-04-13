@@ -4,10 +4,9 @@
 #define _MY_FEATURES_H_
 
 /* 
-  Features are typically named ranges, with optional information about
-  the use of that data in a model or other application. Features do
-  not hold any data, so they are 'lightweight'.  That said, someone
-  else must preserve the data pointed to by the feature.  Column features
+  Features are named ranges, with optional information about the use
+  of that data in a model or other application. Features do not hold
+  any data, so they are 'lightweight'. For example, column features
   hold a reference to a column, but do not new/delete the space.
 
   Column feature
@@ -53,6 +52,7 @@
 #include <vector>
 
 namespace Features {
+  typedef FeatureABC*               Feature;
   typedef std::vector<FeatureABC *> FeatureVector;
 }
 
@@ -98,8 +98,8 @@ class gslVectorFeature : public FeatureABC
   
 public:
   
-    gslVectorFeature(std::string name, gsl_vector const* v)
-      : FeatureABC(v->size), mVector(v), mName(name), mUnique(0), mAvg(0.0), mMin(0.0), mMax(0.0) { initialize(); }
+  gslVectorFeature(std::string name, gsl_vector const* v)
+    : FeatureABC(v->size), mVector(v), mName(name), mUnique(0), mAvg(0.0), mMin(0.0), mMax(0.0) { initialize(); }
   
   std::string class_name()     const { return "gslVectorFeature"; }
   std::string name()           const { return mName; }

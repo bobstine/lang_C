@@ -130,13 +130,13 @@ main(int argc, char** argv)
   debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Y columns and "
 	   << xColumns.size() << " X columns.\n";
   
-  // form column features
+  // convert columns of data into vector of features
   std::vector<FeatureABC*> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     columnFeatures.push_back(new ColumnFeature(*it));
   debug(0) << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
   
-  // build data object
+  // initialize data object held in underlying model [y and optional selector]
   gslData *theData (build_model_data(yColumns, debug("AUCT",1)));
   
   // build model and initialize auction with stream for log
@@ -156,25 +156,15 @@ main(int argc, char** argv)
   typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
   typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
   
-  // main column experts, with two types of bidders
+  // main column experts, with hybrid bidder
   theAuction.add_expert(make_expert(alphaShare, 
-				    FiniteBidder<FStream>(), 
+				    UniversalBoundedBidder<FStream>(), 
 				    make_finite_stream("Columns", columnFeatures)
 				    ));
   
-  theAuction.add_expert(make_expert(alphaShare, 
-				    UniversalBidder<FStream>(), 
-				    make_finite_stream("Columns", columnFeatures)
-				    ));
-  
-  // two bidders on the main collection of interactions
-  theAuction.add_expert(make_expert(alphaShare, 
-				    FiniteBidder<IStream>(),
-				    make_interaction_stream("Column interactions", columnFeatures)
-				    ));
-  
-  theAuction.add_expert(make_expert(alphaShare/1.1, 
-				    UniversalBidder<IStream>(), 
+  // main collection of interactions
+  theAuction.add_expert(make_expert(alphaShare/1.01, // slightly less 
+				    UniversalBoundedBidder<IStream>(),
 				    make_interaction_stream("Column interactions", columnFeatures)
 				    ));
   

@@ -136,11 +136,16 @@ The leading 4 columns of the model data file are
 	Fitted value (prediction if the case is not included)
 	Response variable
 
-These are followed by columns that hold the values of the explanatory
-variables as constructed and used in the modeling. Any explanatory
-variables used in the regression are here, including copies of any
-input variables as well as variables such as interactions formed as
-part of the modeling.
+Notice that predicted values for *all* cases are in the column labeled
+"fit."  For cases used in the model estimation, these are fitted
+values from the regression.  For cases that were not used in the
+regression, these are predicted values.
+
+These first four columns are followed by columns that hold the values
+of the explanatory variables as constructed and used in the
+modeling. Any explanatory variables used in the regression are here,
+including copies of any input variables as well as variables such as
+interactions formed as part of the modeling.
 
 
 

@@ -4,15 +4,29 @@
 
 #include "adapter.h"
 
+namespace {
+  bool found_feature_name (std::string const& name, Features::FeatureVector const& vec)
+  {
+    for (Features::FeatureVector::const_iterator it = vec.begin();it != vec.end(); ++it)
+    { if (name == (*it)->name())
+	return true;
+    }
+    return false;
+  }
+}
+
 
 template<class Source>
 bool
-FiniteStream<Source>::has_feature ()
+FiniteStream<Source>::has_feature (Features::FeatureVector const&, Features::FeatureVector const&)
 {
   int n (mSource.size());
-  while( (mPosition < n) && (mSource[mPosition]->was_tried_in_model() || mSource[mPosition]->is_constant()) )
-    ++mPosition;
-  //  std::cout << "FINITE_STREAM: has_feature... size=" << n << " with mPosition=" << mPosition;
+  if (mPosition >= n)
+    return false;
+  while(mSource[mPosition]->was_tried_in_model() || mSource[mPosition]->is_constant())
+  { ++mPosition;
+    if (mPosition == n) break;
+  }
   return (mPosition < n);
 }
 
@@ -20,10 +34,7 @@ template<class Source>
 std::string
 FiniteStream<Source>::feature_name()                            
 {
-  if (has_feature())
-    return mSource[mPosition]->name();
-  else
-    return "";
+  return mSource[mPosition]->name();
 }
 
 
@@ -31,14 +42,10 @@ template<class Source>
 typename Features::FeatureVector
 FiniteStream<Source>::pop()                            
 {
-  if (has_feature())
-  { Features::FeatureVector result (1);
-    result[0] = mSource[mPosition]; 
-    ++mPosition; 
-    return result;
-  }
-  else
-    return Features::FeatureVector(0);
+  Features::FeatureVector result (1);
+  result[0] = mSource[mPosition]; 
+  ++mPosition; 
+  return result;
 }
 
 
@@ -46,9 +53,23 @@ FiniteStream<Source>::pop()
 
 template<class Source>
 bool
-InteractionStream<Source>::has_feature() const
+InteractionStream<Source>::has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped)
 {
-  return (mPos2 < (int)mSource.size());
+  bool hasFeature = false;
+  while ((mPos2 < (int)mSource.size()) && !hasFeature)
+  { if ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())
+	 || (mSource[mPos1]->is_constant())
+	 || (mSource[mPos2]->is_constant()) )
+      increment_position();
+    else
+    { std::string name = feature_name();
+      if (found_feature_name(name, used) || found_feature_name(name,skipped))
+	increment_position();
+      else
+        hasFeature = true;
+    }
+  }
+  return hasFeature;
 }
 
 
@@ -56,10 +77,7 @@ template<class Source>
 std::string
 InteractionStream<Source>::feature_name() const
 {
-  if (has_feature())
-    return mSource[mPos1]->name()+"*"+mSource[mPos2]->name();
-  else
-    return "";
+  return mSource[mPos1]->name()+"*"+mSource[mPos2]->name();
 }
 
 
@@ -79,21 +97,20 @@ InteractionStream<Source>::increment_position()
 template<class Source>
 int   
 InteractionStream<Source>::number_remaining() const 
-{ 
-  int d (mSource.size()); 
-  int m (mPos2+1); 
-  return (d * (d+1))/2 - (m*(1+m))/2 + mPos1; 
+{
+  if (has_feature())
+  { int d (mSource.size()); 
+    int m (mPos2+1); 
+    return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
+  }
+  else
+    return 0;
 }
 
 template<class Source>
 typename Features::FeatureVector
 InteractionStream<Source>::pop()
 {
-  if (has_feature())
-  { while ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())  ||
-	    (mSource[mPos1]->is_constant())  ||
-	    (mSource[mPos2]->is_constant())  )
-      increment_position();
     std::cout << "SINT: " << name() << " stream making interaction from #"<< mPos1 << " x #" << mPos2 << ".\n";
     FeatureABC* x1 (mSource[mPos1]);
     FeatureABC* x2 (mSource[mPos2]);
@@ -101,13 +118,30 @@ InteractionStream<Source>::pop()
     Features::FeatureVector result;
     result.push_back(new InteractionFeature(x1,x2));
     return result;
-  }
-  else
-    return Features::FeatureVector(0);
 }
 
 
 ///  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  
+
+
+template<class Source1, class Source2>
+bool
+CrossProductStream<Source1, Source2>::has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped)
+{
+  bool hasFeature = false;
+  while (((mFixedSource.size()-mFixedPos)*(mDynSource.size()) > 0) && !hasFeature)
+  { if (mFixedSource[mFixedPos]->is_constant() )
+      increment_position();
+    else
+    { std::string name = feature_name();
+      if (found_feature_name(name, used) || found_feature_name(name,skipped))
+	increment_position();
+      else
+        hasFeature = true;
+    }
+  }
+  return hasFeature;
+}
 
 
 template<class Source1, class Source2>
@@ -129,10 +163,7 @@ template<class Source1, class Source2>
 std::string
 CrossProductStream<Source1,Source2>::feature_name() const
 {
-  if (has_feature())
-    return mFixedSource[mFixedPos]->name()+"*"+mDynSource[mDynPos]->name();
-  else
-    return "";
+  return mFixedSource[mFixedPos]->name()+"*"+mDynSource[mDynPos]->name();
 }
 
 
@@ -161,9 +192,9 @@ CrossProductStream<Source1, Source2>::pop()
 
 template<class Source>
 bool 
-PolynomialStream<Source>::has_feature()
+PolynomialStream<Source>::has_feature(Features::FeatureVector const&, Features::FeatureVector const&)
 { 
-  int remaining (mSource.size()-mPos);
+  int remaining (number_remaining());
   if (0 == remaining)
     return false;
   if (feature_meets_conditions(mSource[mPos]))
@@ -216,7 +247,7 @@ bool
 PolynomialStream<Source>::feature_meets_conditions(FeatureABC const* feature) const
 { 
   ColumnFeature const* cp (dynamic_cast<ColumnFeature const*>(feature));
-  return (cp && feature->is_not_dummy() && feature->is_not_constant());
+  return (cp && (!feature->is_dummy()) && (!feature->is_constant()));
 }
 
 
@@ -225,7 +256,7 @@ PolynomialStream<Source>::feature_meets_conditions(FeatureABC const* feature) co
 
 template<class Source, class Pred, class Trans>
 bool
-BundleStream<Source, Pred, Trans>::has_feature()
+BundleStream<Source, Pred, Trans>::has_feature(Features::FeatureVector const&, Features::FeatureVector const&)
 {
   if (mPopped)
   { mPopped = false;

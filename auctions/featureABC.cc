@@ -23,6 +23,7 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
   return args;
 }
 
+
 bool
 FeatureABC::has_attribute(std::string const& a)       const
 {

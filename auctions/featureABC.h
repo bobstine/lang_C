@@ -4,10 +4,14 @@
 #define _FEATUREABC_H_
 
 /* 
-  Features are basically named ranges, with optional information about
-  the use of that data in a model or other application. Features do
-  not hold any data, so they are 'lightweight'.  That said, someone
-  else must preserve the data pointed to by the feature.
+
+   Features are named anonymous ranges, with optional information
+   about the use of that range in a model or other application.
+
+   Features do *not* hold data; they must be 'lightweight'. Any data
+   referenced by a descendant of this ABC must be held elsewhere and
+   not kept in the feature itself.
+   
 
    9 Apr 04 ... Separate ABC version from rest; beef up name structure, <, ==
    5 Apr 04 ... Read/Write to support virtual constructor
@@ -31,13 +35,14 @@ class FeatureABC
  public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double>  Iterator;
   typedef range< Iterator >                                                    Range;
-  typedef std::map<FeatureABC const*, int>                                     Arguments;
+  typedef std::map<FeatureABC const*, int>                                     Arguments;   // for features of features
   typedef std::set<std::string>                                                Attributes;
 
  private:
   static int number_created;
+  
   int            mCreationIndex;
-  int            mSize;           // Of underlying range
+  int            mSize;           // of underlying range
   Attributes     mAttributes;
   bool           mTried;          // Has this feature been tried in the model?
   bool           mInModel;        // Is this feature a predictor in the model?
@@ -58,7 +63,6 @@ class FeatureABC
   bool                operator<  (FeatureABC const* f)          const;
 
   int                 size()                                    const { return mSize; }
-  virtual std::string class_name()                              const { return "FeatureABC"; }
   Attributes          attributes()                              const { return mAttributes; }
   bool                has_attribute(std::string const& a)       const;
   void                add_attribute(std::string const& s)             { mAttributes.insert(s); }
@@ -68,6 +72,7 @@ class FeatureABC
   double              entry_p_value ()                          const { return mEntryPValue; }
   void                set_model_results(bool used, double pval)       { mTried=true; mInModel=used; mEntryPValue=pval; }
 
+  virtual std::string class_name()                              const { return "FeatureABC"; }
   virtual std::string name()                                    const = 0;                 // pure virtual, must maintain const
   virtual Arguments   arguments()                               const = 0;                 //
   
@@ -76,19 +81,17 @@ class FeatureABC
   virtual double      average ()                                const = 0;                 // mean value
   virtual double      center ()                                 const = 0;                 // may or may not be average, easier to compute
   virtual double      scale ()                                  const = 0;                 // 0 must mean constant
-  virtual bool        is_dummy()                                const; 
-  inline  bool        is_not_dummy()                            const { return (! is_dummy()); }
+  virtual bool        is_dummy()                                const;
   virtual bool        is_constant()                             const { return (0.0 == scale()); }
-  inline  bool        is_not_constant()                         const { return (! is_constant()); }
   
   virtual void        write_to (std::ostream& os)               const;                     
-  virtual void        print_to (std::ostream& os)               const;                     
+  virtual void        print_to (std::ostream& os)               const;
           void        read_from (std::istream& is);                                  
 
 protected:
-            Arguments           join_arguments(Arguments const& a1, Arguments const& a2) const;
+	  Arguments   join_arguments(Arguments const& a1, Arguments const& a2) const;
 private:
-            void initialize_moments();
+	  void        initialize_moments();
 };
 
 inline
@@ -130,4 +133,3 @@ operator<<(std::ostream& os, std::vector<FeatureABC*> const& fv)
 
 
 #endif
-

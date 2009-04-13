@@ -131,4 +131,39 @@ public:
 };
 
 
+
+////  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder 
+
+// mixes universal with finite/bidder minimum bid
+// keeps bid above a minimal threshold determined
+
+namespace {
+  double max(double a, double b) { return a>b ? a : b; }
+}
+
+template <class Stream>
+class UniversalBoundedBidder
+{
+ 
+public:
+  UniversalBoundedBidder () {}    
+  
+  std::string name() const { return "Universal bounded bidder"; }
+  
+  double bid (double alpha, Stream const& stream, BidHistory const& history) const
+  {
+    int n (stream.number_remaining());
+    if (n>0)
+    { double fixedBid=1.0/(double)n;
+      return alpha * max( fixedBid,
+			  universalPDF(history.number_bids_since_last_sucess())
+			  );
+    }
+    else
+      return 0.0;
+  }
+
+};
+
+
 #endif

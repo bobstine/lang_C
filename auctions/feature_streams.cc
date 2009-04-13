@@ -17,5 +17,5 @@
 bool 
 FeatureAcceptancePredicate::operator()(FeatureABC const* f) const
 {
-  return f->is_not_constant() & f->is_not_dummy() & f->name() != "Basis";
+  return !(f->is_constant() || f->is_dummy() || (f->name() == "Basis"));
 }

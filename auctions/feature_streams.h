@@ -17,6 +17,7 @@
  stream.  The *only* calls that come down from the expert are calls to
  
         has_feature()
+	number_remaining()
  
  which if true and the bid wins is followed by a call to 
  
@@ -79,9 +80,9 @@ public:
   
   std::string name()  const { return mName; }
   
-  bool                    has_feature();
+  bool                    has_feature(Features::FeatureVector const&, Features::FeatureVector const&);
   std::string             feature_name();
-  Features::FeatureVector pop();            // pops the top off
+  Features::FeatureVector pop();
   
   int                     number_remaining()                  const { return mSource.size() - mPosition; }
   void                    print_to(std::ostream& os)          const;
@@ -112,14 +113,14 @@ public:
   InteractionStream(std::string name, Source const& src)
     : mName(name), mSource(src), mPos1(0), mPos2(0) {  if (mSource[0]->is_dummy()) increment_position(); } // skip leading dummy
   
-  std::string name()                        const { return mName; }
+  std::string             name()                              const { return mName; }
   
-  bool                    has_feature()                        const;
-  std::string             feature_name()                       const;
+  bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
+  std::string             feature_name()                      const;
   Features::FeatureVector pop();                      
   
-  int                      number_remaining()                  const;
-  void                     print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
+  int                     number_remaining()                  const;
+  void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 private:
   void increment_position();
@@ -150,7 +151,7 @@ public:
   
   std::string name()  const { return mName; }
   
-  bool                    has_feature()                       const { return (number_remaining() > 0); }
+  bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
   std::string             feature_name()                      const;
   Features::FeatureVector pop();                      
   
@@ -194,7 +195,7 @@ public:
   
   std::string name()  const { return mName; }
   
-  bool                    has_feature();
+  bool                    has_feature(Features::FeatureVector const&, Features::FeatureVector const&);
   std::string             feature_name();
   Features::FeatureVector pop();                      
   
@@ -252,7 +253,7 @@ public:
   
   std::string name()  const { return mName; }
   
-  bool                    has_feature();
+  bool                    has_feature(Features::FeatureVector const& , Features::FeatureVector const& );
   std::string             feature_name()               const;
   Features::FeatureVector pop()                              { mPopped=true; return mTransformation(mBundle); }
   

@@ -17,6 +17,8 @@ Auction<Model>::write_csv_header_to(std::ostream& os) const
   os << ", Winning Expert, High Bid, p-value, Outcome, Payoff\n";
 }
 
+
+// Output to OS must be *csv* delimited columns
 template <class ModelClass>
 bool
 Auction<ModelClass>::auction_next_feature (std::ostream& os)
@@ -34,17 +36,15 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   std::pair<ExpertABC*,double> winner (collect_bids(os));  
   ExpertABC* pHighBidder = winner.first;
   double      highBid    = winner.second;
-  if(os)
-    os << ", " << pHighBidder->name() << ", " << highBid;
   if (0.0 == highBid) 
   { mHasActiveExpert = false;
     if (os) os << std::endl;
     return false;
   } 
   // extract chosen features
-  Features::FeatureVector features  (pHighBidder->features()) ;
+  Features::FeatureVector features  (pHighBidder->feature_vector()) ;
   int                     nFeatures (features.size());
-  mLogStream << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
+  debugging::debug(0) << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
   if (0 == nFeatures)
   { debugging::debug(3) << "AUCT: *** ERROR **** No feature offered; expert " << pHighBidder->name()
 			<< " should not bid without a variable to offer.\n";
@@ -55,7 +55,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   //  test chosen features; accept if p-value < bid
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
   for (int j=0; j<nFeatures; ++j) 
-  { // only pass in name and the begin iterator of feature's data, STL style
+  { // pass in name and begin iterator of data
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   }
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
@@ -101,17 +101,20 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
   ExpertABC* pHighBidder (mExperts[0]); 
   double     highBid     (-7.7);     
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
-  { double bid = (*it)->place_bid();
+  { double bid = (*it)->place_bid(mModelFeatures, mSkippedFeatures);
     if (os)
       os << ", " << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
       pHighBidder = *it;
     }
-  }    // inform experts of outcome
+  }
+  // inform experts of outcome, whether win/lose auction
   pHighBidder->bid_accepted();
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != pHighBidder) (*it)->bid_declined();
+  if(os)
+    os << ", " << pHighBidder->name() << ", " << highBid;
   return std::make_pair(pHighBidder, highBid);
 }
   
