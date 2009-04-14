@@ -5,7 +5,7 @@
 #include "adapter.h"
 
 namespace {
-  bool found_feature_name (std::string const& name, Features::FeatureVector const& vec)
+  bool found_feature_name_in_vector (std::string const& name, Features::FeatureVector const& vec)
   {
     for (Features::FeatureVector::const_iterator it = vec.begin();it != vec.end(); ++it)
     { if (name == (*it)->name())
@@ -42,8 +42,8 @@ template<class Source>
 typename Features::FeatureVector
 FiniteStream<Source>::pop()                            
 {
-  Features::FeatureVector result (1);
-  result[0] = mSource[mPosition]; 
+  Features::FeatureVector result;
+  result.push_back(mSource[mPosition]); 
   ++mPosition; 
   return result;
 }
@@ -57,9 +57,8 @@ InteractionStream<Source>::has_feature(Features::FeatureVector const& used, Feat
 {
   bool hasFeature = false;
   while ((mPos2 < (int)mSource.size()) && !hasFeature)
-  { if ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())
-	 || (mSource[mPos1]->is_constant())
-	 || (mSource[mPos2]->is_constant()) )
+  { if ( ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())     // dont square dummy var
+	 || (mSource[mPos1]->is_constant()) )                 // no interactions with constant (mPos2 handled in increment)
       increment_position();
     else
     { std::string name = feature_name();
@@ -88,6 +87,9 @@ InteractionStream<Source>::increment_position()
   // move to next column; traverses 'upper half' a column at a time, from diagonal 'up'
   if (0 == mPos1)
   { ++mPos2;
+    while ((mPos2 < (int)mSource.size()) &&
+	   mSource[mPos2]->is_constant())
+      ++mPos2;
     mPos1 = mPos2;
   }
   else
