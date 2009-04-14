@@ -98,13 +98,9 @@ template<class Source>
 int   
 InteractionStream<Source>::number_remaining() const 
 {
-  if (has_feature())
-  { int d (mSource.size()); 
-    int m (mPos2+1); 
-    return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
-  }
-  else
-    return 0;
+   int d (mSource.size()); 
+   int m (mPos2+1); 
+   return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
 }
 
 template<class Source>
@@ -208,10 +204,7 @@ template<class Source>
 std::string
 PolynomialStream<Source>::feature_name()                            
 {
-  if (has_feature())
-    return mSource[mPos]->name();
-  else
-    return "";
+  return mSource[mPos]->name();
 }
 
 template<class Source>

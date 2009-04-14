@@ -54,15 +54,15 @@ public:
   double                 current_bid()  const { return mCurrentBid; }
   std::pair<int,int>     performance()  const { return mBidHistory.bid_results_summary(); }
 
-  double                 place_bid (FeatureVector const& used, FeatureVector const& skipped);
   void                   bid_accepted()       { mLastBidAccepted = true; }
   void                   bid_declined()       { mLastBidAccepted = false; }
   
   void                   payoff (double w);     /* negative means rejected, zero means predictor was conditionally singular  */
   
-  virtual std::string    name()         const = 0;
-  virtual std::string    feature_name()       = 0;
-  virtual FeatureVector  feature_vector()     = 0;
+  virtual std::string    name()                   const = 0;
+  virtual double         place_bid (FeatureVector const& used, FeatureVector const& skipped) = 0;
+  virtual std::string    feature_name()                 = 0;
+  virtual FeatureVector  feature_vector()               = 0;
 
  protected:
   double                 max_bid    ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
@@ -89,6 +89,7 @@ public:
   Stream const&    stream()       const { return mStream; }
   std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
   
+  double           place_bid (FeatureVector const& used, FeatureVector const& skipped);
   std::string      feature_name()       { return mStream.feature_name(); }       
   FeatureVector    feature_vector()     { return mStream.pop(); }                // stream pop must return feature *vector*
 
@@ -126,8 +127,9 @@ make_expert(double alpha, Bidder b, Stream s)
 ////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE 
 // .Template is here since so little
 
+template<class Bidder, class Stream>
 double
-ExpertABC::place_bid (FeatureVector const& used, FeatureVector const& skipped)
+Expert<Bidder,Stream>::place_bid (FeatureVector const& used, FeatureVector const& skipped)
 {
   debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && (has_feature(used, skipped)) )

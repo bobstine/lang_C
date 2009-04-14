@@ -103,7 +103,10 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid(mModelFeatures, mSkippedFeatures);
     if (os)
-      os << ", " << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
+      if (bid > 0.0)
+	os << ", " << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
+      else
+	os << ",  , " << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
       pHighBidder = *it;
