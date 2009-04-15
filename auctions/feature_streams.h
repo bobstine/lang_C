@@ -86,7 +86,11 @@ public:
   
   int                     number_remaining()                  const { return mSource.size() - mPosition; }
   void                    print_to(std::ostream& os)          const;
-  
+
+private:
+  bool  is_empty()                  const;
+  bool  current_feature_is_okay()   const;
+  void  increment_position();
 };
 
 template <class Source>

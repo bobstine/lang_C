@@ -15,20 +15,46 @@ namespace {
   }
 }
 
+/////////////////  Finite Streams
+
+template<class Source>
+bool
+FiniteStream<Source>::is_empty() const
+{
+  return (mPosition >= (int) mSource.size());
+}
+
+template<class Source>
+void
+FiniteStream<Source>::increment_position()
+{
+  ++mPosition;
+}
+
+template<class Source>
+bool
+FiniteStream<Source>::current_feature_is_okay() const
+{
+  return !(
+	   mSource[mPosition]->was_tried_in_model() ||
+	   mSource[mPosition]->is_constant()
+	   );
+}
+
 
 template<class Source>
 bool
 FiniteStream<Source>::has_feature (Features::FeatureVector const&, Features::FeatureVector const&)
 {
-  int n (mSource.size());
-  if (mPosition >= n)
-    return false;
-  while(mSource[mPosition]->was_tried_in_model() || mSource[mPosition]->is_constant())
-  { ++mPosition;
-    if (mPosition == n) break;
+  while(!is_empty())
+  { if (current_feature_is_okay())
+      return true;
+    else
+      increment_position();
   }
-  return (mPosition < n);
+  return false;
 }
+
 
 template<class Source>
 std::string
