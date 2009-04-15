@@ -150,6 +150,7 @@ main(int argc, char** argv)
   
   // build vector of experts that work directly from input variables
   debug(0) << "AUCT: Assembling experts"  << std::endl;
+
   double alphaShare (totalAlphaToSpend/7);
   typedef  FiniteStream      < std::vector<FeatureABC*> > FStream;
   typedef  InteractionStream < std::vector<FeatureABC*> > IStream;

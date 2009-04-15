@@ -12,11 +12,17 @@
  *  Copyright 2008. All rights reserved.
  *
  
- These streams build the features that go into the model.  That
- happens when an expert makes a call for the next feature from a
- stream.  The *only* calls that come down from the expert are calls to
+ These streams build the features that go into the model.  Regulated
+ streams enforce a set of checks that the features that are offered
+ are reasonable for the problem (eg, not constants, not already in the
+ model and so forth).
+
+ The *only* calls that come down from the expert are calls to
  
         has_feature()
+
+ The bidder at higher level may ask for the number remaining.
+ 
 	number_remaining()
  
  which if true and the bid wins is followed by a call to 
@@ -62,6 +68,25 @@
 #include <iostream>
 
 
+//  Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream 
+template<class Stream>
+class RegulatedStream: public Stream
+{
+public:
+  RegulatedStream(Stream const& s): Stream(s) {}
+  
+  bool has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
+  {
+    while(!Stream::is_empty())
+    { if (Stream::current_feature_is_okay(used,skipped))
+	return true;
+      else
+	Stream::increment_position();
+    }
+    return false;
+  }
+};
+
 
 
 //  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream
@@ -80,24 +105,24 @@ public:
   
   std::string name()  const { return mName; }
   
-  bool                    has_feature(Features::FeatureVector const&, Features::FeatureVector const&);
   std::string             feature_name();
   Features::FeatureVector pop();
   
   int                     number_remaining()                  const { return mSource.size() - mPosition; }
   void                    print_to(std::ostream& os)          const;
 
-private:
+protected:
   bool  is_empty()                  const;
-  bool  current_feature_is_okay()   const;
+  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
   void  increment_position();
 };
 
+
 template <class Source>
-FiniteStream<Source>
+RegulatedStream< FiniteStream<Source> >
 make_finite_stream (std::string const& name, Source const& s)
 {
-  return FiniteStream<Source>(name, s);
+  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s));
 }
 
 
@@ -115,7 +140,7 @@ private:
 public:
   
   InteractionStream(std::string name, Source const& src)
-    : mName(name), mSource(src), mPos1(0), mPos2(0) {  if (mSource[0]->is_dummy()) increment_position(); } // skip leading dummy
+    : mName(name), mSource(src), mPos1(0), mPos2(0) {  }
   
   std::string             name()                              const { return mName; }
   
@@ -126,23 +151,22 @@ public:
   int                     number_remaining()                  const;
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
-private:
+protected:
   bool  is_empty()                  const;
   bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
   void  increment_position();
 };
 
 template <class Source>
-InteractionStream<Source>
+RegulatedStream< InteractionStream<Source> >
 make_interaction_stream (std::string const& name, Source const& s)
 {
-  return InteractionStream<Source>(name, s);
+  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, s));
 }
 
 
 
-
-//  CrossProductStream  CrossProductStream  CrossProductStream  CrossProductStream  
+//  CrossProductStream    CrossProductStream    CrossProductStream    CrossProductStream  
 
 template<class Source1, class Source2>
 class CrossProductStream 
@@ -166,7 +190,7 @@ public:
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
-private:
+protected:
   bool  is_empty()                  const;
   bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
   void  increment_position();
@@ -174,11 +198,10 @@ private:
 
 
 template <class Source1, class Source2>
-inline
-CrossProductStream<Source1, Source2>
+RegulatedStream< CrossProductStream<Source1, Source2> >
 make_cross_product_stream (std::string const& name, Source1 const& fixedSrc, Source2 const& dynSrc)
 {
-  return CrossProductStream<Source1, Source2>(name, fixedSrc, dynSrc);
+  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, fixedSrc, dynSrc));
 }
 
 

@@ -44,7 +44,7 @@ FiniteStream<Source>::increment_position()
 
 template<class Source>
 bool
-FiniteStream<Source>::current_feature_is_okay() const
+FiniteStream<Source>::current_feature_is_okay(Features::FeatureVector const&, Features::FeatureVector const&) const
 {
   return !(
 	   mSource[mPosition]->was_tried_in_model() ||
@@ -52,19 +52,6 @@ FiniteStream<Source>::current_feature_is_okay() const
 	   );
 }
 
-
-template<class Source>
-bool
-FiniteStream<Source>::has_feature (Features::FeatureVector const&, Features::FeatureVector const&)
-{
-  while(!is_empty())
-  { if (current_feature_is_okay())
-      return true;
-    else
-      increment_position();
-  }
-  return false;
-}
 
 
 template<class Source>
