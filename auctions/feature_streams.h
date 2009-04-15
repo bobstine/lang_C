@@ -127,7 +127,9 @@ public:
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 private:
-  void increment_position();
+  bool  is_empty()                  const;
+  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
+  void  increment_position();
 };
 
 template <class Source>
@@ -136,6 +138,8 @@ make_interaction_stream (std::string const& name, Source const& s)
 {
   return InteractionStream<Source>(name, s);
 }
+
+
 
 
 //  CrossProductStream  CrossProductStream  CrossProductStream  CrossProductStream  
@@ -163,8 +167,11 @@ public:
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 private:
-  void increment_position();
+  bool  is_empty()                  const;
+  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
+  void  increment_position();
 };
+
 
 template <class Source1, class Source2>
 inline
