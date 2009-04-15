@@ -23,15 +23,8 @@ template <class ModelClass>
 bool
 Auction<ModelClass>::auction_next_feature (std::ostream& os)
 {
-  // get time, summary of experts
-  const time_t tmpTime (time(0));
-  std::string timeStr (asctime(localtime(&tmpTime)));
   ++mRound;
-  debugging::debug(0) << "AUCT: Beginning auction round #" << mRound << " (" << timeStr.substr(0,timeStr.size() - 1) << ")" << std::endl;
-  if(os)
-    os << mRound << ", " << timeStr.substr(0,timeStr.size()-5) << ", "
-       << model_goodness_of_fit() << ", "
-       << total_expert_alpha();
+  debugging::debug(0) << "AUCT: Beginning auction round #" << mRound << std::endl;
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<ExpertABC*,double> winner (collect_bids(os));  
   ExpertABC* pHighBidder = winner.first;
@@ -44,20 +37,19 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   // extract chosen features
   Features::FeatureVector features  (pHighBidder->feature_vector()) ;
   int                     nFeatures (features.size());
-  debugging::debug(0) << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
   if (0 == nFeatures)
-  { debugging::debug(3) << "AUCT: *** ERROR **** No feature offered; expert " << pHighBidder->name()
-			<< " should not bid without a variable to offer.\n";
+  { debugging::debug(3) << "AUCT: *** ERROR **** Expert " << pHighBidder->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
-  print_features(features);
+  else
+  { debugging::debug(0) << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
+    print_features(features);
+  }
   //  test chosen features; accept if p-value < bid
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
-  for (int j=0; j<nFeatures; ++j) 
-  { // pass in name and begin iterator of data
+  for (int j=0; j<nFeatures; ++j)  // pass in name and begin iterator of data
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
-  }
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
   if (os)
     os << ", " << result.second;
@@ -98,29 +90,35 @@ template <class ModelClass>
 std::pair<ExpertABC*,double>
 Auction<ModelClass>:: collect_bids (std::ostream& os)
 {
+  // get time, summary of experts
+  if (os)
+  { const time_t tmpTime (time(0));
+    std::string timeStr (asctime(localtime(&tmpTime)));
+    os << mRound << ", " << timeStr.substr(0,timeStr.size()-5)
+       << ", " << model_goodness_of_fit()
+       << ", " << total_expert_alpha();
+  }
   ExpertABC* pHighBidder (mExperts[0]); 
   double     highBid     (-7.7);     
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid(mModelFeatures, mSkippedFeatures);
     if (os)
-      if (bid > 0.0)
-	os << ", " << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
-      else
-	os << ",  , " << (*it)->alpha() << ", " << bid;
+      if (bid > 0.0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
+      else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
       pHighBidder = *it;
     }
   }
-  // inform experts of outcome, whether win/lose auction
+  if(os)
+    os << ", " << pHighBidder->name() << ", " << highBid;
+  // inform experts whether win/lose auction
   pHighBidder->bid_accepted();
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != pHighBidder) (*it)->bid_declined();
-  if(os)
-    os << ", " << pHighBidder->name() << ", " << highBid;
   return std::make_pair(pHighBidder, highBid);
 }
-  
+
 
 /* deal with calibration
 
