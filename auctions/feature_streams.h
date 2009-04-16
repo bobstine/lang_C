@@ -13,9 +13,9 @@
  *
  
  These streams build the features that go into the model.  Regulated
- streams enforce a set of checks that the features that are offered
- are reasonable for the problem (eg, not constants, not already in the
- model and so forth).
+ feature streams enforce a set of checks that the features that are
+ offered are reasonable for the problem (eg, not constants, not
+ already in the model and so forth).
 
  The *only* calls that come down from the expert are calls to
  
@@ -69,11 +69,11 @@
 
 
 //  Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream 
-template<class Stream>
+template<class Stream, class Model>
 class RegulatedStream: public Stream
 {
 public:
-  RegulatedStream(Stream const& s): Stream(s) {}
+  RegulatedStream(Stream const& s, Model const& m): Stream(s) {}  ???? RAS
   
   bool has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
   {
