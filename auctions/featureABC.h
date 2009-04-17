@@ -12,7 +12,7 @@
    referenced by a descendant of this ABC must be held elsewhere and
    not kept in the feature itself.
    
-
+  17 Apr 09 ... Arguments hold name; (name, power) setup
    9 Apr 04 ... Separate ABC version from rest; beef up name structure, <, ==
    5 Apr 04 ... Read/Write to support virtual constructor
    1 Apr 04 ... ABC version
@@ -35,7 +35,7 @@ class FeatureABC
  public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double>  Iterator;
   typedef range< Iterator >                                                    Range;
-  typedef std::map<FeatureABC const*, int>                                     Arguments;   // for features of features
+  typedef std::map<std::string, int>                                           Arguments;   // map sorts names, second is power
   typedef std::set<std::string>                                                Attributes;
 
  private:
@@ -86,11 +86,11 @@ class FeatureABC
   
   virtual void        write_to (std::ostream& os)               const;                     
   virtual void        print_to (std::ostream& os)               const;
-          void        read_from (std::istream& is);                                  
 
 protected:
 	  Arguments   join_arguments(Arguments const& a1, Arguments const& a2) const;
 private:
+          void        read_from (std::istream& is);                                  
 	  void        initialize_moments();
 };
 
@@ -117,7 +117,7 @@ std::ostream&
 operator<< (std::ostream& os, FeatureABC::Arguments const& args)
 {
   for (FeatureABC::Arguments::const_iterator it=args.begin(); it!=args.end(); ++it)
-    os << it->first->name() << " " << it->second << " ";
+    os << it->first << " " << it->second << " ";
   return os;
 }
 

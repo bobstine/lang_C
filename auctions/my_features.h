@@ -136,7 +136,7 @@ class InteractionFeature : public FeatureABC
   virtual ~InteractionFeature() {}
   
   InteractionFeature(FeatureABC const* f1, FeatureABC const* f2)
-    : FeatureABC(f1->size()), mFeature1(), mFeature2() {if (f1<f2) {mFeature1=f1; mFeature2=f2;} else {mFeature1=f2; mFeature2=f1;} make_name();  }
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2) { make_name();  }   // names built in map with canonical order
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }

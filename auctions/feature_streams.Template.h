@@ -7,21 +7,17 @@
 namespace {
   bool found_feature_name_in_vector (std::string const& name, Features::FeatureVector const& vec)
   {
+    // std::cout << "Looking for " << name << " in " ;
+    // for(int i=0; i < (int) vec.size(); ++i)  std::cout << vec[i]->name() << ", "; std::cout << std::endl;
+    if (name.size() == 0)
+      return false;
     for (Features::FeatureVector::const_iterator it = vec.begin();it != vec.end(); ++it)
     { if (name == (*it)->name())
+      { debugging::debug(0) << "FETR: Found feature " << name << " already in model.\n";
 	return true;
+      }
     }
     return false;
-  }
-
-  std::string make_interaction_name (std::string const& n1, std::string const& n2)
-  {
-    if (n1 == n2)
-      return n1 + "^2";
-    else if (n1 < n2)
-      return n1 +"*"+ n2;
-    else
-      return n2 +"*"+ n1;
   }
 }
 
@@ -52,8 +48,6 @@ FiniteStream<Source>::current_feature_is_okay(Features::FeatureVector const&, Fe
 	   );
 }
 
-
-
 template<class Source>
 std::string
 FiniteStream<Source>::feature_name()                            
@@ -77,6 +71,16 @@ FiniteStream<Source>::pop()
 
 
 template<class Source>
+void
+InteractionStream<Source>::build_current_feature_name()
+{
+  if (is_empty())
+    mCurrentFeatureName = "";
+  else
+    mCurrentFeatureName = InteractionFeature(mSource[mPos1], mSource[mPos2]).name();
+}
+
+template<class Source>
 bool
 InteractionStream<Source>::is_empty() const
 {
@@ -91,12 +95,13 @@ InteractionStream<Source>::increment_position()
   if (0 == mPos1)  // move to next column; traverses 'upper half' a column at a time, from diagonal 'up'
   { ++mPos2;
     while ((mPos2 < (int)mSource.size())
-	   && mSource[mPos2]->is_constant())  // skip constant column
+	   && mSource[mPos2]->is_constant())            // skip constant column
       ++mPos2;
     mPos1 = mPos2;
   }
   else
     --mPos1;
+  build_current_feature_name();   // rebuild name
 }
 
 
@@ -106,58 +111,34 @@ InteractionStream<Source>::current_feature_is_okay(Features::FeatureVector const
 {
   if (
       ((mPos1 == mPos2) && mSource[mPos1]->is_dummy()) ||    // dont square dummy
-      (mSource[mPos1]->is_constant())          // no interactions with constant (mPos2 handled in increment)
+      (mSource[mPos1]->is_constant())                        // no interactions with constant (mPos2 handled in increment)
       )
     return false;
   std::string name (feature_name());
-  std::cout << "Interaction stream: NAME IS  >>>>>>> " << name << " <<<<<<<< \n";
   if (found_feature_name_in_vector(name, used) || found_feature_name_in_vector(name,skipped))
     return false;
   return true;
 }
 
-
-template<class Source>
-bool
-InteractionStream<Source>::has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
-{
-  while(!is_empty())
-  { if (current_feature_is_okay(used, skipped))
-      return true;
-    else
-      increment_position();
-  }
-  return false;
-}
-
-
-template<class Source>
-std::string
-InteractionStream<Source>::feature_name() const
-{
-  return make_interaction_name(mSource[mPos1]->name(),mSource[mPos2]->name());
-}
-
-
 template<class Source>
 int   
 InteractionStream<Source>::number_remaining() const 
 {
-   int d (mSource.size()); 
-   int m (mPos2+1); 
-   return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
+  int d (mSource.size()); 
+  int m (mPos2+1); 
+  return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
 }
 
 template<class Source>
 typename Features::FeatureVector
 InteractionStream<Source>::pop()
 {
-    FeatureABC* x1 (mSource[mPos1]);
-    FeatureABC* x2 (mSource[mPos2]);
-    increment_position();
-    Features::FeatureVector result;
-    result.push_back(new InteractionFeature(x1,x2));
-    return result;
+  FeatureABC* x1 (mSource[mPos1]);
+  FeatureABC* x2 (mSource[mPos2]);
+  increment_position();
+  Features::FeatureVector result;
+  result.push_back(new InteractionFeature(x1,x2));
+  return result;
 }
 
 
@@ -168,9 +149,18 @@ template<class Source1, class Source2>
 bool
 CrossProductStream<Source1, Source2>::is_empty() const
 {
-  return ( ((int)mFixedSource.size() <= mFixedPos) || (mDynSource.size() == 0) );
+  return ((int)mFixedSource.size() <= mFixedPos) || (mDynSource.size() == 0);
 }
 
+template<class Source1, class Source2>
+void
+CrossProductStream<Source1, Source2>::build_current_feature_name()
+{
+  if (is_empty())
+    mCurrentFeatureName = "";
+  else
+    mCurrentFeatureName = InteractionFeature(mFixedSource[mFixedPos], mDynSource[mDynPos]).name();
+}
 
 
 template<class Source1, class Source2>
@@ -180,47 +170,28 @@ CrossProductStream<Source1, Source2>::increment_position()
   if (mFixedPos < (int) mFixedSource.size()-1)   // move on fixed first since will cover this more completely
     ++ mFixedPos;
   else if (mDynPos < (int)(mDynSource.size()-1))
-    ++mDynPos;
+    ++ mDynPos;
   else
   { mFixedPos = 0;  // start over
     mDynPos = 0;
   }
+  build_current_feature_name();
 }
 
 
 
 template<class Source1, class Source2>
 bool
-CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped) const
+CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)
 {
-  if (mFixedSource[mFixedPos]->is_constant())
+  if (mFixedSource[mFixedPos]->is_constant() || (mDynSource[mDynPos]->is_constant()) )
     return false;
-  std::string name (feature_name());
-  std::cout << "Cross-product stream: NAME IS  >>>>>>> " << name << " <<<<<<<< \n";
-  if (found_feature_name_in_vector(name, used) || found_feature_name_in_vector(name,skipped))
+  if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
+    build_current_feature_name();
+  std::cout << "Cross-product stream: NAME IS  >>>>>>> " << mCurrentFeatureName << " <<<<<<<< \n";
+  if (found_feature_name_in_vector(mCurrentFeatureName, used) || found_feature_name_in_vector(mCurrentFeatureName,skipped))
     return false;
   return true;
-}
-
-
-template<class Source1, class Source2>
-bool
-CrossProductStream<Source1, Source2>::has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
-{
-  while(!is_empty())
-  { if (current_feature_is_okay(used, skipped))
-      return true;
-    else
-      increment_position();
-  }
-  return false;
-}
-
-template<class Source1, class Source2>
-std::string
-CrossProductStream<Source1,Source2>::feature_name() const
-{
-  return make_interaction_name(mFixedSource[mFixedPos]->name(),mDynSource[mDynPos]->name());
 }
 
 
@@ -228,12 +199,7 @@ template<class Source1, class Source2>
 typename Features::FeatureVector
 CrossProductStream<Source1, Source2>::pop()
 {
-  debugging::debug(0) << "SCPS: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
-  while ( (mFixedSource[mFixedPos]->is_constant()) ||
-          (mDynSource[mDynPos]->is_constant()) )
-  {
-    increment_position();
-  }
+  debugging::debug(0) << "CPST: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
   FeatureABC const* xf (mFixedSource[mFixedPos]);
   FeatureABC const* xd (mDynSource[mDynPos]);
   increment_position();

@@ -25,7 +25,7 @@ InteractionFeature::make_name()
 {
   Arguments args (arguments());
   for (Arguments::const_iterator it=args.begin(); it != args.end(); ++it)
-  { mName += it->first->name();
+  { mName += it->first;
     if (it->second > 1)
     { std::ostringstream ss;
       ss << it->second;
@@ -43,11 +43,11 @@ InteractionFeature::arguments()    const
   bool raw1 (mFeature1->class_name() == "ColumnFeature");
   bool raw2 (mFeature2->class_name() == "ColumnFeature");
   if (raw1)
-    argMap[mFeature1] = 1;
+    argMap[mFeature1->name()] = 1;
   else
     argMap = mFeature1->arguments();
   if (raw2)
-    argMap[mFeature2] += 1;
+    argMap[mFeature2->name()] += 1;  // need += in case of square
   else
     argMap = join_arguments(argMap, mFeature2->arguments());
   return argMap;

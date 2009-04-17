@@ -1,8 +1,9 @@
 "string","string with an embedded \"",v12345,spaced name,vvvv,noSpaceName,asddkj,nomizz
 "string","string with an embedded \"",12345,spaced name, 0.12345e4, 2,noSpace,
+one,two,three,four,five,six,"seven-seven",eight
 123,    a b c, w3e443, w34, XXX,6,7,8
 1.111   , 22, three, 4444, five, 666, 7.7777 ,  888
-1, 2.2 ,3.2 , 4.4   ,55   ,6.6e-6,  7e2, 88   
+1, 2.2 ,3.2 , 4.4   ,55   ,6.6e6,  72, 88   
 1,   2,3,4,5, 6   , ,8
 1,2,3,4,5,6,7,8
 1,2,3,4,5,6,7,8

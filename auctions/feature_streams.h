@@ -69,11 +69,11 @@
 
 
 //  Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream 
-template<class Stream, class Model>
+template<class Stream>
 class RegulatedStream: public Stream
 {
 public:
-  RegulatedStream(Stream const& s, Model const& m): Stream(s) {}  ???? RAS
+  RegulatedStream(Stream const& s): Stream(s) {}
   
   bool has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
   {
@@ -134,18 +134,19 @@ class InteractionStream
   
 private:
   std::string     mName;
+  std::string     mCurrentFeatureName;
   Source const&   mSource;
   int             mPos1, mPos2;
   
 public:
   
   InteractionStream(std::string name, Source const& src)
-    : mName(name), mSource(src), mPos1(0), mPos2(0) {  }
+    : mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }
   
   bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
-  std::string             feature_name()                      const;
+  std::string             feature_name()                      const { return mCurrentFeatureName; }
   Features::FeatureVector pop();                      
   
   int                     number_remaining()                  const;
@@ -155,6 +156,8 @@ protected:
   bool  is_empty()                  const;
   bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
   void  increment_position();
+private:
+  void  build_current_feature_name();
 };
 
 template <class Source>
@@ -172,6 +175,7 @@ template<class Source1, class Source2>
 class CrossProductStream 
 {
   std::string     mName;
+  std::string     mCurrentFeatureName;
   Source1 const&  mFixedSource;  // fixed number of features
   Source2 const&  mDynSource;    // this one iterates most often (odometer style)
   int             mFixedPos, mDynPos;
@@ -179,21 +183,23 @@ class CrossProductStream
 public:
     
   CrossProductStream(std::string name, Source1 const& fixedSrc, Source2 const& dynSrc)
-    : mName(name), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0) { }
+    : mName(name), mCurrentFeatureName(""), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0)  { build_current_feature_name(); }
   
   std::string name()  const { return mName; }
   
   bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
-  std::string             feature_name()                      const;
+  std::string             feature_name()                      const { return mCurrentFeatureName; }
   Features::FeatureVector pop();                      
   
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 protected:
-  bool  is_empty()                  const;
-  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
+  bool  is_empty() const;
+  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped);  
   void  increment_position();
+private:
+  void build_current_feature_name();
 };
 
 

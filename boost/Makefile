@@ -58,11 +58,20 @@ regex: regex.o
 	$(GCC) $< $(LDLIBS) -o $@
 	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
 
-csv_parser_demo: csv_parser_demo.o
+
+csv_parser_demo: csv_parser_demo
 	$(GCC) $< $(LDLIBS) -o $@
 	./csv_parser_demo
 
-csv_parser: csv_parser.o test-data.csv
+
+csv_parser: csv_parser.o
+	$(GCC) $< $(LDLIBS) -o $@
+
+test_parser: csv_parser csv_test_data.txt
+	./csv_parser -f csv_test_data.txt
+
+
+test_parser_data: csv_parser.o test-data.csv
 	$(GCC) $< $(LDLIBS) -o $@
 	./csv_parser -o model.dat -f test-data.csv
 
