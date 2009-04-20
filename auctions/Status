@@ -1,7 +1,10 @@
 Need to 
 
-     Streams
-	Multiple input files, with a file associated with a bidder.
+     Streams 
+
+     	Multiple input files, with a file associated with a bidder.
+	Have decided on a single input stream, but use :: to separate
+	the variables into distinct streams.
 
         Build smarter streams that look at the X's they are recommending, more careful
         check for which X's make more sense.  More checking before placing bids.
@@ -11,13 +14,12 @@ Need to
 
 
      Experts
+        
         Build a fixed bidder that considers the terms left in the input stream, not
         just in the current order that is available.  Recyclces through those not yet
         used, perhaps marking them with a boolean as cycles past to remove those that
         become constant (as in the old variable selection code used in BR model).
 
-        Build a bidder that's both Universal + Fixed alpha hybrid.  Several streams
-        now have two bidders.
 
 
      Logistic regression
@@ -29,14 +31,19 @@ Need to
         Figure out how to use calibration for logistic regression.
      
 
+     Calibration
 
-     Get the spline calibration back in place.  It will add them, but gets
-     confused about putting the calibration back.  This might belong elsewhere,
-     such as pushed down into the model itself.
+        Get the spline calibration back in place.  It will add them, but gets
+        confused about putting the calibration back.  This might belong elsewhere,
+        such as pushed down into the model itself.
      
-     *** Subspace methods are all giving pc's that are not well-scaled....
-     Need some type of "unit" analysis to decide which components belong
-     in a pc analysis.
+
+     Subspace bundles
+
+     	Think about which things to combine, such as by using some sort of "units"
+	attribute or within named feature sets.
+
+	 *** Subspace methods are all giving pc's that are not well-scaled....
 
 
 ------------------------------------------------------------------------------
@@ -44,8 +51,10 @@ Need to
 
    Add level of protection option to allow various schemes for computing p-value.
 
-   Add a second bidder on the file stream, using a universal bidder rather
-   in addition to the fixed alpha bidder.
+   Add a second bidder on the file stream, using a universal bidder
+   rather in addition to the fixed alpha bidder.  Build a bidder
+   that's both Universal + Fixed alpha hybrid.  Several streams now
+   have two bidders.
 
    Fixed bug that hangs with the universal bidder on the finite stream
    when reached the end but still tried to see what it had as a

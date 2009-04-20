@@ -67,7 +67,7 @@ FiniteStream<Source>::pop()
 }
 
 
-///////////////  Iteraction Streams
+///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams
 
 
 template<class Source>
@@ -97,7 +97,7 @@ InteractionStream<Source>::increment_position()
     while ((mPos2 < (int)mSource.size())
 	   && mSource[mPos2]->is_constant())            // skip constant column
       ++mPos2;
-    mPos1 = mPos2;
+    mPos1 = (mUseSquares) ? mPos2 : mPos2-1;
   }
   else
     --mPos1;
@@ -182,14 +182,14 @@ CrossProductStream<Source1, Source2>::increment_position()
 
 template<class Source1, class Source2>
 bool
-CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)
+CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&)
 {
   if (mFixedSource[mFixedPos]->is_constant() || (mDynSource[mDynPos]->is_constant()) )
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
   std::cout << "Cross-product stream: NAME IS  >>>>>>> " << mCurrentFeatureName << " <<<<<<<< \n";
-  if (found_feature_name_in_vector(mCurrentFeatureName, used) || found_feature_name_in_vector(mCurrentFeatureName,skipped))
+  if (found_feature_name_in_vector(mCurrentFeatureName, used))  // try this that have been skipped before again
     return false;
   return true;
 }

@@ -49,6 +49,9 @@ data/%.dat: data/%.csv
 baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -p 1 -r 100 -c 0
 
+stop: auction.test.o
+	echo "Stopping"
+
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 6 -p 0 -c 0
 

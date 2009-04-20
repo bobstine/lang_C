@@ -14,7 +14,7 @@ Auction<Model>::write_csv_header_to(std::ostream& os) const
   os << "Round, Time, Goodness of Fit, Total Alpha  ";
   for (int b=0; b<number_of_experts(); ++b)
     os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
-  os << ", Winning Expert, High Bid, p-value, Outcome, Payoff\n";
+  os << ", Winning Expert, High Bid, p-value, Variable, Outcome, Payoff\n";
 }
 
 
@@ -52,17 +52,21 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
   if (os)
-    os << ", " << result.second;
+    os << ", " << result.second << ", " << features[0]->name();
   bool addedPredictors (false);
+  std::string message;
   if (result.second > 1.0) {                                       // singularity in predictors
     pHighBidder->payoff(0.0);
+    message = "*** Singular ***";
     if (os) os << ", Singular " << std::endl;
   }
-  else {
-    addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
-    std::string message;
+  else
+  { addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
     if (addedPredictors)
     { message = "*** Add ***";
+      std::pair<double,double> testResult;
+      testResult = mModel.check_calibration();
+      std::cout << "AUCT: Calibration check produces " << testResult.first << " , " << testResult.second << std::endl;
       pHighBidder->payoff(mPayoff);
       if (os) os << ", Add, " << mPayoff << std::endl;
     }
@@ -72,15 +76,15 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
       pHighBidder->payoff(cost);
       if (os) os << ", Decline, " << cost << std::endl;
     }
-    for (int j=0; j<nFeatures; ++j)
-    { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
-      if (addedPredictors) 
-	mModelFeatures.push_back(features[j]);
-      else      
-	mSkippedFeatures.push_back(features[j]);
-      mLogStream << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
-      mLogStream << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
-    }
+  }
+  for (int j=0; j<nFeatures; ++j)
+  { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
+    if (addedPredictors) 
+      mModelFeatures.push_back(features[j]);
+    else      
+      mSkippedFeatures.push_back(features[j]);
+    mLogStream << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
+    mLogStream << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
   }
   return addedPredictors;
 }

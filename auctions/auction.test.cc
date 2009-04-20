@@ -166,7 +166,7 @@ main(int argc, char** argv)
   // main collection of interactions
   theAuction.add_expert(make_expert(alphaShare/1.01, // slightly less 
 				    UniversalBoundedBidder<IStream>(),
-				    make_interaction_stream("Column interactions", columnFeatures)
+				    make_interaction_stream("Column interactions", columnFeatures, false)  // skip squared terms
 				    ));
   
   // parasitic experts betting on winners
@@ -218,7 +218,8 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-	debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
+      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
+      }
     }
     debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
   }

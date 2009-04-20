@@ -48,7 +48,9 @@
 
     Cross-product interactions between dynamic and fixed set
 
-    subspace      several variables as a bundle
+    Polynomial    bundle of several powers at once
+    
+    Subspace      several variables as a bundle
 
  
  */
@@ -133,6 +135,7 @@ class InteractionStream
 {
   
 private:
+  bool            mUseSquares;
   std::string     mName;
   std::string     mCurrentFeatureName;
   Source const&   mSource;
@@ -140,8 +143,8 @@ private:
   
 public:
   
-  InteractionStream(std::string name, Source const& src)
-    : mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
+  InteractionStream(std::string name, Source const& src, bool useSquares)
+    : mUseSquares(useSquares), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }
   
@@ -162,9 +165,9 @@ private:
 
 template <class Source>
 RegulatedStream< InteractionStream<Source> >
-make_interaction_stream (std::string const& name, Source const& s)
+make_interaction_stream (std::string const& name, Source const& s, bool useSquares)
 {
-  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, s));
+  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, s, useSquares));
 }
 
 
