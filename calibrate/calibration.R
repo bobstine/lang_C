@@ -1,13 +1,20 @@
 ### Calibration testing
 
+# ridge regression
+library(MASS)
+
+# get rid of things in global environment 
+rm(x,y)
 
 ##############################################################################
 #
-#    Try Dean and Sham's on-line version
+#    Try Dean and Sham's on-line version of calibration
 #
 ##############################################################################
 
-# functions
+# --- functions
+
+# polynomial better have a real root, all the better reason to use 3rd or 5th
 find.real.zero <- function(coefs) {
 	z <- polyroot(coefs)
 	# cat("Zeros are", z, "\n")
@@ -18,17 +25,12 @@ find.real.zero <- function(coefs) {
 	Re(z)
 } 
 
-# ridge regression
-library(MASS)
-
-# get rid of things in global environment 
-rm(x,y)
-
-# data is quadratic missed by a linear fit
+# data is quadratic missed by a linear fit; data frame includes constant
+# in case you want to shrink it in the ridge regression
 build.data <- function(n) {
 	one <- rep(1,n)
-	x <- 20*(runif(n)-0.5)
-	y <- 10 + 10 * x + 0.5 * x^2 + 5*rnorm(n)
+	x <- 2*(runif(n)-0.5)
+	y <- 0 + 1 * x + 0.5 * x^2 + 0.05*rnorm(n)
 	data.frame(one,x,y)
 }
 
@@ -45,36 +47,37 @@ vars    <- c("one","x")
 k       <- length(vars)
 coef    <- matrix(0,nrow=n, ncol=k+3)
 
-t0 <- t <- 10
+t0 <- t <- 0           
 
-# fit initial model using shrinkage to find x.b
+# fit initial model using shrinkage to find x.b; do not shrink constant
+# lm.ridge dies unless have at least two columns in the fit
 r0    <- lm.ridge(y~one+x-1, lambda=lambda, data=Data[1:t0,])
 y.hat <- as.matrix(Data[,vars]) %*% coefficients(r0)
 Data  <- data.frame(Data, y.hat, y.hat2 = y.hat^2, y.hat3 = y.hat^3)
 
-# for(i in 1:(n-t0)) {
-for(i in 1:50) {
-	# next fit provides gamma
-	regr.t  <- lm.ridge(y~one+x+y.hat+y.hat2+y.hat3-1, lambda= lambda, data=Data[1:t,])
-
+for(i in 1:(n-t0)) {
+	# next fit provides gamma. Shrink constant in these fits? Does not seem to matter
+	regr.t  <- lm.ridge(y~one+x + y.hat+y.hat2+y.hat3-1, lambda= lambda, data=Data[1:t,])
 	# increment to next time point
 	t <- t+1
 	coef[t,]<- coefficients(regr.t)
 	x.b   <- sum(as.vector(Data[t,vars]) * coefficients(regr.t)[1:k])
 	gamma <- c(x.b, coefficients(regr.t)[(k+1):(k+3)])
-
 	# find zeros (hope for decent one that is real)
 	gamma[2]<-gamma[2]-1  # mv yhat to other side and solve for zero
 	y.h <- find.real.zero(gamma)
-
+	rng <- range(Data[1:(t-1),"y"])
+	y.h <- max(rng[1],min(y.h,rng[2]))  
 	# fill in data
 	Data[t,"y.hat"] <- y.h; Data[t,"y.hat2"] <- y.h^2; Data[t,"y.hat3"] <- y.h^3; 
 }
+points(Data[t0:t,"x"], Data[t0:t,"y.hat"], col=c(rep("red",10),rep("green",20),rep("blue",170)))
+
+
+ plot(Data[,"y.hat"], Data[,"y"], xlim=c(-1,1), col="red"); abline(0,1)
 
 coef[t0:t,]
 Data[t0:t,]
-
-points(Data[t0:t,"x"], Data[t0:t,"y.hat"], col="blue")
 
 ##############################################################################
 #            
