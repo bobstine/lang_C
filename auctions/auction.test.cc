@@ -122,7 +122,7 @@ main(int argc, char** argv)
      by columns is allocated on reading in the function FileColumnStream.getNextColumn.
   */
   int numberYColumns = 1;
-  if (data_has_selector(columnFileName, debug("AUCT",0)))
+  if (data_has_selector(columnFileName, debug("AUCT",0)))  // data for validation
     numberYColumns = 2;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
@@ -220,6 +220,7 @@ main(int argc, char** argv)
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
       { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
       }
+      progress_stream << std::endl;                        // ends lines in progress file
     }
     debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
   }

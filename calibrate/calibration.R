@@ -12,7 +12,7 @@ rm(x,y)
 #
 ##############################################################################
 
-# --- functions
+# ---  functions  -----------------------------------------------------------
 
 # polynomial better have a real root, all the better reason to use 3rd or 5th
 find.real.zero <- function(coefs) {
@@ -35,7 +35,7 @@ build.data <- function(n) {
 }
 
 
-# example
+# ---  example  -----------------------------------------------------------
 n <- 200
 Data <- build.data(n)
 plot(Data[,c("x","y")], col="lightgray")
@@ -47,7 +47,7 @@ vars    <- c("one","x")
 k       <- length(vars)
 coef    <- matrix(0,nrow=n, ncol=k+3)
 
-t0 <- t <- 0           
+t0 <- t <- 1           
 
 # fit initial model using shrinkage to find x.b; do not shrink constant
 # lm.ridge dies unless have at least two columns in the fit
@@ -73,8 +73,17 @@ for(i in 1:(n-t0)) {
 }
 points(Data[t0:t,"x"], Data[t0:t,"y.hat"], col=c(rep("red",10),rep("green",20),rep("blue",170)))
 
+# Alternative is to fit a model using (1) linear fit (2) add polynomial in y-hat
+fit = fitted.values(regr)
+Data <- data.frame(Data,fit2 = fit^2, fit3 = fit^3)
 
- plot(Data[,"y.hat"], Data[,"y"], xlim=c(-1,1), col="red"); abline(0,1)
+summary(regr.2 <- lm(y~x+fit2+fit3,data=Data))
+points(Data[,"x"], fitted.values(regr.2), col="purple",pch=23)
+
+# Check the calibration of the on-line estimates and post-regr estimates
+plot(Data[,"y.hat"], Data[,"y"], xlim=c(-1,1)); abline(0,1)
+points(fitted.values(regr.2), Data[,"y"], col="purple", pch=23)
+
 
 coef[t0:t,]
 Data[t0:t,]

@@ -18,7 +18,7 @@ Auction<Model>::write_csv_header_to(std::ostream& os) const
 }
 
 
-// Output to OS must be *csv* delimited columns
+// Output to OS must be *csv* delimited columns; each item adds its own prefix , delimiter
 template <class ModelClass>
 bool
 Auction<ModelClass>::auction_next_feature (std::ostream& os)
@@ -58,23 +58,23 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   if (result.second > 1.0) {                                       // singularity in predictors
     pHighBidder->payoff(0.0);
     message = "*** Singular ***";
-    if (os) os << ", Singular " << std::endl;
+    if (os) os << ", Singular ";
   }
   else
-  { addedPredictors = (result.second < highBid);                  //  test result.second is p-value 
+  { addedPredictors = (result.second < highBid);                  //  result.second is p-value 
     if (addedPredictors)
     { message = "*** Add ***";
       std::pair<double,double> testResult;
       testResult = mModel.check_calibration();
       std::cout << "AUCT: Calibration check produces " << testResult.first << " , " << testResult.second << std::endl;
       pHighBidder->payoff(mPayoff);
-      if (os) os << ", Add, " << mPayoff << std::endl;
+      if (os) os << ", Add, " << mPayoff;
     }
     else
     { message = "*** Decline ***";
       double cost = -highBid/(1.0-highBid);
       pHighBidder->payoff(cost);
-      if (os) os << ", Decline, " << cost << std::endl;
+      if (os) os << ", Decline, " << cost;
     }
   }
   for (int j=0; j<nFeatures; ++j)

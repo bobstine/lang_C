@@ -1,5 +1,14 @@
 Need to 
 
+     Deans requests
+
+        Pick off name of added variable rather than introduce added/decline column. (easy)
+
+	Get CV ss each time add a variable.  Harder.  This will have to happen outside of
+	the auction since it does not know anything about the 0/1 status of data.  Calling code
+	in auction.test.cc has the model and knows whether there's validation data to use.
+
+
      Streams 
 
      	Multiple input files, with a file associated with a bidder.
