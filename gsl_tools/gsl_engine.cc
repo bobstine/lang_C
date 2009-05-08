@@ -75,7 +75,8 @@ olsEngine::blas_dsyr(gsl_matrix const* z, gsl_vector const*e, gsl_matrix *zdz) c
 double
 olsEngine::smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const
 {
-  SmoothingSpline ss(df, x->data, y->data, (int) x->size);
+  SmoothingSpline ss(df, x->data, y->data, mN); 
+  std::cout << "########### Smoothing spline initialized with vector length " << mN << " out of " << x->size << std::endl;
   ss.fill_with_smooth(df, smth->data);
   return sum_of_squares(smth, average(smth));
 }

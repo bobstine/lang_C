@@ -2,13 +2,6 @@ Need to
 
      Deans requests
 
-        Pick off name of added variable rather than introduce added/decline column. (easy)
-
-	Get CV ss each time add a variable.  Harder.  This will have to happen outside of
-	the auction since it does not know anything about the 0/1 status of data.  Calling code
-	in auction.test.cc has the model and knows whether there's validation data to use.
-
-
      Streams 
 
      	Multiple input files, with a file associated with a bidder.
@@ -56,7 +49,20 @@ Need to
 
 
 ------------------------------------------------------------------------------
- 4 Apr 09
+ 8 May 09   (v 0.60)
+
+   Pick off name of added variable rather than introduce added/decline column so 
+   easier for Dean to get the variable name in his graphics.
+
+   Add RSS and CVSS columns to progress.csv when adding a variable. Computed down
+   in the model rather than exporting data what would require reassembling order.
+   (new function is sums_of_squares).
+
+   Spline calibration also present in this version, but is not incorporated in the
+   fit; its only there as a check/diagnostic.
+
+
+4 Apr 09
 
    Add level of protection option to allow various schemes for computing p-value.
 

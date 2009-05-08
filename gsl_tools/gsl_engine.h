@@ -59,7 +59,7 @@ public:
   void   blas_dsyr (gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz) const;
   
   // smoothing spline returns SS around mean of smooth
-  double   smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const;
+  double smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const;
 
   void   print_header_to (std::ostream& os) const { os << "OLS Engine "; }
   // void   print_to (std::ostream& os)        const { };

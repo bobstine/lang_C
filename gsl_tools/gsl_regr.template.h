@@ -58,6 +58,7 @@ gslRegression<Data,Engine>::prepare_predictors(C predictor_collection)
   { // save centered new predictors into X without increasing mQ in case need later
     int qj = mQ + j;                                               // offset from current model predictors
     gsl_vector_view vXj (gsl_matrix_column(mpData->live_x(),qj));
+    // reads est and validation cases from iterator into data object
     mpData->set_name_of_predictor(predictor_collection[j].first, qj);
     mpData->permuted_copy_from_iterator(predictor_collection[j].second, &vXj.vector);
     // centers *all* mLen cases using mean from first n
@@ -375,12 +376,12 @@ template <class Data, class Engine>
 int 
 gslRegression<Data,Engine>::add_current_predictors ()
 {
-  if (mQ+mDimZ >= mMaxQ) { 
-    std::clog << "GSLR: Attempt to add too many predictors; q " << mQ+mDimZ << ">=" << mMaxQ << std::endl;
-    return 0;  }
-  else   { 
-    // NOTE: most recent predictors are in mDimZ past column mQ in mX
-    debug(0) << "GSLR: Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
+  if (mQ+mDimZ >= mMaxQ)
+  { std::clog << "GSLR: Attempt to add too many predictors; q " << mQ+mDimZ << ">=" << mMaxQ << std::endl;
+    return 0;
+  }
+  else  // NOTE: most recent predictors are in mDimZ past column mQ in mX
+  { debug(0) << "GSLR: Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
     int status (0);
     status = qr_decomposition();   // increments mQ += mDimZ if successful
     status += update_XtXinv();
@@ -388,7 +389,8 @@ gslRegression<Data,Engine>::add_current_predictors ()
     { debug(2) << "GSLR: Error. Cannot invert X'X.\n"; 
       mQ -= mDimZ;
     }
-    return mQ;  }
+    return mQ;
+  }
 }
 
 template <class Data, class Engine>
@@ -463,6 +465,28 @@ void
 gslRegression<Data,Engine>::fill_with_fitted_values(Iter fit) const
 {  
   mpData->permuted_copy_to_iterator(mpData->Xb(), fit, len());
+}
+
+template <class Data, class Engine>
+std::pair<double,double>
+gslRegression<Data,Engine>::sums_of_squares () const
+{
+  gsl_vector const* y (mpData->y());
+  gsl_vector const* f (mpData->Xb());
+  double rssOut (0.0);
+  double diff   (0.0);
+  // test that matches built-in residual SS computed in QR
+  /*  for(int i=0; i<mN; ++i)
+      { diff = mYBar + gsl_vector_get(y,i)-gsl_vector_get(f,i);
+        rssIn += diff * diff;
+      }
+  */
+  // debug(0) << "GSLR: Built in RSS=" << mRSS << " ; calculated RSS=" << rssIn << std::endl;
+  for(int i=mN; i<len(); ++i)
+  { diff = mYBar + gsl_vector_get(y,i)-gsl_vector_get(f,i); // add mean back to uncenter y
+    rssOut += diff * diff;
+  }
+  return std::make_pair(mRSS, rssOut);
 }
 
 template <class Data, class Engine>

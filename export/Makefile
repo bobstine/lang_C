@@ -1,5 +1,11 @@
 # preliminaries
 
+.PHONY : clean 
+clean:
+	-rm -f     *.o *.d *.dd *.exec lib*.a
+	-rm        core
+
+
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 CFLAGS = -g -O3 -Wall -USINGLE -W -Woverloaded-virtual -fmessage-length=0
 GCC = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS) 

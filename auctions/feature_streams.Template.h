@@ -188,8 +188,7 @@ CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureV
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
-  std::cout << "Cross-product stream: NAME IS  >>>>>>> " << mCurrentFeatureName << " <<<<<<<< \n";
-  if (found_feature_name_in_vector(mCurrentFeatureName, used))  // try this that have been skipped before again
+  if (found_feature_name_in_vector(mCurrentFeatureName, used))  // try those that have been skipped before again
     return false;
   return true;
 }

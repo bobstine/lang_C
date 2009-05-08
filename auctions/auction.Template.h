@@ -14,7 +14,7 @@ Auction<Model>::write_csv_header_to(std::ostream& os) const
   os << "Round, Time, Goodness of Fit, Total Alpha  ";
   for (int b=0; b<number_of_experts(); ++b)
     os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
-  os << ", Winning Expert, High Bid, p-value, Variable, Outcome, Payoff\n";
+  os << ", Winning Expert, High Bid, p-value, Variable, Outcome, Payoff, RSS, CVSS\n";
 }
 
 
@@ -64,17 +64,15 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { addedPredictors = (result.second < highBid);                  //  result.second is p-value 
     if (addedPredictors)
     { message = "*** Add ***";
-      std::pair<double,double> testResult;
-      testResult = mModel.check_calibration();
-      std::cout << "AUCT: Calibration check produces " << testResult.first << " , " << testResult.second << std::endl;
       pHighBidder->payoff(mPayoff);
-      if (os) os << ", Add, " << mPayoff;
+      std::pair<double,double> rss (mModel.sums_of_squares());
+      if (os) os << "," << features[0]->name() << "," << mPayoff << "," << rss.first << "," << rss.second;
     }
     else
-    { message = "*** Decline ***";
+    { message = "*** Decline ***";                                // write name again for those chosen
       double cost = -highBid/(1.0-highBid);
       pHighBidder->payoff(cost);
-      if (os) os << ", Decline, " << cost;
+      if (os) os << ", ," << cost << ", , ";
     }
   }
   for (int j=0; j<nFeatures; ++j)

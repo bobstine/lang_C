@@ -41,7 +41,8 @@ public:
   gslData() : mN(0), mY(0), mX(0) { }
 
   template<class Iter, class BIter>                        // no weights
-    gslData(Iter Y, BIter B, int len, int maxQ) : mN(0), mNames(1+maxQ) {
+    gslData(Iter Y, BIter B, int len, int maxQ) : mN(0), mNames(1+maxQ)
+    {
       allocate(len, maxQ, false);
       int k (len);
       for(int i=0; i<len; ++i, ++Y, ++B) {
@@ -49,20 +50,28 @@ public:
           gsl_vector_set(mY, mN, *Y); mPermute[i]=mN; ++mN;}
         else {
           --k; gsl_vector_set(mY, k, *Y); mPermute[i]=k; }
-      }}
+      }
+    }
   
   template<class Iter, class BIter, class WIter>            // weights
-    gslData(Iter Y, BIter B, WIter W, int len, int maxQ) : mN(0), mNames(1+maxQ) {
+    gslData(Iter Y, BIter B, WIter W, int len, int maxQ) : mN(0), mNames(1+maxQ)
+    {
       allocate(len,maxQ, true);
-      int k (len);
-      for(int i=0; i<len; ++i, ++Y, ++B, ++W){ 
-        if (*B) { 
-          gsl_vector_set(mY, mN, *Y); 
+      // k marks end and counts down to insert validation cases
+      int k (len);  
+      for(int i=0; i<len; ++i, ++Y, ++B, ++W)
+      { if (*B)
+	{ gsl_vector_set(mY, mN, *Y); 
           gsl_vector_set(mWeights, mN, *W);
-          mPermute[i]=mN; ++mN;  } 
-        else {
-          --k; gsl_vector_set(mY, k, *Y); mPermute[i]=k; }
-      }}
+          mPermute[i]=mN; ++mN;
+	} 
+        else
+	{ --k;
+	  gsl_vector_set(mY, k, *Y);
+	  mPermute[i]=k;
+	}
+      }
+    }
 
   // preserve const status
   inline int       n()     const { return mN; }

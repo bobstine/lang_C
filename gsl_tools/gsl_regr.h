@@ -140,21 +140,22 @@ public:
   
   
   //  --- Accessors ---
-  int              n() const { return mN; }
-  int              q() const { return mQ; }
+  int              n() const { return mN; }                  // n are used in estimation, len are available with cv
   int            len() const { return mpData->length(); }
-  int           MaxQ() const { return mMaxQ; }
+  int              q() const { return mQ; }
+  int           maxQ() const { return mMaxQ; }
   int         df_fit() const { return mQ+1; }
   int    df_residual() const { return mN - df_fit(); }
-  
-        double        YBar() const { return mYBar; }
-  const double*       XBar() const { return gsl_vector_ptr(mXBar,0); }
+
+        double        yBar() const { return mYBar; }
+  const double*       xBar() const { return gsl_vector_ptr(mXBar,0); }
   const double*       beta() const { return gsl_vector_ptr(mBeta,0); }        // no intercept
-        double   intercept() const;   
+        double   intercept() const;
+  
+  std::pair<double,double> sums_of_squares () const;
 
   template <class Iter> void fill_with_beta (Iter begin) const;  
   template <class Iter> void fill_with_fitted_values (Iter fit) const;
-
   
   //  --- Evaluate potential predictors (test stat, p-value) ---
   //      Pass in predictor at this step, then call routines to evaluate these predictors
@@ -162,10 +163,8 @@ public:
  
   template<class Iter> bool prepare_predictor(std::string const& name, Iter Z);                         // returns mZIsSingular indicator
   template<class C>    bool prepare_predictors(C predictor_collection);
-
   
   template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;  // get std error
-
   
   typedef typename std::pair<double,double> TestResult;  // test stat, p-value
   
@@ -176,7 +175,6 @@ public:
   TestResult  Bennett_evaluation ()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
   TestResult  Bennett_evaluation (double m, double M);                               // response must be of form m <= y <= M       
   TestResult  Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M); // num is dot of z'(y-mu)
-
   
   int add_current_predictors ();                                                    // return size of expanded model
   
@@ -189,26 +187,25 @@ public:
   void print_to (std::ostream &os, int depth=0) const;                              // depth controls printing of y,x observations
   void write_data_to (std::ostream &os)         const;
   
-  // -------------------------------------------------------------------------
 
-private:
+private:   // -------------------------------------------------------------------------
     
   // Initialize 
   void initialize();
   void allocate_memory();
   
   // Calculations for candidate predictors
-  void   sweep_x_from_z_into_zres();
-  bool   z_appears_singular() const;
-  void   compute_cross_products_z();
-  void   compute_partial_coef_z();  
-  void   compute_fitted_values(int nUse);
+  void sweep_x_from_z_into_zres();
+  bool z_appears_singular() const;
+  void compute_cross_products_z();
+  void compute_partial_coef_z();  
+  void compute_fitted_values(int nUse);
   
   double change_in_rss       (gsl_matrix const* sandwich = 0)   const;  // optional matrix for sandwich estimator
   double white_change_in_rss () ;
 
-  int    qr_decomposition ();
-  int    qr_decomposition (int first, int size);
+  int  qr_decomposition ();
+  int  qr_decomposition (int first, int size);
 
 protected:
   // center the vector by subtracting its mean; return the mean

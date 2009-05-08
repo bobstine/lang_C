@@ -38,6 +38,7 @@
 // from gsl_tools
 #include "gsl_model.h"
 
+#include "smoothing_spline.h"
 
 #include <iostream>
 #include <fstream>
@@ -84,17 +85,11 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug(3) << "AUCT: Version build 0.50 (23 Mar 09)\n";
+  debug(3) << "AUCT: Version build 0.60 (8 May 2009)\n";
   debug(3) << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
 	   << " --protect=" << protection << " --rounds=" << numberRounds
 	   << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
 	   << std::endl;
-  
-  // need to fix issues surrouding the calibration adjustment
-  if (splineDF != 0)
-    { splineDF = 0;
-      debug(0) << "AUCT: Calibration DF set to 0 in current implementation to avoid problems\n";
-    }  
   
   // open additional files for output
   std::string modelHTMLFileName  (outputPath + "model.html"); 
@@ -116,7 +111,7 @@ main(int argc, char** argv)
      Line 5: data for the second variable
      Line 6: name of the third variable (X_2) 
      ...
-     The reading is done by a FileColumnStream that allocates the space for the columns
+      The reading is done by a FileColumnStream that allocates the space for the columns
      as the data are read.  A column feature provides a named range of doubles that learns a
      few properties of the data as it's read in (min, max, unique values). The space used
      by columns is allocated on reading in the function FileColumnStream.getNextColumn.
@@ -210,6 +205,8 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
       return -1;
     }
+
+  
   // run the auction with output to file
   {
     int round = 0;
@@ -219,11 +216,19 @@ main(int argc, char** argv)
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
       { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
+	//  spline calibration
+	{ std::pair<double,double> testResult;
+	  double const pToAdd(0.05);
+	  testResult = theRegr.check_calibration(splineDF, pToAdd);
+	  std::cout << "AUCT: Calibration check produces " << testResult.first << " , " << testResult.second << std::endl;
+	}
       }
-      progress_stream << std::endl;                        // ends lines in progress file
+      progressStream << std::endl;                        // ends lines in progress file
     }
     debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
+
+
   // write model in HTML to a file
   {
     std::ofstream output (modelHTMLFileName.c_str());

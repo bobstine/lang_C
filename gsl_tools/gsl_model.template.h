@@ -91,7 +91,7 @@ LinearModel<Data,Engine>::fill_with_se(Iter begin, int origin) const
 
 template <class Data, class Engine>
 std::pair<double,double>
-LinearModel<Data,Engine>::check_calibration(int df) const
+LinearModel<Data,Engine>::check_calibration(int df, double pValThresh) const
 {
   // pass y, e to spline; temp vec 0 used in logistic regression
   Data *  data   (GSLR::mpData);
@@ -101,7 +101,12 @@ LinearModel<Data,Engine>::check_calibration(int df) const
   // test by F test of explained SS
   double totalSS (GSLR::mRSS);
   double f ((regrSS/df)/(totalSS/(n-df)));
-  return std::make_pair(f,gsl_cdf_fdist_Q(f, df, n-df));
+  double p (gsl_cdf_fdist_Q(f, df, n-df));
+  if (p <= pValThresh)
+  {
+  }
+
+  return std::make_pair(f,p);
 }
 
 
