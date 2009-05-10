@@ -1,5 +1,15 @@
 # preliminaries
 
+all: csv_parser build_model
+
+.PHONY : clean 
+
+clean:
+        -rm -f     *.o *.d *.dd *.exec lib*.a
+        -rm        core
+
+
+
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 CFLAGS = -g -O3 -Wall -USINGLE -W -Woverloaded-virtual -fmessage-length=0
 GCC = g++ -DNDEBUG $(INCLUDES) $(LDFLAGS) 
@@ -42,6 +52,9 @@ all: csv_parser build_model
 csv_parser: csv_parser.cc
 	g++ -I.  -I /usr/local/include -g -Wall -USINGLE -W -Woverloaded-virtual -O2 -fmessage-length=0 -c csv_parser.cc -o csv_parser.o 
 	g++ csv_parser.o  -lboost_regex-xgcc40-mt-1_38 -lm  -o csv_parser
+#    For linux change the above line to the following:
+#	g++ csv_parser.o  -lboost_regex -lm  -o csv_parser
+
 
 build_model : $(utils) $(random) $(spline) $(ranges) $(gsl) $(auction) 
 	$(GCC) $^ $(LDLIBS) -o  $@
