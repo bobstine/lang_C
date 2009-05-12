@@ -64,6 +64,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { addedPredictors = (result.second < highBid);                  //  result.second is p-value 
     if (addedPredictors)
     { message = "*** Add ***";
+      mLastVariableAddedRound = mRound;
       pHighBidder->payoff(mPayoff);
       std::pair<double,double> rss (mModel.sums_of_squares());
       if (os) os << "," << features[0]->name() << "," << mPayoff << "," << rss.first << "," << rss.second;
@@ -103,7 +104,7 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
   ExpertABC* pHighBidder (mExperts[0]); 
   double     highBid     (-7.7);     
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
-  { double bid = (*it)->place_bid(mModelFeatures, mSkippedFeatures);
+  { double bid = (*it)->place_bid(mLastVariableAddedRound, mRound, mModelFeatures, mSkippedFeatures);
     if (os)
       if (bid > 0.0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
       else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
@@ -122,33 +123,6 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
 }
 
 
-/* deal with calibration
-
-std::cout << "AUCT: Removing prior calibrator from model.\n";
-mModel.remove_last_predictor();                   // take off the calibrator
-std::pair<double,double> resultWithoutCalibrator  // internal result for adding without calibrator
-(mModel.add_predictor(bid.first->name(), bid.first->range(), bid.first->center(), bid.first->scale(), 1.0, 1.0)); // pEnter, df
-if (resultWithoutCalibrator.first == 0.0)         // numerics failed
-{ addedPredictor = false;
-  result = resultWithoutCalibrator;
-}
-else if (resultWithoutCalibrator.second > bid.second)
-std::cout << "AUCT: Warning. Auction model rejected predictor without validator (p = "
-<< result.second << ") but added anyhow.\n";
-
-if (addedPredictor && (mCalibrationDF>0) && (mModel.number_of_predictors() > 2))
-{	std::pair<double, double> calibrationResult;
-  std::cout << "AUCT: Adding calibrator with " << mCalibrationDF << " df to underlying logistic model.\n";
-  calibrationResult = mModel.add_calibrator(mCalibrationDF, 0.05);
-  if (calibrationResult.first == 0.0)  // failure of the MLE optimization
-  { std::cout << "AUCT: Warning. Model refused calibrator with " << mCalibrationDF << " df; trying " << mCalibrationDF+3 << "df.\n";
-    calibrationResult = mModel.add_calibrator(mCalibrationDF+3, 0.05);
-    if (calibrationResult.first == 0.0) 
-      std::cout << "AUCT: Warning. Model also refused calibrator with " << mCalibrationDF+3 << " df.\n";
-  }
-}
-*/
-
 template <class ModelClass>
 double
 Auction<ModelClass>::total_expert_alpha () const
@@ -158,6 +132,7 @@ Auction<ModelClass>::total_expert_alpha () const
     total += mExperts[i]->alpha();
   return total;
 }
+
 
 // Output
 

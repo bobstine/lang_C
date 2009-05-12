@@ -31,19 +31,19 @@ class Auction
 
 private:
   bool              mHasActiveExpert;
-  int               mRound;
+  int               mRound, mLastVariableAddedRound;
   const double      mPayoff;
   int               mCalibrationDF;     // use calibration if positive
   ExpertVector      mExperts;
   Model&            mModel;
-  FeatureVector     mModelFeatures;     // Only those in the model
-  FeatureVector     mSkippedFeatures;   // Those tried and not used
-  std::ostream&     mLogStream;         // log messages
+  FeatureVector     mModelFeatures;     // those in the model
+  FeatureVector     mSkippedFeatures;   // tried and not used
+  std::ostream&     mLogStream;         // send log messages
 
   
  public:
   Auction (Model& m, int calibrationDF, std::ostream& logStream)
-    : mHasActiveExpert(true), mRound(0), mPayoff(0.05), mCalibrationDF(calibrationDF),
+    : mHasActiveExpert(true), mRound(0), mLastVariableAddedRound(-1), mPayoff(0.05), mCalibrationDF(calibrationDF),
     mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }

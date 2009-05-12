@@ -37,19 +37,21 @@ class ExpertABC
 {
   
 protected:
+  int         mPriority;             // increments bid in sorting to find winner; higher is better
   double      mAlpha;
   double      mCurrentBid;
   bool        mLastBidAccepted;
   BidHistory  mBidHistory;
   
 public:
-  typedef Features::FeatureVector FeatureVector;
+  typedef Features::FeatureVector FVec;
   
   virtual ~ExpertABC () { }
   
- ExpertABC(double alpha)
-   : mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() { }
-  
+ ExpertABC(int priority, double alpha)
+   : mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() { }
+
+  int                    priority()     const { return mPriority; }
   double                 alpha()        const { return mAlpha; }
   double                 current_bid()  const { return mCurrentBid; }
   std::pair<int,int>     performance()  const { return mBidHistory.bid_results_summary(); }
@@ -57,12 +59,12 @@ public:
   void                   bid_accepted()       { mLastBidAccepted = true; }
   void                   bid_declined()       { mLastBidAccepted = false; }
   
-  void                   payoff (double w);     /* negative means rejected, zero means predictor was conditionally singular  */
+  void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
-  virtual std::string    name()                   const = 0;
-  virtual double         place_bid (FeatureVector const& used, FeatureVector const& skipped) = 0;
-  virtual std::string    feature_name()                 = 0;
-  virtual FeatureVector  feature_vector()               = 0;
+  virtual std::string    name()                                      const = 0;
+  virtual double         place_bid (int addRound, int currRound, FVec const& used, FVec const& skipped) = 0;
+  virtual std::string    feature_name()                                    = 0;
+  virtual FeatureVector  feature_vector()                                  = 0;
 
  protected:
   double                 max_bid    ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
@@ -82,19 +84,19 @@ private:
 public:
   virtual ~Expert () { };
   
-  Expert (double alpha, Bidder b, Stream s)
-    : ExpertABC(alpha), mBidder(b), mStream(s) { }
+  Expert (int priority, double alpha, Bidder b, Stream s)
+    : ExpertABC(priority, alpha), mBidder(b), mStream(s) { }
   
-  Bidder const&    bidder()       const { return mBidder; }
-  Stream const&    stream()       const { return mStream; }
-  std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
+  Bidder const&         bidder()       const { return mBidder; }
+  Stream const&         stream()       const { return mStream; }
+  std::string           name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
   
-  double           place_bid (FeatureVector const& used, FeatureVector const& skipped);
-  std::string      feature_name()       { return mStream.feature_name(); }       
-  FeatureVector    feature_vector()     { return mStream.pop(); }                // stream pop must return feature *vector*
+  std::pair<int,double> place_bid (int addRound, int currRound, FeatureVector const& used, FeatureVector const& skipped);   // priority and bid
+  std::string           feature_name()       { return mStream.feature_name(); }       
+  FeatureVector         feature_vector()     { return mStream.pop(); }                // stream pop must return feature *vector*
 
  protected:
-  bool             has_feature(FeatureVector const& used, FeatureVector const& skipped) { return mStream.has_feature(used, skipped); }
+  bool                  has_feature(FeatureVector const& used, FeatureVector const& skipped) { return mStream.has_feature(used, skipped); }
 };
 
 
@@ -118,9 +120,9 @@ operator<< (std::ostream& os, std::vector<ExpertABC*> const& experts)
 template<class Bidder, class Stream>
 inline
 Expert<Bidder,Stream>*
-make_expert(double alpha, Bidder b, Stream s)
+make_expert(int priority, double alpha, Bidder b, Stream s)
 {
-  return new Expert<Bidder, Stream>(alpha, b, s); 
+  return new Expert<Bidder, Stream>(priority, alpha, b, s); 
 }
 
 
@@ -129,7 +131,7 @@ make_expert(double alpha, Bidder b, Stream s)
 
 template<class Bidder, class Stream>
 double
-Expert<Bidder,Stream>::place_bid (FeatureVector const& used, FeatureVector const& skipped)
+Expert<Bidder,Stream>::place_bid (int addRound, int currRound, FeatureVector const& used, FeatureVector const& skipped)
 {
   debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
@@ -138,7 +140,8 @@ Expert<Bidder,Stream>::place_bid (FeatureVector const& used, FeatureVector const
     mCurrentBid = (b<m) ? b:m;
   }    
   else
-    mCurrentBid = 0.0;  return mCurrentBid;
+    mCurrentBid = 0.0;
+  return std::make_pair(mPriority, mCurrentBid);
 }
 
 

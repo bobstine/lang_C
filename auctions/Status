@@ -23,7 +23,6 @@ Need to
         become constant (as in the old variable selection code used in BR model).
 
 
-
      Logistic regression
      	Get the cross-validation to run for least squares and logistic regression.
         Leave out subset works, but it is not plugged into any further.
@@ -35,10 +34,23 @@ Need to
 
      Calibration
 
-        Get the spline calibration back in place.  It will add them, but gets
-        confused about putting the calibration back.  This might belong elsewhere,
-        such as pushed down into the model itself.
-     
+        Spline calibration is out as a manual step, replaced by another expert. Would lose
+        track of the basis if just add a single column, and not easy to extract certain
+        basis without choosing knots.  Too much 'leakage' of y into X space.
+
+	New type of expert (calibration expert) that offers bid only right after variable
+	enters auction (watches how long since one goes into auction).  Expert has a
+	'priority' that allows it to jump in line when it has a bid.  Bids in bursts that
+	occasionally increase the alpha level after period of changes to model.
+
+	This needs: 
+	     - expert must know when variable was just added to model
+	     - new type of bidder that occasionally ups its bid (bursts).
+	     - priority appears in sort for winning bidder
+	     - expert/bidder needs to know how many rounds since variables added.
+	     - constructs variables from Xb, fit of current model... model becomes stream
+     	       but only when just having added a varible.
+
 
      Subspace bundles
 
@@ -46,6 +58,15 @@ Need to
 	attribute or within named feature sets.
 
 	 *** Subspace methods are all giving pc's that are not well-scaled....
+
+
+     Numerics
+
+        Check the gsl_engine code for "validation leakage" where it might use some
+	of the validation data.  Found some of this in the gsl_engine::smooth routine.
+	Need better, cleaner way to access the data held by the data object, such as
+	return vector views of the "n" items in use for estimation rather than the 
+	"length" items held in both training and test data.
 
 
 ------------------------------------------------------------------------------

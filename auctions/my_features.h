@@ -4,10 +4,9 @@
 #define _MY_FEATURES_H_
 
 /* 
-  Features are named ranges, with optional information about the use
-  of that data in a model or other application. Features do not hold
-  any data, so they are 'lightweight'. For example, column features
-  hold a reference to a column, but do not new/delete the space.
+  Features are named ranges, with optional information about the use of that data in a
+  model or application. Features do *not* hold any data, so they are 'lightweight'. For
+  example, column features hold a reference to a column, but do not new/delete the space.
 
   Column feature
 
@@ -60,12 +59,11 @@ namespace Features {
 
 class ColumnFeature : public FeatureABC
 {
+ private:
   Column const& mColumn;
 
  public:
-
-  ColumnFeature(Column const& c)
-    : FeatureABC(c.size()), mColumn(c) { }
+  ColumnFeature(Column const& c) : FeatureABC(c.size()), mColumn(c) { }
 
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn.name(); }

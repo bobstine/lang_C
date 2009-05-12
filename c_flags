@@ -1,5 +1,6 @@
 COMPILER = gcc
-LIBTOOL_CMD = libtool --mode=link $(above_infinity) -o $@
+# LIBTOOL_CMD = libtool --mode=link $(above_infinity) -o $@
+LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 CFLAGS = -g -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0
 GCC = g++ $(INCLUDES) $(LDFLAGS) 
 CC  = g++ $(INCLUDES) $(LDFLAGS)

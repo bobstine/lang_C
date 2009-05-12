@@ -4,8 +4,8 @@
 #define _COLUMN_H_
 
 /*
- A column is essentially a decorated range of doubles. These are typically
- defined by reading from a stream. The column item provides
+ A column is essentially a decorated range of doubles. These are typically defined by
+ reading from a stream. The column item provides
      - name string
      - range
      - basic stats, including the average, number that are unique, min, and max
@@ -43,8 +43,8 @@ private:
   Column(Column const& c)
     : mName(c.mName), mAvg(c.mAvg), mMin(c.mMin), mMax(c.mMax), mUnique(c.mUnique), mBegin(c.mBegin), mEnd(c.mEnd) { }
   
-  Column(char const* name, double *b, double *e)
-    : mName(name), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mBegin(b), mEnd(e) { init_fields(); }
+  Column(char const* name, double *begin, double *end)
+    : mName(name), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mBegin(begin), mEnd(end) { init_fields(); }
   
   Column(char const* name, double avg, double min, double max, int uniq, double *b, double *e)
     : mName(name), mAvg(avg), mMin(min), mMax(max), mUnique(uniq), mBegin(b), mEnd(e) { }

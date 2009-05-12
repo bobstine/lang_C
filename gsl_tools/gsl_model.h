@@ -41,10 +41,10 @@ public:
   
   template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);
-  TestResult  check_calibration(int df, double pValThreshold) const;
+  bool  needs_calibration(int df, double pValThreshold) const;
 
   template <class Iter> void fill_with_se(Iter begin, int origin) const;
-  template <class Iter> void fill_with_predictions(Iter it) const { GSLR::fill_with_fitted_values (it); } // export tracks 0/1 compression
+  template <class Iter> void fill_with_fit(Iter it) const { GSLR::fill_with_fitted_values (it); } // export tracks 0/1 compression
 
   void   print_to    (std::ostream& os, bool useHTML=false) const;
   void   print_gof_to(std::ostream& os) const;

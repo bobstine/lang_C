@@ -67,7 +67,35 @@ FiniteStream<Source>::pop()
 }
 
 
-///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams
+
+//  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
+
+template<class Model, class FeatureSource>
+Features::FeatureVector
+FitStream<Model,FeatureSource>::pop()
+{
+  Features::FeatureVector result;
+
+  ++mCount;
+  FeatureABC* fit (mSource.empty_feature());
+  mModel.fill_with_fit(fit.begin());
+  result.push_back(make_unary_feature(function_utils::square, fit));
+  result.push_back(make_unary_feature(function_utils::cube,   fit));
+  return result;
+} 
+
+template<class Model, class FeatureSource>
+std::string
+FitStream<Model,FeatureSource>::feature_name () const
+{
+  std::ostringstream oss;
+  oss << mCount;
+  return "Fit_" + oss.str();
+}
+
+
+
+  ///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams
 
 
 template<class Source>

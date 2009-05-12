@@ -12,7 +12,7 @@
  *  Copyright 2008. All rights reserved.
  *
  
- These streams build the features that go into the model.  Regulated
+ Streams build the features that go into the model.  Regulated
  feature streams enforce a set of checks that the features that are
  offered are reasonable for the problem (eg, not constants, not
  already in the model and so forth).
@@ -52,6 +52,7 @@
     
     Subspace      several variables as a bundle
 
+    Fitted-values filled by some external object
  
  */
 
@@ -123,6 +124,44 @@ protected:
 template <class Source>
 RegulatedStream< FiniteStream<Source> >
 make_finite_stream (std::string const& name, Source const& s)
+{
+  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s));
+}
+
+
+
+//  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
+
+template<class Model, class FeatureSource>
+class FitStream
+{
+  int                     mCount;
+  std::string             mName;
+  Model           const&  mModel;
+  FeatureSource   const&  mSource;       // source of places to put data
+  
+public:
+  
+  FitStream(std::string const& name, Model const& model, FeatureSource const& src)
+    :  mName(name), mModel(model), mSource(src), mCount(0) {  }
+  
+  std::string             name()           const { return mName; }
+  std::string             feature_name()   const;
+  Features::FeatureVector pop();
+  
+  int                     number_remaining()                                                      const { return 1; }
+
+protected:
+  bool  is_empty()                                                                                const { return false; }
+  bool  current_feature_is_okay(Features::FeatureVector const&, Features::FeatureVector const&)   const { return true; }
+  void  increment_position()                                                                      const { };
+
+};
+
+
+template <class Model>
+RegulatedStream< FiniteStream<Model> >
+make_fit_stream (std::string const& name, Source const& s)
 {
   return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s));
 }

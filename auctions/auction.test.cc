@@ -152,18 +152,18 @@ main(int argc, char** argv)
   typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
   typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
   
-  // main column experts, with hybrid bidder
+  // main column expert
   theAuction.add_expert(make_expert(alphaShare, 
 				    UniversalBoundedBidder<FStream>(), 
 				    make_finite_stream("Columns", columnFeatures)
 				    ));
   
-  // main collection of interactions
+  // main interactions
   theAuction.add_expert(make_expert(alphaShare/1.01, // slightly less 
 				    UniversalBoundedBidder<IStream>(),
 				    make_interaction_stream("Column interactions", columnFeatures, false)  // skip squared terms
 				    ));
-  
+
   // parasitic experts betting on winners
   theAuction.add_expert(make_expert(alphaShare,
 				    UniversalBidder<CPStream>(),
@@ -198,6 +198,13 @@ main(int argc, char** argv)
     )));                                   // WARNING: cannot return more than 25 x's in subspace
   */
   
+  // calibration expert
+  Expert<UniversalBidder<FStream>, FStream> calibrationExpert (make_expert(0.20,
+									   UniversalBidder<FStream>(),
+									   theAuction.model_features()));
+  
+
+
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
   std::ofstream progressStream (progressCSVFileName.c_str());
@@ -216,7 +223,8 @@ main(int argc, char** argv)
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
       { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
-	//  spline calibration
+	//  check to see if spline calibration finds a problem
+	if (false)
 	{ std::pair<double,double> testResult;
 	  double const pToAdd(0.05);
 	  testResult = theRegr.check_calibration(splineDF, pToAdd);
