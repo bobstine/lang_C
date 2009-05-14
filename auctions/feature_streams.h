@@ -132,18 +132,18 @@ make_finite_stream (std::string const& name, Source const& s)
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
-template<class Model, class FeatureSource>
+template<class Model, class FeatureStore>
 class FitStream
 {
-  int                     mCount;
-  std::string             mName;
-  Model           const&  mModel;
-  FeatureSource   const&  mSource;       // source of places to put data
+  int                    mCount;
+  std::string            mName;
+  Model          const&  mModel;
+  FeatureStore   const&  mStore;       // places to put data
   
 public:
   
-  FitStream(std::string const& name, Model const& model, FeatureSource const& src)
-    :  mName(name), mModel(model), mSource(src), mCount(0) {  }
+  FitStream(std::string const& name, Model const& model, FeatureStore const& src)
+    :  mName(name), mModel(model), mStore(src), mCount(0) {  }
   
   std::string             name()           const { return mName; }
   std::string             feature_name()   const;

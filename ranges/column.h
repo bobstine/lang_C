@@ -14,7 +14,8 @@
  Column item. The implemented example, called here a FileColumnStream 
  allocates the space for the data when data is read from a file.  It 
  does not free this space (currently).
- 
+
+ 13 May 09 ... Dynamic column storage.
  15 Nov 07 ... Diddle with getting a pair back from reading data.
  15 Mar 03 ... Created.
 */
@@ -23,31 +24,62 @@
 #include <utility>
 #include <iterator>
 #include <set>
+#include <map>
 #include <vector>
 
+#include <iostream>
+
+
 #include "range.h"
+
+// manages memory for columns that allocate dynamic memory
+class ColumnMemory;
+
+double * new_column_pointer    (size_t n);
+double * copy_column_pointer   (double* p)  ;
+void     delete_column_pointer (double* p)  ;
+void     print_column_pointers (std::ostream &os); 
+
+
 
 class Column
 {
 private:
-  std::string     mName;
-  double          mAvg;
-  double          mMin, mMax;
-  int             mUnique;          // number distinct values
-  double*         mBegin;           // space managed by someone else; would be nice to manage internally ???
-  double*         mEnd;
+  std::string         mName;
+  double              mAvg;
+  double              mMin, mMax;
+  int                 mUnique;          // number distinct values
+  double*             mBegin;           // space managed by someone else; would be nice to manage internally ???
+  double*             mEnd;
 
  public:
-  ~Column() { }
+  ~Column() { delete_column_pointer(mBegin); }
   
-  Column(Column const& c)
-    : mName(c.mName), mAvg(c.mAvg), mMin(c.mMin), mMax(c.mMax), mUnique(c.mUnique), mBegin(c.mBegin), mEnd(c.mEnd) { }
+  // copy constructor
+ Column(Column const& c)
+   : mName(c.mName), mAvg(c.mAvg), mMin(c.mMin), mMax(c.mMax), mUnique(c.mUnique),
+    mBegin(copy_column_pointer(c.mBegin)), mEnd(c.mEnd) { }
+
+  // manages dynamic space
+  template <class Iter>
+  Column(char const* name, size_t n, Iter source)
+    : mName(name), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mBegin(new_column_pointer(n)), mEnd(/*set during copy*/)
+  { double *x (mBegin);
+    std::cout << "COLM: filling pointer " << x << " in column " << mName << "\n";
+    while(n--)
+    { *x = *source;
+      ++x; ++source;
+    }
+    mEnd = x;
+    init_properties();
+  }
+
+  // rely on external space
+ Column(char const* name, double *begin, double *end)
+   : mName(name), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mBegin(begin), mEnd(end) { init_properties(); }
   
-  Column(char const* name, double *begin, double *end)
-    : mName(name), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mBegin(begin), mEnd(end) { init_fields(); }
-  
-  Column(char const* name, double avg, double min, double max, int uniq, double *b, double *e)
-    : mName(name), mAvg(avg), mMin(min), mMax(max), mUnique(uniq), mBegin(b), mEnd(e) { }
+ Column(char const* name, double avg, double min, double max, int uniq, double *b, double *e)
+   : mName(name), mAvg(avg), mMin(min), mMax(max), mUnique(uniq), mBegin(b), mEnd(e) { }
   
   Column& operator= (Column const& c);
 
@@ -64,15 +96,13 @@ private:
   range<double*>  writable_range()const { return make_range(begin(), end()); }
   range<double const*> range()    const { return make_range(begin(), end()); }
   
-  //  double*         memory()        const { return mBegin; }
-  
   bool            is_constant()   const { return mUnique == 1; }
   bool            is_dummy()      const { return ((mUnique == 2) && (mMin == 0) && (mMax == 1)); }
 
-  void            update()              { init_fields(); }
+  void            update()              { init_properties(); }
   void            print_to (std::ostream &os) const;
  private:
-  void            init_fields();
+  void            init_properties();
 };
 
 inline
@@ -82,6 +112,71 @@ operator<<(std::ostream& os, Column const& column)
   column.print_to(os);
   return os;
 }
+
+
+
+class ColumnMemory
+{
+  typedef std::map<double *, int> Map;
+  
+ private:
+  Map mPtrMap;
+  
+ public:
+  
+ ColumnMemory() : mPtrMap() {}
+    
+  ~ColumnMemory()
+  {
+    for(Map::iterator i=mPtrMap.begin(); i!= mPtrMap.end(); ++i)
+      delete[] i->first;
+  }
+
+  double* new_ptr (size_t size)
+  {
+    double *p = new double[size];
+    mPtrMap[p] = 1;
+    std::cout << "COLM: made new pointer " << p << " with size " << size << std::endl;
+    return p;
+  }
+      
+  double * copy_ptr (double * p)
+  {
+    std::cout << "COLM: copy pointer " << p << "\n";
+    Map::iterator i =  mPtrMap.find(p);
+    if (i != mPtrMap.end())
+      ++(i->second);
+    return p;
+  }
+
+  void del_ptr (double * p)
+  {
+    std::cout << "COLM: delete pointer \n";
+    Map::iterator i =  mPtrMap.find(p);
+    // assume space managed elsewhere if not found
+    if (i != mPtrMap.end())
+    { --(i->second);
+      std::cout << "COLM: delete pointer found for ptr " << p << "; reference count is " << (i->second) << " after this deletion. \n";
+      if (0 == i->second)
+      { delete[] i->first;
+	mPtrMap.erase(i);
+      }
+    }
+  }
+  void print_to (std::ostream &os) const;
+};
+
+
+inline
+std::ostream&
+operator<<(std::ostream& os, ColumnMemory const& cm)
+{
+  cm.print_to(os);
+  return os;
+}
+
+
+
 
 
 namespace {

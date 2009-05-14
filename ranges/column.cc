@@ -7,6 +7,48 @@
 #include <iostream>
 #include <fstream>
 
+//   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory
+
+
+ColumnMemory gColumnMemory;
+
+void
+ColumnMemory::print_to (std::ostream &os) const
+{
+  os << "Column Memory [" << mPtrMap.size() << "] \n";
+  for (Map::const_iterator i = mPtrMap.begin(); i != mPtrMap.end(); ++i)
+    os << "      " << i->first << "  #" << i->second << std::endl;
+}
+
+
+
+double*
+new_column_pointer (size_t n)
+{
+  return gColumnMemory.new_ptr(n);
+}
+
+double*
+copy_column_pointer (double* p)
+{
+  return gColumnMemory.copy_ptr(p);
+}
+
+void
+delete_column_pointer (double* p)
+{
+  gColumnMemory.del_ptr(p);
+}
+
+void
+print_column_pointers (std::ostream &os)
+{
+  os << gColumnMemory;
+}
+
+
+
+//   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column
 
 Column& 
 Column::operator= (Column const& c)
@@ -16,9 +58,9 @@ Column::operator= (Column const& c)
   mMin = c.mMin;
   mMax = c.mMax;
   mUnique = c.mUnique;
-  mBegin = c.mBegin;
+  mBegin = copy_column_pointer(c.mBegin);
   mEnd = c.mEnd;
-  init_fields();
+  init_properties();
   return *this;
 }
 
@@ -32,8 +74,9 @@ Column::print_to (std::ostream &os) const
      << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] ;
 }
 
+
 void
-Column::init_fields ()
+Column::init_properties ()
 {
   double *x = mBegin;
   if (!x) return;  // nothing to do 
