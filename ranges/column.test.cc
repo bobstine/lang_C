@@ -35,7 +35,6 @@ main()
     std::cout << c4 << std::endl;
     std::cout << c5 << std::endl;
 
-    print_column_pointers (std::cout);
   }
 
   std::cout << "TEST: Starting file portion.  Opening the column stream.\n";

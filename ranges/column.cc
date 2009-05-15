@@ -7,46 +7,6 @@
 #include <iostream>
 #include <fstream>
 
-//   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory   Column Memory
-
-
-ColumnMemory gColumnMemory;
-
-void
-ColumnMemory::print_to (std::ostream &os) const
-{
-  os << "Column Memory [" << mPtrMap.size() << "] \n";
-  for (Map::const_iterator i = mPtrMap.begin(); i != mPtrMap.end(); ++i)
-    os << "      " << i->first << "  #" << i->second << std::endl;
-}
-
-
-
-double*
-new_column_pointer (size_t n)
-{
-  return gColumnMemory.new_ptr(n);
-}
-
-double*
-copy_column_pointer (double* p)
-{
-  return gColumnMemory.copy_ptr(p);
-}
-
-void
-delete_column_pointer (double* p)
-{
-  gColumnMemory.del_ptr(p);
-}
-
-void
-print_column_pointers (std::ostream &os)
-{
-  os << gColumnMemory;
-}
-
-
 
 //   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column
 
@@ -54,12 +14,12 @@ Column&
 Column::operator= (Column const& c)
 {
   mName = c.mName;
+  mN = c.mN;
   mAvg = c.mAvg;
   mMin = c.mMin;
   mMax = c.mMax;
   mUnique = c.mUnique;
-  mBegin = copy_column_pointer(c.mBegin);
-  mEnd = c.mEnd;
+  mData = ColumnDataPtr(c.mData);
   init_properties();
   return *this;
 }
@@ -67,7 +27,7 @@ Column::operator= (Column const& c)
 void
 Column::print_to (std::ostream &os) const
 { 
-  double *x (mBegin);
+  double *x (begin());
   int     n (size());
   os << "Column " << mName << " [" << mUnique << "/" << n << ", "
      << mMin << " < " << mAvg << " < " << mMax << "] "
@@ -78,13 +38,13 @@ Column::print_to (std::ostream &os) const
 void
 Column::init_properties ()
 {
-  double *x = mBegin;
+  double *x = begin();
   if (!x) return;  // nothing to do 
   
   std::set<double> uniq;
   int n (0);
   mMin = mMax = *x;
-  while (x != mEnd)
+  while (x != end())
   { ++n;
     mAvg += *x;
     if (*x > mMax)
@@ -193,43 +153,19 @@ FileColumnStream::read_next_column_from_file()
   }
   else
   { mCurrentName[0] = '\0';
-    mCurrentAvg = 0.0;
-    mMin = mMax = 0.0;
-    mUniqueSet = std::set<double>();
-    if (read_name_with_skip(mCurrentName, maxNameLength, mFile))
-    {
-      mCurrentColumn = new double[mN];         // somebody else has to free this
-      double *x(mCurrentColumn);
-      fscanf(mFile, "%lf", x);                 // init using first value
-      mCurrentAvg = mMin = mMax = *x;
-      mUniqueSet.insert(*x);
-      ++x;
-      for (int i=1; i<mN; ++i, ++x)
-      { fscanf(mFile, "%lf", x);
-        mCurrentAvg += *x;
-        mUniqueSet.insert(*x);
-        if (*x < mMin)
-          mMin = *x;
-        else if (*x > mMax)
-          mMax = *x;
-      }
-      mCurrentAvg /= mN;
+    if (read_name_with_skip(mCurrentName, maxNameLength, mFile)) // do not gobble a trailing /n; that's handled by next read_name
+    { mCurrentColumn = Column(mCurrentName, mN, mN, mFile);
       return true;
-      // do not gobble a trailing /n; that's handled by next read_name
     }
     else
-    {
-      mN = 0;
-      mCurrentName[0] = '\0';  // make sure name is empty
-      mCurrentAvg     = 0.0;
-      mCurrentColumn    = 0;
+    { mCurrentColumn = Column();
       return false;
     }
   }
 }
 
 
-std::pair<double,double>
+std::pair<int,int>
 insert_columns_from_file (std::string const& fileName, 
                           std::back_insert_iterator< std::vector<Column> > it)
 {
@@ -245,7 +181,7 @@ insert_columns_from_file (std::string const& fileName,
   return std::make_pair(n,k);
 }
 
-std::pair<double,double>
+std::pair<int,int>
 insert_columns_from_file (std::string const& fileName, int ny,
                           std::back_insert_iterator< std::vector<Column> > yIt,
                           std::back_insert_iterator< std::vector<Column> > xIt)
@@ -285,21 +221,10 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   { std::string nameStr(name);
     if (strlen(name) > 0)
     { names.push_back(nameStr);
-      double *x = new double [nRows];
-      if (x)
-        xPtrs.push_back(x);
-      else
-      { std::cout << "COLM: Allocation of columns fails at column " << names.size() << "; returning.\n";
-        return names.size();
-      }
+      Column col(name, nRows, nRows, is);  // fill from file
+      *it = col;
     }
   }
-  std::cout << "COLM: Allocated " << names.size() << " pointers of size " << nRows << " for each column.\n";
-  for (int row=0; row<nRows; ++row)
-    for (unsigned int j=0; j < names.size(); ++j)
-      fscanf(is, "%lf", &xPtrs[j][row]);
-  std::cout << "COLM: Data read into the ranges; now inserting the columns.\n";
-  for (unsigned int j=0; j<names.size(); ++j, ++it)
-    *it = Column(names[j].c_str(), xPtrs[j], xPtrs[j]+nRows);
   return names.size();
 }
+
