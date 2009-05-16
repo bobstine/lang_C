@@ -31,6 +31,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   double      highBid    = winner.second;
   if (0.0 == highBid) 
   { mHasActiveExpert = false;
+    debugging::debug(0) << "AUCT: Auction does not have an active expert to bid; terminating.\n";
     if (os) os << std::endl;
     return false;
   } 
@@ -46,44 +47,32 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { debugging::debug(0) << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
     print_features(features);
   }
-  //  test chosen features; accept if p-value < bid
+  // build variables for testing
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
-  for (int j=0; j<nFeatures; ++j)  // pass in name and begin iterator of data
+  for (int j=0; j<nFeatures; ++j)                                                       
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
+  debug(3) << "AUCT: Test results p- value is <" << result.second << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
-  bool addedPredictors (false);
-  std::string message;
-  if (result.second > 1.0) {                                       // singularity in predictors
-    pHighBidder->payoff(0.0);
-    message = "*** Singular ***";
-    if (os) os << ", Singular ";
-  }
-  else
-  { addedPredictors = (result.second < highBid);                  //  result.second is p-value 
+  // report bid result
+  double payoff = payoff_to_highest_bidder(pHighBidder, highBid, result.second);            // result.second is p-value
+  bool addedPredictors (payoff > 0.0);
+  if (os)
     if (addedPredictors)
-    { message = "*** Add ***";
-      mLastVariableAddedRound = mRound;
-      pHighBidder->payoff(mPayoff);
-      std::pair<double,double> rss (mModel.sums_of_squares());
-      if (os) os << "," << features[0]->name() << "," << mPayoff << "," << rss.first << "," << rss.second;
+    { std::pair<double,double> rss (mModel.sums_of_squares());
+      os << "," << features[0]->name() << "," << payoff << "," << rss.first << "," << rss.second;
     }
     else
-    { message = "*** Decline ***";                                // write name again for those chosen
-      double cost = -highBid/(1.0-highBid);
-      pHighBidder->payoff(cost);
-      if (os) os << ", ," << cost << ", , ";
-    }
-  }
+      os <<               ", ,"               << payoff <<           ", , ";
   for (int j=0; j<nFeatures; ++j)
-  { features[j]->set_model_results(addedPredictors, result.second); //  save attributes in the feature for printing
+  { features[j]->set_model_results(addedPredictors, result.second);                      // save attributes in feature for printing
     if (addedPredictors) 
+    { mLogStream << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
+    }
     else      
       mSkippedFeatures.push_back(features[j]);
-    mLogStream << "AUCT: " << message << " pvalue " << result.second << "  bid " << highBid << std::endl;
-    mLogStream << "+F+   " << features[j] << std::endl;              // show this feature in output with key for grepping
   }
   return addedPredictors;
 }
@@ -93,7 +82,6 @@ template <class ModelClass>
 std::pair<ExpertABC*,double>
 Auction<ModelClass>:: collect_bids (std::ostream& os)
 {
-  // get time, summary of experts
   if (os)
   { const time_t tmpTime (time(0));
     std::string timeStr (asctime(localtime(&tmpTime)));
@@ -101,10 +89,12 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
        << ", " << model_goodness_of_fit()
        << ", " << total_expert_alpha();
   }
-  ExpertABC* pHighBidder (mExperts[0]); 
-  double     highBid     (-7.7);     
+  ExpertABC* pHighBidder           (NULL);
+  double     highBid               (-7.7);     
+  ExpertABC* pPriorityBidder       (NULL);
+  double     priorityBid           (0.0);
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
-  { double bid = (*it)->place_bid(mLastVariableAddedRound, mRound, mModelFeatures, mSkippedFeatures);
+  { double bid = (*it)->place_bid(mPayoffHistory, mModelFeatures, mSkippedFeatures);  // pass information to experts
     if (os)
       if (bid > 0.0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
       else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
@@ -112,15 +102,51 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
     { highBid = bid;
       pHighBidder = *it;
     }
+    if ((*it)->priority() > 0) // priority bidder with bid jumps to top
+    { debug(3) << "AUCT: at priority bidder with bid " << bid << std::endl;
+      if (bid > 0)
+      { pPriorityBidder = *it;
+	priorityBid = bid;
+      }
+    }
+  }
+  if (pPriorityBidder) // override results
+  { debug(3) << "AUCT: assigning round to priority bidder.\n";
+    highBid = priorityBid;
+    pHighBidder = pPriorityBidder;
   }
   if(os)
     os << ", " << pHighBidder->name() << ", " << highBid;
-  // inform experts whether win/lose auction
+  // inform experts whether win/lose auction (not model status, just whether bid was accepted)
   pHighBidder->bid_accepted();
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != pHighBidder) (*it)->bid_declined();
   return std::make_pair(pHighBidder, highBid);
 }
+
+
+template<class ModelClass>
+double
+Auction<ModelClass>::payoff_to_highest_bidder (ExpertABC* pHighBidder, double bid, double pValue)
+{
+  if (pValue > 1.0)
+  { pHighBidder->payoff(0.0);                          // singularity in predictors
+    mPayoffHistory.push_back(0.0);
+    return 0.0;
+  }
+  if (pValue < bid)                                    // add variable to model
+  { pHighBidder->payoff(mPayoff);
+    mPayoffHistory.push_back(mPayoff);
+    return mPayoff;
+  }
+  else
+  { double cost = -bid/(1.0-bid);
+    pHighBidder->payoff(cost);
+    mPayoffHistory.push_back(cost);
+    return cost;
+  }
+}
+  
 
 
 template <class ModelClass>
@@ -173,28 +199,6 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
 
 
 template <class ModelClass>
-FeatureABC*
-Auction<ModelClass>::calibration_feature() const
-{
-  if (not calibrated())
-  { std::cerr << "AUCT: *** ERROR *** Attempt to extract calibrator from uncalibrated model.\n";
-    return 0;
-  }
-  else
-  { int q (mModel.q()-1);   // dont count calibrator
-    std::ostringstream oss;
-    oss << q;
-    mLogStream << "AUCT: Need to deal with output of a calibration feature.\n" ;
-    /* std::string name ("Cal_" + oss.str());     // Name ought to be used
-      return mFeatureFactory->make_unary_feature_ptr(mModel.calibration_operator(),
-                                                     xb_feature(mModel.calibration_beta()));
-    */
-    return 0;
-  }
-}
-
-
-template <class ModelClass>
 void
 Auction<ModelClass>::print_features(FeatureVector const& features)   const
 {
@@ -240,13 +244,6 @@ Auction<ModelClass>::write_model_to  (std::ostream& os) const
     mLogStream << "       center = " << mModelFeatures[j]->center()
 	       << "    scale = " << mModelFeatures[j]->scale() << std::endl;
     mModelFeatures[j]->write_to(os);
-  }
-  if (calibrated())
-  { FeatureABC* cb (calibration_feature());
-    cb->write_to(os);
-    mLogStream << "AUCT: Writing calibration feature " << cb->name() << " with range " << cb->range() << std::endl;
-    mLogStream << "       center = " << cb->center()       << "    scale = " << cb->scale() << std::endl;
-    delete cb;
   }
 }
 

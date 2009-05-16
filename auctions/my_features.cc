@@ -63,6 +63,20 @@ InteractionFeature::write_to (std::ostream& os) const
   FeatureABC::write_to(os);
 }
 
+// Unary feature
+
+Features::FeatureVector
+powers_of_column_feature (Column const& col)
+{
+  Features::FeatureVector fv;
+  ColumnFeature * base = new ColumnFeature(col);
+  fv.push_back(make_unary_feature(Function_Utils::CenteredSquare(col.average()), base));
+  fv.push_back(make_unary_feature(  Function_Utils::CenteredCube(col.average()), base));
+  return fv;
+}
+
+
+
 //  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature  
 
 bool

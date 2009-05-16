@@ -41,11 +41,31 @@ namespace Function_Utils
   public:
     double operator()(double x) const { return x*x; }
   };
+  
 
+  class CenteredSquare : public std::unary_function<double,double> {
+  private:
+    double mCenter;
+  public:
+    CenteredSquare(double center) : mCenter(center) {};
+
+    double operator()(double x) const { double dev (x - mCenter); return dev*dev; }
+  };
+  
   
   class Cube : public std::unary_function<double,double> {
   public:
     double operator()(double x) const { return x*x*x; }
+  };
+  
+
+  class CenteredCube : public std::unary_function<double,double> {
+  private:
+    double mCenter;
+  public:
+    CenteredCube(double center) : mCenter(center) {};
+
+    double operator()(double x) const { double dev (x - mCenter); return dev*dev*dev; }
   };
   
   
@@ -117,14 +137,6 @@ namespace Function_Utils
   public:
     Standardize(double c, double s) : mC(c),mS(s) { }
     double operator()(double x) const { return (x-mC)/mS; }
-  };
-
-  
-  class CenterSquare : public std::unary_function<double,double> {
-    const double mC;
-  public:
-    CenterSquare(double c) : mC(c) { }
-    double operator()(double x) const { double z = x - mC; return z*z; }
   };
 
   

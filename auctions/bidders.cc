@@ -17,7 +17,7 @@ BidHistory::append_bid_outcome (bool success)
   mResults.push_back(result); 
   if (success) 
   { mBidsSinceLastSuccess = 0;
-    ++mNumberSuccessfulBids;
+    ++mNumSuccessfulBids;
   }
   else
     ++mBidsSinceLastSuccess;

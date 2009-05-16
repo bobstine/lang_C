@@ -72,32 +72,34 @@ private:
  Column() : mName(""), mN(0), mAvg(0), mMin(0), mMax(0), mUnique(0), mData(0) {}
 
   // copy constructor
- Column(Column const& c)
+ Column(Column const& c)  // why do these get copied SO much
    : mName(c.mName+"_c"), mN(c.mN), mAvg(c.mAvg), mMin(c.mMin), mMax(c.mMax), mUnique(c.mUnique), mData(c.mData) {}
+
+ // empty space; will need to call 'update' after filling contents
+ Column(char const* name, int n)
+    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n) { }
+
+  
+ // fill from file (template specialization)  [ kludge to avoid template problem ]
+ Column(char const* name, size_t n, FILE *fp)
+    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n)
+  { double *x (mData.begin());   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
+    while(n--)
+      fscanf(fp, "%lf", x++);  
+    init_properties();
+  }
 
   // fill from iterator
   template <class Iter>
   Column(char const* name, size_t n, Iter source)
     : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n)
-  { double *x (mData.begin());
-    // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
+  { double *x (mData.begin());  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
     while(n--)
     { *x = *source;
       ++x; ++source;
     }
     init_properties();
   }
-
- // fill from file (template specialization)  [ kludge to avoid template problem ]
-  Column(char const* name, size_t n, size_t, FILE *fp)
-    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n)
-  { double *x (mData.begin());
-    // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
-    while(n--)
-      fscanf(fp, "%lf", x++);  
-    init_properties();
-  }
-
   
   Column& operator= (Column const& c);
 
@@ -116,7 +118,7 @@ private:
   
   bool            is_constant()   const { return mUnique == 1; }
   bool            is_dummy()      const { return ((mUnique == 2) && (mMin == 0) && (mMax == 1)); }
-
+  
   void            update()              { init_properties(); }
   void            print_to (std::ostream &os) const;
  private:

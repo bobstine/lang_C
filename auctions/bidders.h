@@ -27,9 +27,12 @@
 
 // universal PDF 
 #include "coding.h"
+#include "debug.h"
 
 #include <iostream>
 #include <vector>
+#include <deque>
+
 
 //   BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  
 /*
@@ -40,14 +43,14 @@ class BidHistory
 {
   std::vector<int> mResults;
   int mBidsSinceLastSuccess;
-  int mNumberSuccessfulBids;
+  int mNumSuccessfulBids;
   
 public:
     BidHistory ()
-    : mResults(), mBidsSinceLastSuccess(0), mNumberSuccessfulBids(0) { }
+    : mResults(), mBidsSinceLastSuccess(0), mNumSuccessfulBids(0) { }
   
   std::vector<int> const&  results()                       const { return mResults; }
-  std::pair<int,int>       bid_results_summary()           const { int n (mResults.size()); return std::make_pair(mNumberSuccessfulBids, n-mNumberSuccessfulBids); }
+  std::pair<int,int>       bid_results_summary()           const { int n (mResults.size()); return std::make_pair(mNumSuccessfulBids, n-mNumSuccessfulBids); }
   int                      number_bids_since_last_sucess() const { return mBidsSinceLastSuccess; }
 
   void                     append_bid_outcome (bool success);
@@ -64,7 +67,7 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const&) const
+  double bid (double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
   {
     int n (stream.number_remaining());
     if (n>0)
@@ -83,6 +86,42 @@ make_finite_bidder(Stream& stream)
 }
 
 
+////  FitBidder    FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder
+
+
+class FitBidder
+{
+ private:
+  int mDelayInterval;  // set randomly?
+  int mCountDown;
+  
+ public:
+  
+  FitBidder (int delay)    : mDelayInterval(delay),mCountDown(delay) {}
+
+  
+  std::string name() const { return "Fit bidder"; }
+  
+  template <class Stream>
+    double bid (double, Stream const&, BidHistory const&, std::deque<double> const& payoffs)
+  {
+    debugging::debug(3) << "BIDR: fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
+    if(!payoffs.empty() && payoffs.back() > 0) // last variable successful
+    {  --mCountDown;
+       if(0 == mCountDown)
+       { mCountDown = mDelayInterval;
+	 return .25;
+       }
+       else
+	 return 0.05;
+    }
+    else return 0.0;  // dont bid
+  }
+  
+};
+
+
+
 ////  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder  GeometricBidder
 
 template <class Stream>
@@ -97,7 +136,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const&) const
+  double bid (double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * mRate; 
@@ -106,6 +145,7 @@ class GeometricBidder
   }
   
 };
+
 
 
 
@@ -120,7 +160,7 @@ public:
   
   std::string name() const { return "Universal bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const& history) const
+  double bid (double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * universalPDF(history.number_bids_since_last_sucess());
@@ -150,7 +190,7 @@ public:
   
   std::string name() const { return "Universal bounded bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const& history) const
+  double bid (double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
   {
     int n (stream.number_remaining());
     if (n>0)

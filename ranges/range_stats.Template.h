@@ -31,7 +31,7 @@ template <class I>
 inline double
 range_stats::sum_of_squares (range<I> range, double center)
 {
-  return range_ops::accumulate(make_unary_range(Function_Utils::CenterSquare(center),range), 0.0);
+  return range_ops::accumulate(make_unary_range(Function_Utils::CenteredSquare(center),range), 0.0);
 }
 
 template<class I, class Iw>
@@ -66,7 +66,7 @@ range_stats::weighted_sum_of_squares (range<I> r, double center, range<Iw> wts)
   return range_ops::accumulate(
 		    make_binary_range(
 				      std::multiplies<double>(),
-				      make_unary_range(Function_Utils::CenterSquare(center),r),
+				      make_unary_range(Function_Utils::CenteredSquare(center),r),
 				      wts),
 		    0.0);      
 }

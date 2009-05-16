@@ -69,9 +69,21 @@
 #include <functional>
 
 #include <iostream>
-
+#include <sstream>
 
 //  Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream 
+
+/*
+  A regulated stream injects the method 'has_feature' into a stream object.  That stream
+  object must implement the three functions 'is_empty, current_feature_is_ok and
+  increment_position.  The stream will then have the chance to bid in the auction and
+  submit a feature to the model.
+
+  The regulated stream provides a 'consistent interface' for all streams without needing
+  an abstract base class.  (Works since never have a collection of streams.)
+*/
+  
+
 template<class Stream>
 class RegulatedStream: public Stream
 {
@@ -106,16 +118,16 @@ public:
   FiniteStream(std::string const& name, Source const& src)
     :  mName(name), mSource(src), mPosition(0) {  }
   
-  std::string name()  const { return mName; }
-  
-  std::string             feature_name();
+  std::string             name()         const { return mName; }
+  std::string             feature_name() const;
   Features::FeatureVector pop();
   
-  int                     number_remaining()                  const { return mSource.size() - mPosition; }
   void                    print_to(std::ostream& os)          const;
 
+  int                     number_remaining()                  const { return (int)mSource.size() - mPosition; }
+  
 protected:
-  bool  is_empty()                  const;
+  bool  is_empty()                                                                                             const;
   bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
   void  increment_position();
 };
@@ -132,38 +144,32 @@ make_finite_stream (std::string const& name, Source const& s)
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
-template<class Model, class FeatureStore>
+template<class Model>
 class FitStream
 {
-  int                    mCount;
-  std::string            mName;
+  int                    mCount;    // Number of times popped a fitted value (used to name fit values)
   Model          const&  mModel;
-  FeatureStore   const&  mStore;       // places to put data
   
 public:
   
-  FitStream(std::string const& name, Model const& model, FeatureStore const& src)
-    :  mName(name), mModel(model), mStore(src), mCount(0) {  }
+  FitStream(Model const& model)    :  mCount(0), mModel(model) {  }
   
-  std::string             name()           const { return mName; }
+  std::string             name()           const { return mModel.name(); }
   std::string             feature_name()   const;
   Features::FeatureVector pop();
-  
-  int                     number_remaining()                                                      const { return 1; }
 
-protected:
+protected:  // bidder decides whether to use the fit of the model
   bool  is_empty()                                                                                const { return false; }
   bool  current_feature_is_okay(Features::FeatureVector const&, Features::FeatureVector const&)   const { return true; }
   void  increment_position()                                                                      const { };
-
 };
 
 
 template <class Model>
-RegulatedStream< FiniteStream<Model> >
-make_fit_stream (std::string const& name, Source const& s)
+RegulatedStream< FitStream<Model> >
+make_fit_stream (Model const& m)
 {
-  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m));
 }
 
 
@@ -227,7 +233,7 @@ public:
   CrossProductStream(std::string name, Source1 const& fixedSrc, Source2 const& dynSrc)
     : mName(name), mCurrentFeatureName(""), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0)  { build_current_feature_name(); }
   
-  std::string name()  const { return mName; }
+  std::string             name()                              const { return mName; }
   
   bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
   std::string             feature_name()                      const { return mCurrentFeatureName; }
@@ -275,10 +281,10 @@ public:
   PolynomialStream(std::string name, Source const& src, int degree)
     : mName(name), mSource(src), mPos(0), mDegree(degree) { }
   
-  std::string name()  const { return mName; }
+  std::string name()      const { return mName; }
   
   bool                    has_feature(Features::FeatureVector const&, Features::FeatureVector const&);
-  std::string             feature_name();
+  std::string             feature_name() const;
   Features::FeatureVector pop();                      
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
@@ -333,7 +339,7 @@ public:
     : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mBundle(), 
       mPredicate(pred), mTransformation(trans), mPopped(false) { }
   
-  std::string name()  const { return mName; }
+  std::string             name()  const { return mName; }
   
   bool                    has_feature(Features::FeatureVector const& , Features::FeatureVector const& );
   std::string             feature_name()               const;

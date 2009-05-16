@@ -17,6 +17,7 @@
 
 #include <sstream>
 #include <vector>
+#include <deque>
 
 template <class Model>
 class Auction
@@ -30,21 +31,22 @@ class Auction
   typedef typename std::pair<double,double>           TestResult;
 
 private:
-  bool              mHasActiveExpert;
-  int               mRound, mLastVariableAddedRound;
-  const double      mPayoff;
-  int               mCalibrationDF;     // use calibration if positive
-  ExpertVector      mExperts;
-  Model&            mModel;
-  FeatureVector     mModelFeatures;     // those in the model
-  FeatureVector     mSkippedFeatures;   // tried and not used
-  std::ostream&     mLogStream;         // send log messages
+  bool                mHasActiveExpert;
+  bool                mCalibrateFit;      // use calibration
+  int                 mRound;          
+  std::deque<double>  mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
+  const double        mPayoff;            // payoff for a winning bid
+  ExpertVector        mExperts;
+  Model&              mModel;
+  FeatureVector       mModelFeatures;     // those in the model
+  FeatureVector       mSkippedFeatures;   // tried and not used
+  std::ostream&       mLogStream;         // send log messages
 
   
  public:
-  Auction (Model& m, int calibrationDF, std::ostream& logStream)
-    : mHasActiveExpert(true), mRound(0), mLastVariableAddedRound(-1), mPayoff(0.05), mCalibrationDF(calibrationDF),
-    mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
+  Auction (Model& m, bool calibrate, std::ostream& logStream)
+    : mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mPayoff(0.05),
+      mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
 
@@ -58,7 +60,6 @@ private:
   FeatureVector const&   model_features ()          const { return mModelFeatures; }
   FeatureVector const&   skipped_features ()        const { return mSkippedFeatures; }
   Model const&           model()                    const { return mModel; }
-  bool                   calibrated()               const { return (mCalibrationDF>0); }
 
   bool                   auction_next_feature (std::ostream&);          // write to output csv file if not null
 
@@ -73,9 +74,10 @@ private:
 
  private:
   std::pair<ExpertABC*,double> collect_bids(std::ostream&);
-  FeatureABC *  xb_feature(std::vector<double> const& b)  const;
-  FeatureABC *  calibration_feature()                     const;
-  void          print_features(FeatureVector const& fv)   const;
+  double                       payoff_to_highest_bidder (ExpertABC*, double bid, double pValue);
+  FeatureABC *                 xb_feature(std::vector<double> const& b)  const;
+  FeatureABC *                 calibration_feature()                     const;
+  void                         print_features(FeatureVector const& fv)   const;
 };
 
 template <class Model>

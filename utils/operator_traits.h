@@ -10,7 +10,7 @@ class operator_traits
 {
  public:
   typedef Op operator_type;
-	typedef typename Op::result_type result_type;
+  typedef typename Op::result_type result_type;
 
   static std::string name();
   static std::string symbol();

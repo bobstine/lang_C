@@ -154,7 +154,7 @@ FileColumnStream::read_next_column_from_file()
   else
   { mCurrentName[0] = '\0';
     if (read_name_with_skip(mCurrentName, maxNameLength, mFile)) // do not gobble a trailing /n; that's handled by next read_name
-    { mCurrentColumn = Column(mCurrentName, mN, mN, mFile);
+    { mCurrentColumn = Column(mCurrentName, mN, mFile);
       return true;
     }
     else
@@ -221,7 +221,7 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   { std::string nameStr(name);
     if (strlen(name) > 0)
     { names.push_back(nameStr);
-      Column col(name, nRows, nRows, is);  // fill from file
+      Column col(name, nRows, is);  // fill from file
       *it = col;
     }
   }

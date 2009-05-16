@@ -32,7 +32,8 @@ public:
   
   LinearModel (gslData *data, int protection) : gslRegression<Data,Engine>(data, protection) { }
 
-  inline Data  *data()       const { return GSLR::mpData; }
+  inline std::string  name() const { return "Linear Model";}
+  inline Data        *data() const { return GSLR::mpData; }
   inline int    protection() const { return GSLR::mProtection; }
   inline int        n()      const { return GSLR::mN; }
   inline int        q()      const { return GSLR::mQ; }
@@ -45,6 +46,7 @@ public:
 
   template <class Iter> void fill_with_se(Iter begin, int origin) const;
   template <class Iter> void fill_with_fit(Iter it) const { GSLR::fill_with_fitted_values (it); } // export tracks 0/1 compression
+  int                        fit_length()           const { return GSLR::len(); }
 
   void   print_to    (std::ostream& os, bool useHTML=false) const;
   void   print_gof_to(std::ostream& os) const;

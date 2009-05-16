@@ -50,7 +50,7 @@ FiniteStream<Source>::current_feature_is_okay(Features::FeatureVector const&, Fe
 
 template<class Source>
 std::string
-FiniteStream<Source>::feature_name()                            
+FiniteStream<Source>::feature_name() const                            
 {
   return mSource[mPosition]->name();
 }
@@ -70,23 +70,20 @@ FiniteStream<Source>::pop()
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
-template<class Model, class FeatureSource>
+template<class Model>
 Features::FeatureVector
-FitStream<Model,FeatureSource>::pop()
-{
-  Features::FeatureVector result;
-
-  ++mCount;
-  FeatureABC* fit (mSource.empty_feature());
+FitStream<Model>::pop()
+{ ++mCount;
+  Column fit(feature_name().c_str(), mModel.fit_length());
   mModel.fill_with_fit(fit.begin());
-  result.push_back(make_unary_feature(function_utils::square, fit));
-  result.push_back(make_unary_feature(function_utils::cube,   fit));
-  return result;
-} 
+  fit.update();
+  return powers_of_column_feature(fit);
+}  
 
-template<class Model, class FeatureSource>
+
+template<class Model>
 std::string
-FitStream<Model,FeatureSource>::feature_name () const
+FitStream<Model>::feature_name () const
 {
   std::ostringstream oss;
   oss << mCount;
@@ -256,7 +253,7 @@ PolynomialStream<Source>::has_feature(Features::FeatureVector const&, Features::
 
 template<class Source>
 std::string
-PolynomialStream<Source>::feature_name()                            
+PolynomialStream<Source>::feature_name() const                            
 {
   return mSource[mPos]->name();
 }

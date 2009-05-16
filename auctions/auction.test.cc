@@ -153,33 +153,39 @@ main(int argc, char** argv)
   typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
   
   // main column expert
-  theAuction.add_expert(make_expert(alphaShare, 
+  theAuction.add_expert(make_expert(0, alphaShare,      // priority, alpha
 				    UniversalBoundedBidder<FStream>(), 
 				    make_finite_stream("Columns", columnFeatures)
 				    ));
   
   // main interactions
-  theAuction.add_expert(make_expert(alphaShare/1.01, // slightly less 
+  theAuction.add_expert(make_expert(0, alphaShare/1.01, // slightly less 
 				    UniversalBoundedBidder<IStream>(),
 				    make_interaction_stream("Column interactions", columnFeatures, false)  // skip squared terms
 				    ));
 
   // parasitic experts betting on winners
-  theAuction.add_expert(make_expert(alphaShare,
+  theAuction.add_expert(make_expert(0, alphaShare,
 				    UniversalBidder<CPStream>(),
 				    make_cross_product_stream("Used-feature interactions", columnFeatures, theAuction.model_features())
 				    ));
   
-  theAuction.add_expert(make_expert(alphaShare/2, 
+  theAuction.add_expert(make_expert(0, alphaShare/2, 
 				    UniversalBidder<CPStream>(),
 				    make_cross_product_stream("Skipped-feature interactions", columnFeatures, theAuction.skipped_features())
 				    ));
   
-  theAuction.add_expert(make_expert(alphaShare/2, 
+  theAuction.add_expert(make_expert(0, alphaShare/2, 
 				    UniversalBidder<PolyStream>(),
 				    make_polynomial_stream("Skipped-feature polynomial", theAuction.skipped_features(), 3)     // poly degree
 				    ));
   
+  // calibration expert
+  theAuction.add_expert(make_expert(1, 100,
+				    FitBidder(4),  // delay between bursts
+				    make_fit_stream(theRegr)));
+
+    
   /*
     Principle component type features are temp turned off
     theAuction.add_expert(make_expert(alphaShare, 
@@ -198,10 +204,6 @@ main(int argc, char** argv)
     )));                                   // WARNING: cannot return more than 25 x's in subspace
   */
   
-  // calibration expert
-  Expert<UniversalBidder<FStream>, FStream> calibrationExpert (make_expert(0.20,
-									   UniversalBidder<FStream>(),
-									   theAuction.model_features()));
   
 
 
@@ -222,18 +224,10 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
-	//  check to see if spline calibration finds a problem
-	if (false)
-	{ std::pair<double,double> testResult;
-	  double const pToAdd(0.05);
-	  testResult = theRegr.check_calibration(splineDF, pToAdd);
-	  std::cout << "AUCT: Calibration check produces " << testResult.first << " , " << testResult.second << std::endl;
-	}
-      }
+	debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
       progressStream << std::endl;                        // ends lines in progress file
     }
-    debug(3) << "\nAUCT:         -------  Auction ends after " << round << " rounds.   ------ \n\n" << theAuction << std::endl;
+    debug(3) << "\nAUCT:         -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
 
 

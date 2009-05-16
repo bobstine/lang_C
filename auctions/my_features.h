@@ -42,6 +42,7 @@
 #include "column.h"
 #include "range_stats.h"
 #include "operator_traits.h"
+#include "function_utils.h"
 
 #include "gsl_iterator.h"
 
@@ -60,10 +61,10 @@ namespace Features {
 class ColumnFeature : public FeatureABC
 {
  private:
-  Column const& mColumn;
+  Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
-  ColumnFeature(Column const& c) : FeatureABC(c.size()), mColumn(c) { }
+  ColumnFeature(Column c) : FeatureABC(c.size()), mColumn(c) { }
 
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn.name(); }
@@ -78,11 +79,11 @@ class ColumnFeature : public FeatureABC
   bool        is_constant()    const { return (1 == mColumn.unique()); }
   double      average()        const { return mColumn.average(); }
   double      center()         const { return mColumn.average(); }
-  double      scale()          const { return mColumn.scale(); }  // range/6
+  double      scale()          const { return mColumn.scale(); }  // defaults to range/6
 
   void        write_to(std::ostream& os) const;
 };
-
+  
 
 ////  gslVector feature
 
@@ -238,6 +239,12 @@ make_unary_feature(Op const& op, FeatureABC const* f)
 {
   return new UnaryFeature<Op>(op, f);
 }
+
+
+Features::FeatureVector
+powers_of_column_feature (Column const& col);  // , std::vector<int> powers)
+  
+
 
 ////  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature
 
