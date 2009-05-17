@@ -71,15 +71,34 @@ FiniteStream<Source>::pop()
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
 template<class Model>
+bool
+FitStream<Model>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&)
+{
+  if(!used.empty())  // check name of last used feature for our signature
+  { mEmpty = false;
+    std::string lastVarName = used.back()->name();
+    mIncreaseDegree = (std::string::npos != lastVarName.find(mSignature));  // npos means not found
+    if (mIncreaseDegree && (std::string::npos != lastVarName.find("fifth")))
+    { mEmpty = true;
+      return false;
+    }
+  }
+  return true;
+}
+      
+template<class Model>
 Features::FeatureVector
 FitStream<Model>::pop()
 { ++mCount;
   Column fit(feature_name().c_str(), mModel.fit_length());
   mModel.fill_with_fit(fit.begin());
   fit.update();
-  return powers_of_column_feature(fit);
-}  
-
+  std::vector<int> powers;
+  powers.push_back(2); powers.push_back(3);
+  if (mIncreaseDegree)
+    for(size_t i=0; i<powers.size(); ++i) powers[i]+=2;
+  return powers_of_column_feature(fit,powers);
+}
 
 template<class Model>
 std::string
@@ -87,7 +106,7 @@ FitStream<Model>::feature_name () const
 {
   std::ostringstream oss;
   oss << mCount;
-  return "Fit_" + oss.str();
+  return mSignature + oss.str();
 }
 
 

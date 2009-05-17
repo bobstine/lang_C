@@ -85,7 +85,7 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug(3) << "AUCT: Version build 0.60 (8 May 2009)\n";
+  debug(3) << "AUCT: Version build 0.80c (17 May 2009)\n";
   debug(3) << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
 	   << " --protect=" << protection << " --rounds=" << numberRounds
 	   << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
@@ -181,9 +181,10 @@ main(int argc, char** argv)
 				    ));
   
   // calibration expert
+  std::string signature("Y_hat_");
   theAuction.add_expert(make_expert(1, 100,
-				    FitBidder(4),  // delay between bursts
-				    make_fit_stream(theRegr)));
+				    FitBidder(4, signature),  // delay between bursts
+				    make_fit_stream(theRegr, signature)));
 
     
   /*

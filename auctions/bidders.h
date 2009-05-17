@@ -17,6 +17,9 @@
   bidder 'spends' this alpha along the way as the auction proceeds,
   earning more chance for error when it gets one right.
 
+  Bid history tracks the bids of this expert. Payoff history tracks
+  the auction as a whole rather than just a specific bidder.
+
   19 Jan 08 ... Revised to simplified policy class, without an ABC
   16 Jan 08 ... Add universal bidder; make payoff conform to JRSS results. No pvalue.
    6 Apr 04 ... Smarter constant bidder spreads wealth evenly over the rest.
@@ -36,7 +39,7 @@
 
 //   BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  
 /*
- This is the 0/1 vector from JRSS paper
+ This is the 0/1 vector from JRSS paper, held separately within each expert
  */
 
 class BidHistory 
@@ -56,7 +59,8 @@ public:
   void                     append_bid_outcome (bool success);
 
 };
-  
+
+
 //   FiniteBidder    FiniteBidder    FiniteBidder    FiniteBidder    FiniteBidder    FiniteBidder    FiniteBidder   
 
 template <class Stream>  // source must be able to tell it the number remaining
@@ -67,7 +71,7 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
   {
     int n (stream.number_remaining());
     if (n>0)
@@ -92,32 +96,35 @@ make_finite_bidder(Stream& stream)
 class FitBidder
 {
  private:
-  int mDelayInterval;  // set randomly?
-  int mCountDown;
-  
+  int         mDelayInterval;  // set randomly?
+  int         mCountDown;
+  std::string mSignature;
  public:
   
-  FitBidder (int delay)    : mDelayInterval(delay),mCountDown(delay) {}
+  FitBidder (int delay, std::string signature)    : mDelayInterval(delay),mCountDown(delay),mSignature(signature) {}
 
   
-  std::string name() const { return "Fit bidder"; }
+  std::string name() const { return "Fit bidder [" + mSignature + "]"; }
   
   template <class Stream>
-    double bid (double, Stream const&, BidHistory const&, std::deque<double> const& payoffs)
+    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, std::deque<double> const& auctionPayoffs)
   {
     debugging::debug(3) << "BIDR: fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
-    if(!payoffs.empty() && payoffs.back() > 0) // last variable successful
-    {  --mCountDown;
-       if(0 == mCountDown)
-       { mCountDown = mDelayInterval;
-	 return .25;
-       }
-       else
-	 return 0.05;
-    }
+    if(!auctionPayoffs.empty() && auctionPayoffs.back() > 0) // last variable successful (deque never empty)
+      if (lastBidAccepted) // increase calibration polynomial degree
+	return (mCountDown == mDelayInterval) ? 0.25 : 0.05;
+      else
+      {  --mCountDown;
+	 if(0 == mCountDown)
+	 { mCountDown = mDelayInterval;
+	   return .25;
+	 }
+	 else
+	   return 0.025;
+      }
     else return 0.0;  // dont bid
   }
-  
+	
 };
 
 
@@ -136,7 +143,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * mRate; 
@@ -160,7 +167,7 @@ public:
   
   std::string name() const { return "Universal bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * universalPDF(history.number_bids_since_last_sucess());
@@ -190,7 +197,7 @@ public:
   
   std::string name() const { return "Universal bounded bidder"; }
   
-  double bid (double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
   {
     int n (stream.number_remaining());
     if (n>0)

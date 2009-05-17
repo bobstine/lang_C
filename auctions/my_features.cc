@@ -66,13 +66,30 @@ InteractionFeature::write_to (std::ostream& os) const
 // Unary feature
 
 Features::FeatureVector
-powers_of_column_feature (Column const& col)
+powers_of_column_feature (Column const& col, std::vector<int> const& powers)
 {
   Features::FeatureVector fv;
   ColumnFeature * base = new ColumnFeature(col);
-  fv.push_back(make_unary_feature(Function_Utils::CenteredSquare(col.average()), base));
-  fv.push_back(make_unary_feature(  Function_Utils::CenteredCube(col.average()), base));
-  return fv;
+  for (size_t i=0; i<powers.size(); ++i)
+  { switch( powers[i] )
+    {
+    case 2:
+      fv.push_back(make_unary_feature(Function_Utils::CenteredSquare(col.average()), base));
+      break;
+    case 3:
+      fv.push_back(make_unary_feature(  Function_Utils::CenteredCube(col.average()), base));
+      break;
+    case 4:
+      fv.push_back(make_unary_feature(Function_Utils::CenteredQuad(col.average()), base));
+      break;
+    case 5:
+      fv.push_back(make_unary_feature(Function_Utils::CenteredQuint(col.average()), base));
+      break;
+    default:
+      std::cout << "FETR: Error. Requested power outside of supported range.\n";
+    }
+  }
+  return fv;    
 }
 
 

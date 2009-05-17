@@ -242,7 +242,7 @@ make_unary_feature(Op const& op, FeatureABC const* f)
 
 
 Features::FeatureVector
-powers_of_column_feature (Column const& col);  // , std::vector<int> powers)
+powers_of_column_feature (Column const& col, std::vector<int> const& powers);
   
 
 

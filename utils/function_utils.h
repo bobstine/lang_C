@@ -68,6 +68,26 @@ namespace Function_Utils
     double operator()(double x) const { double dev (x - mCenter); return dev*dev*dev; }
   };
   
+
+  class CenteredQuad : public std::unary_function<double,double> {
+  private:
+    double mCenter;
+  public:
+    CenteredQuad(double center) : mCenter(center) {};
+
+    double operator()(double x) const { double dev (x - mCenter); dev = dev * dev; return dev*dev; }
+  };
+  
+
+  class CenteredQuint : public std::unary_function<double,double> {
+  private:
+    double mCenter;
+  public:
+    CenteredQuint(double center) : mCenter(center) {};
+
+    double operator()(double x) const { double dev (x - mCenter); double result (dev*dev); return result*result*dev; }
+  };
+  
   
   
   class Power : public std::unary_function<double,double> {
@@ -78,6 +98,16 @@ namespace Function_Utils
   };
 
   
+  
+  class CenteredPower : public std::unary_function<double,double> {
+    size_t mPower;
+    double mCenter;
+  public:
+  CenteredPower(size_t p, double center): mPower(p), mCenter(center) { }
+    double operator()(double x) const { size_t i=mPower; x = x-mCenter; double result(x); while(--i) result *= x; return result; }
+  };
+
+
   class LogisticNeg : public std::unary_function<double,double> {
   public:
     double operator()(double x) const { return 1.0/(1.0 + exp(-x)); }

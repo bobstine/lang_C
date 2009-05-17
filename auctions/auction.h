@@ -46,7 +46,7 @@ private:
  public:
   Auction (Model& m, bool calibrate, std::ostream& logStream)
     : mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mPayoff(0.05),
-      mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) { }
+      mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
 

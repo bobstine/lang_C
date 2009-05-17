@@ -147,30 +147,33 @@ make_finite_stream (std::string const& name, Source const& s)
 template<class Model>
 class FitStream
 {
-  int                    mCount;    // Number of times popped a fitted value (used to name fit values)
+  int                    mCount;     // Number of times popped a fitted value (used to name fit values)
   Model          const&  mModel;
-  
+  std::string            mSignature; // Prefix for variable names
+  bool                   mIncreaseDegree;
+  bool                   mEmpty;
 public:
   
-  FitStream(Model const& model)    :  mCount(0), mModel(model) {  }
+  FitStream(Model const& model, std::string s)    :  mCount(0), mModel(model), mSignature(s), mEmpty(false) {  }
   
   std::string             name()           const { return mModel.name(); }
   std::string             feature_name()   const;
   Features::FeatureVector pop();
 
 protected:  // bidder decides whether to use the fit of the model
-  bool  is_empty()                                                                                const { return false; }
-  bool  current_feature_is_okay(Features::FeatureVector const&, Features::FeatureVector const&)   const { return true; }
-  void  increment_position()                                                                      const { };
+  bool  is_empty()                                                                                     const { return mEmpty; }
+  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&);
+  void  increment_position()                                                                           const { };
 };
 
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m)
+make_fit_stream (Model const& m, std::string signature)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature));
 }
+
 
 
 //  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  

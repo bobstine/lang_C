@@ -16,9 +16,13 @@ Need to
 
 
      Experts
+
+        Improve the auction history information (bid history, auction payoff history) by
+	pairing this information or making it available in a more organized way to keep
+	various lists synchronized.
         
         Build a fixed bidder that considers the terms left in the input stream, not
-        just in the current order that is available.  Recyclces through those not yet
+        just in the current order that is available.  Recycle through those not yet
         used, perhaps marking them with a boolean as cycles past to remove those that
         become constant (as in the old variable selection code used in BR model).
 
@@ -31,26 +35,6 @@ Need to
 
         Figure out how to use calibration for logistic regression.
      
-
-     Calibration
-
-        Spline calibration is out as a manual step, replaced by another expert. Would lose
-        track of the basis if just add a single column, and not easy to extract certain
-        basis without choosing knots.  Too much 'leakage' of y into X space.
-
-	New type of expert (calibration expert) that offers bid only right after variable
-	enters auction (watches how long since one goes into auction).  Expert has a
-	'priority' that allows it to jump in line when it has a bid.  Bids in bursts that
-	occasionally increase the alpha level after period of changes to model.
-
-	This needs: 
-	     - expert must know when variable was just added to model
-	     - new type of bidder that occasionally ups its bid (bursts).
-	     - priority appears in sort for winning bidder
-	     - expert/bidder needs to know how many rounds since variables added.
-	     - constructs variables from Xb, fit of current model... model becomes stream
-     	       but only when just having added a varible.
-
 
      Subspace bundles
 
@@ -69,8 +53,35 @@ Need to
 	"length" items held in both training and test data.
 
 
+
+------------------------------------------------------------------------------
+17 May 09   (v 0.80c)
+
+	New type of expert (calibration expert) that offers bid only right after variable
+	enters auction (watches how long since one goes into auction).  Expert has a
+	'priority' that allows it to jump in line when it has a bid.  Bids in bursts that
+	occasionally increase the alpha level after period of changes to model.
+
+	Expert adds 2,3 powers of fit and if these are useful, then adds 4,5th
+	powers. Tests show that it basically makes up for the wrong link function, but
+	does so in a reasonable way.
+
+	This needs: 
+	     - expert must know when variable was just added to model
+	     - new type of bidder that occasionally ups its bid (bursts).
+	     - priority appears in sort for winning bidder
+	     - expert/bidder needs to know how many rounds since variables added.
+	     - constructs variables from Xb, fit of current model... model becomes stream
+     	       but only when just having added a varible.
+
+
 ------------------------------------------------------------------------------
  8 May 09   (v 0.60)
+
+   Calibration
+        Spline calibration is out as a manual step, replaced by another expert. Would lose
+        track of the basis if just add a single column, and not easy to extract certain
+        basis without choosing knots.  Too much 'leakage' of y into X space.
 
    Pick off name of added variable rather than introduce added/decline column so 
    easier for Dean to get the variable name in his graphics.

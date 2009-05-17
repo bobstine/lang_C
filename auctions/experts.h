@@ -52,7 +52,7 @@ public:
   virtual ~ExpertABC () { }
   
  ExpertABC(int priority, double alpha)
-   : mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() { }
+   : mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
   int                    priority()     const { return mPriority; }
   double                 alpha()        const { return mAlpha; }
@@ -61,7 +61,7 @@ public:
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
-  virtual double         place_bid (std::deque<double> const& payoffHistory, FeatureVector const& used, FeatureVector const& skipped) = 0; // priority, bid
+  virtual double         place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped) = 0; 
   virtual std::string    name()               const = 0;
   virtual std::string    feature_name()       const = 0;
   virtual FeatureVector  feature_vector()     = 0;
@@ -94,7 +94,7 @@ public:
   Stream const&    stream()       const { return mStream; }
   std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
   
-  double           place_bid (std::deque<double> const& payoffHistory, FeatureVector const& used, FeatureVector const& skipped);
+  double           place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped);
   std::string      feature_name()   const     { return mStream.feature_name(); }       
   FeatureVector    feature_vector()           { return mStream.pop(); }                // stream pop must return feature *vector*
 
@@ -134,11 +134,11 @@ make_expert(int priority, double alpha, Bidder b, Stream s)
 
 template<class Bidder, class Stream>
 double
-Expert<Bidder,Stream>::place_bid (std::deque<double> const& payoffHistory, FeatureVector const& used, FeatureVector const& skipped)
+  Expert<Bidder,Stream>::place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped)
 {
   debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
-  { double b (mBidder.bid(mAlpha, mStream, mBidHistory, payoffHistory)); 
+  { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, auctionPayoffHistory)); 
     double m (max_bid()); 
     mCurrentBid = (b<m) ? b:m;
   }    
