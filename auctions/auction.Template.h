@@ -191,9 +191,7 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
   oss << q;
   std::string name ("xb_" + oss.str());
   int     n      (mModel.len());                 // include those used in validation
-  double *x      (new double[n]);                // who manages this space???
-  Column* colPtr (new Column(name.c_str(), x, x+n));
-  LinearCombinationFeature *f = new LinearCombinationFeature(beta,useFeatures,colPtr);  
+  LinearCombinationFeature *f = new LinearCombinationFeature(n, beta,useFeatures);
   return f;
 }
 

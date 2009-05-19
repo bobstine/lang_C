@@ -24,6 +24,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <assert.h>
 
 #include <iostream>
 

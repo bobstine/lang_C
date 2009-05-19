@@ -44,6 +44,13 @@ Need to
 	 *** Subspace methods are all giving pc's that are not well-scaled....
 
 
+     Calibration
+
+        Should more of this code be moved into the auction object, as done in the old
+	version of the calibration adjustment? (For example, there's still the xb_feature
+	function that builds a feature of the predicted values.)
+
+
      Numerics
 
         Check the gsl_engine code for "validation leakage" where it might use some

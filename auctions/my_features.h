@@ -169,28 +169,28 @@ class LinearCombinationFeature : public FeatureABC
   std::vector<double>      mBeta;      // b[0] is constant, as in regr
   std::vector<FeatureABC*> mFeatures;
   std::string              mName;
-  Column*                  mColumn;
+  Column                   mColumn;
   
  public:
   virtual ~LinearCombinationFeature() {}
   
-  LinearCombinationFeature(std::vector<double> const& b, std::vector<FeatureABC*> const& fv, Column* column)
+ LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<FeatureABC*> const& fv)
     :                                                      // uses the column as a place to store the lin comb
-    FeatureABC(column->size()), 
-    mBeta(b), mFeatures(fv), mName(), mColumn(column) { if (valid_args()) { make_name(); fill_column();} }
+    FeatureABC(n), 
+      mBeta(b), mFeatures(fv), mName(), mColumn(Column("Linear Comb", n)) { if (valid_args()) { make_name(); fill_column();} }
 
   std::string class_name()    const { return "LinearCombinationFeature"; }
   std::string name()          const { return mName; }
   std::string long_name()     const;
   Arguments   arguments()     const { return Arguments();}
   
-  Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
-  Range       range()         const { return make_anonymous_range(mColumn->range()); }
-  double      average()       const { return mColumn->average(); }
-  double      center()        const { return mColumn->average(); }
-  double      scale()         const { return mColumn->scale(); }
-  bool        is_dummy()      const { return mColumn->is_dummy(); }
-  bool        is_constant()   const { return (1 == mColumn->unique()); }
+  Iterator    begin()         const { return make_anonymous_iterator(mColumn.begin()); }
+  Range       range()         const { return make_anonymous_range(mColumn.range()); }
+  double      average()       const { return mColumn.average(); }
+  double      center()        const { return mColumn.average(); }
+  double      scale()         const { return mColumn.scale(); }
+  bool        is_dummy()      const { return mColumn.is_dummy(); }
+  bool        is_constant()   const { return (1 == mColumn.unique()); }
   void        write_to (std::ostream& os) const;
 
  private:

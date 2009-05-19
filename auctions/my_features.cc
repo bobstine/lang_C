@@ -131,10 +131,10 @@ LinearCombinationFeature::long_name() const
 void
 LinearCombinationFeature::fill_column()
 {
-  range_ops::fill(mColumn->writable_range(),mBeta[0]);
+  range_ops::fill(mColumn.writable_range(),mBeta[0]);
   for (unsigned int j=1; j<mBeta.size(); ++j)
-    range_ops::transform(mFeatures[j-1]->range(), mColumn->range(), mColumn->begin(), Function_Utils::AXPY(mBeta[j]));
-  mColumn->update(); 
+    range_ops::transform(mFeatures[j-1]->range(), mColumn.range(), mColumn.begin(), Function_Utils::AXPY(mBeta[j]));
+  mColumn.update(); 
 }
 
 void
