@@ -1,0 +1,184 @@
+VALGRIND SUMMARY
+
+==15196== ERROR SUMMARY: 20 errors from 6 contexts (suppressed: 4 from 1)
+==15196== malloc/free: in use at exit: 61,323,542 bytes in 2,073 blocks.
+==15196== malloc/free: 565,129 allocs, 563,056 frees, 140,006,898 bytes allocated.
+==15196== For counts of detected errors, rerun with: -v
+==15196== searching for pointers to 2,073 not-freed blocks.
+==15196== checked 4,636,096 bytes.
+==15196== 
+==15196== 
+==15196== 0 bytes in 1 blocks are definitely lost in loss record 1 of 42
+==15196==    at 0x4C21964: operator new[](unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x438E54: insert_columns_from_file(std::string const&, int, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >) (column.h:47)
+==15196==    by 0x406518: main (auction.test.cc:124)
+==15196== 
+==15196== 
+==15196== 4 bytes in 1 blocks are definitely lost in loss record 2 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x437F32: FileColumnStream::read_next_column_from_file() (column.h:47)
+==15196==    by 0x438E92: insert_columns_from_file(std::string const&, int, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >) (column.h:159)
+==15196==    by 0x406518: main (auction.test.cc:124)
+==15196== 
+==15196== 
+==15196== 4 bytes in 1 blocks are definitely lost in loss record 3 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x438E45: insert_columns_from_file(std::string const&, int, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >) (column.h:47)
+==15196==    by 0x406518: main (auction.test.cc:124)
+==15196== 
+==15196== 
+==15196== 29 bytes in 1 blocks are possibly lost in loss record 4 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x54C2523: std::string::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&) (in /usr/lib64/gcc/x86_64-pc-linux-gnu/4.2.4/libstdc++.so.6.0.9)
+==15196==    by 0x54C2FD0: (within /usr/lib64/gcc/x86_64-pc-linux-gnu/4.2.4/libstdc++.so.6.0.9)
+==15196==    by 0x54C30EC: std::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(char const*, std::allocator<char> const&) (in /usr/lib64/gcc/x86_64-pc-linux-gnu/4.2.4/libstdc++.so.6.0.9)
+==15196==    by 0x41CB6B: std::ostream& debugging::debug<char>(char const*, int) (debug.h:144)
+==15196==    by 0x4074BF: main (auction.test.cc:270)
+==15196== 
+==15196== 
+==15196== 83,536 bytes in 1 blocks are definitely lost in loss record 13 of 42
+==15196==    at 0x4C21964: operator new[](unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x437F4A: FileColumnStream::read_next_column_from_file() (column.h:47)
+==15196==    by 0x438E92: insert_columns_from_file(std::string const&, int, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >) (column.h:159)
+==15196==    by 0x406518: main (auction.test.cc:124)
+==15196== 
+==15196== 
+==15196== 421,810 (1,456 direct, 420,354 indirect) bytes in 14 blocks are definitely lost in loss record 14 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x41702F: CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > >::pop() (feature_streams.Template.h:250)
+==15196==    by 0x417111: Expert<UniversalBidder<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 337,148 (1,040 direct, 336,108 indirect) bytes in 10 blocks are definitely lost in loss record 16 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x4169FA: InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > >::pop() (feature_streams.Template.h:184)
+==15196==    by 0x416A87: Expert<UniversalBoundedBidder<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 2,516,150 (3,744 direct, 2,512,406 indirect) bytes in 36 blocks are definitely lost in loss record 18 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x410184: FeatureABC* make_unary_feature<Function_Utils::Square>(Function_Utils::Square const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x414086: PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > >::pop() (feature_streams.Template.h:300)
+==15196==    by 0x4141AD: Expert<UniversalBidder<PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 506,289 (3,744 direct, 502,545 indirect) bytes in 36 blocks are definitely lost in loss record 19 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x4102FC: FeatureABC* make_unary_feature<Function_Utils::Cube>(Function_Utils::Cube const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x4140F0: PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > >::pop() (feature_streams.Template.h:302)
+==15196==    by 0x4141AD: Expert<UniversalBidder<PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 419,472 (832 direct, 418,640 indirect) bytes in 8 blocks are definitely lost in loss record 20 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x429256: FeatureABC* make_unary_feature<Function_Utils::CenteredCube>(Function_Utils::CenteredCube const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x4214E9: powers_of_column_feature(Column const&, std::vector<int, std::allocator<int> > const&) (my_features.cc:80)
+==15196==    by 0x41873D: FitStream<LinearModel<gslData, olsEngine> >::pop() (feature_streams.Template.h:100)
+==15196==    by 0x4187D3: Expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 168,184 (728 direct, 167,456 indirect) bytes in 7 blocks are definitely lost in loss record 21 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x428A5A: FeatureABC* make_unary_feature<Function_Utils::CenteredSquare>(Function_Utils::CenteredSquare const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x4214AB: powers_of_column_feature(Column const&, std::vector<int, std::allocator<int> > const&) (my_features.cc:77)
+==15196==    by 0x41873D: FitStream<LinearModel<gslData, olsEngine> >::pop() (feature_streams.Template.h:100)
+==15196==    by 0x4187D3: Expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 83,936 (208 direct, 83,728 indirect) bytes in 2 blocks are definitely lost in loss record 22 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x42A24E: FeatureABC* make_unary_feature<Function_Utils::CenteredQuint>(Function_Utils::CenteredQuint const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x421562: powers_of_column_feature(Column const&, std::vector<int, std::allocator<int> > const&) (my_features.cc:86)
+==15196==    by 0x41873D: FitStream<LinearModel<gslData, olsEngine> >::pop() (feature_streams.Template.h:100)
+==15196==    by 0x4187D3: Expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 83,937 (208 direct, 83,729 indirect) bytes in 2 blocks are definitely lost in loss record 23 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x429A52: FeatureABC* make_unary_feature<Function_Utils::CenteredQuad>(Function_Utils::CenteredQuad const&, FeatureABC const*) (my_features.h:240)
+==15196==    by 0x421527: powers_of_column_feature(Column const&, std::vector<int, std::allocator<int> > const&) (my_features.cc:83)
+==15196==    by 0x41873D: FitStream<LinearModel<gslData, olsEngine> >::pop() (feature_streams.Template.h:100)
+==15196==    by 0x4187D3: Expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >::feature_vector() (experts.h:99)
+==15196==    by 0x41B496: Auction<LinearModel<gslData, olsEngine> >::auction_next_feature(std::ostream&) (auction.Template.h:39)
+==15196==    by 0x407044: main (auction.test.cc:227)
+==15196== 
+==15196== 
+==15196== 32,411,829 (59,736 direct, 32,352,093 indirect) bytes in 393 blocks are definitely lost in loss record 27 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x406632: main (auction.test.cc:131)
+==15196== 
+==15196== 
+==15196== 2,476,357 (160 direct, 2,476,197 indirect) bytes in 1 blocks are definitely lost in loss record 28 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x4058A3: build_model_data(std::vector<Column, std::allocator<Column> > const&, std::ostream&) (auction.test.cc:382)
+==15196==    by 0x406764: main (auction.test.cc:135)
+==15196== 
+==15196== 
+==15196== 319 (120 direct, 199 indirect) bytes in 1 blocks are definitely lost in loss record 29 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x4119C4: Expert<UniversalBoundedBidder<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >* make_expert<UniversalBoundedBidder<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >(int, double, UniversalBoundedBidder<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<InteractionStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >) (experts.h:128)
+==15196==    by 0x4069B6: main (auction.test.cc:165)
+==15196== 
+==15196== 
+==15196== 552 (240 direct, 312 indirect) bytes in 2 blocks are definitely lost in loss record 31 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x411C34: Expert<UniversalBidder<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >* make_expert<UniversalBidder<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >(int, double, UniversalBidder<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<CrossProductStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> >, std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >) (experts.h:128)
+==15196==    by 0x406C1C: main (auction.test.cc:176)
+==15196== 
+==15196== 
+==15196== 411 (104 direct, 307 indirect) bytes in 1 blocks are definitely lost in loss record 32 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x411ECB: Expert<UniversalBidder<PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >* make_expert<UniversalBidder<PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >(int, double, UniversalBidder<PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, PolynomialStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > >) (experts.h:128)
+==15196==    by 0x406D57: main (auction.test.cc:181)
+==15196== 
+==15196== 
+==15196== 1,160 (104 direct, 1,056 indirect) bytes in 1 blocks are definitely lost in loss record 34 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x41177B: Expert<UniversalBoundedBidder<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >* make_expert<UniversalBoundedBidder<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > > >(int, double, UniversalBoundedBidder<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >, RegulatedStream<FiniteStream<std::vector<FeatureABC*, std::allocator<FeatureABC*> > > >) (experts.h:128)
+==15196==    by 0x40688E: main (auction.test.cc:159)
+==15196== 
+==15196== 
+==15196== 215 (120 direct, 95 indirect) bytes in 1 blocks are definitely lost in loss record 35 of 42
+==15196==    at 0x4C21CBE: operator new(unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x412255: Expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >* make_expert<FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > > >(int, double, FitBidder, RegulatedStream<FitStream<LinearModel<gslData, olsEngine> > >) (experts.h:128)
+==15196==    by 0x406EB4: main (auction.test.cc:187)
+==15196== 
+==15196== 
+==15196== 501,216 bytes in 6 blocks are possibly lost in loss record 38 of 42
+==15196==    at 0x4C21964: operator new[](unsigned long) (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x437F4A: FileColumnStream::read_next_column_from_file() (column.h:47)
+==15196==    by 0x43920E: insert_columns_from_file(std::string const&, int, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >, std::back_insert_iterator<std::vector<Column, std::allocator<Column> > >) (column.h:162)
+==15196==    by 0x406518: main (auction.test.cc:124)
+==15196== 
+==15196== 
+==15196== 21,301,680 bytes in 1 blocks are possibly lost in loss record 41 of 42
+==15196==    at 0x4C214C0: malloc (in /usr/lib64/valgrind/amd64-linux/vgpreload_memcheck.so)
+==15196==    by 0x4E77132: gsl_block_alloc (in /usr/lib64/libgsl.so.0.12.0)
+==15196==    by 0x4ED4B4F: gsl_matrix_alloc (in /usr/lib64/libgsl.so.0.12.0)
+==15196==    by 0x42DEF0: gslData::allocate(int, int, bool) (gsl_data.cc:32)
+==15196==    by 0x411384: gslData::gslData<double*, constant_iterator<bool>, constant_iterator<double> >(double*, constant_iterator<bool>, constant_iterator<double>, int, int) (gsl_data.h:59)
+==15196==    by 0x4058C5: build_model_data(std::vector<Column, std::allocator<Column> > const&, std::ostream&) (auction.test.cc:382)
+==15196==    by 0x406764: main (auction.test.cc:135)
+==15196== 
+==15196== LEAK SUMMARY:
+==15196==    definitely lost: 156,088 bytes in 519 blocks.
+==15196==    indirectly lost: 39,355,225 bytes in 1,543 blocks.
+==15196==      possibly lost: 21,802,925 bytes in 8 blocks.
+==15196==    still reachable: 9,304 bytes in 3 blocks.
+==15196==         suppressed: 0 bytes in 0 blocks.
+==15196== Reachable blocks (those to which a pointer was found) are not shown.
+==15196== To see them, rerun with: --leak-check=full --show-reachable=yes

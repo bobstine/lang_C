@@ -32,6 +32,8 @@ gslData::allocate(int nr, int nc, bool wts)
   mX       = gsl_matrix_alloc(nr, nc);
   assert(mX != 0);
   mY       = gsl_vector_alloc(nr);
+  if (wts) mWeights = gsl_vector_alloc(nr);
+  else     mWeights = 0;
   mScratch = new double[gslDataTempSize*gslDataTempSize];
   for (int j=0; j< gslDataTempSize; ++j)
   { gsl_vector *v (gsl_vector_alloc(nr));
@@ -40,8 +42,6 @@ gslData::allocate(int nr, int nc, bool wts)
     else
       std::cerr << "GSLD: Error.  Cannot allocate vector to hold data.\n";
   }
-  if (wts) mWeights = gsl_vector_alloc(nr);
-  else     mWeights = 0;
 }
 
 void
