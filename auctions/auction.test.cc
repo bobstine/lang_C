@@ -268,6 +268,7 @@ main(int argc, char** argv)
   }
   
   debug("AUCT",-1) << "Done; disposing objects.\n";
+  delete (theData);
   return 0;  
 }
 
