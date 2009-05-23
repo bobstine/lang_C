@@ -350,8 +350,10 @@ SubspaceBasis<Method>::operator()(Features::FeatureVector const& fv) const
   gsl_matrix_free(mat);
   // convert the resulting vector of gsl vectors into features
   std::vector<FeatureABC *> result;
-  for (int j=0; j<numPC; ++j)
+  /* gsl_features did not respect memory... need to replace this with column features
+     for (int j=0; j<numPC; ++j)
     result.push_back(new gslVectorFeature("Basis", basis.second[j]));
+  */
   return result;
 }
 
