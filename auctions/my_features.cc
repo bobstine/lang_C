@@ -69,7 +69,7 @@ Features::FeatureVector
 powers_of_column_feature (Column const& col, std::vector<int> const& powers)
 {
   Features::FeatureVector fv;
-  ColumnFeature * base = new ColumnFeature(col);
+  ColumnFeature * base = new ColumnFeature(col);   // need a better memory model to avoid this???
   for (size_t i=0; i<powers.size(); ++i)
   { switch( powers[i] )
     {
@@ -77,7 +77,7 @@ powers_of_column_feature (Column const& col, std::vector<int> const& powers)
       fv.push_back(make_unary_feature(Function_Utils::CenteredSquare(col.average()), base));
       break;
     case 3:
-      fv.push_back(make_unary_feature(  Function_Utils::CenteredCube(col.average()), base));
+      fv.push_back(make_unary_feature(Function_Utils::CenteredCube(col.average()), base));
       break;
     case 4:
       fv.push_back(make_unary_feature(Function_Utils::CenteredQuad(col.average()), base));
@@ -149,40 +149,4 @@ LinearCombinationFeature::write_to (std::ostream& os) const
   FeatureABC::write_to(os);
 }
 
-
-//  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  GSLFEATURE  
-
-void
-gslVectorFeature::initialize()   // analogous to init_fields of column
-{
-  gsl_vector_const_iterator it (GSL::begin(mVector));
-    
-  std::set<double> uniq;
-  int n (mVector->size);
-  mMin = mMax = *it;
-  for (int i=0; i<n; ++i)
-  { mAvg += *it;
-    if (*it > mMax)
-      mMax = *it; 
-    else if (*it < mMin)
-      mMin = *it;
-    uniq.insert(*it);
-    ++it;
-  }
-  mAvg /= n;
-  mUnique = uniq.size();
-}
-
-double      
-gslVectorFeature::scale()          const 
-{ 
-  return gsl_vector_standard_deviation(mVector,mAvg); 
-} 
-
-
-void        
-gslVectorFeature::write_to(std::ostream& os) const
-{
-  os << class_name() << mVector ;
-}
 

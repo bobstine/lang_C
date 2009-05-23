@@ -50,11 +50,11 @@ gslData::free()
   debugging::debug(0) << "GSLD: Freeing memory.\n" ;
   if (mXb)      gsl_vector_free(mXb);
   if (mE)       gsl_vector_free(mE);
-  if (mPermute) delete(mPermute);
+  if (mPermute) delete[] mPermute;
   if (mX)       gsl_matrix_free(mX);
   if (mY)       gsl_vector_free(mY);
   if (mWeights) gsl_vector_free(mWeights);
-  if (mScratch) delete(mScratch);
+  if (mScratch) delete[] mScratch;
   for(unsigned int j=0; j<mTempVec.size(); ++j)
     gsl_vector_free(mTempVec[j]);
   debugging::debug(0) << "GSLD: Freeing memory completed.\n" ;

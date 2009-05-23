@@ -85,44 +85,6 @@ class ColumnFeature : public FeatureABC
 };
   
 
-////  gslVector feature
-
-class gslVectorFeature : public FeatureABC
-{
-  gsl_vector const* mVector;
-  std::string       mName;
-  int               mUnique;
-  double            mAvg;
-  double            mMin, mMax;
-  
-public:
-  
-  gslVectorFeature(std::string name, gsl_vector const* v)
-    : FeatureABC(v->size), mVector(v), mName(name), mUnique(0), mAvg(0.0), mMin(0.0), mMax(0.0) { initialize(); }
-  
-  std::string class_name()     const { return "gslVectorFeature"; }
-  std::string name()           const { return mName; }
-  std::string operator_name()  const { return ""; }
-  Arguments   arguments()      const { return Arguments(); }
-  
-  gsl_vector  const* vector()  const { return mVector; }
-  
-  Iterator    begin()          const { return make_anonymous_iterator(GSL::begin(mVector)); }
-  Range       range()          const { return make_anonymous_range(make_range(GSL::begin(mVector), GSL::end(mVector))); }
-  bool        is_dummy()       const { return (2 == mUnique); }
-  bool        is_constant()    const { return (1 == mUnique); }
-  double      average()        const { return mAvg; }
-  double      center()         const { return mAvg; }
-  double      scale()          const;
-  
-  void        write_to(std::ostream& os) const;
-  
-private:
-  void initialize();
-};
-
-
-
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 
 class InteractionFeature : public FeatureABC

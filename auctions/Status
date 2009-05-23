@@ -2,6 +2,21 @@ Need to
 
      Deans requests
 
+
+     Memory (leaks, problems)
+
+        powers_of_column_feature has a problems since the features are passed around
+	as pointers.  This gets to be nasty way to create a unary feature that not sure
+	who is going to delete. (my_features.cc, my_features.h) Called by FitStream in
+	feature_streams.Template.h.  FitStream::pop seems wrong... where's the Column
+	go?
+
+	In general, who manages the space required by functional features (my_features)
+	such as the unary feature that is a function of another.  If the argument feature
+	is in the modeling, the destruction of the model gets them.  If not (such as fits
+	created to calibrate the model)	then the argument is never released.
+
+
      Streams 
 
      	Multiple input files, with a file associated with a bidder.
