@@ -28,6 +28,7 @@ class Auction
   typedef typename std::vector<ExpertABC*>            ExpertVector;
   typedef typename std::vector<ExpertABC*>::iterator  ExpertIterator;
   typedef typename std::vector<FeatureABC*>           FeatureVector;
+  typedef typename std::vector<FeatureABC*>::iterator FeatureVecIter;
   typedef typename std::pair<double,double>           TestResult;
 
 private:
@@ -44,6 +45,22 @@ private:
 
   
  public:
+  ~Auction()
+    {
+      debug(0) << "AUCT: Deleting experts in auction. \n";
+      for(ExpertIterator i=mExperts.begin()        ; i != mExperts.end()        ; ++i) delete *i;
+      debug(0) << "AUCT: Deleting skipped features that have not yet been deleted (column features). \n";
+      int k = 0;
+      for(FeatureVecIter i=mSkippedFeatures.begin(); i != mSkippedFeatures.end(); ++i)
+	{
+	  std::cout << k++ << " " ;
+	  if (*i)
+	    delete *i;
+	}
+      debug(0) << "AUCT: Deleting model features. \n";
+      for(FeatureVecIter i=mModelFeatures.begin()  ; i != mModelFeatures.end()  ; ++i) if (*i) delete *i; 
+    }
+    
   Auction (Model& m, bool calibrate, std::ostream& logStream)
     : mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mPayoff(0.05),
       mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 

@@ -131,7 +131,6 @@ private:
 public:
   ~gslRegression ();
 
-  //  --- Initialize ---
   gslRegression (gslData *data, int protection) : mEngine(data), mpData(data), mProtection(protection) { initialize(); }
   
   //  --- Change weights ---

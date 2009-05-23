@@ -57,4 +57,5 @@ gslData::free()
   if (mScratch) delete(mScratch);
   for(unsigned int j=0; j<mTempVec.size(); ++j)
     gsl_vector_free(mTempVec[j]);
+  debugging::debug(0) << "GSLD: Freeing memory completed.\n" ;
 }

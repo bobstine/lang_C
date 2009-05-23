@@ -23,15 +23,14 @@
 
 template <class Data, class Engine>
 class LinearModel : public gslRegression<Data,Engine> {
-    
-public:
   typedef gslRegression<Data,Engine> GSLR;
   typedef std::pair<double,double> TestResult;
-
-  ~LinearModel() { } 
+    
+public:
   
   LinearModel (gslData *data, int protection) : gslRegression<Data,Engine>(data, protection) { }
 
+  
   inline std::string  name() const { return "Linear Model";}
   inline Data        *data() const { return GSLR::mpData; }
   inline int    protection() const { return GSLR::mProtection; }

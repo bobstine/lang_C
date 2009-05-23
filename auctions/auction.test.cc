@@ -111,10 +111,11 @@ main(int argc, char** argv)
      Line 5: data for the second variable
      Line 6: name of the third variable (X_2) 
      ...
-      The reading is done by a FileColumnStream that allocates the space for the columns
-     as the data are read.  A column feature provides a named range of doubles that learns a
-     few properties of the data as it's read in (min, max, unique values). The space used
-     by columns is allocated on reading in the function FileColumnStream.getNextColumn.
+     
+     The reading is done by a FileColumnStream.  A column feature provides a named range
+     of doubles that learns a few properties of the data as it's read in (min, max, unique
+     values). The space used by columns is allocated on reading in the function
+     FileColumnStream.  Spaced is managed within each column.
   */
   int numberYColumns = 1;
   if (data_has_selector(columnFileName, debug("AUCT",0)))  // data for validation
@@ -138,10 +139,9 @@ main(int argc, char** argv)
   LinearModel <gslData, olsEngine> theRegr(theData, protection);
   Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF, debug(0));
   
-  // build logisitic model and auction// LogisticModel <gslData> theRegr(theData);
+  // build logisitic model and auction
+  // LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
-  debug(0) << "AUCT: Initial model in the auction is\n" << theRegr << std::endl;
-  
   
   // build vector of experts that work directly from input variables
   debug(0) << "AUCT: Assembling experts"  << std::endl;
@@ -266,11 +266,18 @@ main(int argc, char** argv)
     theAuction.write_model_data_to(output);
     output.close();
   }
-  
-  debug("AUCT",-1) << "Done; disposing objects.\n";
+   
+  debug(0) << "AUCT: Auction is completed; disposing GSL data objects.\n";
   delete (theData);
+  debug(0) << "AUCT: Disposing column features.\n";
+  for (std::vector<FeatureABC*>::const_iterator it = columnFeatures.begin(); it != columnFeatures.end(); ++it)
+    delete *it;
+  debug(0) << "AUCT: Exiting; final clean-up done by ~ functions.\n";
+  
   return 0;  
 }
+
+
 
 
 void
