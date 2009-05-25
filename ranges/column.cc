@@ -10,43 +10,43 @@
 
 //   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column
 
+
 Column& 
 Column::operator= (Column const& c)
 {
-  mName = c.mName;
-  mN = c.mN;
-  mAvg = c.mAvg;
-  mMin = c.mMin;
-  mMax = c.mMax;
-  mUnique = c.mUnique;
-  mData = ColumnDataPtr(c.mData);
-  init_properties();
+  ++c.mData->mRefCount;                      // increment his count
+  if(--mData->mRefCount <= 0) delete mData;  // decrement mine and delete if no others
+  mData = c.mData;
+  mData->mName = mData->mName + "_C";        // mark for a copy
+
   return *this;
 }
 
+
+//  ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData
+
 void
-Column::print_to (std::ostream &os) const
+ColumnData::print_to (std::ostream &os) const
 { 
-  double *x (begin());
-  int     n (size());
-  os << "Column " << mName << " [" << mUnique << "/" << n << ", "
-     << mMin << " < " << mAvg << " < " << mMax << "] "
-     << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] ;
+  double *x (mBegin);
+  int     n (mN);
+  os << mName << " [" << mNumUnique << "/" << n << ", "
+     << mMin << "<" << mAvg << "<" << mMax << "]   {"
+     << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] << "} " ;
 }
 
 
 void
-Column::init_properties ()
+ColumnData::init_properties ()
 {
-  double *x = begin();
-  if (!x) return;  // nothing to do 
+  double *x = mBegin;
+  if ((!x) || (mN==0)) return;         // nothing to do 
   
   std::set<double> uniq;
-  int n (0);
+  mAvg = 0.0;
   mMin = mMax = *x;
   while (x != end())
-  { ++n;
-    mAvg += *x;
+  { mAvg += *x;
     if (*x > mMax)
       mMax = *x;
     else if (*x < mMin)
@@ -54,8 +54,8 @@ Column::init_properties ()
     uniq.insert(*x);
     ++x;
   }
-  mAvg /= n;
-  mUnique = uniq.size();
+  mAvg /= mN;
+  mNumUnique = uniq.size();
 }
 
 
@@ -172,7 +172,7 @@ insert_columns_from_file (std::string const& fileName,
   FileColumnStream colStream(fileName);
   int k (0);
   int n (colStream.n());
-  for (Column col = *colStream; col.size()>0; ++k, ++it)
+  for (Column col = *colStream; col->size()>0; ++k, ++it)
   { *it = col;
     ++colStream;
     col = *colStream;
@@ -194,7 +194,7 @@ insert_columns_from_file (std::string const& fileName, int ny,
     ++yIt;
     ++colStream;
   }
-  for (Column col = *colStream; col.size()>0; ++k, ++xIt)
+  for (Column col = *colStream; col->size()>0; ++k, ++xIt)
   { *xIt = col;
     ++colStream;
     col = *colStream;

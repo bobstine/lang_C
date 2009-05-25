@@ -4,15 +4,10 @@
 #define _COLUMN_H_
 
 /*
- A column is essentially a decorated range of doubles. These are typically defined by
- reading from a stream. The column item provides
-     - name string
-     - range
-     - basic stats, including the average, number that are unique, min, and max
-	 
- A column stream is a forward iterator whose * operator provides a Column item. When
- initially defined from data, the column allocates and then manages a ref-counted pointer.
+ A Column puts a name on a numerical range and the various statistics of that range.
+ Access to properties of the column come via operator->.
 
+ 25 May 09 ... Better form of dynamic storage (see Coplein, p67-68)
  13 May 09 ... Dynamic column storage.
  15 Nov 07 ... Diddle with getting a pair back from reading data.
  15 Mar 03 ... Created.
@@ -31,99 +26,92 @@
 
 #include "range.h"
 
-// pointer that manages memory for columns that allocate dynamic memory
 
-class ColumnDataPtr
+
+class Column;
+
+class ColumnData
 {
+  friend class Column;
+
  private:
-  int    * mRefCount;
-  double * mBegin;
-  double * mEnd;
+  std::string mName;
+  int         mN;
+  double      mAvg;
+  double      mMin, mMax;
+  int         mNumUnique; 
+  int         mRefCount;
+  double *    mBegin;
+  double *    mEnd;
+
+ private:
+  ~ColumnData()                     { delete[] mBegin; }
+
+ ColumnData(size_t n)            : mRefCount(1), mBegin(new double[n]), mEnd(mBegin+n) { mN = n; assert(mBegin != NULL); }
 
  public:
-
-  ~ColumnDataPtr()                      { --*mRefCount; if(0 == *mRefCount) { delete mRefCount; delete[] mBegin; }}
-
-  ColumnDataPtr(size_t n)               : mRefCount(new int), mBegin(new double[n]), mEnd(mBegin+n) { *mRefCount = 1; assert(mBegin != NULL); }
-
-  ColumnDataPtr(ColumnDataPtr const& d) : mRefCount(d.mRefCount), mBegin(d.mBegin), mEnd(d.mEnd)    { ++ *mRefCount; }
-
-
-  ColumnDataPtr& operator= (ColumnDataPtr const& d)  { mRefCount = d.mRefCount; ++ *mRefCount; mBegin = d.mBegin; mEnd = d.mEnd; return *this; }
-
-  double * begin() const { return mBegin;}
-  double * end()   const { return mEnd;  }
-  
-};
-
-
-class Column
-{
-private:
-  std::string         mName;
-  int                 mN;
-  double              mAvg;
-  double              mMin, mMax;
-  int                 mUnique;          // number distinct values
-  ColumnDataPtr       mData;
-
- public:
-  ~Column() {  }
-  
- Column() : mName(""), mN(0), mAvg(0), mMin(0), mMax(0), mUnique(0), mData(0) {}
-
-  // copy constructor
- Column(Column const& c)  // why do these get copied SO much
-   : mName(c.mName+"_c"), mN(c.mN), mAvg(c.mAvg), mMin(c.mMin), mMax(c.mMax), mUnique(c.mUnique), mData(c.mData) {}
-
- // empty space; will need to call 'update' after filling contents
- Column(char const* name, int n)
-    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n) { }
-
-  
- // fill from file (template specialization)  [ kludge to avoid template problem ]
- Column(char const* name, size_t n, FILE *fp)
-    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n)
-  { double *x (mData.begin());   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
-    while(n--)
-      fscanf(fp, "%lf", x++);  
-    init_properties();
-  }
-
-  // fill from iterator
-  template <class Iter>
-  Column(char const* name, size_t n, Iter source)
-    : mName(name), mN(n), mAvg(0.0), mMin(0.0), mMax(0.0), mUnique(0), mData(n)
-  { double *x (mData.begin());  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
-    while(n--)
-    { *x = *source;
-      ++x; ++source;
-    }
-    init_properties();
-  }
-  
-  Column& operator= (Column const& c);
-
   int             size()          const { return mN; }
-  std::string     name()          const { return mName; }
   double          average()       const { return mAvg; }
   double          scale()         const { return (mMax - mMin)/6.0; }
   double          min()           const { return mMin; }
   double          max()           const { return mMax; }
-  int             unique()        const { return mUnique; }
-  double          element(int i)  const { return *(mData.begin()+i); }
-  double*         begin()         const { return mData.begin(); }
-  double*         end()           const { return mData.end(); }
-  range<double*>  writable_range()const { return make_range(begin(), end()); }
-  range<double const*> range()    const { return make_range(begin(), end()); }
+  int             num_unique()    const { return mNumUnique; }
+  double          element(int i)  const { return *(mBegin+i); }
+  double*         begin()         const { return mBegin; }
+  double*         end()           const { return mEnd; }
+  range<double*>  writable_range()const { return make_range(mBegin, mEnd); }
+  range<double const*> range()    const { return make_range(mBegin, mEnd); }
   
-  bool            is_constant()   const { return mUnique == 1; }
-  bool            is_dummy()      const { return ((mUnique == 2) && (mMin == 0) && (mMax == 1)); }
-  
-  void            update()              { init_properties(); }
-  void            print_to (std::ostream &os) const;
+  bool            is_constant()   const { return mNumUnique == 1; }
+  bool            is_dummy()      const { return ((mNumUnique == 2) && (mMin == 0) && (mMax == 1)); }
+
+  void            print_to(std::ostream& os) const;
  private:
   void            init_properties();
+};
+
+
+
+// Envelope
+
+class Column
+{
+private:
+  ColumnData       *  mData;            // having pointer makes it possible to have const but change ref count
+
+ public:
+  ~Column() { if(--mData->mRefCount <= 0) delete mData; }
+  
+ Column()                                     : mData( new ColumnData(0) ) {  }
+
+ Column(Column const& c)                      : mData(c.mData) { ++c.mData->mRefCount; }
+
+ Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; }  // need to init properties
+  
+ Column(char const* name, size_t n, FILE *fp) : mData( new ColumnData(n) )
+  { mData->mName = name; 
+    double *x (mData->mBegin);   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
+    while(n--)
+      fscanf(fp, "%lf", x++);  
+    mData->init_properties();
+  }
+
+  template <class Iter>
+    Column(char const* name, size_t n, Iter source) : mData( new ColumnData(n) )
+  { mData->mName = name;
+    double *x (mData->mBegin);  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
+    while(n--)
+    { *x = *source;
+      ++x; ++source;
+    }
+    mData->init_properties();
+  }
+  
+  Column& operator= (Column const& c);
+
+  ColumnData* operator->()                const { return mData; }
+  
+  void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
 };
 
 inline

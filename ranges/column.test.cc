@@ -55,7 +55,7 @@ main()
   for (int j=0; j<30; ++j, ++columnStream) // try to read past end of columns
   {
     Column x = *columnStream;
-    if (x.size() == 0)
+    if (x->size() == 0)
     { std::cout << "TEST: Column stream is empty" << std::endl;
       break;
     }
@@ -74,7 +74,7 @@ main()
 
   // dim = insert_columns_from_file("/Users/bob/C/seq_regr/data/bank_small.dat",std::back_inserter(columnVector));
   std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
-  int nRows (yColumns[0].size());
+  int nRows (yColumns[0]->size());
   std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
 
   // or read them from a name file and a data file of rows.
