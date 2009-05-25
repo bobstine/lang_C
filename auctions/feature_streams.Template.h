@@ -91,8 +91,8 @@ Features::FeatureVector
 FitStream<Model>::pop()
 { ++mCount;
   Column fit(feature_name().c_str(), mModel.fit_length());
-  mModel.fill_with_fit(fit.begin());
-  fit.update();
+  mModel.fill_with_fit(fit->begin());
+  fit->update();
   std::vector<int> powers;
   powers.push_back(2); powers.push_back(3);
   if (mIncreaseDegree)

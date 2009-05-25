@@ -373,21 +373,22 @@ parse_arguments(int argc, char** argv,
 gslData*
 build_model_data(std::vector<Column> const& y, std::ostream& os)
 {
-  bool                      useSubset    (y.size() == 2);
-  constant_iterator<double> equalWeights (1.0);  
-  int                       nRows        (y[0].end()-y[0].begin());
+  int                       nyCols       (y.size());
+  bool                      useSubset    (nyCols == 2);
+  constant_iterator<double> equalWeights (1.0);
+  int                       nRows        (y[0]->size());
   
   os << " Response has " << nRows << " rows.\n";
   if (useSubset)  // leading column is indicator of which cases to use in fitting
   {
     os << " Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
-    return new gslData(y[1].begin(), y[0].begin(), equalWeights, nRows, gslRegression_Max_Q);
+    return new gslData(y[1]->begin(), y[0]->begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting
   {
     constant_iterator<bool>   noSelection(true);
     os << " Response variable is " << y[0] << std::endl;
-    return new gslData(y[0].begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
+    return new gslData(y[0]->begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
 

@@ -64,22 +64,22 @@ class ColumnFeature : public FeatureABC
   Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
-  ColumnFeature(Column c) : FeatureABC(c.size()), mColumn(c) { }
+  ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c) { }
 
   std::string class_name()     const { return "ColumnFeature"; }
-  std::string name()           const { return mColumn.name(); }
+  std::string name()           const { return mColumn->name(); }
   std::string operator_name()  const { return ""; }
   Arguments   arguments()      const { return Arguments(); }
   
   Column      column()         const { return mColumn; }
 
-  Iterator    begin()          const { return make_anonymous_iterator(mColumn.begin()); }
-  Range       range()          const { return make_anonymous_range(mColumn.range()); }
-  bool        is_dummy()       const { return mColumn.is_dummy(); }
-  bool        is_constant()    const { return (1 == mColumn.unique()); }
-  double      average()        const { return mColumn.average(); }
-  double      center()         const { return mColumn.average(); }
-  double      scale()          const { return mColumn.scale(); }  // defaults to range/6
+  Iterator    begin()          const { return make_anonymous_iterator(mColumn->begin()); }
+  Range       range()          const { return make_anonymous_range(mColumn->range()); }
+  bool        is_dummy()       const { return mColumn->is_dummy(); }
+  bool        is_constant()    const { return (1 == mColumn->num_unique()); }
+  double      average()        const { return mColumn->average(); }
+  double      center()         const { return mColumn->average(); }
+  double      scale()          const { return mColumn->scale(); }  // defaults to range/6
 
   void        write_to(std::ostream& os) const;
 };
@@ -146,13 +146,13 @@ class LinearCombinationFeature : public FeatureABC
   std::string long_name()     const;
   Arguments   arguments()     const { return Arguments();}
   
-  Iterator    begin()         const { return make_anonymous_iterator(mColumn.begin()); }
-  Range       range()         const { return make_anonymous_range(mColumn.range()); }
-  double      average()       const { return mColumn.average(); }
-  double      center()        const { return mColumn.average(); }
-  double      scale()         const { return mColumn.scale(); }
-  bool        is_dummy()      const { return mColumn.is_dummy(); }
-  bool        is_constant()   const { return (1 == mColumn.unique()); }
+  Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
+  Range       range()         const { return make_anonymous_range(mColumn->range()); }
+  double      average()       const { return mColumn->average(); }
+  double      center()        const { return mColumn->average(); }
+  double      scale()         const { return mColumn->scale(); }
+  bool        is_dummy()      const { return mColumn->is_dummy(); }
+  bool        is_constant()   const { return (1 == mColumn->num_unique()); }
   void        write_to (std::ostream& os) const;
 
  private:

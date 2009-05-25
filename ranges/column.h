@@ -50,6 +50,7 @@ class ColumnData
  ColumnData(size_t n)            : mRefCount(1), mBegin(new double[n]), mEnd(mBegin+n) { mN = n; assert(mBegin != NULL); }
 
  public:
+  std::string     name()          const { return mName; }
   int             size()          const { return mN; }
   double          average()       const { return mAvg; }
   double          scale()         const { return (mMax - mMin)/6.0; }
@@ -64,7 +65,8 @@ class ColumnData
   
   bool            is_constant()   const { return mNumUnique == 1; }
   bool            is_dummy()      const { return ((mNumUnique == 2) && (mMin == 0) && (mMax == 1)); }
-
+  void            update()              { init_properties(); }
+  
   void            print_to(std::ostream& os) const;
  private:
   void            init_properties();
