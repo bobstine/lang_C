@@ -85,6 +85,8 @@ Need to
        around the ABC and implementation, using operator -> to forward calls to the
        underlying range of data.
 
+       Valgrind of my_features.test finds no leaks in this very basic test.
+
 
 ------------------------------------------------------------------------------
 17 May 09   (v 0.80c)

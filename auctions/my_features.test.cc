@@ -113,6 +113,7 @@ main ()
     std::cout << "TEST: average of gsl feature is " << g.center() << std::endl;
   */
   
+  delete [] x1;
   return 0;
 }
     
