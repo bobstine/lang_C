@@ -8,6 +8,42 @@
 #include <sstream>
 #include <set>
 
+
+//  Feature Envelope
+
+
+Feature::Feature()
+{
+  Column c;
+  mFP = new ColumnFeature(c);
+}
+
+Feature::Feature(Column const &c)
+{
+  mFP = new ColumnFeature(c);
+}
+
+Feature::Feature(Feature const& f1, Feature const& f2)
+{
+  mFP = new InteractionFeature(f1,f2);
+}
+
+Feature::Feature(int n, std::vector<double> b, std::vector<Feature> const& fv)
+{
+  mFP = new LinearCombinationFeature(n, b, fv);
+}
+
+
+Feature&
+Feature::operator=(Feature const& f)
+{
+  if( (--mFP->mRefCount <= 0) && (mFP != f.mFP) ) delete mFP;
+  mFP = f.mFP;
+  mFP->mRefCount++;
+  return *this;
+}
+
+
 //  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  
 
 void
@@ -65,25 +101,25 @@ InteractionFeature::write_to (std::ostream& os) const
 
 // Unary feature
 
-Features::FeatureVector
+std::vector<Feature>
 powers_of_column_feature (Column const& col, std::vector<int> const& powers)
 {
-  Features::FeatureVector fv;
-  ColumnFeature * base = new ColumnFeature(col);   // need a better memory model to avoid this???
+  std::vector<Feature> fv;
+  Feature  base(col);
   for (size_t i=0; i<powers.size(); ++i)
   { switch( powers[i] )
     {
     case 2:
-      fv.push_back(make_unary_feature(Function_Utils::CenteredSquare(col->average()), base));
+      fv.push_back(Feature(Function_Utils::CenteredSquare(col->average()), base));
       break;
     case 3:
-      fv.push_back(make_unary_feature(Function_Utils::CenteredCube(col->average()), base));
+      fv.push_back(Feature(Function_Utils::CenteredCube(col->average()), base));
       break;
     case 4:
-      fv.push_back(make_unary_feature(Function_Utils::CenteredQuad(col->average()), base));
+      fv.push_back(Feature(Function_Utils::CenteredQuad(col->average()), base));
       break;
     case 5:
-      fv.push_back(make_unary_feature(Function_Utils::CenteredQuint(col->average()), base));
+      fv.push_back(Feature(Function_Utils::CenteredQuint(col->average()), base));
       break;
     default:
       std::cout << "FETR: Error. Requested power outside of supported range.\n";

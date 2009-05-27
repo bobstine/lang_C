@@ -4,15 +4,6 @@
 
 #include "range_stats.h"
 
-int FeatureABC::number_created = 0;
-
-
-bool
-FeatureABC::operator<  (FeatureABC const* f) const
-{
-  return(mCreationIndex < f->mCreationIndex);
-}
-
 
 FeatureABC::Arguments
 FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Arguments const& a2) const

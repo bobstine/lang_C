@@ -77,6 +77,16 @@ Need to
 
 
 ------------------------------------------------------------------------------
+26 May 09 
+
+       Get new style of reference counted features starting to work. Mimic style of
+       the number class in Coplien.  Have the test program compiling and now need to
+       stick it in the auction and see what happens.  A Feature is now a wrapper
+       around the ABC and implementation, using operator -> to forward calls to the
+       underlying range of data.
+
+
+------------------------------------------------------------------------------
 17 May 09   (v 0.80c)
 
 	New type of expert (calibration expert) that offers bid only right after variable

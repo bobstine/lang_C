@@ -29,9 +29,12 @@
 
 
 ///
+class Feature;
 
 class FeatureABC
 {
+  friend class Feature;
+  
  public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double>  Iterator;
   typedef range< Iterator >                                                    Range;
@@ -39,9 +42,7 @@ class FeatureABC
   typedef std::set<std::string>                                                Attributes;
 
  private:
-  static int number_created;
-  
-  int            mCreationIndex;
+  int            mRefCount;
   int            mSize;           // of underlying range
   Attributes     mAttributes;
   bool           mTried;          // Has this feature been tried in the model?
@@ -51,16 +52,13 @@ class FeatureABC
  public:
   virtual ~FeatureABC() { }
   
-  FeatureABC (int size) :
-    mCreationIndex(++number_created),
-    mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { }
+  FeatureABC (int size)
+    : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { }
 
-  FeatureABC (std::istream& is) :
-    mCreationIndex(++number_created),
-    mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { read_from(is); }
+  FeatureABC (std::istream& is)
+    : mRefCount(1), mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { read_from(is); }
 
   bool                operator== (FeatureABC const* f)          const { return name() == f->name(); }
-  bool                operator<  (FeatureABC const* f)          const;
 
   int                 size()                                    const { return mSize; }
   Attributes          attributes()                              const { return mAttributes; }
@@ -130,6 +128,7 @@ operator<<(std::ostream& os, std::vector<FeatureABC*> const& fv)
   std::copy(fv.begin(), fv.end(), std::ostream_iterator<FeatureABC*>(os, "\n      "));
   return os;
 }
+
 
 
 #endif

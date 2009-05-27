@@ -51,10 +51,61 @@
 #include <iostream>
 #include <vector>
 
-namespace Features {
-  typedef FeatureABC*               Feature;
-  typedef std::vector<FeatureABC *> FeatureVector;
+
+template<class Op>
+class UnaryFeature;
+
+
+////  Envelope class
+
+class Feature
+{
+ private:
+  FeatureABC *mFP;
+
+ public:
+  ~Feature() { if(--mFP->mRefCount <= 0) delete mFP; }
+
+  
+  // copy
+ Feature(Feature const& f)    : mFP(f.mFP)                { ++f.mFP->mRefCount;  }
+
+  //  empty has a null column
+  Feature();
+
+  //  column feature
+  Feature(Column const &c);
+  
+  //  interaction feature
+  Feature(Feature const& f1, Feature const& f2);
+
+  //  linear combination
+  Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
+
+  //  unary feature
+  template<class Op>
+    Feature(Op const& op, Feature const &x);
+
+  //  binary feature
+  template<class Op>
+    Feature(Op const& op, Feature const &x1, Feature const& x2);
+
+  
+  Feature&    operator=(Feature const& f);
+  FeatureABC* operator->()                 const       { return mFP; }
+
+  
+};
+
+inline
+std::ostream&
+operator<< (std::ostream& os, Feature const& feature)
+{
+  feature->print_to(os);
+  return os;
 }
+
+
 
 ////  Column feature
 
@@ -89,15 +140,15 @@ class ColumnFeature : public FeatureABC
 
 class InteractionFeature : public FeatureABC
 {
-  FeatureABC  const* mFeature1;
-  FeatureABC  const* mFeature2;
+  Feature  const& mFeature1;
+  Feature  const& mFeature2;
   std::string       mName;
 
  public:
   virtual ~InteractionFeature() {}
   
-  InteractionFeature(FeatureABC const* f1, FeatureABC const* f2)
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2) { make_name();  }   // names built in map with canonical order
+  InteractionFeature(Feature const& f1, Feature const& f2)
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2) { make_name();  }   // names built in using map to define canonical order
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
@@ -128,16 +179,16 @@ class InteractionFeature : public FeatureABC
 
 class LinearCombinationFeature : public FeatureABC
 {
-  std::vector<double>      mBeta;      // b[0] is constant, as in regr
-  std::vector<FeatureABC*> mFeatures;
-  std::string              mName;
-  Column                   mColumn;
+  std::vector<double>  mBeta;      // b[0] is constant, as in regr
+  std::vector<Feature> mFeatures;
+  std::string          mName;
+  Column               mColumn;    // place to store the lin comb
   
  public:
   virtual ~LinearCombinationFeature() {}
   
- LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<FeatureABC*> const& fv)
-    :                                                      // uses the column as a place to store the lin comb
+ LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<Feature> const& fv)
+    :                                                      
     FeatureABC(n), 
       mBeta(b), mFeatures(fv), mName(), mColumn(Column("Linear Comb", n)) { if (valid_args()) { make_name(); fill_column();} }
 
@@ -169,14 +220,14 @@ class LinearCombinationFeature : public FeatureABC
 template<class Op>
 class UnaryFeature : public FeatureABC
 {
-  Op                mOp;
-  FeatureABC const* mFeature;
+  Op             mOp;
+  Feature        mFeature;
   double         mMean;  // cache
 
  public:
   virtual ~UnaryFeature() {}
   
-  UnaryFeature(Op const& op, FeatureABC const* f)
+  UnaryFeature(Op const& op, Feature const& f)
     : FeatureABC(f->size()), mOp(op), mFeature(f), mMean(range_stats::average(range(), size())) { }
 
   std::string class_name() const { return "UnaryFeature"; }
@@ -195,15 +246,8 @@ class UnaryFeature : public FeatureABC
   void        write_to (std::ostream& os) const;
 };
 
-template<class Op>
-FeatureABC*
-make_unary_feature(Op const& op, FeatureABC const* f)
-{
-  return new UnaryFeature<Op>(op, f);
-}
 
-
-Features::FeatureVector
+std::vector<Feature>
 powers_of_column_feature (Column const& col, std::vector<int> const& powers);
   
 
@@ -214,11 +258,11 @@ template<class Op>
 class BinaryFeature : public FeatureABC
 {
   Op mOp;
-  FeatureABC  const* mFeature1;
-  FeatureABC  const* mFeature2;
+  Feature   mFeature1;
+  Feature   mFeature2;
 
  public:  
-  BinaryFeature(Op const& op, FeatureABC const* f1, FeatureABC const* f2)
+  BinaryFeature(Op const& op, Feature const& f1, Feature const& f2)
     : FeatureABC(f1->size()), mOp(op), mFeature1(f1), mFeature2(f2) { }
 
   std::string class_name()  const { return "BinaryFeature"; }
@@ -236,6 +280,7 @@ class BinaryFeature : public FeatureABC
 
   void        write_to (std::ostream& os) const;
 };
+
 
 #include "my_features.Template.h"
   

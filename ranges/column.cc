@@ -2,6 +2,7 @@
 
 #include "column.h"
 
+#include <set>
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
@@ -14,11 +15,10 @@
 Column& 
 Column::operator= (Column const& c)
 {
-  ++c.mData->mRefCount;                      // increment his count
-  if(--mData->mRefCount <= 0) delete mData;  // decrement mine and delete if no others
+  if(--mData->mRefCount <= 0 && mData != c.mData) delete mData;  // decrement mine and delete if not the same
   mData = c.mData;
+  ++mData->mRefCount;
   mData->mName = mData->mName + "_C";        // mark for a copy
-
   return *this;
 }
 
