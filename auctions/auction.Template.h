@@ -27,7 +27,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   debugging::debug(0) << "AUCT: Beginning auction round #" << mRound << std::endl;
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<ExpertABC*,double> winner (collect_bids(os));  
-  ExpertABC* pHighBidder = winner.first;
+  ExpertABC* pWinningExpert = winner.first;
   double      highBid    = winner.second;
   if (0.0 == highBid) 
   { mHasActiveExpert = false;
@@ -36,27 +36,27 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
     return false;
   } 
   // extract chosen features
-  Features::FeatureVector features  (pHighBidder->feature_vector()) ;
-  int                     nFeatures (features.size());
+  std::vector<Feature> features  (pWinningExpert->feature_vector()) ;
+  int                  nFeatures (features.size());
   if (0 == nFeatures)
-  { debugging::debug(3) << "AUCT: *** ERROR **** Expert " << pHighBidder->name() << " did not provide features.\n";
+  { debugging::debug(3) << "AUCT: *** ERROR **** Expert " << pWinningExpert->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
   else
-  { debugging::debug(0) << "AUCT: Winning expert  " << pHighBidder->name() << " bids on ";
+  { debugging::debug(0) << "AUCT: Winning expert  " << pWinningExpert->name() << " bids on ";
     print_features(features);
   }
   // build variables for testing
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
-  for (int j=0; j<nFeatures; ++j)                                                       
+  for (int j=0; j<nFeatures; ++j)
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
-  debug(3) << "AUCT: Test results p- value is <" << result.second << "," << result.second << ">\n";
+  debug(3) << "AUCT: Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
   // report bid result
-  double payoff = payoff_to_highest_bidder(pHighBidder, highBid, result.second);            // result.second is p-value
+  double payoff = payoff_to_highest_bidder(pWinningExpert, highBid, result.second);            // result.second is p-value
   bool addedPredictors (payoff > 0.0);
   if (os)
     if (addedPredictors)
@@ -89,7 +89,7 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
        << ", " << model_goodness_of_fit()
        << ", " << total_expert_alpha();
   }
-  ExpertABC* pHighBidder           (NULL);
+  ExpertABC* pWinningExpert        (NULL);
   double     highBid               (-7.7);     
   ExpertABC* pPriorityBidder       (NULL);
   double     priorityBid           (0.0);
@@ -100,7 +100,7 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
       else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
-      pHighBidder = *it;
+      pWinningExpert = *it;
     }
     if ((*it)->priority() > 0) // priority bidder with bid jumps to top
     { debug(3) << "AUCT: at priority bidder with bid " << bid << std::endl;
@@ -113,35 +113,35 @@ Auction<ModelClass>:: collect_bids (std::ostream& os)
   if (pPriorityBidder) // override results
   { debug(3) << "AUCT: assigning round to priority bidder.\n";
     highBid = priorityBid;
-    pHighBidder = pPriorityBidder;
+    pWinningExpert = pPriorityBidder;
   }
   if(os)
-    os << ", " << pHighBidder->name() << ", " << highBid;
+    os << ", " << pWinningExpert->name() << ", " << highBid;
   // inform experts whether win/lose auction (not model status, just whether bid was accepted)
-  pHighBidder->bid_accepted();
+  pWinningExpert->bid_accepted();
   for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
-    if ((*it) != pHighBidder) (*it)->bid_declined();
-  return std::make_pair(pHighBidder, highBid);
+    if ((*it) != pWinningExpert) (*it)->bid_declined();
+  return std::make_pair(pWinningExpert, highBid);
 }
 
 
 template<class ModelClass>
 double
-Auction<ModelClass>::payoff_to_highest_bidder (ExpertABC* pHighBidder, double bid, double pValue)
+Auction<ModelClass>::payoff_to_highest_bidder (ExpertABC* pWinningExpert, double bid, double pValue)
 {
   if (pValue > 1.0)
-  { pHighBidder->payoff(0.0);                          // singularity in predictors
+  { pWinningExpert->payoff(0.0);                          // singularity in predictors
     mPayoffHistory.push_back(0.0);
     return 0.0;
   }
   if (pValue < bid)                                    // add variable to model
-  { pHighBidder->payoff(mPayoff);
+  { pWinningExpert->payoff(mPayoff);
     mPayoffHistory.push_back(mPayoff);
     return mPayoff;
   }
   else
   { double cost = -bid/(1.0-bid);
-    pHighBidder->payoff(cost);
+    pWinningExpert->payoff(cost);
     mPayoffHistory.push_back(cost);
     return cost;
   }

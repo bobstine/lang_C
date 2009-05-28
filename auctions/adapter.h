@@ -14,7 +14,7 @@
 #include "my_features.h"
 
 gsl_matrix *
-ConvertFeaturesIntoMatrix(Features::FeatureVector v);
+ConvertFeaturesIntoMatrix(std::vector<Feature> v);
 
 #endif
 

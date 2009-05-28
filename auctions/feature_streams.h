@@ -90,7 +90,7 @@ class RegulatedStream: public Stream
 public:
   RegulatedStream(Stream const& s): Stream(s) {}
   
-  bool has_feature (Features::FeatureVector const& used, Features::FeatureVector const& skipped)
+  bool has_feature (std::vector<Feature> const& used, std::vector<Feature> const& skipped)
   {
     while(!Stream::is_empty())
     { if (Stream::current_feature_is_okay(used,skipped))
@@ -120,15 +120,15 @@ public:
   
   std::string             name()         const { return mName; }
   std::string             feature_name() const;
-  Features::FeatureVector pop();
+  std::vector<Feature>    pop();
   
   void                    print_to(std::ostream& os)          const;
 
   int                     number_remaining()                  const { return (int)mSource.size() - mPosition; }
   
 protected:
-  bool  is_empty()                                                                                             const;
-  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
+  bool  is_empty()                                                                                       const;
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   void  increment_position();
 };
 
@@ -158,11 +158,11 @@ public:
   
   std::string             name()           const { return mModel.name(); }
   std::string             feature_name()   const;
-  Features::FeatureVector pop();
+  std::vector<Feature>    pop();
 
 protected:  // bidder decides whether to use the fit of the model
   bool  is_empty()                                                                                     const { return mEmpty; }
-  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&);
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
   void  increment_position()                                                                           const { };
 };
 
@@ -196,16 +196,16 @@ public:
   
   std::string             name()                              const { return mName; }
   
-  bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
+  bool                    has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  Features::FeatureVector pop();                      
+  std::vector<Feature>    pop();                      
   
   int                     number_remaining()                  const;
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
   bool  is_empty()                  const;
-  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped)   const;
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   void  increment_position();
 private:
   void  build_current_feature_name();
@@ -238,16 +238,16 @@ public:
   
   std::string             name()                              const { return mName; }
   
-  bool                    has_feature(Features::FeatureVector const& used, Features::FeatureVector const& skipped);
+  bool                    has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  Features::FeatureVector pop();                      
+  std::vector<Feature> pop();                      
   
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 protected:
   bool  is_empty() const;
-  bool  current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped);  
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
 private:
   void build_current_feature_name();
@@ -286,16 +286,16 @@ public:
   
   std::string name()      const { return mName; }
   
-  bool                    has_feature(Features::FeatureVector const&, Features::FeatureVector const&);
+  bool                    has_feature(std::vector<Feature> const&, std::vector<Feature> const&);
   std::string             feature_name() const;
-  Features::FeatureVector pop();                      
+  std::vector<Feature> pop();                      
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
   void                    print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
   
 private:
   void increment_position();
-  bool feature_meets_conditions(FeatureABC const* feature) const;
+  bool feature_meets_conditions(Feature const& feature) const;
 };
 
 template <class Source>
@@ -317,7 +317,7 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 //               The stream waits until it obtains a bundle that satisfies the input
 //               predicate of the indicated size, the applies a transformation.
 //               These classes should act like these:
-//                    std::unary_function<Features::FeatureVector,Features::FeatureVector> Transformation;
+//                    std::unary_function<std::vector<Feature>,std::vector<Feature>> Transformation;
 //                    std::unary_function<FeatureABC const*, bool>                         Predicate;
 
 
@@ -331,7 +331,7 @@ private:
   Source const&            mSource;  
   int                      mPos; 
   int                      mBundleSize;
-  Features::FeatureVector  mBundle;
+  std::vector<Feature>     mBundle;
   Pred                     mPredicate;       // hold as object, not as reference
   Trans                    mTransformation;
   bool                     mPopped;          // set true when popped to avoid stack copy
@@ -344,9 +344,9 @@ public:
   
   std::string             name()  const { return mName; }
   
-  bool                    has_feature(Features::FeatureVector const& , Features::FeatureVector const& );
-  std::string             feature_name()               const;
-  Features::FeatureVector pop()                              { mPopped=true; return mTransformation(mBundle); }
+  bool                    has_feature(std::vector<Feature> const& , std::vector<Feature> const& );
+  std::string             feature_name()                   const;
+  std::vector<Feature>    pop()                              { mPopped=true; return mTransformation(mBundle); }
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
   void                    print_to(std::ostream& os)   const { os << "BDLS: " << name() << " stream @ " << mPos ; }
@@ -363,10 +363,10 @@ template <class Source, class Pred, class Trans>
 
 
 
-class FeatureAcceptancePredicate : public std::unary_function<FeatureABC const*,bool>
+class FeatureAcceptancePredicate : public std::unary_function<Feature const&,bool>
 {
 public:
-  bool operator()(FeatureABC const* f) const;
+  bool operator()(Feature const& f) const;
 };
 
 
@@ -378,14 +378,14 @@ public:
 
 
 template<class Method>
-class SubspaceBasis: public std::unary_function<Features::FeatureVector const&, Features::FeatureVector>
+class SubspaceBasis: public std::unary_function<std::vector<Feature> const&, std::vector<Feature> >
 {
   Method mMethod;
 public:
   SubspaceBasis (Method m)                : mMethod(m)          { }
   SubspaceBasis (SubspaceBasis const& pc) : mMethod(pc.mMethod) { }
                                                                                     
-  Features::FeatureVector operator()(Features::FeatureVector const& fv) const;
+  std::vector<Feature> operator()(std::vector<Feature> const& fv) const;
 };
 
 

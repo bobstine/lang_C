@@ -140,9 +140,9 @@ class ColumnFeature : public FeatureABC
 
 class InteractionFeature : public FeatureABC
 {
-  Feature  const& mFeature1;
-  Feature  const& mFeature2;
-  std::string       mName;
+  Feature      mFeature1;
+  Feature      mFeature2;
+  std::string  mName;
 
  public:
   virtual ~InteractionFeature() {}

@@ -38,6 +38,7 @@ then it pops the feature off of the stream.
 // need ABC since will need to have a collection of experts
 class ExpertABC
 {
+  typedef     std::vector<Feature>  FeatureVector;
   
 protected:
   int         mPriority;             //  higher jumps to top of auction
@@ -47,8 +48,6 @@ protected:
   BidHistory  mBidHistory;
   
 public:
-  typedef Features::FeatureVector FeatureVector;
-  
   virtual ~ExpertABC () { }
   
  ExpertABC(int priority, double alpha)

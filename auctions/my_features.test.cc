@@ -51,12 +51,14 @@ main ()
   // make an interaction
   Feature inter (x, dup);
   std::cout << "TEST: center of x x duplicate interaction feature is " << inter->center() << std::endl;
+  std::cout << "TEST: begin of x x interaction feature is " << *(inter->begin()) << std::endl;
   std::cout << "      " << inter << std::endl;
 
   // now another interaction (that squares)
   Feature xx(x, x);
   std::cout << "TEST: center of xx interaction feature is " << xx->center() << std::endl;
-  std::cout << "      " << &xx << std::endl;
+  std::cout << "TEST: *begin of xx interaction feature is " << *(xx->begin()) << std::endl;
+  std::cout << "      " << xx << std::endl;
 
   // an interaction of xx with xx
   Feature xxxx(xx, xx);

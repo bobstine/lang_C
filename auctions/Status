@@ -76,6 +76,23 @@ Need to
 
 
 
+
+------------------------------------------------------------------------------
+27 May 09      0.90
+
+       Have recompiled with new feature structures in place.  Crashing, but it
+       compiles.  Dies when offering an interaction feature.
+
+       Now have running.  'Error' was the use of a copy constructor within
+       a function, rather than to use a const& within the function. The feature
+       created in interaction feature stream (feature_streams.Template.h)
+       evidently vanished when the function ended.  It lost track of it, even
+       though it was in the vector result.  Yuk.  
+
+       Problem really was in the interaction feature itself.  It tried to hold its features
+       as references rather than as actual values.  That was the error.
+
+
 ------------------------------------------------------------------------------
 26 May 09 
 

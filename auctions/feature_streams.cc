@@ -15,7 +15,7 @@
 #include "gsl_utils.h"
 
 bool 
-FeatureAcceptancePredicate::operator()(FeatureABC const* f) const
+FeatureAcceptancePredicate::operator()(Feature const& f) const
 {
   return !(f->is_constant() || f->is_dummy() || (f->name() == "Basis"));
 }

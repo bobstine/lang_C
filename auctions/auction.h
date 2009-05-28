@@ -27,8 +27,8 @@ class Auction
   typedef Model                                       ModelClass;
   typedef typename std::vector<ExpertABC*>            ExpertVector;
   typedef typename std::vector<ExpertABC*>::iterator  ExpertIterator;
-  typedef typename std::vector<FeatureABC*>           FeatureVector;
-  typedef typename std::vector<FeatureABC*>::iterator FeatureVecIter;
+  typedef typename std::vector<Feature>               FeatureVector;
+  typedef typename std::vector<Feature>::iterator     FeatureVecIter;
   typedef typename std::pair<double,double>           TestResult;
 
 private:
@@ -49,24 +49,6 @@ private:
     {
       debug(0) << "AUCT: Deleting experts in auction. \n";
       for(ExpertIterator i=mExperts.begin()        ; i != mExperts.end()        ; ++i) delete *i;
-      debug(0) << "AUCT: Deleting skipped features that have not yet been deleted (column features). \n";
-      // This is a stupid test since someone else deleting these does not reveal that to this object!
-      { int k = 0;
-	for(FeatureVecIter i=mSkippedFeatures.begin(); i != mSkippedFeatures.end(); ++i)
-	{ std::cout << k++ << " " ;
-	  if (*i)
-	    delete *i;
-	}
-      }
-      debug(0) << "AUCT: Deleting model features. \n";
-      for(FeatureVecIter i=mModelFeatures.begin()  ; i != mModelFeatures.end()  ; ++i)
-      { int k = 0;
-	for(FeatureVecIter i=mSkippedFeatures.begin(); i != mSkippedFeatures.end(); ++i)
-	{ std::cout << k++ << " " ;
-	  if (*i)
-	    delete *i;
-	}
-      }
     }
     
   Auction (Model& m, bool calibrate, std::ostream& logStream)

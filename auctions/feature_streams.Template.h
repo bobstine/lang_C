@@ -5,15 +5,16 @@
 #include "adapter.h"
 
 namespace {
-  bool found_feature_name_in_vector (std::string const& name, Features::FeatureVector const& vec)
+
+  bool found_feature_name_in_vector (std::string const& name, std::vector<Feature> const& vec, std::string const& vecName)
   {
     // std::cout << "Looking for " << name << " in " ;
     // for(int i=0; i < (int) vec.size(); ++i)  std::cout << vec[i]->name() << ", "; std::cout << std::endl;
     if (name.size() == 0)
       return false;
-    for (Features::FeatureVector::const_iterator it = vec.begin();it != vec.end(); ++it)
+    for (std::vector<Feature>::const_iterator it = vec.begin();it != vec.end(); ++it)
     { if (name == (*it)->name())
-      { debugging::debug(0) << "FETR: Found feature " << name << " already in model.\n";
+      { debugging::debug(0) << "FETR: Found feature " << name << " in feature vector " << vecName << std::endl;
 	return true;
       }
     }
@@ -40,7 +41,7 @@ FiniteStream<Source>::increment_position()
 
 template<class Source>
 bool
-FiniteStream<Source>::current_feature_is_okay(Features::FeatureVector const&, Features::FeatureVector const&) const
+FiniteStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
   return !(
 	   mSource[mPosition]->was_tried_in_model() ||
@@ -57,10 +58,10 @@ FiniteStream<Source>::feature_name() const
 
 
 template<class Source>
-typename Features::FeatureVector
+typename std::vector<Feature>
 FiniteStream<Source>::pop()                            
 {
-  Features::FeatureVector result;
+  std::vector<Feature> result;
   result.push_back(mSource[mPosition]); 
   ++mPosition; 
   return result;
@@ -72,7 +73,7 @@ FiniteStream<Source>::pop()
 
 template<class Model>
 bool
-FitStream<Model>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&)
+FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
   if(!used.empty())  // check name of last used feature for our signature
   { mEmpty = false;
@@ -87,7 +88,7 @@ FitStream<Model>::current_feature_is_okay(Features::FeatureVector const& used, F
 }
       
 template<class Model>
-Features::FeatureVector
+std::vector<Feature>
 FitStream<Model>::pop()
 { ++mCount;
   Column fit(feature_name().c_str(), mModel.fit_length());
@@ -121,7 +122,7 @@ InteractionStream<Source>::build_current_feature_name()
   if (is_empty())
     mCurrentFeatureName = "";
   else
-    mCurrentFeatureName = InteractionFeature(mSource[mPos1], mSource[mPos2]).name();
+    mCurrentFeatureName = Feature(mSource[mPos1], mSource[mPos2])->name();
 }
 
 template<class Source>
@@ -151,7 +152,7 @@ InteractionStream<Source>::increment_position()
 
 template<class Source>
 bool
-InteractionStream<Source>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const& skipped) const
+InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped) const
 {
   if (
       ((mPos1 == mPos2) && mSource[mPos1]->is_dummy()) ||    // dont square dummy
@@ -159,7 +160,7 @@ InteractionStream<Source>::current_feature_is_okay(Features::FeatureVector const
       )
     return false;
   std::string name (feature_name());
-  if (found_feature_name_in_vector(name, used) || found_feature_name_in_vector(name,skipped))
+  if (found_feature_name_in_vector(name, used, "used features") || found_feature_name_in_vector(name,skipped, "skipped features"))
     return false;
   return true;
 }
@@ -174,14 +175,14 @@ InteractionStream<Source>::number_remaining() const
 }
 
 template<class Source>
-typename Features::FeatureVector
+typename std::vector<Feature>
 InteractionStream<Source>::pop()
 {
-  FeatureABC* x1 (mSource[mPos1]);
-  FeatureABC* x2 (mSource[mPos2]);
+  Feature  x1 (mSource[mPos1]);    // RAS: const& *essential* here
+  Feature  x2 (mSource[mPos2]);
   increment_position();
-  Features::FeatureVector result;
-  result.push_back(new InteractionFeature(x1,x2));
+  std::vector<Feature> result;
+  result.push_back(Feature(x1,x2));
   return result;
 }
 
@@ -203,7 +204,7 @@ CrossProductStream<Source1, Source2>::build_current_feature_name()
   if (is_empty())
     mCurrentFeatureName = "";
   else
-    mCurrentFeatureName = InteractionFeature(mFixedSource[mFixedPos], mDynSource[mDynPos]).name();
+    mCurrentFeatureName = Feature(mFixedSource[mFixedPos], mDynSource[mDynPos])->name();
 }
 
 
@@ -226,28 +227,28 @@ CrossProductStream<Source1, Source2>::increment_position()
 
 template<class Source1, class Source2>
 bool
-CrossProductStream<Source1, Source2>::current_feature_is_okay(Features::FeatureVector const& used, Features::FeatureVector const&)
+CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
   if (mFixedSource[mFixedPos]->is_constant() || (mDynSource[mDynPos]->is_constant()) )
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
-  if (found_feature_name_in_vector(mCurrentFeatureName, used))  // try those that have been skipped before again
+  if (found_feature_name_in_vector(mCurrentFeatureName, used, "used"))  // try those that have been skipped before again
     return false;
   return true;
 }
 
 
 template<class Source1, class Source2>
-typename Features::FeatureVector
+typename std::vector<Feature>
 CrossProductStream<Source1, Source2>::pop()
 {
   debugging::debug(0) << "CPST: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
-  FeatureABC const* xf (mFixedSource[mFixedPos]);
-  FeatureABC const* xd (mDynSource[mDynPos]);
+  Feature  xf (mFixedSource[mFixedPos]);
+  Feature  xd (mDynSource[mDynPos]);
   increment_position();
-  Features::FeatureVector result;
-  result.push_back(new InteractionFeature(xf,xd));
+  std::vector<Feature> result;
+  result.push_back(Feature(xf,xd));
   return(result);
 }
 
@@ -258,7 +259,7 @@ CrossProductStream<Source1, Source2>::pop()
 
 template<class Source>
 bool 
-PolynomialStream<Source>::has_feature(Features::FeatureVector const&, Features::FeatureVector const&)
+PolynomialStream<Source>::has_feature(std::vector<Feature> const&, std::vector<Feature> const&)
 { 
   int remaining (number_remaining());
   if (0 == remaining)
@@ -290,27 +291,27 @@ PolynomialStream<Source>::increment_position()
 
 
 template<class Source>
-typename Features::FeatureVector
+typename std::vector<Feature>
 PolynomialStream<Source>::pop()
 {
-  FeatureABC *x  (mSource[mPos]);
+  Feature x  (mSource[mPos]);
   debugging::debug(0) << "PLYS: " << name() << " stream making polynomial subspace from feature " <<  x->name() << std::endl;
   ++mPos; // do not revisit this one
-  std::vector<FeatureABC*> result;
-  result.push_back(make_unary_feature(Function_Utils::Square(), x));
+  std::vector<Feature> result;
+  result.push_back(Feature(Function_Utils::Square(), x));
   if(mDegree>2) 
-    result.push_back(make_unary_feature(Function_Utils::Cube(), x));
+    result.push_back(Feature(Function_Utils::Cube(), x));
   for (int j=4; j<=mDegree; ++j)
-    result.push_back(make_unary_feature(Function_Utils::Power(j), x));
+    result.push_back(Feature(Function_Utils::Power(j), x));
   return result;
 }
 
 template<class Source>
 bool 
-PolynomialStream<Source>::feature_meets_conditions(FeatureABC const* feature) const
+PolynomialStream<Source>::feature_meets_conditions(Feature const& feature) const
 { 
-  ColumnFeature const* cp (dynamic_cast<ColumnFeature const*>(feature));
-  return (cp && (!feature->is_dummy()) && (!feature->is_constant()));
+  // dont need this anymore???  ColumnFeature const* cp (dynamic_cast<ColumnFeature const*>(feature));
+  return ( (!feature->is_dummy()) && (!feature->is_constant()) );
 }
 
 
@@ -319,7 +320,7 @@ PolynomialStream<Source>::feature_meets_conditions(FeatureABC const* feature) co
 
 template<class Source, class Pred, class Trans>
 bool
-BundleStream<Source, Pred, Trans>::has_feature(Features::FeatureVector const&, Features::FeatureVector const&)
+BundleStream<Source, Pred, Trans>::has_feature(std::vector<Feature> const&, std::vector<Feature> const&)
 {
   if (mPopped)
   { mPopped = false;
@@ -334,8 +335,8 @@ BundleStream<Source, Pred, Trans>::has_feature(Features::FeatureVector const&, F
 }
  
 template <class Method>
-Features::FeatureVector 
-SubspaceBasis<Method>::operator()(Features::FeatureVector const& fv) const
+std::vector<Feature> 
+SubspaceBasis<Method>::operator()(std::vector<Feature> const& fv) const
 {
   gsl_matrix *mat (ConvertFeaturesIntoMatrix(fv));
   // form the decomposition of the corr matrix 
@@ -349,7 +350,7 @@ SubspaceBasis<Method>::operator()(Features::FeatureVector const& fv) const
   gsl_vector_free(basis.first);
   gsl_matrix_free(mat);
   // convert the resulting vector of gsl vectors into features
-  std::vector<FeatureABC *> result;
+  std::vector<Feature> result;
   /* gsl_features did not respect memory... need to replace this with column features
      for (int j=0; j<numPC; ++j)
     result.push_back(new gslVectorFeature("Basis", basis.second[j]));

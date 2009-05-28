@@ -85,7 +85,7 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug(3) << "AUCT: Version build 0.80c (17 May 2009)\n";
+  debug(3) << "AUCT: Version build 0.90 (27 May 2009)\n";
   debug(3) << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
 	   << " --protect=" << protection << " --rounds=" << numberRounds
 	   << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
@@ -123,13 +123,12 @@ main(int argc, char** argv)
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Y columns and "
-	   << xColumns.size() << " X columns.\n";
+  debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
   
   // convert columns of data into vector of features
-  std::vector<FeatureABC*> columnFeatures;
+  std::vector<Feature> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
-    columnFeatures.push_back(new ColumnFeature(*it));
+    columnFeatures.push_back(Feature(*it));
   debug(0) << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
   
   // initialize data object held in underlying model [y and optional selector]
@@ -147,10 +146,10 @@ main(int argc, char** argv)
   debug(0) << "AUCT: Assembling experts"  << std::endl;
 
   double alphaShare (totalAlphaToSpend/7);
-  typedef  FiniteStream      < std::vector<FeatureABC*> > FStream;
-  typedef  InteractionStream < std::vector<FeatureABC*> > IStream;
-  typedef  CrossProductStream< std::vector<FeatureABC*>, std::vector<FeatureABC*> > CPStream;
-  typedef  PolynomialStream  < std::vector<FeatureABC*> > PolyStream;
+  typedef  FiniteStream      < std::vector<Feature> > FStream;
+  typedef  InteractionStream < std::vector<Feature> > IStream;
+  typedef  CrossProductStream< std::vector<Feature>, std::vector<Feature> > CPStream;
+  typedef  PolynomialStream  < std::vector<Feature> > PolyStream;
   
   // main column expert
   theAuction.add_expert(make_expert(0, alphaShare,      // priority, alpha
@@ -269,9 +268,6 @@ main(int argc, char** argv)
    
   debug(0) << "AUCT: Auction is completed; disposing GSL data objects.\n";
   delete (theData);
-  debug(0) << "AUCT: Disposing column features.\n";
-  for (std::vector<FeatureABC*>::const_iterator it = columnFeatures.begin(); it != columnFeatures.end(); ++it)
-    delete *it;
   debug(0) << "AUCT: Exiting; final clean-up done by ~ functions.\n";
   
   return 0;  
