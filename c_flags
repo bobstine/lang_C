@@ -1,3 +1,4 @@
+# Need to customize for mac or linux
 COMPILER = gcc
 # LIBTOOL_CMD = libtool --mode=link $(above_infinity) -o $@ # something
 # LIBTOOL_CMD = ar -rc $@ $(above_infinity)                 # linux
