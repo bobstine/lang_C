@@ -12,26 +12,25 @@
  *  Copyright 2008. All rights reserved.
  *
  
- Streams build the features that go into the model.  Regulated
- feature streams enforce a set of checks that the features that are
- offered are reasonable for the problem (eg, not constants, not
- already in the model and so forth).
+ Feature streams implement an abstract protocol and deliver upon request another feature.
+ The regulator template wrapper-class enforce the common protocol for checking whether the
+ stream is (a) empty and (b) has a non-trivial feature (eg, one that is not a
+ constant). Template objects in the feature stream object provide the data source that the
+ stream uses to build the supplied features.  These might be a model, a list of variables,
+ a file, and so forth.
 
- The *only* calls that come down from the expert are calls to
+ Feature streams (along with bidders) are held in experts that participate in the
+ auction. The *only* calls that come down from the expert are calls to
  
         has_feature()
 
- The bidder at higher level may ask for the number remaining.
- 
-	number_remaining()
- 
- which if true and the bid wins is followed by a call to 
+ The bidder at higher level may ask for the number remaining (number_remaining).  If the
+ stream has a feature, then a winning bidder will call
  
         pop()
  
- which *must* return a feature vector (or else waste the bid).
- Feature streams are a revised version of the old recommender
- classes. The pop() operator of the stream must
+ which *must* return a feature vector (or else waste the bid).  Feature streams are a
+ revised version of the old recommender classes. The pop() operator of the stream must
         (a) pop off the top element from the stack
         (b) advance indices/whatever keeps track of the status of the stream
 
@@ -43,17 +42,12 @@
  Flavors
 
     Finite        chooses variables from a fixed set of columns
-
+    Fit           builds features depending on state of model (such as just added var)
     Interaction   interactions from a fixed set
-
     Cross-product interactions between dynamic and fixed set
-
     Polynomial    bundle of several powers at once
-    
     Subspace      several variables as a bundle
 
-    Fitted-values filled by some external object
- 
  */
 
 #include "my_features.h"
@@ -80,7 +74,8 @@
   submit a feature to the model.
 
   The regulated stream provides a 'consistent interface' for all streams without needing
-  an abstract base class.  (Works since never have a collection of streams.)
+  an abstract base class.  (Works since never have a collection of streams; streams are
+  hidden in experts, for which we *do* have an abstract base class.)
 */
   
 
@@ -92,8 +87,8 @@ public:
   
   bool has_feature (std::vector<Feature> const& used, std::vector<Feature> const& skipped)
   {
-    while(!Stream::is_empty())
-    { if (Stream::current_feature_is_okay(used,skipped))
+    while(!Stream::is_empty())                            // is_empty signals to leave stream alone
+    { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
 	return true;
       else
 	Stream::increment_position();
@@ -112,11 +107,12 @@ class FiniteStream
   std::string   mName;
   Source const& mSource;
   int           mPosition;
+  int           mCyclesLeft;
   
 public:
   
-  FiniteStream(std::string const& name, Source const& src)
-    :  mName(name), mSource(src), mPosition(0) {  }
+  FiniteStream(std::string const& name, Source const& src, int cycles)
+    :  mName(name), mSource(src), mPosition(0), mCyclesLeft(cycles-1) {  }
   
   std::string             name()         const { return mName; }
   std::string             feature_name() const;
@@ -124,7 +120,7 @@ public:
   
   void                    print_to(std::ostream& os)          const;
 
-  int                     number_remaining()                  const { return (int)mSource.size() - mPosition; }
+  int                     number_remaining()                  const { int m = mSource.size(); return m - mPosition + mCyclesLeft*m; }
   
 protected:
   bool  is_empty()                                                                                       const;
@@ -135,9 +131,9 @@ protected:
 
 template <class Source>
 RegulatedStream< FiniteStream<Source> >
-make_finite_stream (std::string const& name, Source const& s)
+make_finite_stream (std::string const& name, Source const& s, int numberCycles)
 {
-  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s));
+  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s, numberCycles));
 }
 
 

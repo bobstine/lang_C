@@ -29,7 +29,8 @@ template<class Source>
 bool
 FiniteStream<Source>::is_empty() const
 {
-  return (mPosition >= (int) mSource.size());
+  std::cout << "FINITE STREAM at " << mPosition << " with " << mCyclesLeft << " cycles left.\n";
+  return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
 }
 
 template<class Source>
@@ -37,6 +38,10 @@ void
 FiniteStream<Source>::increment_position()
 {
   ++mPosition;
+  if (mPosition >= (int) mSource.size() && mCyclesLeft>0)
+  { --mCyclesLeft;
+    mPosition = 0;
+  }
 }
 
 template<class Source>
@@ -44,7 +49,7 @@ bool
 FiniteStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
   return !(
-	   mSource[mPosition]->was_tried_in_model() ||
+	   mSource[mPosition]->is_used_in_model() ||
 	   mSource[mPosition]->is_constant()
 	   );
 }

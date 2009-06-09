@@ -102,7 +102,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
       pWinningExpert = *it;
     }
     if ((*it)->priority() > 0) // priority bidder with bid jumps to top
-    { debug(3) << "AUCT: ***** Priority bidder places bid " << bid << std::endl;
+    { 
       if (bid > 0)
       { debug(3) << "AUCT: Priority bidder takes bid " << bid << std::endl;
 	pPriorityBidder = *it;
@@ -111,7 +111,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
     }
   }
   if (pPriorityBidder) // override results
-  { debug(3) << "AUCT: assigning round to priority bidder.\n";
+  { 
     highBid = priorityBid;
     pWinningExpert = pPriorityBidder;
   }

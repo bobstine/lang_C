@@ -154,7 +154,7 @@ main(int argc, char** argv)
   // main column expert
   theAuction.add_expert(make_expert(0, alphaShare,      // priority, alpha
 				    UniversalBoundedBidder<FStream>(), 
-				    make_finite_stream("Columns", columnFeatures)
+				    make_finite_stream("Columns", columnFeatures, 2) // 2 cycles through these features
 				    ));
   
   // main interactions
