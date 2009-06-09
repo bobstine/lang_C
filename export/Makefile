@@ -5,8 +5,8 @@ all: csv_parser build_model
 .PHONY : clean 
 
 clean:
-        -rm -f     *.o *.d *.dd *.exec lib*.a
-        -rm        core
+	-rm -f     *.o *.d *.dd *.exec lib*.a
+	-rm        core
 
 
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)

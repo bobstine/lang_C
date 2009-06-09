@@ -23,6 +23,10 @@ Need to
 	Have decided on a single input stream, but use :: to separate
 	the variables into distinct streams.
 
+	Interface code (such as current_feature) would be cleaner if the object
+	providing used, skipped were made available to the streams that need it, and
+	otherwise were hidden (perhaps add another template parameter for those that need it).
+
         Build smarter streams that look at the X's they are recommending, more careful
         check for which X's make more sense.  More checking before placing bids.
         At a minimum, use regular expression to avoid dummy variable products.

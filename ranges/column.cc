@@ -18,7 +18,7 @@ Column::operator= (Column const& c)
   if(--mData->mRefCount <= 0 && mData != c.mData) delete mData;  // decrement mine and delete if not the same
   mData = c.mData;
   ++mData->mRefCount;
-  mData->mName = mData->mName + "_C";        // mark for a copy
+  mData->mName = mData->mName;                                   // add  + "_C"  to mark for a copy
   return *this;
 }
 

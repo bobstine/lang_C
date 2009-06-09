@@ -135,7 +135,7 @@ template<class Bidder, class Stream>
 double
   Expert<Bidder,Stream>::place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped)
 {
-  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
+  //  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
   { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, auctionPayoffHistory)); 
     double m (max_bid()); 

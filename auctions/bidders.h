@@ -110,10 +110,10 @@ class FitBidder
     double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, std::deque<double> const& auctionPayoffs)
   {
     debugging::debug(3) << "BIDR: fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
-    if(!auctionPayoffs.empty() && auctionPayoffs.back() > 0) // last variable successful (deque never empty)
-      if (lastBidAccepted) // increase calibration polynomial degree
-	return (mCountDown == mDelayInterval) ? 0.25 : 0.05;
-      else
+    if(!auctionPayoffs.empty() && auctionPayoffs.back() > 0)         // last variable was added to model
+      if (lastBidAccepted)                                           // it was mine, so pick the same bid
+	return (mCountDown == mDelayInterval) ? 0.25 : 0.025;
+      else                                                           // was not mine, so adjust countdown
       {  --mCountDown;
 	 if(0 == mCountDown)
 	 { mCountDown = mDelayInterval;
@@ -122,7 +122,7 @@ class FitBidder
 	 else
 	   return 0.025;
       }
-    else return 0.0;  // dont bid
+    else return 0.0;                                                 // dont bid when last not entered into auction
   }
 	
 };

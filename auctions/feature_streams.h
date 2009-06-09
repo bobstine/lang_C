@@ -147,23 +147,25 @@ make_finite_stream (std::string const& name, Source const& s)
 template<class Model>
 class FitStream
 {
-  int                    mCount;     // Number of times popped a fitted value (used to name fit values)
+  int                    mCount;           // number of times popped a fitted value (used to name fit values)
+  int                    mLastQ;           // used to detect change in model size
   Model          const&  mModel;
-  std::string            mSignature; // Prefix for variable names
+  std::string            mSignature;       // prefix for variable names so that it can recognize them
   bool                   mIncreaseDegree;
-  bool                   mEmpty;
+  Column                 mFit;             // holds fit values from model
+
 public:
   
-  FitStream(Model const& model, std::string s)    :  mCount(0), mModel(model), mSignature(s), mEmpty(false) {  }
+  FitStream(Model const& model, std::string s)    :  mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit() {  }
   
   std::string             name()           const { return mModel.name(); }
-  std::string             feature_name()   const;
+  std::string             feature_name()   const; 
   std::vector<Feature>    pop();
 
-protected:  // bidder decides whether to use the fit of the model
-  bool  is_empty()                                                                                     const { return mEmpty; }
+protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
+  bool  is_empty();
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
-  void  increment_position()                                                                           const { };
+  void  increment_position()                                                                   const { };
 };
 
 
@@ -204,7 +206,7 @@ public:
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  is_empty()                  const;
+  bool  is_empty               ()                                                                        const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   void  increment_position();
 private:

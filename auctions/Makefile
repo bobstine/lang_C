@@ -47,7 +47,7 @@ data/%.dat: data/%.csv
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
 baseball_test: auction.test data/baseball.dat
-	./auction.test -f data/baseball.dat -p 1 -r 100 -c 5
+	./auction.test -f data/baseball.dat -p 1 -r 300 -c 5
 
 stop: auction.test.o
 	echo "Stopping"

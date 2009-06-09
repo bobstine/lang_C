@@ -73,32 +73,44 @@ FiniteStream<Source>::pop()
 
 template<class Model>
 bool
+FitStream<Model>::is_empty()
+{
+  if (mLastQ == mModel.q())
+    return true;
+  mLastQ = mModel.q();
+  return false;
+}
+
+template<class Model>
+bool
 FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-  if(!used.empty())  // check name of last used feature for our signature
-  { mEmpty = false;
-    std::string lastVarName = used.back()->name();
-    mIncreaseDegree = (std::string::npos != lastVarName.find(mSignature));  // npos means not found
-    if (mIncreaseDegree && (std::string::npos != lastVarName.find("fifth")))
-    { mEmpty = true;
-      return false;
-    }
-  }
-  return true;
+   std::string lastVarName = used.back()->name();                             // check name of last used feature for name signature
+   mIncreaseDegree = (std::string::npos != lastVarName.find(mSignature));     // ::npos means not found
+   if (mIncreaseDegree && (std::string::npos != lastVarName.find("fifth")))   // already topped out at fifth degree
+     return false;
+   else
+     return true;
 }
       
 template<class Model>
 std::vector<Feature>
 FitStream<Model>::pop()
-{ ++mCount;
-  Column fit(feature_name().c_str(), mModel.fit_length());
-  mModel.fill_with_fit(fit->begin());
-  fit->update();
+{
   std::vector<int> powers;
-  powers.push_back(2); powers.push_back(3);
-  if (mIncreaseDegree)
-    for(size_t i=0; i<powers.size(); ++i) powers[i]+=2;
-  return powers_of_column_feature(fit,powers);
+  if (!mIncreaseDegree)                                              // first attempt to calibrate
+  { ++mCount;
+    mFit = Column(feature_name().c_str(), mModel.fit_length());      // grab current fit
+    mModel.fill_with_fit(mFit->begin());
+    mFit->update();
+    powers.push_back(2);
+    powers.push_back(3);                                             // square and cubic for first attempt
+  }                                                        
+  else                                                               // use higher powers to improve
+  { powers.push_back(4);
+    powers.push_back(5);
+  }
+  return powers_of_column_feature(mFit,powers);
 }
 
 template<class Model>
@@ -112,7 +124,7 @@ FitStream<Model>::feature_name () const
 
 
 
-  ///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams
+///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteractgion Streams
 
 
 template<class Source>
