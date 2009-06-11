@@ -76,7 +76,7 @@ private:
   void write_model_to            (std::ostream& os)                      const;
   void write_model_data_to       (std::ostream& os)                      const;
   
-  void write_csv_header_to       (std::ostream& os)                      const;
+  void write_csv_header_to       (std::ostream& os, double inSS, double outSS) const;
 
 
  private:

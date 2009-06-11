@@ -9,12 +9,15 @@
 
 template <class Model>
 void
-Auction<Model>::write_csv_header_to(std::ostream& os) const
+Auction<Model>::write_csv_header_to(std::ostream& os, double ssIn, double ssOut) const
 {
   os << "Round, Time, Goodness of Fit, Total Alpha  ";
   for (int b=0; b<number_of_experts(); ++b)
     os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
   os << ", Winning Expert, High Bid, p-value, Variable, Outcome, Payoff, RSS, CVSS\n";
+  os << " , , ,";
+  for (int b=0; b<number_of_experts(); ++b)    os << ",  , , ";
+  os << ", , , , , , , " << ssIn << "," << ssOut << std::endl;
 }
 
 

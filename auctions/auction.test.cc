@@ -124,7 +124,55 @@ main(int argc, char** argv)
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
-  
+
+  // compute initial SS
+  double inSS  (0.0);
+  double outSS (0.0);
+  if (yColumns.size() == 2) // have subsets
+  { double avg0 (0.0), avg1 (0.0);
+    int n0 (0), n1 (0);
+    double *x = yColumns[1]->begin();
+    double *b = yColumns[0]->begin();
+    for(int i = 0; i<yColumns[0]->size(); ++i)
+    { if (*b++)
+      {	avg1 += *x++;
+	++n1;
+      }
+      else
+      { avg0 += *x++;
+	++n0;
+      }
+    }
+    assert (n0); assert (n1);
+    if ((0 == n0) || (0 == n1))
+    { std::cout << "ERROR: counts in in-sample/out-of-sample data are " << n0 << " " << n1 << std::endl;
+      return -5;
+    }
+    avg0 = avg0 / n0;
+    avg1 = avg1 / n1;
+    x = yColumns[1]->begin();
+    b = yColumns[0]->begin();
+    for (int i=0; i<yColumns[0]->size(); ++i)
+    {
+      double dev;
+      if (*b++)
+      { dev = *x++ - avg1;
+	inSS += dev * dev;
+      }
+      else
+      { dev = *x++ - avg0;
+	outSS += dev*dev;
+      }
+    }
+  }
+  else
+  { double avg = yColumns[0]->average();
+    double  *x = yColumns[0]->begin();
+    for(int i = 0; i<yColumns[0]->size(); ++i)
+    { double dev = *x++ - avg;
+      inSS += dev*dev;
+    }
+  }
   // convert columns of data into vector of features
   std::vector<Feature> columnFeatures;
   for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
@@ -219,7 +267,7 @@ main(int argc, char** argv)
   // run the auction with output to file
   {
     int round = 0;
-    theAuction.write_csv_header_to (progressStream);
+    theAuction.write_csv_header_to (progressStream, inSS, outSS);
     while(round<numberRounds && theAuction.has_active_expert())
     {
       ++round;
