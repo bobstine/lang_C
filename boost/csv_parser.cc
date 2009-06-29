@@ -21,19 +21,24 @@
    The input data should have the style of named columns. Names can consist of
    characters, numbers, and the symbols ".", "_", and "/".  Others might ought
    to be added to aid in later parsing of variables. For example, an input csv
-   file with 3 variables might begin as in
+   file with 3 variables might begin as follows
 
       Var1, a/b, Var.3
        1, 2, 3
        3, 4, 5
        a,  , 5
 
-   If the first input column is a list of names, "in"/"out", then the parser will treat
+   If the first input column is a list the labels "in" and "out", then the parser will treat
    this column differently; it will treat this column as an indicator of which cases are
    to be used in subsequent analysis.  Rather than generate 2 indicators, it will only
    generate 1 and this single boolean variable will be placed first in the file sent to
-   the auction.
+   the auction for modeling.
 
+   Known limitations:
+
+      No blanks at the end of the line are allowed!
+
+      
    
    Output
 
@@ -48,7 +53,7 @@
 
    The presence of a non-numerical symbol (here, the 'a' in the 3rd row) in the
    data for Var1 converts Var1 into a categorical variable. Every unique value
-   found in this columns will lead the software to generate an indicator (so,
+   found in this column will cause the software to generate an indicator (so,
    you'll get a lot of these if this was an accident and the column really is
    numerical). In this case, you'd get an output column called
    Var1[1],Var1[3],Var1[a].  For the second column, the presence of a missing
@@ -59,7 +64,8 @@
       a/b[missing]
       0 0 1
 
-   Assuming these the only 3 cases. Missing data is denoted by an empty field.
+   Assuming these are the only 3 cases. Missing data in the input file is denoted
+   by an empty field.
 
    
     7 Jan 09 ... Debug, formatting, better messages and comments.
@@ -76,6 +82,7 @@
 #include <cstdlib> // strtod
 
 #include <vector>
+#include <map>
 #include <set>
 
 #include <iterator>
@@ -94,44 +101,69 @@
 
 using namespace std;
 using namespace boost::spirit;
-using namespace boost::lambda;
+// using namespace boost::lambda;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// holds every line of input file
-typedef std::vector< std::vector<std::string> > StringDataMatrix;
+typedef std::vector< std::string > StringVector;
+
+typedef std::map<int,StringVector> OptionMap;
+typedef std::vector< StringVector> StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// operator used by parse engine
 class StringCatcher
 {
 private:
-  typedef std::vector< std::string > StrVec;
-
-  StrVec *mpStrings;
+  StringVector *mpStrings;
 
 public:
-  StringCatcher (StrVec *pStrings) : mpStrings(pStrings) {}
+  StringCatcher (StringVector *pStrings) : mpStrings(pStrings) {}
   
   template <class It>
   void operator()(It first, It last) const      { std::string s(first, last); mpStrings->push_back(s); }
 };
 
 
-template <class Op>
-bool
-parse_variable_names (char const* str, Op f)                   // Op f is bound to parse action
+class MappedStringCatcher   // holds options of names in a map
 {
-  rule<phrase_scanner_t> name_rule, name_item, option_item;    // phrase_scanner type allows space_p in parser
+private:
+  StringVector *mpStrings;
+  OptionMap    *mpMap;
   
-  option_item = confix_p('[', *anychar_p , ']');               // bracketed options in var name
+public:
+  MappedStringCatcher (StringVector *pStrings, OptionMap *pMap) : mpStrings(pStrings), mpMap(pMap) {}
+  
+  template <class It>
+  void operator()(It first, It last) const
+  { std::string s(first, last);
+    int position (mpStrings->size());
+    (*mpMap)[position-1].push_back(s);    // shift by one for index 0 since attaching option to parsed name
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <class OpName, class OpOption>
+bool
+parse_variable_names (char const* str, OpName f, OpOption g)         // Op f is bound to parse action
+{
+  rule<phrase_scanner_t> name_rule, name_item, option_rule, option_item;    // phrase_scanner type allows space_p in parser
+  rule<phrase_scanner_t> token;
+  
+  // option_item = confix_p('[', *anychar_p , ']');               // bracketed options in var name
+  option_item = alpha_p >> *alnum_p;
+  option_rule = (ch_p('[') >>  option_item[g] >> ch_p(']'));         //	 list_p(option_item[g], ';'), ch_p(']'));
+
   name_item =
      (                                                         // char first in name without quotes
-      alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/')) >> *option_item 
+      (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/')))
       |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
      );
-  name_rule = list_p(name_item[f], ',');                       // call the operator f for each parsed string
+
+  token = (name_item[f] >> !option_rule);                      // zero or one options
+  
+  name_rule = list_p(token, ',');                       // call the operator f for each parsed string
 
   parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
   if (result.hit)
@@ -149,9 +181,9 @@ parse_variable_names (char const* str, Op f)                   // Op f is bound 
 }
 
 
-template <class Op>
+template <class OpName>
 bool
-parse_data_line (char const* str, Op f)
+parse_data_line (char const* str, OpName f)
 {
   rule<phrase_scanner_t> data_rule, data_item;
 
@@ -388,13 +420,21 @@ csv_parser(std::istream& input, std::ostream& output)
   std::string inputLine;
   
   // parse names of variables from first input line
-  std::vector< std::string > inputColumnNames;
+  StringVector inputColumnNames;
+  OptionMap    inputOptions;
   if (getline(input, inputLine))
   {
-    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ) ))
+    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ), MappedStringCatcher( &inputColumnNames, &inputOptions ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
+      for (int i=0; i<inputColumnNames.size(); ++i)
+	if (!inputOptions[i].empty())
+	{ std::clog << "Options[" << inputColumnNames[i] << "," << i << "]  ";
+	  for(unsigned int j=0; j<inputOptions[i].size(); ++j)
+	    std::clog << inputOptions[i][j] << " ";
+	  std::clog << endl;
+	}
     }
     else std::cerr<< "Parser: ERROR. Failed to parse CSV variable names.\n" << endl;
   } else std::cerr << "Parser: ERROR. Not able to read input data.\n " << endl;
@@ -411,7 +451,7 @@ csv_parser(std::istream& input, std::ostream& output)
   while (getline(input, inputLine))
   { ++lineNumber;
     std::vector<std::string> inputData;
-    if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData ))) {
+    if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData )) ) {
       // cout <<  "\nData from the item parser:" << endl;
       // for (std::vector<std::string>::iterator it = inputData.begin(); it != inputData.end(); ++it)  {
       // cout << " |" << *it << "| " << endl; 
