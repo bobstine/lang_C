@@ -29,7 +29,7 @@ template<class Source>
 bool
 FiniteStream<Source>::is_empty() const
 {
-  std::cout << "FINITE STREAM at " << mPosition << " with " << mCyclesLeft << " cycles left.\n";
+  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left.\n";
   return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
 }
 
@@ -68,7 +68,7 @@ FiniteStream<Source>::pop()
 {
   std::vector<Feature> result;
   result.push_back(mSource[mPosition]); 
-  ++mPosition; 
+  increment_position();
   return result;
 }
 
@@ -195,7 +195,7 @@ template<class Source>
 typename std::vector<Feature>
 InteractionStream<Source>::pop()
 {
-  Feature  x1 (mSource[mPos1]);    // RAS: const& *essential* here
+  Feature  x1 (mSource[mPos1]);  
   Feature  x2 (mSource[mPos2]);
   increment_position();
   std::vector<Feature> result;

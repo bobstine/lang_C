@@ -42,6 +42,9 @@ auction_test: model/costs
 quick_test: auction.test
 	./auction.test -f test/bank_post45.dat -r 100 -c 5
 
+crash_test: auction.test
+	./auction.test -f test/crash.dat -r 100 -c 5
+
 data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
