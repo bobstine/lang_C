@@ -43,18 +43,21 @@ standard_deviation (std::vector<double> const& x, double avg)
 
 ////  Tests and p-values
 
-
 std::pair<double,double>
 t_test(double tStat, int df)
 {
+  if (isnan(tStat) || isinf(tStat))
+    return std::make_pair(0.0,1.001);
   return std::make_pair(tStat, gsl_cdf_tdist_Q(tStat, df));    
 }
 
 std::pair<double,double> 
 f_test(double numSS, int numDF, double denSS, int denDF)
 {
-  if((numSS <= 0.0) || (denSS <= 0.0)) return std::make_pair(0.0,1.0);
-  
+  if ( ( isnan(numSS) || isnan(denSS) ) ||
+       ( isinf(numSS) || isinf(denSS) ) ||
+       ( (numSS <= 0.0) || (denSS <= 0.0)) )
+    return std::make_pair(0.0,1.01);
   double fRatio ((numSS * denDF)/(denSS * numDF));                      
   return std::make_pair(fRatio, gsl_cdf_fdist_Q(fRatio, numDF, denDF));    
 }
