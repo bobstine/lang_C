@@ -66,6 +66,7 @@ const int gslRegression_Max_P ( 31)  ; // max number to evaluate for adding
 
 ///////////////////////////  State Preservation  /////////////////////////////
 
+
 class gslRegressionState
 {
 private:

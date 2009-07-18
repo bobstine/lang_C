@@ -42,21 +42,29 @@ auction_test: model/costs
 quick_test: auction.test
 	./auction.test -f test/bank_post45.dat -r 100 -c 5
 
-crash_test: auction.test
-	./auction.test -f test/crash.dat -r 100 -c 5
-
 data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
+
+crash_test: auction.test
+	./auction.test -f data/crash.dat -r 100 -c 5
+
+anes_test: auction.test data/anes2008.dat
+	./auction.test -f data/anes2008.dat -r 2500 -c 5
+
 baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -p 1 -r 300 -c 5
+
+crunch_test: auction.test data/crunch.dat
+	./auction.test -f data/crunch.dat -r 1000 -a 6 -p 0 -c 0
+
+
 
 stop: auction.test.o
 	echo "Stopping"
 
-crunch_test: auction.test data/crunch.dat
-	./auction.test -f data/crunch.dat -r 1000 -a 6 -p 0 -c 0
+
 
 model/costs: model/test.dat model/auction.model estimator validator
 	./estimator -f test/test.dat est2.dat -n test/bank_post45.names -m model/auction.model -o model/refit.model

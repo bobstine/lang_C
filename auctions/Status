@@ -5,17 +5,17 @@ Need to
 
      Memory (leaks, problems)
 
-        powers_of_column_feature has a problems since the features are passed around
-	as pointers.  This gets to be nasty way to create a unary feature that not sure
-	who is going to delete. (my_features.cc, my_features.h) Called by FitStream in
-	feature_streams.Template.h.  FitStream::pop seems wrong... where's the Column
-	go?
 
-	In general, who manages the space required by functional features (my_features)
-	such as the unary feature that is a function of another.  If the argument feature
-	is in the modeling, the destruction of the model gets them.  If not (such as fits
-	created to calibrate the model)	then the argument is never released.
+     General
 
+	What's up with the weird choices of polynomial streams.  Seems to raise
+	variable to higher and higher power and never try another. Keeps trying
+	to power up its prior choices.
+
+	Interactions within a variable are a mess with things like State.
+
+	In parsing options, remove the [] option terms and use these to set attributes,
+	as in type = indicator; label = xxx
 
      Streams 
 
@@ -79,6 +79,14 @@ Need to
 	"length" items held in both training and test data.
 
 
+------------------------------------------------------------------------------
+ 3 Jul 09    
+
+       Small improvements to csv_parser; can now recognize [ ; ] options in 
+       name of the variable.
+
+       Fix f_test (stat_utils) so that it detects an underflow/overflow in 
+       p-value calculations.
 
 
 ------------------------------------------------------------------------------
@@ -95,6 +103,9 @@ Need to
 
        Problem really was in the interaction feature itself.  It tried to hold its features
        as references rather than as actual values.  That was the error.
+
+       New feature model (using -> to dereference object as explained in Coplein)
+       works very nicely.  Handles memory well.  Valgrind reports no leaks
 
 
 ------------------------------------------------------------------------------
