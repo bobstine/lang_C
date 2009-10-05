@@ -28,15 +28,17 @@
        3, 4, 5
        a,  , 5
 
-   If the first input column is a list the labels "in" and "out", then the parser will treat
-   this column differently; it will treat this column as an indicator of which cases are
-   to be used in subsequent analysis.  Rather than generate 2 indicators, it will only
-   generate 1 and this single boolean variable will be placed first in the file sent to
-   the auction for modeling.
+   If the first input column is a list of the labels "in" and "out",
+   then the parser will treat this column differently; it will treat
+   this column as an indicator of which cases are to be used in
+   subsequent analysis.  Rather than generate 2 indicators, it will
+   only generate 1 and this single boolean variable will be placed
+   first in the file sent to the auction for modeling.
 
    Known limitations:
 
       No blanks at the end of the line are allowed!
+      You need a *mix* of in/out for the leading indicator (not all in).
 
       
    

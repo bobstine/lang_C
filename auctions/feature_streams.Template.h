@@ -29,7 +29,7 @@ template<class Source>
 bool
 FiniteStream<Source>::is_empty() const
 {
-  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left.\n";
+  // std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left.\n";
   return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
 }
 

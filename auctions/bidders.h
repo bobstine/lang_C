@@ -73,9 +73,12 @@ public:
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
   {
+    const double maxbid = 0.25;
     int n (stream.number_remaining());
     if (n>0)
-      return alpha/n;
+    { bid = alpha/n;
+      return (bid < maxbid) ? bid : maxbid;
+    }
     else
       return 0.0;
   }
@@ -199,12 +202,14 @@ public:
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
   {
+    const double maxbid = 0.25;
     int n (stream.number_remaining());
     if (n>0)
     { double fixedBid=1.0/(double)n;
-      return alpha * max( fixedBid,
-			  universalPDF(history.number_bids_since_last_sucess())
-			  );
+      double bid = alpha * max( fixedBid,
+				universalPDF(history.number_bids_since_last_sucess())
+				);
+      return (bid < maxbid) ? bid : maxbid;
     }
     else
       return 0.0;

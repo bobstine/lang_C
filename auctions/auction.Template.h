@@ -46,7 +46,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
     return false;
   }
   else
-  { debugging::debug(0) << "AUCT: Winning expert  " << pWinningExpert->name() << " bids on ";
+  { debugging::debug(0) << "AUCT: Winning expert  " << pWinningExpert->name() << " bids $" << highBid <<  " on ";
     print_features(features);
   }
   // build variables for testing

@@ -1,5 +1,5 @@
 /*
-  Run using commands in the Makefile to get the data setup properly (eg, make auction_test)
+  Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
   
           auction.test -f filename -o path -r rounds -c calibration_df -v
@@ -272,7 +272,9 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-	debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl << theAuction << std::endl << std::endl;
+      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl;
+	debug(3) << theAuction << std::endl << std::endl;
+      }
       progressStream << std::endl;                        // ends lines in progress file
     }
     debug(3) << "\nAUCT:         -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;

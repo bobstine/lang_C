@@ -69,7 +69,7 @@ crunch/model.dat: csv_parser crunch/input.csv
 
 crunch: build_model crunch/model.dat
 	mkdir -p crunch/log
-	./build_model --input-file crunch/model.dat --output-path crunch/log/ -r 10000 -p 0 -a 5
+	./build_model --input-file crunch/model.dat --output-path crunch/log/ -r 10000 -p 0 -a 15
 
 
 # h option tars the files rather than the symbolic links
