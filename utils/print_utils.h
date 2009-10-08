@@ -36,17 +36,17 @@ template <class SIter, class Iter>
 void
   print_stat_summary_table (int k, SIter name, Iter est, Iter se, std::ostream &os)
 {
-  const unsigned int maxString (25);
+  const unsigned int maxNameString (50);
 
   os << "\n - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
   os << "                         Summary of Estimates\n";
-  os << "        Name                   Estimate            SE          t         p\n";
+  os << "        Name                                   Estimate            SE          t         p\n";
   // print the names in the first column, then est   se   t  p-val
   for (int i=0; i<k; ++i)
   { std::string aName (name[i]);
-    if (aName.size() > maxString)
-      aName = aName.substr(0,maxString);
-    os << std::setw(25) << aName  << "   ";
+    if (aName.size() > maxNameString)
+      aName = aName.substr(0,maxNameString);
+    os << std::setw(maxNameString) << aName  << "   ";
     os << std::setw(15) << est[i] << " ";
     // reduce precision for se, t values, p-values
     os.precision(3);
@@ -75,7 +75,7 @@ template <class SIter, class Iter>
 void
   print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, std::ostream &os)
 {
-  const unsigned int maxAllowedNameLength (35);
+  const unsigned int maxNameLength (50);
 
   // find the length of the longest name; use that length unless bigger than max
   unsigned int maxLen = 0;
@@ -83,8 +83,8 @@ void
   { if (name[i].size() > maxLen)
       maxLen = name[i].size();
   }
-  if (maxLen > maxAllowedNameLength)
-    maxLen = maxAllowedNameLength;
+  if (maxLen > maxNameLength)
+    maxLen = maxNameLength;
   
   os << "\n<TABLE BORDER CELLSPACING=10 CELLPADDING=10 WIDTH=\"80%\">\n";
   os << " <CAPTION> Summary of Statistical Estimates </CAPTION>\n";

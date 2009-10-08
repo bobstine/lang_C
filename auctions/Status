@@ -8,7 +8,8 @@ Need to
 
      General
 
-        Put in a test to make sure number of variables does not come close to n.
+        Put in a test to make sure number of variables does not come
+        close to n. (occured in testing of Jason's program)
 
 	What's up with the weird choices of polynomial streams.  Seems to raise
 	variable to higher and higher power and never try another. Keeps trying
