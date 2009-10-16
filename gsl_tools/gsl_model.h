@@ -34,9 +34,10 @@ public:
   inline std::string  name() const { return "Linear Model";}
   inline Data        *data() const { return GSLR::mpData; }
   inline int    protection() const { return GSLR::mProtection; }
+  inline int   residual_df() const { return n()-1-q(); }
   inline int        n()      const { return GSLR::mN; }
   inline int        q()      const { return GSLR::mQ; }
-  inline double    s2()      const { return GSLR::mRSS/(n()-(1+q())); }  
+  inline double    s2()      const { return GSLR::mRSS/residual_df(); }  
   inline double   gof()      const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
   
   template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);

@@ -57,7 +57,7 @@ baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -p 1 -r 300 -c 5
 
 crunch_test: auction.test data/crunch.dat
-	./auction.test -f data/crunch.dat -r 1000 -a 6 -p 0 -c 0
+	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
 
 

@@ -125,12 +125,12 @@ main(int argc, char** argv)
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
 
-  // compute initial SS
+  // compute initial SS, sample sizes for estimation n0 and validation n1
   double inSS  (0.0);
   double outSS (0.0);
+  int n0 (0), n1 (0);
   if (yColumns.size() == 2) // have subsets
   { double avg0 (0.0), avg1 (0.0);
-    int n0 (0), n1 (0);
     double *x = yColumns[1]->begin();
     double *b = yColumns[0]->begin();
     for(int i = 0; i<yColumns[0]->size(); ++i)
@@ -267,8 +267,9 @@ main(int argc, char** argv)
   // run the auction with output to file
   {
     int round = 0;
+    const int minimum_residual_df = 10;
     theAuction.write_csv_header_to (progressStream, inSS, outSS);
-    while(round<numberRounds && theAuction.has_active_expert())
+    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
