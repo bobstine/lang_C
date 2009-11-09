@@ -24,7 +24,7 @@ EXTERNAL_USES = gsl gslcblas
 ###########################################################################
 
 level_0   = featureABC.o       bidders.o
-level_1   = my_features.o
+level_1   = features.o
 level_2   = adapter.o          feature_streams.o
 level_3   = experts.o
 level_4   = auction.o

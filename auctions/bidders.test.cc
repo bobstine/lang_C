@@ -7,9 +7,8 @@
 #include "bidders.h"
 
 #include "column.h"
-#include "my_features.h"
+#include "features.h"
 #include "feature_streams.h"
-#include "recommenders.h"
 
 
 #include <iostream>

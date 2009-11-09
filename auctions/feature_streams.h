@@ -48,9 +48,9 @@
     Polynomial    bundle of several powers at once
     Subspace      several variables as a bundle
 
- */
+*/
 
-#include "my_features.h"
+#include "features.h"
 
 // polynomial
 #include "function_utils.h"

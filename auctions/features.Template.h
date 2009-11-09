@@ -1,5 +1,3 @@
-// $Id: my_features.Template.h,v 3.1 2008/01/30 03:57:01 bob Exp $
-
 
 //  Feature constructors
 

@@ -1,6 +1,6 @@
 // $Id: my_features.test.cc,v 3.4 2008/01/30 22:39:01 bob Exp $
 
-#include "my_features.h"
+#include "features.h"
 #include "column.h"
 
 #include "smoothing_spline.h"
@@ -32,12 +32,16 @@ main ()
   // make a feature from a column, add some attributes
   Feature x   (xColumn1);
   Feature dup (xColumn2);
-  x->add_attribute ("test");
-  x->add_attribute ("test_2");
+  x->add_attribute ("test", "value of test");
+  x->add_attribute ("test_int", "23423");
+  x->add_attribute ("test_dbl", "234.235");
   x->set_model_results(true, 0.04);
   std::cout << "TEST: average of feature is " << x->center() << std::endl;
-  std::cout << "      feature attribute {test}  = " << x->has_attribute("test") << std::endl;
-  std::cout << "      feature attribute {test2} = " << x->has_attribute("test2") << std::endl;
+  std::cout << "      feature attribute {test}     = " << x->has_attribute("test") << std::endl;
+  std::cout << "      feature attribute {test2}    = " << x->has_attribute("test2") << std::endl;
+  std::cout << "      feature attribute {test}     = " << x->attribute_str_value("test") << std::endl;
+  std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
+  std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
 
 
 

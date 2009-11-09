@@ -286,7 +286,7 @@ class BinaryFeature : public FeatureABC
 };
 
 
-#include "my_features.Template.h"
+#include "features.Template.h"
   
 #endif
 

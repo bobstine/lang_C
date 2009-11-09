@@ -11,7 +11,7 @@
 
 
 #include <gsl/gsl_matrix.h>
-#include "my_features.h"
+#include "features.h"
 
 gsl_matrix *
 ConvertFeaturesIntoMatrix(std::vector<Feature> v);

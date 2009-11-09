@@ -10,7 +10,7 @@
    1 Aug 03 ... Created
 */  
 
-#include "my_features.h"
+#include "features.h"
 #include "experts.h"
 #include "gsl_data.h"
 #include "gsl_model.h"

@@ -4,6 +4,7 @@
 
 #include "range_stats.h"
 
+#include <sstream>
 
 FeatureABC::Arguments
 FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Arguments const& a2) const
@@ -15,10 +16,44 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
 }
 
 
-bool
-FeatureABC::has_attribute(std::string const& a)       const
+std::string
+FeatureABC::attribute_str_value(std::string attr) const
 {
-  return (mAttributes.end() != std::find(mAttributes.begin(), mAttributes.end(), a));
+  AttrIter iter (mAttributes.find(attr));
+  if (iter != mAttributes.end())
+    return iter->second;
+  else
+    return "";
+}
+      
+
+int
+FeatureABC::attribute_int_value(std::string attr) const
+{
+  AttrIter iter (mAttributes.find(attr));
+  if (iter != mAttributes.end())
+  { std::istringstream ss(iter->second);
+    int i;
+    ss >> i;
+    return i;
+  }
+  else
+    return 0;
+}
+      
+
+double
+FeatureABC::attribute_dbl_value(std::string attr) const
+{
+  AttrIter iter (mAttributes.find(attr));
+  if (iter != mAttributes.end())
+  { std::istringstream ss(iter->second);
+    double d;
+    ss >> d;
+    return d;
+  }
+  else
+    return 0.0;
 }
 
 
@@ -42,8 +77,10 @@ FeatureABC::read_from (std::istream& is)
   is >> attributeCount;
   while (attributeCount)
   { std::string attribute;
+    std::string attributeValue;
     is >> attribute;
-    mAttributes.insert(attribute);
+    is >> attributeValue;
+    mAttributes[attribute] =  attributeValue;
     --attributeCount;
   }
   is >> mTried;
@@ -56,7 +93,7 @@ FeatureABC::write_to (std::ostream& os)     const
 {
   os << "FeatureABC " << mAttributes.size() << " ";
   if (!mAttributes.empty())
-    std::copy(mAttributes.begin(), mAttributes.end(), std::ostream_iterator<std::string>(os," "));
+    os << mAttributes; // defined in featureABC.h
   os << mTried << " " << mInModel << " " << mEntryPValue << std::endl;
 }
 
