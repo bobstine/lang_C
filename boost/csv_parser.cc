@@ -4,6 +4,7 @@
 
    EXECUTE:  csv_parser -o output-file-name < input.csv
    
+
    
    This program uses boost's BNF spirit engine to parse the information in a csv
    file.  The program converts the columns in that file into *numerical*
@@ -14,35 +15,34 @@
    perhaps process them as a block.  Bracketed terms in the names of output
    variables identify variables generated during processing (e.g., V1[missing]
    or Location[SC].
-
+   
 
    Input
    
-   The input data should have the style of named columns. Names can
-   consist of characters, numbers, and the symbols ".", "_", and "/".
-   Others might ought to be added to aid in later parsing of
-   variables. The name can be extended by included within brackets
-   options formatted as name=value pairs that associate with this
-   variable. For example, an input csv file with 3 variables might
-   begin as follows
+   The input data should have the style of named columns. Names can consist of
+   characters, numbers, and the symbols ".", "_", and "/".  Others might ought
+   to be added to aid in later parsing of variables. The name can be extended by
+   including semicolon-separated attributes [within brackets] formatted as
+   name=value pairs to associate with this variable. For example, an input csv
+   file with 3 variables might begin as follows
 
       Var1, a/b, Var.3[priority=2;knots=4]
        1, 2, 3
        3, 4, 5
        a,  , 5
 
-   If the first input column is a list of the labels "in" and "out",
-   then the parser will treat this column differently; it will treat
-   this column as an indicator of which cases are to be used in
-   subsequent analysis.  Rather than generate 2 indicators, it will
-   only generate 1 and this single boolean variable will be placed
-   first in the file sent to the auction for modeling.
+   Missing data in the input file is denoted by an empty field.
+
+   If the first input column is a list of the labels "in" and "out", then the
+   parser will treat this column differently; it will treat this column as an
+   indicator of which cases are to be used in subsequent analysis.  Rather than
+   generate 2 indicators, it will only generate 1 and this single boolean
+   variable will be placed first in the file sent to the auction for modeling.
 
    Known limitations:
 
       No blanks at the end of the line are allowed!
       You need a *mix* of in/out for the leading indicator (not all in).
-
       
    
    Output
@@ -51,39 +51,47 @@
    variables to be written
    
    The remaining output is written one column at a time, so the data is written
-   out in streaming style, with a variable name on a line followed by data on
-   the next line.  The output consists of at least as many columns as in the
-   input due to the expansion caused by missing values and categorical
-   indicators.
+   out in streaming style, with three lines for each variable:
 
-   The presence of a non-numerical symbol (here, the 'a' in the 3rd
-   row) in the data for Var1 converts Var1 into a categorical
-   variable. Every unique value found in this column will cause the
-   software to generate an indicator (so, you'll get a lot of these if
-   this was an accident and the column really is numerical).  As in
-   JMP, square brackets in the name of a variable identify an
-   indicator for a category.
+      (1) the name of the variable (square brackets denote an indicator)
+      (2) attribute for this variable as space delimited strings/numbers
+      (3) data
+     
+   As in JMP, square brackets in the name of a variable identify an indicator
+   for a category.  If a variable lacks attributes, the second line begins with
+   '*'.  The output consists of at least as many columns as in the input due to
+   the expansion caused by missing values and categorical indicators.
 
-   In this example, you'd get an output column called Var1[1],
-   Var1[3], Var1[a].  For the second column, the presence of a missing
-   value means that you'd get the two output variables (the mean is 3)
+   The presence of a non-numerical symbol (in the example, the 'a' in the 3rd
+   row) in the data for Var1 converts Var1 into a categorical variable. Every
+   unique value found in this column will cause the software to generate an
+   indicator (so, you'll get a lot of these if this was an accident and the
+   column really is numerical).
+
+   In this example, you'd get output columns called Var1[1], Var1[3], Var1[a].
+   For the second column, the presence of a missing value means that you'd get
+   the two output variables (the mean is 3).
   
       Var1[1]
+      parent Var1 category 1
       1 0 0
       Var1[3]
+      parent Var1 category 3
       0 1 0
       Var1[a]
+      parent Var1 category a
       0 0 1
       a/b
+      *
       2 4 3 
       a/b[missing]
+      parent a/b category missing
       0 0 1
       Var.3
+      *
       3 5 5
-   Assuming these are the only 3 cases. Missing data in the input file is denoted
-   by an empty field.
-
-   
+      
+   11 Nov 09 ... Attributes read and written.   
     7 Jan 09 ... Debug, formatting, better messages and comments.
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
 
@@ -123,7 +131,7 @@ using namespace boost::spirit;
 
 typedef std::vector< std::string > StringVector;
 
-typedef std::map<int,StringVector> OptionMap;
+typedef std::map<int,StringVector> AttributeMap;
 typedef std::vector< StringVector> StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,37 +149,37 @@ public:
 };
 
 
-class MappedStringCatcher   // holds options of names in a map
+class MappedStringCatcher   // holds attributes of names in a map
 {
 private:
   StringVector *mpStrings;
-  OptionMap    *mpMap;
+  AttributeMap    *mpMap;
   
 public:
-  MappedStringCatcher (StringVector *pStrings, OptionMap *pMap) : mpStrings(pStrings), mpMap(pMap) {}
+  MappedStringCatcher (StringVector *pStrings, AttributeMap *pMap) : mpStrings(pStrings), mpMap(pMap) {}
   
   template <class It>
   void operator()(It first, It last) const
   { std::string s(first, last);
     int position (mpStrings->size());
-    (*mpMap)[position-1].push_back(s);    // shift by one for index 0 since attaching option to parsed name
+    (*mpMap)[position-1].push_back(s);    // shift by one for index 0 since attaching attribute to parsed name
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class OpName, class OpOption>
+template <class OpName, class OpAttribute>
 bool
-parse_variable_names (char const* str, OpName f, OpOption g)         // Op f is bound to parse action
+parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f is bound to parse action
 {
-  rule<phrase_scanner_t> name_rule, name_item, option_rule, option_item;    // phrase_scanner type allows space_p in parser
+  rule<phrase_scanner_t> name_rule, name_item, attribute_rule, attribute_item;    // phrase_scanner type allows space_p in parser
   rule<phrase_scanner_t> token;
   
-  option_item = alpha_p >> *(alnum_p | ch_p("="));
-  option_rule = (ch_p('[')
-		 >> option_item[g]
-		 >> *(ch_p(';') >> option_item[g])
-		 >> ch_p(']'));                                //	 list_p(option_item[g], ';'), ch_p(']'));
+  attribute_item = alpha_p >> *(alnum_p | ch_p("="));
+  attribute_rule = (ch_p('[')
+		 >> attribute_item[g]
+		 >> *(ch_p(';') >> attribute_item[g])
+		 >> ch_p(']'));                                //	 list_p(attribute_item[g], ';'), ch_p(']'));
 
   name_item =
      (                                                         // char first in name without quotes
@@ -179,7 +187,7 @@ parse_variable_names (char const* str, OpName f, OpOption g)         // Op f is 
       |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
      );
 
-  token = (name_item[f] >> !option_rule);                      // zero or one options
+  token = (name_item[f] >> !attribute_rule);                      // zero or one attributes
   
   name_rule = list_p(token, ',');                       // call the operator f for each parsed string
 
@@ -256,12 +264,47 @@ parse_double (std::string str)
        - data for the variable as a following line (which can be long)
 */
 
+
+// Utility class for parsing the name=value strings that define attributes in the
+// source csv file.
+
+class AttributeWriter: std::unary_function<string, void>
+{
+private:
+  std::ostream& m_os;
+public:
+  AttributeWriter(std::ostream& os): m_os(os) {}
+
+  void  operator()(std::string s);
+};
+
+  void
+  AttributeWriter::operator()(std::string s)
+{
+  std::string::const_iterator it (s.begin());
+  for (; *it != '='; ++it)
+    m_os << *it;
+  ++it;
+  m_os << ' ';
+  for (; it != s.end(); ++it)
+    m_os << *it;
+  m_os << "  ";
+}
+
+
 void
-write_missing_column (std::string const& varName, StringDataMatrix const& data,
+write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 		      int column, std::ostream& output)
 {
-  int nObs (data.size());
+  // write name with missing appended
   output << varName << "[missing]" << endl;
+  // write attributes
+  output << "parent " << varName << "  category missing  ";
+  if (!attributes.empty())
+    for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+  output << endl;
+  // write data
+  int nObs (data.size());
   for(int i=0; i<nObs; ++i) {
     if (data[i][column].size()==0)     output << "1 ";
     else                               output << "0 ";
@@ -270,11 +313,17 @@ write_missing_column (std::string const& varName, StringDataMatrix const& data,
 }  
 
 void
-write_numerical_column  (std::string const& varName, StringDataMatrix const& data,
+write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
   // start by writing the undecorated name to output
   output << varName << endl;
+  // write attributes
+  if (attributes.empty())
+    output << "*";
+  else
+    for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+  output << endl;
   // now write the observed data, with any missing value inserted
   int nObs (data.size());
   if (0 == numberMissing)                                // write directly to output
@@ -333,7 +382,7 @@ data_has_selection_indicator(StringDataMatrix const& data)
 
 
 void
-write_categorical_column (std::string const& varName, StringDataMatrix const& data,
+write_categorical_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, bool dropLastLabel, std::ostream& output)
 {
   // find the collection of unique values
@@ -349,6 +398,11 @@ write_categorical_column (std::string const& varName, StringDataMatrix const& da
   // write data for each label
   for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
   { output << varName << "[" << *it << "]" << endl;
+    // write attributes for each indicator
+    output << "parent " << varName << "  category " << *it << "  ";
+    if (!attributes.empty())
+      for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+    output << endl;
     for (int i=0; i<nObs; ++i)
       if (data[i][column] == *it)   output << "1 ";
       else                          output << "0 ";
@@ -399,7 +453,7 @@ number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 
 
 void
-write_numerical_data_file (std::vector<std::string> const& varNames, StringDataMatrix const& data,
+write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMap const& attributes, StringDataMatrix const& data,
 			   bool hasSelector,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
@@ -407,24 +461,25 @@ write_numerical_data_file (std::vector<std::string> const& varNames, StringDataM
 {
   int nVars (varNames.size());
   int nObs  (data.size());
-
+  StringVector noAttr (0);
+  
   int column = 0;
   if (hasSelector)
-  { write_categorical_column("[in/out]", data, column, true, output);  // true = drop last label
+  { write_categorical_column("[in/out]", noAttr, data, column, true, output);  // true = drop last label
     ++column;
   }
   for (; column<nVars; ++column)
   { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
-      write_numerical_column (varNames[column], data, column, varMissingCount[column], output);
+      write_numerical_column (varNames[column], attributes.at(column), data, column, varMissingCount[column], output);
     }
     else
     {
-      write_categorical_column (varNames[column], data, column, false,output); // false = use all labels
+      write_categorical_column (varNames[column], attributes.at(column), data, column, false, output); // false = use all labels
     }
     if (varMissingCount[column] > 0)
     {
-      write_missing_column (varNames[column], data, column, output);
+      write_missing_column (varNames[column], attributes.at(column), data, column, output);
     }
   }
 }
@@ -438,24 +493,31 @@ csv_parser(std::istream& input, std::ostream& output)
   std::string inputLine;
   
   // parse names of variables from first input line
-  StringVector inputColumnNames;
-  OptionMap    inputOptions;
+  StringVector  inputColumnNames;
+  AttributeMap  inputAttributes;
   if (getline(input, inputLine))
   {
-    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ), MappedStringCatcher( &inputColumnNames, &inputOptions ) ))
+    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ), MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
       for (int i=0; i<(int)inputColumnNames.size(); ++i)
-	if (!inputOptions[i].empty())
-	{ std::clog << "Options[" << inputColumnNames[i] << ", var #" << i << "]  ";
-	  for(unsigned int j=0; j<inputOptions[i].size(); ++j)
-	    std::clog << inputOptions[i][j] << " ";
+	if (!inputAttributes[i].empty())
+	{ std::clog << "Attributes[" << inputColumnNames[i] << ", var #" << i << "]  ";
+	  for(unsigned int j=0; j<inputAttributes[i].size(); ++j)
+	    std::clog << inputAttributes[i][j] << " ";
 	  std::clog << endl;
 	}
     }
-    else std::cerr<< "Parser: ERROR. Failed to parse CSV variable names.\n" << endl;
-  } else std::cerr << "Parser: ERROR. Not able to read input data.\n " << endl;
+    else
+    { std::cerr<< "Parser: ERROR. Failed to parse variable names in first line of input stream.\n" << endl;
+      return std::make_pair(0,inputColumnNames.size());
+    }
+  }
+  else
+  { std::cerr << "Parser: ERROR. Unable to read first line from input stream.\n " << endl;
+    return std::make_pair(0,0);
+  }
   
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
   int nVars (inputColumnNames.size());
@@ -507,7 +569,7 @@ csv_parser(std::istream& input, std::ostream& output)
   // write leading header with number of obs, number of cols
   output << dataMatrix.size() << " " << nToWrite << endl;
   // write data
-  write_numerical_data_file (inputColumnNames, dataMatrix, hasSelector, missing, numeric, output);
+  write_numerical_data_file (inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
   
   return std::make_pair(dataMatrix.size(), nVars);
 }
