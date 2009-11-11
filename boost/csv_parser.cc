@@ -20,13 +20,13 @@
    Input
    
    The input data should have the style of named columns. Names can consist of
-   characters, numbers, and the symbols ".", "_", and "/".  Others might ought
+   characters, numbers, and the symbols ".", "_", "[", "]", and "/".  Others might ought
    to be added to aid in later parsing of variables. The name can be extended by
-   including semicolon-separated attributes [within brackets] formatted as
+   including semicolon-separated attributes {within curly brackets} formatted as
    name=value pairs to associate with this variable. For example, an input csv
    file with 3 variables might begin as follows
 
-      Var1, a/b, Var.3[priority=2;knots=4]
+      Var1, a/b, Var.3{priority=2;knots=4}
        1, 2, 3
        3, 4, 5
        a,  , 5
@@ -176,14 +176,14 @@ parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f 
   rule<phrase_scanner_t> token;
   
   attribute_item = alpha_p >> *(alnum_p | ch_p("="));
-  attribute_rule = (ch_p('[')
+  attribute_rule = (ch_p('{')
 		 >> attribute_item[g]
 		 >> *(ch_p(';') >> attribute_item[g])
-		 >> ch_p(']'));                                //	 list_p(attribute_item[g], ';'), ch_p(']'));
+		 >> ch_p('}'));                                //	 list_p(attribute_item[g], ';'), ch_p(']'));
 
   name_item =
      (                                                         // char first in name without quotes
-      (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/')))
+      (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/') | ch_p("[") | ch_p("]") | ch_p("=")))
       |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
      );
 
