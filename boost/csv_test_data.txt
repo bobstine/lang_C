@@ -1,15 +1,16 @@
-"string",v123,"string with an embedded \"",spaced name,vvvv,noSpaceName,asddkj[xx],nomizz[c]
-"string","string with an embedded \"",12345,spaced name, 0.12345e4, 2,noSpace,
-one,two,three,four,five,six,"seven-seven",eight
-123,    a b c, w3e443, w34, XXX,6,7,8
-1.111   , "2. a", three, 4444, five, 666, 7.7777 ,  888
-1, 2.2 ,3.2 , 4.4   ,55   , 6.6,  72, 88
-1,2.2,3.2,4.4,55,6.6e6,72,88
-1, 2,3,4,5, 6   , ,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
-1,2,3,4,5,6,7,8
+xx[xp=3;priority=3],var[priority=3; use=2;kk=3],"string",v123,"string with an embedded \"",spaced name,vvvv,noSpaceName,asddkj[precidence=3],nomizz[c]
+1,a,"string","string with an embedded \"",12345,spaced name, 0.12345e4, 2,noSpace,
+2,a,one,two,three,four,five,six,"seven-seven",eight
+3,b,123,    a b c, w3e443, w34, XXX,6,7,8
+4,b,1.111   , "2. a", three, 4444, five, 666, 7.7777 ,  888
+5,b,1, 2.2 ,3.2 , 4.4   ,55   , 6.6,  72, 88
+6,b,1,2.2,3.2,4.4,55,6.6e6,72,88
+7,c,1, 2,3,4,5, 6   , ,8
+8,c,1,2,3,4,5,6,7,8
+9,c,1,2,3,4,5,6,7,8
+10,c,  1,2,3,4,5,6,7,8
+11,c  ,1,2,3,4,5,6,7,8
+12,c,1,2,3,4,5,6,7,8
+13,d, 1,2,3,4,5,6,7,8
+14,d, 1,2,3,4,5,6,7,8
+15,d, 1,2,3,4,5,6,7,8

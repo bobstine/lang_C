@@ -18,12 +18,15 @@
 
    Input
    
-   The input data should have the style of named columns. Names can consist of
-   characters, numbers, and the symbols ".", "_", and "/".  Others might ought
-   to be added to aid in later parsing of variables. For example, an input csv
-   file with 3 variables might begin as follows
+   The input data should have the style of named columns. Names can
+   consist of characters, numbers, and the symbols ".", "_", and "/".
+   Others might ought to be added to aid in later parsing of
+   variables. The name can be extended by included within brackets
+   options formatted as name=value pairs that associate with this
+   variable. For example, an input csv file with 3 variables might
+   begin as follows
 
-      Var1, a/b, Var.3
+      Var1, a/b, Var.3[priority=2;knots=4]
        1, 2, 3
        3, 4, 5
        a,  , 5
@@ -53,19 +56,30 @@
    input due to the expansion caused by missing values and categorical
    indicators.
 
-   The presence of a non-numerical symbol (here, the 'a' in the 3rd row) in the
-   data for Var1 converts Var1 into a categorical variable. Every unique value
-   found in this column will cause the software to generate an indicator (so,
-   you'll get a lot of these if this was an accident and the column really is
-   numerical). In this case, you'd get an output column called
-   Var1[1],Var1[3],Var1[a].  For the second column, the presence of a missing
+   The presence of a non-numerical symbol (here, the 'a' in the 3rd
+   row) in the data for Var1 converts Var1 into a categorical
+   variable. Every unique value found in this column will cause the
+   software to generate an indicator (so, you'll get a lot of these if
+   this was an accident and the column really is numerical).  As in
+   JMP, square brackets in the name of a variable identify an
+   indicator for a category.
+
+   In this example, you'd get an output column called Var1[1],
+   Var1[3], Var1[a].  For the second column, the presence of a missing
    value means that you'd get the two output variables (the mean is 3)
   
+      Var1[1]
+      1 0 0
+      Var1[3]
+      0 1 0
+      Var1[a]
+      0 0 1
       a/b
       2 4 3 
       a/b[missing]
       0 0 1
-
+      Var.3
+      3 5 5
    Assuming these are the only 3 cases. Missing data in the input file is denoted
    by an empty field.
 
@@ -153,9 +167,11 @@ parse_variable_names (char const* str, OpName f, OpOption g)         // Op f is 
   rule<phrase_scanner_t> name_rule, name_item, option_rule, option_item;    // phrase_scanner type allows space_p in parser
   rule<phrase_scanner_t> token;
   
-  // option_item = confix_p('[', *anychar_p , ']');               // bracketed options in var name
-  option_item = alpha_p >> *alnum_p;
-  option_rule = (ch_p('[') >>  option_item[g] >> ch_p(']'));         //	 list_p(option_item[g], ';'), ch_p(']'));
+  option_item = alpha_p >> *(alnum_p | ch_p("="));
+  option_rule = (ch_p('[')
+		 >> option_item[g]
+		 >> *(ch_p(';') >> option_item[g])
+		 >> ch_p(']'));                                //	 list_p(option_item[g], ';'), ch_p(']'));
 
   name_item =
      (                                                         // char first in name without quotes
@@ -430,9 +446,9 @@ csv_parser(std::istream& input, std::ostream& output)
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
-      for (int i=0; i<inputColumnNames.size(); ++i)
+      for (int i=0; i<(int)inputColumnNames.size(); ++i)
 	if (!inputOptions[i].empty())
-	{ std::clog << "Options[" << inputColumnNames[i] << "," << i << "]  ";
+	{ std::clog << "Options[" << inputColumnNames[i] << ", var #" << i << "]  ";
 	  for(unsigned int j=0; j<inputOptions[i].size(); ++j)
 	    std::clog << inputOptions[i][j] << " ";
 	  std::clog << endl;
