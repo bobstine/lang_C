@@ -31,7 +31,7 @@ ColumnData::print_to (std::ostream &os) const
   double *x (mBegin);
   int     n (mN);
   os << mName << " [" << mNumUnique << "/" << n << ", "
-     << mMin << "<" << mAvg << "<" << mMax << "]   {"
+     << mMin << "<" << mAvg << "<" << mMax << "; " << mDescription << "] \n     {"
      << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] << "} " ;
 }
 
@@ -90,7 +90,7 @@ FileColumnStream::open_file()
 
 namespace {
   bool
-  read_name_with_skip(char *s, int max, register FILE *iop)
+  read_name_and_desc_after_skip(char *s, int max, char *desc, int dMax, register FILE *iop)
   {
     register int c;
     // skip to next line
@@ -102,20 +102,21 @@ namespace {
     // read a string name, and position at start of next line (removes blanks)
     register char *cs;
     cs = s;
-    bool addedEOL (false);
     while (--max > 0 && (c = getc(iop)) != EOF)
     {
-      if (c == ' ')   // put _ in place of blank
+      if (c == ' ')         // put _ in place of blank
 	*cs++ = '_';
       else if ((*cs++ = c) == '\n')
-	{ addedEOL = true;
-	  break;
-	}
+	break;
     }
-    if (addedEOL)
-    { --cs;
-      *cs='\0';
+    --cs; *cs='\0';         // mark the end of the string
+    // read description line
+    while (--dMax > 0 && (c = getc(iop)) != EOF)
+    {
+      if ((*desc++ = c) == '\n')
+	break;
     }
+    --desc; *desc = '\0';
     return (cs != s);
   }
 
@@ -153,8 +154,8 @@ FileColumnStream::read_next_column_from_file()
   }
   else
   { mCurrentName[0] = '\0';
-    if (read_name_with_skip(mCurrentName, maxNameLength, mFile)) // do not gobble a trailing /n; that's handled by next read_name
-    { mCurrentColumn = Column(mCurrentName, mN, mFile);
+    if (read_name_and_desc_after_skip(mCurrentName, maxNameLength, mCurrentDesc, maxDescLength, mFile)) // don't gobble trailing /n; leave for next read
+    { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
       return true;
     }
     else
@@ -221,7 +222,7 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   { std::string nameStr(name);
     if (strlen(name) > 0)
     { names.push_back(nameStr);
-      Column col(name, nRows, is);  // fill from file
+      Column col(name, " ", nRows, is);  // fill from file
       *it = col;
     }
   }

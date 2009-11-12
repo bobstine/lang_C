@@ -17,27 +17,35 @@
    or Location[SC].
    
 
-   Input
+   Input -----------------------------
    
    The input data should have the style of named columns. Names can consist of
-   characters, numbers, and the symbols ".", "_", "[", "]", and "/".  Others might ought
-   to be added to aid in later parsing of variables. The name can be extended by
-   including semicolon-separated attributes {within curly brackets} formatted as
-   name=value pairs to associate with this variable. For example, an input csv
-   file with 3 variables might begin as follows
+   characters, numbers, and the symbols ".", "_", "[", "]", and "/".  Others
+   might ought to be added the in later parsing of variables.  Attributes can be
+   assigned to the variable by listing name=value pairs of attributes {within
+   curly brackets} and separated by semi-colons.  Currently used attributes are
+
+      stream:  identifies a separate input stream  (defaults to main)
+
+
+   For example, an input csv file with 3 variables might begin as follows
 
       Var1, a/b, Var.3{priority=2;knots=4}
        1, 2, 3
        3, 4, 5
        a,  , 5
 
-   Missing data in the input file is denoted by an empty field.
+   Missing data in the input file is denoted by an empty field.  If the same
+   name is used for two (or more columns), the second occurance will have a _2
+   appended, then a _3, and so forth for others.
 
    If the first input column is a list of the labels "in" and "out", then the
    parser will treat this column differently; it will treat this column as an
    indicator of which cases are to be used in subsequent analysis.  Rather than
    generate 2 indicators, it will only generate 1 and this single boolean
-   variable will be placed first in the file sent to the auction for modeling.
+   variable will be placed first in the file sent to the auction for
+   modeling. In the auction, only those cases marked "in" will be used for
+   estimation.  All will be predicted.
 
    Known limitations:
 
@@ -45,7 +53,7 @@
       You need a *mix* of in/out for the leading indicator (not all in).
       
    
-   Output
+   Output -----------------------------
 
    The first line of output gives n and k, the number of cases and the number of
    variables to be written
@@ -102,6 +110,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstdio>
 #include <cstdlib> // strtod
 
@@ -166,6 +175,25 @@ public:
   }
 };
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+void
+check_for_duplicate_names (StringVector *sv)
+{
+  std::map<std::string, int> counter;
+  for(StringVector::iterator it=sv->begin(); it != sv->end(); ++it)
+  {
+    int k;
+    counter[*it] += 1;
+    if ((k=counter[*it]) > 1)
+    { ostringstream oss;
+      oss << k;
+      *it = *it + "_" + oss.str();
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <class OpName, class OpAttribute>
@@ -179,19 +207,19 @@ parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f 
   attribute_rule = (ch_p('{')
 		 >> attribute_item[g]
 		 >> *(ch_p(';') >> attribute_item[g])
-		 >> ch_p('}'));                                //	 list_p(attribute_item[g], ';'), ch_p(']'));
+		 >> ch_p('}'));
 
   name_item =
-     (                                                         // char first in name without quotes
+     (                                                       // char first in name without quotes
       (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/') | ch_p("[") | ch_p("]") | ch_p("=")))
-      |  confix_p('\"', *c_escape_ch_p, '\"')                  // string with quotes around it
+      |  confix_p('\"', *c_escape_ch_p, '\"')                // string with quotes around it
      );
 
-  token = (name_item[f] >> !attribute_rule);                      // zero or one attributes
+  token = (name_item[f] >> !attribute_rule);                 // opName operator does the work; zero or one attributes
   
-  name_rule = list_p(token, ',');                       // call the operator f for each parsed string
+  name_rule = list_p(token, ',');                            // call the operator f for each parsed string
 
-  parse_info<> result = parse(str, name_rule, space_p);        // binding 3rd argument produces a phrase scanner  
+  parse_info<> result = parse(str, name_rule, space_p);      // binding 3rd argument produces a phrase scanner  
   if (result.hit)
   { // clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
@@ -518,6 +546,9 @@ csv_parser(std::istream& input, std::ostream& output)
   { std::cerr << "Parser: ERROR. Unable to read first line from input stream.\n " << endl;
     return std::make_pair(0,0);
   }
+
+  // check for duplicated variable names
+  check_for_duplicate_names (&inputColumnNames);
   
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
   int nVars (inputColumnNames.size());

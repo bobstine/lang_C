@@ -129,7 +129,7 @@ main(int argc, char** argv)
   double inSS  (0.0);
   double outSS (0.0);
   int n0 (0), n1 (0);
-  if (yColumns.size() == 2) // have subsets
+  if (yColumns.size() == 2) // have validation test sample
   { double avg0 (0.0), avg1 (0.0);
     double *x = yColumns[1]->begin();
     double *b = yColumns[0]->begin();
@@ -143,7 +143,6 @@ main(int argc, char** argv)
 	++n0;
       }
     }
-    assert (n0); assert (n1);
     if ((0 == n0) || (0 == n1))
     { std::cout << "ERROR: counts in in-sample/out-of-sample data are " << n0 << " " << n1 << std::endl;
       return -5;

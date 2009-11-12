@@ -22,10 +22,10 @@ main()
       y[i] = i;
     }
 
-    Column c1 ("c1", n, x.begin());
+    Column c1 ("c1", "description 1", n, x.begin());
     Column c2 (c1);
     Column c3 (c2);
-    Column c4 ("c4", n, y.begin());
+    Column c4 ("c4", "description 2", n, y.begin());
     Column c5 (c4);
     
     std::cout << "TEST: inserted data\n";
@@ -37,10 +37,12 @@ main()
 
   }
 
-  std::cout << "TEST: Starting file portion.  Opening the column stream.\n";
+
+  
+  std::cout << "\n\nTEST: Starting file portion.  Opening the column stream.\n";
   
   // read the columns one at a time via the iterator interface
-  FileColumnStream columnStream("/Users/bob/C/gsl_tools/data/bank_small.dat");
+  FileColumnStream columnStream("/Users/bob/C/ranges/column_test.dat");
   std::cout << "TEST: Length of elements in column stream is n = " << columnStream.n() << std::endl;
 
   
@@ -66,11 +68,15 @@ main()
   std::cout << "TEST: column vector has " << columnVector.size() << " columns.\n";
   
 
+  
   // or just read them all into a vector
+
+  std::cout << "\n\nTEST: Second file portion.  Inserting from file.\n";
+
   std::pair<int,int> dim;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
-  dim = insert_columns_from_file("/Users/bob/C/gsl_tools/data/bank_small.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+  dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
 
   // dim = insert_columns_from_file("/Users/bob/C/seq_regr/data/bank_small.dat",std::back_inserter(columnVector));
   std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;

@@ -34,6 +34,7 @@ class ColumnData
 
  private:
   std::string mName;
+  std::string mDescription;       // store whatever you want here
   int         mN;
   double      mAvg;
   double      mMin, mMax;
@@ -49,6 +50,7 @@ class ColumnData
 
  public:
   std::string     name()          const { return mName; }
+  std::string     description()   const { return mDescription; }
   int             size()          const { return mN; }
   double          average()       const { return mAvg; }
   double          scale()         const { return (mMax - mMin)/6.0; }
@@ -76,7 +78,7 @@ class ColumnData
 
 class Column
 {
-private:
+ private:
   ColumnData       *  mData;            // having pointer makes it possible to have const but change ref count
 
  public:
@@ -88,8 +90,9 @@ private:
 
  Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; }  // need to init properties
   
- Column(char const* name, size_t n, FILE *fp) : mData( new ColumnData(n) )
-  { mData->mName = name; 
+ Column(char const* name, char const* description, size_t n, FILE *fp) : mData( new ColumnData(n) )
+  { mData->mName = name;
+    mData->mDescription = description;
     double *x (mData->mBegin);   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
     while(n--)
       fscanf(fp, "%lf", x++);  
@@ -97,8 +100,9 @@ private:
   }
 
   template <class Iter>
-    Column(char const* name, size_t n, Iter source) : mData( new ColumnData(n) )
+    Column(char const* name, char const* description, size_t n, Iter source) : mData( new ColumnData(n) )
   { mData->mName = name;
+    mData->mDescription = description;
     double *x (mData->mBegin);  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
     while(n--)
     { *x = *source;
@@ -126,6 +130,7 @@ operator<<(std::ostream& os, Column const& column)
 
 namespace {
   const int maxNameLength = 128 ;    // max length of a variable name read from file
+  const int maxDescLength = 255 ;
 }
 
 
@@ -135,6 +140,7 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   int              mN;
   int              mCount;
   char             mCurrentName[maxNameLength];
+  char             mCurrentDesc[maxDescLength];
   Column           mCurrentColumn;
   FILE*            mFile;
   
@@ -143,7 +149,7 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   
   FileColumnStream (std::string const& fileName)
     :
-    mFileName(fileName), mN(0), mCount(0), mCurrentName(), mCurrentColumn(), mFile(0)
+    mFileName(fileName), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn(), mFile(0)
     { open_file(); read_next_column_from_file(); }
   
   Column            operator*()  const { return mCurrentColumn; }
