@@ -68,7 +68,7 @@ csv_parser: csv_parser.o
 	$(GCC) $< $(LDLIBS) -o $@
 
 test_parser: csv_parser csv_test_data.txt
-	./csv_parser -f csv_test_data.txt
+	./csv_parser -f csv_test_data.txt -s strm
 
 
 test_parser_data: csv_parser.o test-data.csv

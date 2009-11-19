@@ -2,9 +2,13 @@
 
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
 
-   EXECUTE:  csv_parser -o output-file-name < input.csv
-   
+   EXECUTE:  csv_parser < input.csv > output.data
+             csv_parser -f input.csv -o output-file-name
+             csv_parser -s stream < input.csv > output_stream.data
 
+   The first version uses standard io.  The second uses a supplied file name.
+   The last allows the user to supply a stream name.  All variables will be
+   associated with a stream named 'stream'.
    
    This program uses boost's BNF spirit engine to parse the information in a csv
    file.  The program converts the columns in that file into *numerical*
@@ -14,7 +18,7 @@
    denote the columns so that you can recognize the indicators and such and
    perhaps process them as a block.  Bracketed terms in the names of output
    variables identify variables generated during processing (e.g., V1[missing]
-   or Location[SC].
+   or Location[SC]).  
    
 
    Input -----------------------------
@@ -27,6 +31,9 @@
 
       stream:  identifies a separate input stream  (defaults to main)
 
+   Protected attributes are
+      category (identifies a categorical variable)
+      parent (identifies the derived from variable)
 
    For example, an input csv file with 3 variables might begin as follows
 
@@ -37,7 +44,9 @@
 
    Missing data in the input file is denoted by an empty field.  If the same
    name is used for two (or more columns), the second occurance will have a _2
-   appended, then a _3, and so forth for others.
+   appended, then a _3, and so forth for others.  The input stream option is a
+   'convenience function' that avoids having to use the bracketed option
+   {stream=stream_name} for every variable in the file.
 
    If the first input column is a list of the labels "in" and "out", then the
    parser will treat this column differently; it will treat this column as an
@@ -140,11 +149,28 @@ using namespace boost::spirit;
 
 typedef std::vector< std::string > StringVector;
 
-typedef std::map<int,StringVector> AttributeMap;
+typedef std::vector< StringVector> AttributeMatrix;
+
 typedef std::vector< StringVector> StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class Attribute
+{
+private:
+  const std::string mName;  // name of attribute
+  const std::string mValue; // value of attribute, as a string
+  const bool mOverride;     // over ride any found attribute
+
+public:
+  Attribute(std::string name, std::string value, bool override): mName(name), mValue(value), mOverride(override) {}
+
+  std::string name()     const { return mName; }
+  std::string value()    const { return mValue; }
+  bool        override() const { return mOverride; }
+}
+
+  
 class StringCatcher
 {
 private:
@@ -158,20 +184,20 @@ public:
 };
 
 
-class MappedStringCatcher   // holds attributes of names in a map
+class MatrixStringCatcher   // holds attributes of names in a map
 {
 private:
-  StringVector *mpStrings;
-  AttributeMap    *mpMap;
+  StringVector     *mpStrings;
+  AttributeMatrix  *mpMatrix;
   
 public:
-  MappedStringCatcher (StringVector *pStrings, AttributeMap *pMap) : mpStrings(pStrings), mpMap(pMap) {}
+  MatrixStringCatcher (StringVector *pStrings, AttributeMatrix *pMatrix) : mpStrings(pStrings), mpMatrix(pMatrix) {}
   
   template <class It>
   void operator()(It first, It last) const
   { std::string s(first, last);
     int position (mpStrings->size());
-    (*mpMap)[position-1].push_back(s);    // shift by one for index 0 since attaching attribute to parsed name
+    mpMatrix->at(position-1).push_back(s);    // shift by one for index 0 since attaching attribute to parsed name
   }
 };
 
@@ -203,11 +229,9 @@ parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f 
   rule<phrase_scanner_t> name_rule, name_item, attribute_rule, attribute_item;    // phrase_scanner type allows space_p in parser
   rule<phrase_scanner_t> token;
   
-  attribute_item = alpha_p >> *(alnum_p | ch_p("="));
-  attribute_rule = (ch_p('{')
-		 >> attribute_item[g]
-		 >> *(ch_p(';') >> attribute_item[g])
-		 >> ch_p('}'));
+  attribute_term = alpha_p >> *(alnum_p);
+  attribute_pair = attribute_item[g] >> ch_p("=") >> attribute_item[g];
+  attribute_rule = ch_p('{') >>  attribute_pair >> *(ch_p(';') >> attribute_pair) >> ch_p('}'));
 
   name_item =
      (                                                       // char first in name without quotes
@@ -300,14 +324,15 @@ class AttributeWriter: std::unary_function<string, void>
 {
 private:
   std::ostream& m_os;
+
 public:
   AttributeWriter(std::ostream& os): m_os(os) {}
 
-  void  operator()(std::string s);
+  void  operator()(std::string s) const;
 };
 
   void
-  AttributeWriter::operator()(std::string s)
+  AttributeWriter::operator()(std::string s) const
 {
   std::string::const_iterator it (s.begin());
   for (; *it != '='; ++it)
@@ -321,13 +346,13 @@ public:
 
 
 void
-write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_missing_column (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 		      int column, std::ostream& output)
 {
   // write name with missing appended
   output << varName << "[missing]" << endl;
   // write attributes
-  output << "parent " << varName << "  category missing  ";
+  output << "stream " << streamName << "  parent " << varName << "  category missing  ";
   if (!attributes.empty())
     for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
   output << endl;
@@ -341,15 +366,14 @@ write_missing_column (std::string const& varName, StringVector const& attributes
 }  
 
 void
-write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_numerical_column  (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
   // start by writing the undecorated name to output
-  output << varName << endl;
-  // write attributes
-  if (attributes.empty())
-    output << "*";
-  else
+  output << varName << endl
+	 << "stream " << streamName << "  ";
+  // write rest of attributes
+  if (!attributes.empty())
     for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
   output << endl;
   // now write the observed data, with any missing value inserted
@@ -410,7 +434,7 @@ data_has_selection_indicator(StringDataMatrix const& data)
 
 
 void
-write_categorical_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_categorical_column (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, bool dropLastLabel, std::ostream& output)
 {
   // find the collection of unique values
@@ -427,7 +451,7 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
   for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
   { output << varName << "[" << *it << "]" << endl;
     // write attributes for each indicator
-    output << "parent " << varName << "  category " << *it << "  ";
+    output << "stream " << streamName << "  parent " << varName << "  category " << *it << "  ";
     if (!attributes.empty())
       for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
     output << endl;
@@ -481,7 +505,8 @@ number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 
 
 void
-write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMap const& attributes, StringDataMatrix const& data,
+write_numerical_data_file (std::string streamName,
+			   std::vector<std::string> const& varNames, AttributeMap const& attributes, StringDataMatrix const& data,
 			   bool hasSelector,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
@@ -493,21 +518,21 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
   
   int column = 0;
   if (hasSelector)
-  { write_categorical_column("[in/out]", noAttr, data, column, true, output);  // true = drop last label
+  { write_categorical_column(streamName, "[in/out]", noAttr, data, column, true, output);  // true = drop last label
     ++column;
   }
   for (; column<nVars; ++column)
   { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
-      write_numerical_column (varNames[column], attributes.at(column), data, column, varMissingCount[column], output);
+      write_numerical_column (streamName, varNames[column], attributes.at(column), data, column, varMissingCount[column], output);
     }
     else
     {
-      write_categorical_column (varNames[column], attributes.at(column), data, column, false, output); // false = use all labels
+      write_categorical_column (streamName, varNames[column], attributes.at(column), data, column, false, output); // false = use all labels
     }
     if (varMissingCount[column] > 0)
     {
-      write_missing_column (varNames[column], attributes.at(column), data, column, output);
+      write_missing_column (streamName, varNames[column], attributes.at(column), data, column, output);
     }
   }
 }
@@ -515,14 +540,20 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
 
 // return number of obs, number of vars written
 std::pair<int, int>
-csv_parser(std::istream& input, std::ostream& output)
+csv_parser(std::istream& input, std::ostream& output, std::string streamName)
 {
+
+  // default input stream
+  Attribute stream;
+  if (streamName == "main")
+    
   // read from input into this string
   std::string inputLine;
   
   // parse names of variables from first input line
   StringVector  inputColumnNames;
   AttributeMap  inputAttributes;
+  
   if (getline(input, inputLine))
   {
     if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ), MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
@@ -600,7 +631,7 @@ csv_parser(std::istream& input, std::ostream& output)
   // write leading header with number of obs, number of cols
   output << dataMatrix.size() << " " << nToWrite << endl;
   // write data
-  write_numerical_data_file (inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
+  write_numerical_data_file (streamName, inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
   
   return std::make_pair(dataMatrix.size(), nVars);
 }
@@ -609,7 +640,7 @@ csv_parser(std::istream& input, std::ostream& output)
 
 
 void
-parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile );
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile, std::string& streamName);
 
 
 int
@@ -618,24 +649,26 @@ main (int argc, char** argv)
   //  set default parameter values
   std::string inputFileName     ("");
   std::string outputFileName    ("");
+  std::string streamName        ("main");
 
   // parse arguments from command line
-  parse_arguments(argc, argv, inputFileName, outputFileName);
+  parse_arguments(argc, argv, inputFileName, outputFileName, streamName);
   std::clog << "CSVP: Arguments    --input-file=" << inputFileName
 	    << " --output-file=" << outputFileName
+	    << " --stream=" << streamName 
 	    << std::endl;
 
   // 4 call variations
   if (inputFileName.size() == 0)
   { if (outputFileName.size() == 0)
-      csv_parser(std::cin, std::cout);                // A
+      csv_parser(std::cin, std::cout, streamName);    // A
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 1;
       }
-      csv_parser(std::cin, output);                  // B
+      csv_parser(std::cin, output, streamName);       // B
     }
   }
   else
@@ -645,14 +678,14 @@ main (int argc, char** argv)
       return 2;
     }
     if (outputFileName.size() == 0)
-      csv_parser(input, std::cout);                   // C
+      csv_parser(input, std::cout, streamName);       // C
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      csv_parser(input, output);                      // D
+      csv_parser(input, output, streamName);          // D
     }
   }
   return 0;
@@ -661,7 +694,7 @@ main (int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile)
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile, std::string& stream)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -670,10 +703,11 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
       static struct option long_options[] = {
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-file",       1, 0, 'o'},  // has arg,
+	  {"stream",            1, 0, 's'},  // has arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:o:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:o:s:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -691,6 +725,12 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
 	      outputFile = optarg;
 	      break;
 	    }
+	  case 's' :  
+	    {
+	      std::string name(optarg);
+	      stream = optarg;
+	      break;
+	    }
 	  case 'h' :
 	    {
 	      std::cout << "switches:" << std::endl << std::endl;
@@ -698,6 +738,8 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
 	      std::cout << "      -ifoo" << std::endl << std::endl;
 	      std::cout << "      --output-file=out      output file" << std::endl;
 	      std::cout << "      -oout" << std::endl << std::endl;
+	      std::cout << "      --stream=name          stream name" << std::endl;
+	      std::cout << "      -sname" << std::endl << std::endl;
 	      std::cout << "      --help      generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);
