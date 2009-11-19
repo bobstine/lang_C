@@ -37,7 +37,7 @@
 
    For example, an input csv file with 3 variables might begin as follows
 
-      Var1, a/b, Var.3{priority=2;knots=4}
+      Var1, a/b, Var.3{stream=sub;priority=2;knots=4}
        1, 2, 3
        3, 4, 5
        a,  , 5
@@ -65,7 +65,7 @@
    Output -----------------------------
 
    The first line of output gives n and k, the number of cases and the number of
-   variables to be written
+   variables to be written.
    
    The remaining output is written one column at a time, so the data is written
    out in streaming style, with three lines for each variable:
@@ -87,25 +87,26 @@
 
    In this example, you'd get output columns called Var1[1], Var1[3], Var1[a].
    For the second column, the presence of a missing value means that you'd get
-   the two output variables (the mean is 3).
+   the two output variables (the mean is 3).  The last variable is assigned to
+   stream sub.
   
       Var1[1]
-      parent Var1 category 1
+      stream main  parent Var1  category 1
       1 0 0
       Var1[3]
-      parent Var1 category 3
+      stream main  parent Var1  category 3
       0 1 0
       Var1[a]
-      parent Var1 category a
+      stream main  parent Var1  category a
       0 0 1
       a/b
-      *
+      stream main
       2 4 3 
       a/b[missing]
-      parent a/b category missing
+      stream main  parent a/b  category missing
       0 0 1
       Var.3
-      *
+      stream sub
       3 5 5
       
    11 Nov 09 ... Attributes read and written.   
@@ -143,34 +144,17 @@
 
 using namespace std;
 using namespace boost::spirit;
-// using namespace boost::lambda;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef std::vector< std::string > StringVector;
 
-typedef std::vector< StringVector> AttributeMatrix;
+typedef std::map   <int, StringVector> AttributeMap;  // use map since not all parses have attributes
 
 typedef std::vector< StringVector> StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class Attribute
-{
-private:
-  const std::string mName;  // name of attribute
-  const std::string mValue; // value of attribute, as a string
-  const bool mOverride;     // over ride any found attribute
-
-public:
-  Attribute(std::string name, std::string value, bool override): mName(name), mValue(value), mOverride(override) {}
-
-  std::string name()     const { return mName; }
-  std::string value()    const { return mValue; }
-  bool        override() const { return mOverride; }
-}
-
-  
 class StringCatcher
 {
 private:
@@ -184,20 +168,20 @@ public:
 };
 
 
-class MatrixStringCatcher   // holds attributes of names in a map
+class MappedStringCatcher   // holds attributes of names in a map
 {
 private:
-  StringVector     *mpStrings;
-  AttributeMatrix  *mpMatrix;
+  StringVector   *mpStrings;
+  AttributeMap   *mpMap;
   
 public:
-  MatrixStringCatcher (StringVector *pStrings, AttributeMatrix *pMatrix) : mpStrings(pStrings), mpMatrix(pMatrix) {}
+  MappedStringCatcher (StringVector *pStrings, AttributeMap *pMap) : mpStrings(pStrings), mpMap(pMap) {}
   
   template <class It>
   void operator()(It first, It last) const
   { std::string s(first, last);
-    int position (mpStrings->size());
-    mpMatrix->at(position-1).push_back(s);    // shift by one for index 0 since attaching attribute to parsed name
+    int position (mpStrings->size()-1);     // shift by one for index 0 since attaching attribute to parsed name
+    (*mpMap)[position].push_back(s);
   }
 };
 
@@ -220,24 +204,46 @@ check_for_duplicate_names (StringVector *sv)
   }
 }
 
+
+StringVector
+set_default_stream_name (std::string name, StringVector const& sv)  // copies it, changing stream attribute
+{
+  StringVector result;
+  bool hasStreamAttr = false;
+  for(unsigned int j=0; j < sv.size(); j+=2)
+  { if (sv[j] == "stream")
+      hasStreamAttr = true;
+    result.push_back(sv[j  ]);
+    result.push_back(sv[j+1]);
+  }
+  if (!hasStreamAttr)
+  { result.push_back("stream");
+    result.push_back(name);
+  }
+  return result;
+}
+
+  
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <class OpName, class OpAttribute>
 bool
-parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f is bound to parse action
+parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f is bound to parse action for name, g for attribute
 {
-  rule<phrase_scanner_t> name_rule, name_item, attribute_rule, attribute_item;    // phrase_scanner type allows space_p in parser
+  rule<phrase_scanner_t> name_rule, name_item;               // phrase_scanner_t allows space_p in parser
+  rule<phrase_scanner_t> attribute_rule, attribute_pair, attribute_term;
   rule<phrase_scanner_t> token;
-  
-  attribute_term = alpha_p >> *(alnum_p);
-  attribute_pair = attribute_item[g] >> ch_p("=") >> attribute_item[g];
-  attribute_rule = ch_p('{') >>  attribute_pair >> *(ch_p(';') >> attribute_pair) >> ch_p('}'));
 
   name_item =
      (                                                       // char first in name without quotes
       (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/') | ch_p("[") | ch_p("]") | ch_p("=")))
       |  confix_p('\"', *c_escape_ch_p, '\"')                // string with quotes around it
      );
+
+  attribute_term = (alnum_p >> *(alnum_p));
+  attribute_pair = (attribute_term[g] >> ch_p("=") >> attribute_term[g]);
+  attribute_rule = (ch_p('{') >>  attribute_pair >> *(ch_p(';') >> attribute_pair) >> ch_p('}'));
 
   token = (name_item[f] >> !attribute_rule);                 // opName operator does the work; zero or one attributes
   
@@ -317,44 +323,16 @@ parse_double (std::string str)
 */
 
 
-// Utility class for parsing the name=value strings that define attributes in the
-// source csv file.
-
-class AttributeWriter: std::unary_function<string, void>
-{
-private:
-  std::ostream& m_os;
-
-public:
-  AttributeWriter(std::ostream& os): m_os(os) {}
-
-  void  operator()(std::string s) const;
-};
-
-  void
-  AttributeWriter::operator()(std::string s) const
-{
-  std::string::const_iterator it (s.begin());
-  for (; *it != '='; ++it)
-    m_os << *it;
-  ++it;
-  m_os << ' ';
-  for (; it != s.end(); ++it)
-    m_os << *it;
-  m_os << "  ";
-}
-
-
 void
-write_missing_column (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 		      int column, std::ostream& output)
 {
   // write name with missing appended
   output << varName << "[missing]" << endl;
   // write attributes
-  output << "stream " << streamName << "  parent " << varName << "  category missing  ";
+  output << "parent " << varName << " category missing ";
   if (!attributes.empty())
-    for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+    std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
   output << endl;
   // write data
   int nObs (data.size());
@@ -366,15 +344,14 @@ write_missing_column (std::string streamName, std::string const& varName, String
 }  
 
 void
-write_numerical_column  (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
   // start by writing the undecorated name to output
-  output << varName << endl
-	 << "stream " << streamName << "  ";
+  output << varName << endl;
   // write rest of attributes
   if (!attributes.empty())
-    for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+    std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
   output << endl;
   // now write the observed data, with any missing value inserted
   int nObs (data.size());
@@ -434,7 +411,7 @@ data_has_selection_indicator(StringDataMatrix const& data)
 
 
 void
-write_categorical_column (std::string streamName, std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+write_categorical_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, bool dropLastLabel, std::ostream& output)
 {
   // find the collection of unique values
@@ -451,9 +428,9 @@ write_categorical_column (std::string streamName, std::string const& varName, St
   for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
   { output << varName << "[" << *it << "]" << endl;
     // write attributes for each indicator
-    output << "stream " << streamName << "  parent " << varName << "  category " << *it << "  ";
+    output << "parent " << varName << " category " << *it << " ";
     if (!attributes.empty())
-      for_each(attributes.begin(), attributes.end(), AttributeWriter(output));
+      std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
     output << endl;
     for (int i=0; i<nObs; ++i)
       if (data[i][column] == *it)   output << "1 ";
@@ -505,8 +482,7 @@ number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 
 
 void
-write_numerical_data_file (std::string streamName,
-			   std::vector<std::string> const& varNames, AttributeMap const& attributes, StringDataMatrix const& data,
+write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMap& attributes, StringDataMatrix const& data,
 			   bool hasSelector,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
 			   std::ostream& output)
@@ -515,24 +491,25 @@ write_numerical_data_file (std::string streamName,
   int nVars (varNames.size());
   int nObs  (data.size());
   StringVector noAttr (0);
-  
+
   int column = 0;
   if (hasSelector)
-  { write_categorical_column(streamName, "[in/out]", noAttr, data, column, true, output);  // true = drop last label
+  { write_categorical_column("[in/out]", noAttr, data, column, true, output);  // true = drop last label
     ++column;
   }
   for (; column<nVars; ++column)
-  { if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
+  {  
+    if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
-      write_numerical_column (streamName, varNames[column], attributes.at(column), data, column, varMissingCount[column], output);
+      write_numerical_column (varNames[column], attributes[column], data, column, varMissingCount[column], output);
     }
     else
     {
-      write_categorical_column (streamName, varNames[column], attributes.at(column), data, column, false, output); // false = use all labels
+      write_categorical_column (varNames[column], attributes[column], data, column, false, output); // false = use all labels
     }
     if (varMissingCount[column] > 0)
     {
-      write_missing_column (streamName, varNames[column], attributes.at(column), data, column, output);
+      write_missing_column (varNames[column], attributes[column], data, column, output);
     }
   }
 }
@@ -542,11 +519,6 @@ write_numerical_data_file (std::string streamName,
 std::pair<int, int>
 csv_parser(std::istream& input, std::ostream& output, std::string streamName)
 {
-
-  // default input stream
-  Attribute stream;
-  if (streamName == "main")
-    
   // read from input into this string
   std::string inputLine;
   
@@ -556,7 +528,9 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
   
   if (getline(input, inputLine))
   {
-    if (parse_variable_names(inputLine.c_str(), StringCatcher( &inputColumnNames ), MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
+    if (parse_variable_names(inputLine.c_str(),
+			     StringCatcher( &inputColumnNames ),
+			     MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
@@ -580,6 +554,10 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
 
   // check for duplicated variable names
   check_for_duplicate_names (&inputColumnNames);
+
+  // insert default stream name if attribute not found
+  for(unsigned int j=0; j<inputColumnNames.size(); ++j)
+    inputAttributes[j] = set_default_stream_name (streamName, inputAttributes[j]);
   
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
   int nVars (inputColumnNames.size());
@@ -631,7 +609,7 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
   // write leading header with number of obs, number of cols
   output << dataMatrix.size() << " " << nToWrite << endl;
   // write data
-  write_numerical_data_file (streamName, inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
+  write_numerical_data_file (inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
   
   return std::make_pair(dataMatrix.size(), nVars);
 }

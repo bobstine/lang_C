@@ -1,4 +1,4 @@
-xx/yy=zz{xp=3;priority=3},var,var,var,"string with an embedded \"",spaced name,vvvv,var,asddkj{precidence=3},nomizz{c=3}
+xx/yy=zz{stream=test;xp=3;priority=3},var,var,var,"string with an embedded \"",spaced name,vvvv,var,asddkj{precidence=3},nomizz{c=3}
 1,a,"string","string with an embedded \"", 12345 ,spaced name,0.12345e4, 2  ,noSpace,
 2,a,     one,                         two, three ,four       ,  five      ,666,"seven-seven",eight
 3,b,     123,                       a b c, w3e443,  w34,    XXX,6,7,8
