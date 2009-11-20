@@ -7,6 +7,7 @@
  A Column puts a name on a numerical range and the various statistics of that range.
  Access to properties of the column come via operator->.
 
+ 11 Nov 09 ... Add description field to allow attributes when reading stream format data.
  25 May 09 ... Better form of dynamic storage (see Coplein, p67-68)
  13 May 09 ... Dynamic column storage.
  15 Nov 07 ... Diddle with getting a pair back from reading data.
@@ -39,9 +40,9 @@ class ColumnData
   double      mAvg;
   double      mMin, mMax;
   int         mNumUnique; 
-  int         mRefCount;
   double *    mBegin;
   double *    mEnd;
+  int         mRefCount;
 
  private:
   ~ColumnData()                     { delete[] mBegin; }
@@ -88,10 +89,25 @@ class Column
 
  Column(Column const& c)                      : mData(c.mData) { ++c.mData->mRefCount; }
 
- Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; }  // need to init properties
+ Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; mData->mDescription = " ";}  // need to init properties
   
- Column(char const* name, char const* description, size_t n, FILE *fp) : mData( new ColumnData(n) )
+ Column(char const* name, size_t n, FILE *fp) : mData( new ColumnData(n) )
   { mData->mName = name;
+
+    
+    // read description line
+    while (--dMax > 0 && (c = getc(iop)) != EOF)
+    {
+      if ((*desc++ = c) == '\n')
+	break;
+    }
+    --desc; *desc = '\0';
+    return (cs != s);
+    char ch;
+    while ((ch=fgetc(fp)) != '\n')
+
+
+      
     mData->mDescription = description;
     double *x (mData->mBegin);   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
     while(n--)

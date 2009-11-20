@@ -1,4 +1,3 @@
-// $Id: my_features.test.cc,v 3.4 2008/01/30 22:39:01 bob Exp $
 
 #include "features.h"
 #include "column.h"
@@ -25,8 +24,8 @@ main ()
   std::cout << "TEST: X initialized with name " << name1 << std::endl;  
   
   // make two columns
-  Column  xColumn1  (name1.c_str(), n, x1);
-  Column  xColumn2  ("duplicate", n, x1);
+  Column  xColumn1  (name1.c_str(), "first column", n, x1);
+  Column  xColumn2  ("duplicate", "second column", n, x1);
   std::cout << xColumn1 << std::endl;
    
   // make a feature from a column, add some attributes
