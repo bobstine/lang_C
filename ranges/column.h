@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-
+#include "read_utils.h"
 #include "range.h"
 
 
@@ -47,7 +47,7 @@ class ColumnData
  private:
   ~ColumnData()                     { delete[] mBegin; }
 
- ColumnData(size_t n)            : mRefCount(1), mBegin(new double[n]), mEnd(mBegin+n) { mN = n; assert(mBegin != NULL); }
+ ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = n; assert(mBegin != NULL); }
 
  public:
   std::string     name()          const { return mName; }
@@ -77,6 +77,10 @@ class ColumnData
 
 // Envelope
 
+const int maxColumnNameLength ( 128);
+
+const int maxColumnDescLength (1024);
+
 class Column
 {
  private:
@@ -91,23 +95,8 @@ class Column
 
  Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; mData->mDescription = " ";}  // need to init properties
   
- Column(char const* name, size_t n, FILE *fp) : mData( new ColumnData(n) )
+ Column(char const* name, char const* description, size_t n, FILE *fp) : mData( new ColumnData(n) )
   { mData->mName = name;
-
-    
-    // read description line
-    while (--dMax > 0 && (c = getc(iop)) != EOF)
-    {
-      if ((*desc++ = c) == '\n')
-	break;
-    }
-    --desc; *desc = '\0';
-    return (cs != s);
-    char ch;
-    while ((ch=fgetc(fp)) != '\n')
-
-
-      
     mData->mDescription = description;
     double *x (mData->mBegin);   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
     while(n--)
@@ -144,19 +133,13 @@ operator<<(std::ostream& os, Column const& column)
 
 
 
-namespace {
-  const int maxNameLength = 128 ;    // max length of a variable name read from file
-  const int maxDescLength = 255 ;
-}
-
-
 class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
   std::string      mFileName;
   int              mN;
   int              mCount;
-  char             mCurrentName[maxNameLength];
-  char             mCurrentDesc[maxDescLength];
+  char             mCurrentName[maxColumnNameLength];
+  char             mCurrentDesc[maxColumnDescLength];
   Column           mCurrentColumn;
   FILE*            mFile;
   

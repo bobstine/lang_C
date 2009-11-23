@@ -29,11 +29,12 @@
 int
 main()
 {
-  std::string fileName("/Users/bob/C/utils/test/big_test.dat");
+  std::string       fileName("/Users/bob/C/utils/test/big_test.dat");
   std::string prefixFileName("/Users/bob/C/utils/test/prefix_test.dat");
-
+  const int maxLength (1023);
+  char str[maxLength];
+    
   FILE *file;
-  bool b;
   
   const int nToRead (25000);  // last one craps out if this is set to less than the file size (reads until end of file)
   const int nRepeat (10);
@@ -47,8 +48,15 @@ main()
     return -1;
   }
   else    
-  { 
-    { // first read using standard istream 
+  {
+    { // check read line
+      int n;
+      n = read_file_line(str, maxLength, file);
+      std::string s (str);
+      std::cout << "TEST: Read " << n << " chars from file; string is " << s << std::endl;
+    }
+    
+    { // now read numbers using standard istream 
       std::vector<double> x (nToRead);
       clock_t time = clock();
       for(int j=0; j<nRepeat; ++j)
@@ -66,7 +74,7 @@ main()
       clock_t time = clock();
       for(int j=0; j<nRepeat; ++j)
       { file = fopen (fileName.c_str(), "r");
-        input_file_iterator<double> it(file);
+        read_file_iterator<double> it(file);
         for (int i=0; i<nToRead; ++i)
         {
           x[i] = *it;
@@ -77,13 +85,13 @@ main()
       std::cout << "TEST: loop with iterator took " << clock()-time << " ticks; x[n]= " << x[nToRead-1] << std::endl;
     }
     
-    { //  with iterator and a copy algothm
+    { //  with iterator and a copy algorithm
       std::vector<double> x (nToRead);
       clock_t time = clock();
       for(int j=0; j<nRepeat; ++j)
       { file = fopen (fileName.c_str(), "r");
-        input_file_iterator<double> it(file);
-        input_file_iterator<double> stop;
+        read_file_iterator<double> it(file);
+        read_file_iterator<double> stop;
         std::copy(it,stop,x.begin());
         fclose(file);
       }
@@ -96,8 +104,8 @@ main()
       { std::vector<double> x;
         std::back_insert_iterator< std::vector<double> > dest(x);
         file = fopen (fileName.c_str(), "r");
-        input_file_iterator<double> it(file);
-        input_file_iterator<double> stop;
+        read_file_iterator<double> it(file);
+        read_file_iterator<double> stop;
         std::copy(it,stop,dest);
         fclose(file);
       }
@@ -112,7 +120,8 @@ main()
       { std::cout << "TEST: Could not open prefix input file.\n" ;
         return -1;
       }
-      int n (fill_vector_from_file(file, xIter));
+      int n;
+      n = fill_iterator_from_file(file, xIter);
       std::cout << "TEST: Read " << n << " from prefixed file... " << x << std::endl;
     }
     

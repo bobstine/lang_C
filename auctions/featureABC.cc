@@ -15,6 +15,35 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
   return args;
 }
 
+//  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes
+
+bool
+FeatureABC::has_attribute(std::string attr)           const
+{
+  return (mAttributes.end() != mAttributes.find(attr));
+}
+
+
+void
+FeatureABC::add_attribute(std::string name, std::string value)
+{
+  mAttributes[name] = value;
+}
+
+
+void
+FeatureABC::add_attributes_from_paired_list (std::string list)
+{
+  std::istringstream iss (list);
+  iss >> std::ws;
+  while (!iss.eof())
+  { std::string name;
+    std::string value;
+    iss >> name >> value;
+    add_attribute(name, value);
+  }
+}
+
 
 std::string
 FeatureABC::attribute_str_value(std::string attr) const
@@ -87,6 +116,9 @@ FeatureABC::read_from (std::istream& is)
   is >> mInModel;
   is >> mEntryPValue;
 }
+
+
+//  Output    Output    Output    Output    Output    Output    Output    Output    Output    Output    Output    Output
 
 void
 FeatureABC::write_to (std::ostream& os)     const

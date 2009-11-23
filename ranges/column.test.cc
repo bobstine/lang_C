@@ -34,68 +34,58 @@ main()
     std::cout << c3 << std::endl;
     std::cout << c4 << std::endl;
     std::cout << c5 << std::endl;
-
   }
 
 
-  
-  std::cout << "\n\nTEST: Starting file portion.  Opening the column stream.\n";
-  
-  // read the columns one at a time via the iterator interface
-  FileColumnStream columnStream("/Users/bob/C/ranges/column_test.dat");
-  std::cout << "TEST: Length of elements in column stream is n = " << columnStream.n() << std::endl;
-
-  
-  std::vector< std::iterator_traits<FileColumnStream>::value_type > columnVector;
-
-  columnVector.push_back(*columnStream); ++columnStream;
-  columnVector.push_back(*columnStream); ++columnStream;
-
-  std::cout << columnVector[0] << std::endl;
-  std::cout << columnVector[1] << std::endl;
-
-  for (int j=0; j<30; ++j, ++columnStream) // try to read past end of columns
-  {
-    Column x = *columnStream;
-    if (x->size() == 0)
-    { std::cout << "TEST: Column stream is empty" << std::endl;
-      break;
+  {     // read the columns one at a time via the iterator interface
+    
+    std::cout << "\n\nTEST: Starting file portion.  Opening the column stream.\n";
+    
+    FileColumnStream columnStream("/Users/bob/C/ranges/column_test.dat");
+    std::cout << "TEST: Length of elements in column stream is n = " << columnStream.n() << std::endl;    
+    std::vector< std::iterator_traits<FileColumnStream>::value_type > columnVector;
+    for (int j=0; j<30; ++j, ++columnStream) // try to read past end of columns
+    {
+      Column x = *columnStream;
+      if (x->size() == 0)
+      { std::cout << "TEST: Column stream is empty" << std::endl;
+	break;
+      }
+      else
+	std::cout << x << std::endl;
     }
-    else
-      std::cout << x << std::endl;
+    columnStream.close_file();
+    std::cout << "TEST: column vector has " << columnVector.size() << " columns.\n";
+
+    
+    // or just read them all into a vector
+
+    std::cout << "\n\nTEST: Second portion of file test.  Inserting from file.\n";
+    
+    std::pair<int,int> dim;
+    std::vector<Column> yColumns;
+    std::vector<Column> xColumns;
+    dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+    
+    std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
+    int nRows (yColumns[0]->size());
+    std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
+
+
+    
+    // or read them from a name file and a data file of rows.
+    // These two are made by Dean's c4.5 syntax program test. (NEED to add number of rows.)
+    // run as cat test/nrows test/c45_test.rows | column.test.exec`
+    if(false)
+    { int nRows (5);
+      std::vector<Column> cols;
+      std::cout << "TEST: Read "
+		<< insert_columns_from_stream(stdin, "test/c45_test.names", nRows, std::back_inserter(cols))
+		<< " columns from stdin.\n";
+      for (unsigned int j=0; j<cols.size(); ++j)
+	std::cout << "     " << cols[j] << std::endl;
+    }   
+    return 0;
   }
-  columnStream.close_file();
-  std::cout << "TEST: column vector has " << columnVector.size() << " columns.\n";
-  
-
-  
-  // or just read them all into a vector
-
-  std::cout << "\n\nTEST: Second file portion.  Inserting from file.\n";
-
-  std::pair<int,int> dim;
-  std::vector<Column> yColumns;
-  std::vector<Column> xColumns;
-  dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
-
-  // dim = insert_columns_from_file("/Users/bob/C/seq_regr/data/bank_small.dat",std::back_inserter(columnVector));
-  std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
-  int nRows (yColumns[0]->size());
-  std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
-
-  // or read them from a name file and a data file of rows.
-  // These two are made by Dean's c4.5 syntax program test. (NEED to add number of rows.)
-  // run as cat test/nrows test/c45_test.rows | column.test.exec`
-  if(false)
-  { int nRows (5);
-    std::vector<Column> cols;
-    std::cout << "TEST: Read "
-              << insert_columns_from_stream(stdin, "test/c45_test.names", nRows, std::back_inserter(cols))
-              << " columns from stdin.\n";
-    for (unsigned int j=0; j<cols.size(); ++j)
-      std::cout << "     " << cols[j] << std::endl;
-  }
-   
-  return 0;
 }
   

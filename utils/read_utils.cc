@@ -34,6 +34,23 @@ operator>>(std::istream& input, std::vector<double>& vec)
 #include <cstdio>
 const int maxNameLength = 255;
 
+int
+read_file_line (char *s, int maxLength, FILE *fp)
+{
+  int count (0);
+  register char c;
+  while (--maxLength > 0 && (c = getc(fp)) != EOF)
+  { *s = c;
+    if (c == '\n')
+      break;
+    ++s;
+    ++count;
+  }
+  *s = '\0';
+  return count;
+}
+
+
 bool
 read_string(char *s, int n, register FILE *iop)
 {
@@ -59,27 +76,6 @@ read_int_from_file(FILE *input)
 	return i;
 }
 
-
-int
-fill_vector_from_file(FILE* inputFile, std::vector<double>::iterator xIter)
-{
-  const int n(read_int_from_file(inputFile));
-  return fill_vector_from_file(inputFile, n, xIter);
-}
-
-
-int
-fill_vector_from_file(FILE* inputFile, int n, std::vector<double>::iterator xIter)
-{
-  input_file_iterator<double> fileIter(inputFile);
-  int i;
-  for(i=0; inputFile && (i<n); ++i)
-  { *xIter = *fileIter;
-    ++fileIter;
-    ++xIter;
-  }
-  return i;
-}
 
 
 // type traits

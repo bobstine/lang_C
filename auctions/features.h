@@ -119,7 +119,7 @@ class ColumnFeature : public FeatureABC
   Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
-  ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c) { }
+ ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c) { add_attributes_from_paired_list(c->description()); }
 
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn->name(); }

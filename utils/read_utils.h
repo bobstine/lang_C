@@ -1,4 +1,4 @@
-/* $Id: read_utils.h,v 1.4 2008/01/03 04:06:15 bob Exp $
+/* 
  *  read_utils.h
  *  utils
  *
@@ -6,6 +6,7 @@
  *  Copyright 2005. All rights reserved.
  *
  */
+
 #ifndef _READ_UTILS_H_
 #define _READ_UTILS_H_
 
@@ -13,6 +14,12 @@
 #include <iterator>
 #include <iostream>
 #include <cstdio>
+
+
+// Read rest of current file line into c char string of indicated length
+
+int
+read_file_line (char *s, int maxLength, FILE *fp);
 
 
 // Read vector of arbitrary length, emptying input stream
@@ -48,26 +55,26 @@ public:
 
 
 template <class T>
-class input_file_iterator: public std::iterator<std::input_iterator_tag,T>
+class read_file_iterator: public std::iterator<std::output_iterator_tag,T>
 {
   FILE *mInputFile;
   T mValue;
   int mState;
 
 public:
-  input_file_iterator()
+  read_file_iterator()
     : mInputFile(0), mValue(0), mState(EOF)                            { }
-  input_file_iterator(FILE *file)
+  read_file_iterator(FILE *file)
     : mInputFile(file), mValue(0), mState(0)                           { read_next(); }
-  input_file_iterator(input_file_iterator const& it)
+  read_file_iterator(read_file_iterator const& it)
     : mInputFile(it.mInputFile), mValue(it.mValue), mState(it.mState)  { }
 	
-  double               operator*()  const { return mValue; } 
-  input_file_iterator& operator++()       { read_next(); return *this; }
-  input_file_iterator  operator++(int)    { input_file_iterator it(*this); read_next(); return it; }
+  double              operator*()  const { return mValue; } 
+  read_file_iterator& operator++()       { read_next(); return *this; }
+  read_file_iterator  operator++(int)    { read_file_iterator it(*this); read_next(); return it; }
 
-  bool   operator!=(input_file_iterator const& it) const { return (mState != it.mState); }
-  bool   operator==(input_file_iterator const& it) const { return (mState == it.mState); }
+  bool   operator!=(read_file_iterator const& it) const { return (mState != it.mState); }
+  bool   operator==(read_file_iterator const& it) const { return (mState == it.mState); }
   
   void print_to(std::ostream& os)  const       { os << mInputFile << ":" << mState << " -> " << mValue;  }
 
@@ -78,7 +85,7 @@ private:
 template<class T>
 inline
 std::ostream&
-operator<<(std::ostream& os, input_file_iterator<T> const& it)
+operator<<(std::ostream& os, read_file_iterator<T> const& it)
 {
   it.print_to(os);
   return os;
@@ -89,15 +96,29 @@ operator<<(std::ostream& os, input_file_iterator<T> const& it)
 int
 read_int_from_file(FILE* inputFile);
 
+template <class Iter>
 int
-fill_vector_from_file(FILE* inputFile, std::vector<double>::iterator xit);
-// reads n from the file first; return number read
+fill_iterator_from_file(FILE* inputFile, int n, Iter xIter)
+{
+  // alas, the type of a back_insert_iterator is void so the next line fails...
+  // read_file_iterator<typename std::iterator_traits<Iter>::value_type> fileIter(inputFile);
+  read_file_iterator<double> fileIter(inputFile);
+  int i;
+  for(i=0; inputFile && (i<n); ++i)
+  { *xIter = *fileIter;
+    ++fileIter;
+    ++xIter;
+  }
+  return i;
+}
 
+template <class Iter>
 int
-fill_vector_from_file(FILE* inputFile, int n, std::vector<double>::iterator xit);
-// you know how many to read; returns the number read
-
+fill_iterator_from_file(FILE* inputFile, Iter xIter)
+{
+  const int n(read_int_from_file(inputFile));
+  return fill_iterator_from_file(inputFile, n, xIter);
+}
 
 
 #endif
-

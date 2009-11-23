@@ -64,8 +64,10 @@ class FeatureABC
   int                 size()                                    const { return mSize; }
 
   Attributes          attributes()                              const { return mAttributes; }
-  void                add_attribute(std::string name, std::string value)        { mAttributes[name] = value; }
-  bool                has_attribute(std::string attr)           const { return (mAttributes.end() != mAttributes.find(attr)); }
+  bool                has_attribute(std::string attr)           const;
+  void                add_attribute(std::string name, std::string value);
+  void                add_attributes_from_paired_list (std::string list);
+
   std::string         attribute_str_value(std::string attr)     const;
   int                 attribute_int_value(std::string attr)     const;
   double              attribute_dbl_value(std::string attr)     const;
@@ -109,9 +111,8 @@ inline
 std::ostream&
 operator<< (std::ostream& os, std::map<std::string,std::string> const& attributes)
 {
-  typedef std::map<std::string, std::string>::const_iterator Iter;
   os << " { ";
-  for (Iter it = attributes.begin(); it !=attributes.end(); ++it)
+  for (FeatureABC::Attributes::const_iterator it = attributes.begin(); it !=attributes.end(); ++it)
     os << " [" << it->first << "," << it->second << "] ";
   os << "}";
   return os;

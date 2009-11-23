@@ -30,8 +30,8 @@ ColumnData::print_to (std::ostream &os) const
 { 
   double *x (mBegin);
   int     n (mN);
-  os << mName << " [" << mNumUnique << "/" << n << ", "
-     << mMin << "<" << mAvg << "<" << mMax << "; " << mDescription << "] \n     {"
+  os << mName << "  [" << mDescription <<";  "
+     << mNumUnique << "/" << n << ", " << mMin << "<" << mAvg << "<" << mMax <<  "]     {"
      << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] << "} " ;
 }
 
@@ -154,7 +154,8 @@ FileColumnStream::read_next_column_from_file()
   }
   else
   { mCurrentName[0] = '\0';
-    if (read_name_and_desc_after_skip(mCurrentName, maxNameLength, mCurrentDesc, maxDescLength, mFile)) // don't gobble trailing /n; leave for next read
+    if (read_name_and_desc_after_skip(mCurrentName, maxColumnNameLength,
+				      mCurrentDesc, maxColumnDescLength, mFile)) // don't gobble trailing /n; leave for next read
     { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
       return true;
     }
@@ -217,12 +218,15 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   std::cout << "COLM: Making columns from stream data with " << nRows << " rows.\n";
   std::vector<std::string> names;
   std::vector<double*> xPtrs;
-  char name[maxNameLength];
-  while (read_name(name, maxNameLength, nameFile))
+  char name[maxColumnNameLength];
+  char desc[maxColumnNameLength];
+  while (read_name(name, maxColumnNameLength, nameFile))
   { std::string nameStr(name);
+    read_file_line(desc, maxColumnNameLength, nameFile); // from utils/read_utils
+    std::string descStr(desc);
     if (strlen(name) > 0)
     { names.push_back(nameStr);
-      Column col(name, " ", nRows, is);  // fill from file
+      Column col(name, desc, nRows, is);  // fill from file
       *it = col;
     }
   }

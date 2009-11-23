@@ -41,8 +41,7 @@ main ()
   std::cout << "      feature attribute {test}     = " << x->attribute_str_value("test") << std::endl;
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
-
-
+  
 
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
@@ -106,6 +105,18 @@ main ()
   spline->write_to(output);
   output.close();
 
+
+  // read multiple features from file by converting into columns
+  std::cout << "\nTEST: Building features from file of columns ... \n";
+  std::pair<int,int> dim;
+  std::vector<Column> yColumns;
+  std::vector<Column> xColumns;
+  dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+  Feature xCol0 (xColumns[0]);
+  Feature xCol1 (xColumns[1]);
+  std::cout << xCol0 << std::endl;
+  std::cout << "TEST: average of feature is "  << xCol0->center()                         << std::endl;
+  std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
   
 
   /*
