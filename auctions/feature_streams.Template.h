@@ -172,14 +172,24 @@ bool
 InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped) const
 {
   if (
-      ((mPos1 == mPos2) && mSource[mPos1]->is_dummy()) ||    // dont square dummy
-      (mSource[mPos1]->is_constant())                        // no interactions with constant (mPos2 handled in increment)
+      ((mPos1 == mPos2) && mSource[mPos1]->is_dummy()) ||              // dont square dummy
+      indicators_from_same_parent(mSource[mPos1], mSource[mPos2]) ||   // disjoint by definition
+      (mSource[mPos1]->is_constant())                                  // no interactions with constant (mPos2 handled in increment)
       )
     return false;
   std::string name (feature_name());
   if (found_feature_name_in_vector(name, used, "used features") || found_feature_name_in_vector(name,skipped, "skipped features"))
     return false;
   return true;
+}
+  
+template<class Source>
+bool
+InteractionStream<Source>::indicators_from_same_parent(Feature const& f1, Feature const& f2) const
+{
+  return f1->has_attribute("category")
+    && f2->has_attribute("category")
+    && (f1->attribute_str_value("parent")==f2->attribute_str_value("parent"));
 }
 
 template<class Source>
@@ -260,7 +270,7 @@ template<class Source1, class Source2>
 typename std::vector<Feature>
 CrossProductStream<Source1, Source2>::pop()
 {
-  debugging::debug(0) << "CPST: " << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
+  debugging::debug("CPST",0) << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
   Feature  xf (mFixedSource[mFixedPos]);
   Feature  xd (mDynSource[mDynPos]);
   increment_position();

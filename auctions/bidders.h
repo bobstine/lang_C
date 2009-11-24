@@ -112,7 +112,7 @@ class FitBidder
   template <class Stream>
     double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, std::deque<double> const& auctionPayoffs)
   {
-    debugging::debug(3) << "BIDR: fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
+    debugging::debug("BIDR",1) << "Fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
     if(!auctionPayoffs.empty() && auctionPayoffs.back() > 0)         // last variable was added to model
       if (lastBidAccepted)                                           // it was mine, so pick the same bid
 	return (mCountDown == mDelayInterval) ? 0.25 : 0.025;

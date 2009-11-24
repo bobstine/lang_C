@@ -59,7 +59,7 @@ parse_arguments(int argc, char** argv,
 		int &nRounds, double &totalAlpha, int &df);
 
 gslData*
-build_model_data(std::vector<Column> const& y, std::ostream&);
+build_model_data(std::vector<Column> const& y);
 
 bool
 data_has_selector(std::string const& dataFileName, std::ostream&);
@@ -135,7 +135,7 @@ main(int argc, char** argv)
   std::pair< std::pair<int,double>, std::pair<int,double> > inOut (initialize_sums_of_squares(yColumns));
     
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns, debug(1)));
+  gslData *theData (build_model_data(yColumns));
   
   // --- build model and initialize auction with stream for log
   LinearModel <gslData, olsEngine> theRegr(theData, protection);
@@ -386,23 +386,22 @@ parse_arguments(int argc, char** argv,
 
 // reads in response, initialized data object
 gslData*
-build_model_data(std::vector<Column> const& y, std::ostream& os)
+build_model_data(std::vector<Column> const& y)
 {
   int                       nyCols       (y.size());
   bool                      useSubset    (nyCols == 2);
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        (y[0]->size());
   
-  os << " Response has " << nRows << " rows.\n";
   if (useSubset)  // leading column is indicator of which cases to use in fitting
   {
-    os << " Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
+    debug("AUCT",1) << " Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
     return new gslData(y[1]->begin(), y[0]->begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting
   {
     constant_iterator<bool>   noSelection(true);
-    os << " Response variable is " << y[0] << std::endl;
+    debug("AUCT",1) << "Response variable is " << y[0] << std::endl;
     return new gslData(y[0]->begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }

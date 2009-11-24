@@ -9,7 +9,7 @@
 
 // gsl iterators
 #include "gsl_iterator.h"
-// output
+#include "debug.h"
 #include "print_utils.h"
 
 // logistic transformation
@@ -59,16 +59,16 @@ LinearModel<Data,Engine>::add_predictors_if_useful (Collection c, double pToEnte
   // further testing if higher protection
   if (protection() == 0)
   { if (result.second > pToEnter) return result;        // exit
-    std::cout << "LINM: Predictor passes standard evaluation; p-value " << result.second << " < " << pToEnter << std::endl;
+    debug("LINM",3) << "Predictor passes standard evaluation; p-value " << result.second << " < " << pToEnter << std::endl;
   }
   else
   { if (result.second > 2 * pToEnter)   return result;  // exit
     // do more computational bennett or white test before adding
-    std::cout << "LINM: Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
+    debug("LINM",3) << "Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
     bool useTSS (protection() > 1);
     result = GSLR::White_evaluation(useTSS);
     if (result.second > pToEnter)   return result;  
-    std::cout << "LINM: Predictor passes second evaluation;  p-value " << result.second << " <  " << pToEnter << std::endl;
+    debug("LINM",3) << "Predictor passes second evaluation;  p-value " << result.second << " <  " << pToEnter << std::endl;
   }
   // add them to the model for those that get this far
   GSLR::add_current_predictors();

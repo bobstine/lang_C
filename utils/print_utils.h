@@ -22,13 +22,6 @@
 
 ////////////////////////  Stat Tabular Summary  //////////////////
 
-/*
-namespace pu {
-
-  debug_os = std::cout;
-
-}
-*/
 
 // First iterator gives the names of the elements, next two give the estimates and SEs
 
@@ -39,8 +32,8 @@ void
   const unsigned int maxNameString (50);
 
   os << "\n - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-  os << "                         Summary of Estimates\n";
-  os << "        Name                                   Estimate            SE          t         p\n";
+  os << "                                     Summary of Regression Coefficient Estimates\n";
+  os << "                       Predictor Name                    Estimate        SE         t        p\n";
   // print the names in the first column, then est   se   t  p-val
   for (int i=0; i<k; ++i)
   { std::string aName (name[i]);

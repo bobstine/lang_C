@@ -54,7 +54,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   for (unsigned int j=0; j<features.size(); ++j)
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
-  debug("AUCT",0) << "AUCT: Test results are  <" << result.first << "," << result.second << ">\n";
+  debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
   // report bid result

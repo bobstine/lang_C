@@ -202,8 +202,9 @@ public:
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  is_empty               ()                                                                        const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
+  bool  is_empty                    ()                                                                       const;
+  bool  current_feature_is_okay    (std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
+  bool  indicators_from_same_parent(Feature const& f1, Feature const& f2)                                    const;
   void  increment_position();
 private:
   void  build_current_feature_name();
