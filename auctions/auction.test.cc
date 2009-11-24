@@ -43,8 +43,13 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
+#include <map>
 #include <getopt.h>
 
+
+std::pair< std::pair<int,double>, std::pair<int,double> >
+initialize_sums_of_squares(std::vector<Column> y);
 
 void
 parse_arguments(int argc, char** argv,
@@ -63,6 +68,7 @@ int
 main(int argc, char** argv)
 {
   using namespace debugging;
+  typedef std::vector<Feature> FeatureVector;
   
   // build vector of columns from file; set default parameter values
   double      totalAlphaToSpend    (0.1);
@@ -85,17 +91,17 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug(3) << "AUCT: Version build 0.90 (27 May 2009)\n";
-  debug(3) << "AUCT: Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
-	   << " --protect=" << protection << " --rounds=" << numberRounds
-	   << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
-	   << std::endl;
+  debug("AUCT",4) << "Version build 0.90 (27 May 2009)\n";
+  debug("AUCT",4) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
+		  << " --protect=" << protection << " --rounds=" << numberRounds
+		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
+		  << std::endl;
   
   // open additional files for output
   std::string modelHTMLFileName  (outputPath + "model.html"); 
   std::string modelTextFileName  (outputPath + "model.txt");
   std::string modelDataFileName  (outputPath + "model_data.csv");
-  debug(0) << "AUCT: Output going to:\n"
+  debug("AUCT",3) << "Output going to these files:\n"
 #ifdef NDEBUG
 	   << "             log  --> " << debugFileName  << std::endl
 #endif
@@ -118,110 +124,75 @@ main(int argc, char** argv)
      FileColumnStream.  Spaced is managed within each column.
   */
   int numberYColumns = 1;
-  if (data_has_selector(columnFileName, debug("AUCT",0)))  // data for validation
+  if (data_has_selector(columnFileName, debug(0)))  // data for validation
     numberYColumns = 2;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  debug(0) << "AUCT: Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
+  debug("AUCT",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
 
-  // compute initial SS, sample sizes for estimation n0 and validation n1
-  double inSS  (0.0);
-  double outSS (0.0);
-  int n0 (0), n1 (0);
-  if (yColumns.size() == 2) // have validation test sample
-  { double avg0 (0.0), avg1 (0.0);
-    double *x = yColumns[1]->begin();
-    double *b = yColumns[0]->begin();
-    for(int i = 0; i<yColumns[0]->size(); ++i)
-    { if (*b++)
-      {	avg1 += *x++;
-	++n1;
-      }
-      else
-      { avg0 += *x++;
-	++n0;
-      }
-    }
-    if ((0 == n0) || (0 == n1))
-    { std::cout << "ERROR: counts in in-sample/out-of-sample data are " << n0 << " " << n1 << std::endl;
-      return -5;
-    }
-    avg0 = avg0 / n0;
-    avg1 = avg1 / n1;
-    x = yColumns[1]->begin();
-    b = yColumns[0]->begin();
-    for (int i=0; i<yColumns[0]->size(); ++i)
-    {
-      double dev;
-      if (*b++)
-      { dev = *x++ - avg1;
-	inSS += dev * dev;
-      }
-      else
-      { dev = *x++ - avg0;
-	outSS += dev*dev;
-      }
-    }
-  }
-  else
-  { double avg = yColumns[0]->average();
-    double  *x = yColumns[0]->begin();
-    for(int i = 0; i<yColumns[0]->size(); ++i)
-    { double dev = *x++ - avg;
-      inSS += dev*dev;
-    }
-  }
-  // convert columns of data into vector of features
-  std::vector<Feature> columnFeatures;
-  for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
-    columnFeatures.push_back(Feature(*it));
-  debug(0) << "AUCT: Initialization converted " << xColumns.size() << " columns into features.\n";
-  
+  // in-sample count and SS, out of sample count and SS
+  std::pair< std::pair<int,double>, std::pair<int,double> > inOut (initialize_sums_of_squares(yColumns));
+    
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns, debug("AUCT",1)));
+  gslData *theData (build_model_data(yColumns, debug(1)));
   
-  // build model and initialize auction with stream for log
+  // --- build model and initialize auction with stream for log
   LinearModel <gslData, olsEngine> theRegr(theData, protection);
   Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF, debug(0));
-  
-  // build logisitic model and auction
+  // --- build logisitic model and auction
   // LogisticModel <gslData> theRegr(theData);
   // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
-  
+
+  // convert columns into features, organized as a map[stream] = feature vector
+  std::map< std::string, FeatureVector > featureVectorMap;
+  { for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
+    { Feature f(*it);
+      std::string stream (f->attribute_str_value("stream"));
+      if (stream.size() == 0) stream = "main";
+      featureVectorMap[stream].push_back(f);
+    }
+    debug("AUCT",1) << "Initialization converted " << xColumns.size() << " columns into " << featureVectorMap.size() << " streams of features:\n";
+    for (std::map<std::string,FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
+      debug(1) << "       " << it->first << " with " << it->second.size() << " features\n";
+  }
+
   // build vector of experts that work directly from input variables
-  debug(0) << "AUCT: Assembling experts"  << std::endl;
+  debug("AUCT",0) << "Assembling experts"  << std::endl;
 
-  double alphaShare (totalAlphaToSpend/7);
-  typedef  FiniteStream      < std::vector<Feature> > FStream;
-  typedef  InteractionStream < std::vector<Feature> > IStream;
-  typedef  CrossProductStream< std::vector<Feature>, std::vector<Feature> > CPStream;
-  typedef  PolynomialStream  < std::vector<Feature> > PolyStream;
+  // slice alpha: 3/4 to columns input, 1/4 saved for parasites
+  double columnAlphaShare   (0.75 * totalAlphaToSpend / featureVectorMap.size());
+  double parasiteAlphaShare (0.25 * totalAlphaToSpend / 3.0);
   
-  // main column expert
-  theAuction.add_expert(make_expert(0, alphaShare,      // priority, alpha
-				    UniversalBoundedBidder<FStream>(), 
-				    make_finite_stream("Columns", columnFeatures, 2) // 2 cycles through these features
-				    ));
-  
+  // add a column expert and an interaction expert for each column stream
+  typedef  FiniteStream      < FeatureVector > FStream;
+  typedef  InteractionStream < FeatureVector > IStream;
+  for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
+  { theAuction.add_expert(make_expert(0, columnAlphaShare * 0.51,      // priority, alpha
+				      UniversalBoundedBidder<FStream>(), 
+				      make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
+				      ));
   // main interactions
-  theAuction.add_expert(make_expert(0, alphaShare/1.01, // slightly less 
-				    UniversalBoundedBidder<IStream>(),
-				    make_interaction_stream("Column interactions", columnFeatures, false)  // skip squared terms
-				    ));
-
+    theAuction.add_expert(make_expert(0, columnAlphaShare * 0.49, // slightly less 
+				      UniversalBoundedBidder<IStream>(),
+				      make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
+				      ));
+  }
+  
   // parasitic experts betting on winners
-  theAuction.add_expert(make_expert(0, alphaShare,
+  typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
+  theAuction.add_expert(make_expert(0, parasiteAlphaShare,
 				    UniversalBidder<CPStream>(),
-				    make_cross_product_stream("Used-feature interactions", columnFeatures, theAuction.model_features())
+				    make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.model_features())
 				    ));
   
-  theAuction.add_expert(make_expert(0, alphaShare/2, 
+  theAuction.add_expert(make_expert(0, parasiteAlphaShare/2, 
 				    UniversalBidder<CPStream>(),
-				    make_cross_product_stream("Skipped-feature interactions", columnFeatures, theAuction.skipped_features())
+				    make_cross_product_stream("Skipped-feature interactions", featureVectorMap["main"], theAuction.skipped_features())
 				    ));
   
-  theAuction.add_expert(make_expert(0, alphaShare/2, 
+  typedef  PolynomialStream  < FeatureVector > PolyStream;  
+  theAuction.add_expert(make_expert(0, parasiteAlphaShare/2, 
 				    UniversalBidder<PolyStream>(),
 				    make_polynomial_stream("Skipped-feature polynomial", theAuction.skipped_features(), 3)     // poly degree
 				    ));
@@ -251,8 +222,6 @@ main(int argc, char** argv)
     )));                                   // WARNING: cannot return more than 25 x's in subspace
   */
   
-  
-
 
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
@@ -267,17 +236,17 @@ main(int argc, char** argv)
   {
     int round = 0;
     const int minimum_residual_df = 10;
-    theAuction.write_csv_header_to (progressStream, inSS, outSS);
+    theAuction.write_csv_header_to (progressStream, inOut.first.second, inOut.second.second);   // initial SS in and out of sample
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-      { debug(3) << "AUCT: @@@ Auction adds predictor @@@" << std::endl;
+      { debug(3) << " @@@ Auction adds predictor @@@" << std::endl;
 	debug(3) << theAuction << std::endl << std::endl;
       }
       progressStream << std::endl;                        // ends lines in progress file
     }
-    debug(3) << "\nAUCT:         -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+    debug(4) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
 
 
@@ -294,7 +263,7 @@ main(int argc, char** argv)
   
   // write model to a file
   {
-    debug("AUCT",0) << "Writing model to file " << modelTextFileName << std::endl;
+    debug(2) << "Writing model to file " << modelTextFileName << std::endl;
     std::ofstream output (modelTextFileName.c_str());
     if (! output)
     { std::cerr << "AUCT: Cannot open output text file for writing model " << modelTextFileName << std::endl;
@@ -306,7 +275,7 @@ main(int argc, char** argv)
   
   // write model data to file
   {
-    debug("AUCT",0) << "Writing model data to file " << modelDataFileName << std::endl;
+    debug(2) << "Writing model data to file " << modelDataFileName << std::endl;
     std::ofstream output (modelDataFileName.c_str());
     if (! output)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
@@ -316,9 +285,9 @@ main(int argc, char** argv)
     output.close();
   }
    
-  debug(0) << "AUCT: Auction is completed; disposing GSL data objects.\n";
+  debug(0) << "Auction is completed; disposing GSL data objects.\n";
   delete (theData);
-  debug(0) << "AUCT: Exiting; final clean-up done by ~ functions.\n";
+  debug(0) << "Exiting; final clean-up done by ~ functions.\n";
   
   return 0;  
 }
@@ -456,3 +425,57 @@ data_has_selector(std::string const& dataFileName, std::ostream& os)
     return false;
   }
 }
+
+
+std::pair< std::pair<int,double>, std::pair<int,double> >
+initialize_sums_of_squares( std::vector<Column> y)
+{
+  double inSS  (0.0);
+  double outSS (0.0);
+  int n0 (0), n1 (0);
+  if (y.size() == 2) // have validation test sample
+  { double avg0 (0.0), avg1 (0.0);
+    double *x = y[1]->begin();
+    double *b = y[0]->begin();
+    for(int i = 0; i<y[0]->size(); ++i)
+    { if (*b++)
+      {	avg1 += *x++;
+	++n1;
+      }
+      else
+      { avg0 += *x++;
+	++n0;
+      }
+    }
+    if ((0 == n0) || (0 == n1))
+    { std::cout << "ERROR: counts in in-sample/out-of-sample data are " << n0 << " " << n1 << std::endl;
+      return std::make_pair( std::make_pair(0,0), std::make_pair(0,0));
+    }
+    avg0 = avg0 / n0;
+    avg1 = avg1 / n1;
+    x = y[1]->begin();
+    b = y[0]->begin();
+    for (int i=0; i<y[0]->size(); ++i)
+    {
+      double dev;
+      if (*b++)
+      { dev = *x++ - avg1;
+	inSS += dev * dev;
+      }
+      else
+      { dev = *x++ - avg0;
+	outSS += dev*dev;
+      }
+    }
+  }
+  else
+  { double avg = y[0]->average();
+    double  *x = y[0]->begin();
+    for(int i = 0; i<y[0]->size(); ++i)
+    { double dev = *x++ - avg;
+      inSS += dev*dev;
+    }
+  }
+  return std::make_pair( std::make_pair(n1, inSS), std::make_pair(n0, outSS) );
+}
+

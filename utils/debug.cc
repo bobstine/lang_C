@@ -71,17 +71,17 @@ debugging::Debug::prefix(int level)
   if(level < 0)
     return "--------------   "+m_prefix+"  ------------------\n";
   else if(level == 0)
-    return ")"+m_prefix+":\t";
+    return m_prefix+"0:\t";
   else if(level == 1)
-    return "!"+m_prefix+":\t";
+    return m_prefix+"1:\t";
   else if(level == 2)  // most common level
-    return "@"+m_prefix+":\t";
+    return m_prefix+"2:\t";
   else if(level == 3)  // most common level
-    return "#"+m_prefix+":\t";
+    return m_prefix+"3:\t";
   else if(level == 4)
-    return "$"+m_prefix+":\t";
+    return m_prefix+"4:\t";
   else
-    return "%"+m_prefix+":\t";
+    return m_prefix+"*:\t";
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void

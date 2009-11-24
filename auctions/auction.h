@@ -47,7 +47,7 @@ private:
  public:
   ~Auction()
     {
-      debug(0) << "AUCT: Deleting experts in auction. \n";
+      debugging::debug("AUCT",0) << "Deleting experts in auction. \n";
       for(ExpertIterator i=mExperts.begin()        ; i != mExperts.end()        ; ++i) delete *i;
     }
     

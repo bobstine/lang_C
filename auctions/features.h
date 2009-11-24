@@ -72,11 +72,11 @@ class Feature
 
   
   // copy
- Feature(Feature const& f)    : mFP(f.mFP)                { ++f.mFP->mRefCount;  }
+  Feature(Feature const& f)    : mFP(f.mFP)                { ++f.mFP->mRefCount;  }
 
   //  empty has a null column
   Feature();
-
+  
   //  column feature
   Feature(Column const &c);
   

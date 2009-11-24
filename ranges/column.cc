@@ -1,12 +1,14 @@
 //  $Id: column.cc,v 1.16 2008/01/22 21:15:07 bob Exp $
 
 #include "column.h"
+#include "debug.h"
 
 #include <set>
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+
 
 
 //   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column
@@ -72,16 +74,16 @@ FileColumnStream::open_file()
     mN = 0;
     int count = fscanf (mFile, "%d", &mN);
     if ( (count==1) && (mN > 0) )
-    { std::cout << "CLMN: File " << mFileName << " opened; n = " << mN << std::endl;
+    { debugging::debug("CLMN",0) << "File " << mFileName << " opened; n = " << mN << std::endl;
       return true;
     }
     else
-    { std::cout << "CLMN: Read invalid n = " << mN << std::endl;
+    { std::cerr << "CLMN: Read invalid n = " << mN << std::endl;
       return false;
     }
   }
   else
-  { std::cout << "CLMN: Could not open file " << mFileName << std::endl;
+  { std::cerr << "CLMN: Could not open file " << mFileName << std::endl;
     return false;
   }
 }
@@ -149,7 +151,7 @@ FileColumnStream::read_next_column_from_file()
 {
   if (!mFile)
   {
-    std::cout << "COLM: Error. File is not open for reading.\n";
+    std::cerr << "CLMN: Error. File is not open for reading.\n";
     return false;
   }
   else
@@ -179,7 +181,7 @@ insert_columns_from_file (std::string const& fileName,
     ++colStream;
     col = *colStream;
   }
-  std::cout << "CLMN: Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+  debugging::debug("CLMN",1) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -201,7 +203,7 @@ insert_columns_from_file (std::string const& fileName, int ny,
     ++colStream;
     col = *colStream;
   }
-  std::cout << "CLMN: Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+  debugging::debug("CLMN",1) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -212,10 +214,10 @@ insert_columns_from_stream (FILE *is, std::string const& nameFileName, int nRows
   FILE *nameFile;
   nameFile = fopen(nameFileName.c_str(), "r");
   if (not nameFile)
-  { std::cout << "COLM: Could not open name file to create columns; open of " << nameFileName << " failed.\n";
+  { std::cerr << "COLM: Could not open name file to create columns; open of " << nameFileName << " failed.\n";
     return 0;
   }
-  std::cout << "COLM: Making columns from stream data with " << nRows << " rows.\n";
+  debugging::debug("COLM", 0) << "Making columns from stream data with " << nRows << " rows.\n";
   std::vector<std::string> names;
   std::vector<double*> xPtrs;
   char name[maxColumnNameLength];

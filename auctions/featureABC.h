@@ -13,7 +13,6 @@
    Features do *not* hold data; they must be 'lightweight'. Any data
    referenced by a descendant of this ABC must be held elsewhere and
    not kept in the feature itself.
-
    
    9 Nov 09 ... Attributes as a map of two strings.
   17 Apr 09 ... Arguments hold name; (name, power) setup

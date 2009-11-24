@@ -27,26 +27,26 @@ bool
 Auction<ModelClass>::auction_next_feature (std::ostream& os)
 {
   ++mRound;
-  debugging::debug(0) << "AUCT: Beginning auction round #" << mRound << std::endl;
+  debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<ExpertABC*,double> winner (collect_bids(os));  
   ExpertABC* pWinningExpert = winner.first;
   double      highBid    = winner.second;
   if (0.0 == highBid) 
   { mHasActiveExpert = false;
-    debugging::debug(0) << "AUCT: Auction does not have an active expert to bid; terminating.\n";
+    debug("AUCT",3) << "Auction does not have an active expert to bid; terminating.\n";
     if (os) os << std::endl;
     return false;
   } 
   // extract chosen features
   std::vector<Feature> features  (pWinningExpert->feature_vector()) ;
   if (features.empty())
-  { debugging::debug(3) << "AUCT: *** ERROR **** Winning expert " << pWinningExpert->name() << " did not provide features.\n";
+  { debug("AUCT",3) << "*** ERROR **** Winning expert " << pWinningExpert->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
   else
-  { debugging::debug(0) << "AUCT: Winning expert  " << pWinningExpert->name() << " bids $" << highBid <<  " on ";
+  { debug("AUCT",0) << "Winning expert  " << pWinningExpert->name() << " bids $" << highBid <<  " on ";
     print_features(features);
   }
   // build variables for testing
@@ -54,7 +54,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   for (unsigned int j=0; j<features.size(); ++j)
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
   TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
-  debug(3) << "AUCT: Test results are  <" << result.first << "," << result.second << ">\n";
+  debug("AUCT",0) << "AUCT: Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
   // report bid result

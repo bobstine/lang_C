@@ -19,15 +19,15 @@
 //
 //  ---- name ---- \n    level -1
 //
-//  )object_name:\t      level 0   (look at your keyboard to see why these symbols are used.)
+//  object_name0:\t      level 0
 //
-//  !object_name:\t      level 1 
+//  object_name1:\t      level 1 
 //
-//  @object_name:\t      level 2
+//  object_name2:\t      level 2
 //
-//  #object_name:\t      level 3
+//  object_name3:\t      level 3
 //
-//  $object_name:\t      level 4
+//  object_name4:\t      level 4
 //
 // Use level 4 for outputting one line of major decisions
 // Use level 3 for outputting one line per major event 
@@ -109,7 +109,6 @@ namespace debugging
 
   std::string   debug_prefix(int level);  // prefix used for level of debugging
   std::ostream& debug();                              // continues with last level of debugging
-  std::ostream& debug(int);                           // prefix used for appropiate level
   std::ostream& debug(int);                           // prefix used for appropiate level
   std::ostream& debug(const std::string&, int level); // debug("prefix",level) << "message." << std::endl;
   void     debug_init(std::ostream&,int level);       // sets stream and minimum level to print at
