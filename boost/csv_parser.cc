@@ -24,16 +24,17 @@
    Input -----------------------------
    
    The input data should have the style of named columns. Names can consist of
-   characters, numbers, and the symbols ".", "_", "[", "]", and "/".  Others
-   might ought to be added the in later parsing of variables.  Attributes can be
-   assigned to the variable by listing name=value pairs of attributes {within
-   curly brackets} and separated by semi-colons.  Currently used attributes are
+   characters, numbers, and the symbols " " (space), ".", "_", "[", "]", and
+   "/".  Others might ought to be added the in later parsing of variables.
+   Attributes can be assigned to the variable by listing name=value pairs of
+   attributes {within curly brackets} and separated by semi-colons. NO spaces
+   are allowed within the attributes.  Currently used attributes defined by the
+   software are
 
-      stream:  identifies a separate input stream  (defaults to main)
-
-   Protected attributes are
-      category (identifies a categorical variable)
-      parent (identifies the derived from variable)
+      parent    attached to a variable derived from another (eg, categorical or missing)
+      category  category represented
+      stream    identifies a specific input stream  (defaults to main)
+      name      repeated name of the variable (non-blank text only)
 
    For example, an input csv file with 3 variables might begin as follows
 
@@ -91,22 +92,22 @@
    stream sub.
   
       Var1[1]
-      stream main  parent Var1  category 1
+      name Var1[1]  stream main  parent Var1  category 1
       1 0 0
       Var1[3]
-      stream main  parent Var1  category 3
+      name Var1[3]  stream main  parent Var1  category 3
       0 1 0
       Var1[a]
-      stream main  parent Var1  category a
+      name Var1[a]  stream main  parent Var1  category a
       0 0 1
       a/b
-      stream main
+      name a/b  stream main
       2 4 3 
       a/b[missing]
-      stream main  parent a/b  category missing
+      name a/b[missing]  stream main  parent a/b  category missing
       0 0 1
       Var.3
-      stream sub
+      name Var.3  stream sub
       3 5 5
       
    11 Nov 09 ... Attributes read and written.   
@@ -154,6 +155,17 @@ typedef std::map   <int, StringVector> AttributeMap;  // use map since not all p
 typedef std::vector< StringVector> StringDataMatrix;
 
 ///////////////////////////////////////////////////////////////////////////////
+
+
+std::string
+fill_blanks(std::string str)
+{
+  for(std::string::iterator it=str.begin(); it!=str.end(); ++it)
+    if(*it == ' ' || *it == '"')
+      *it = '_';
+  return str;
+}
+
 
 class StringCatcher
 {
@@ -327,8 +339,9 @@ void
 write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 		      int column, std::ostream& output)
 {
-  // write name with missing appended
-  output << varName << "[missing]" << endl;
+  // write name with missing appended as leading line plus as an attribute
+  std::string name (varName + "[missing]");
+  output << name << endl << "name " << fill_blanks(name) << " ";
   // write attributes
   output << "parent " << varName << " category missing ";
   if (!attributes.empty())
@@ -347,8 +360,8 @@ void
 write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
 			  int column, int numberMissing, std::ostream& output)
 {
-  // start by writing the undecorated name to output
-  output << varName << endl;
+  // start by writing the undecorated name to output on top line and as attribute
+  output << varName << endl << "name " << fill_blanks(varName) << " ";
   // write rest of attributes
   if (!attributes.empty())
     std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
@@ -426,7 +439,9 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
   if (dropLastLabel) --last;
   // write data for each label
   for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
-  { output << varName << "[" << *it << "]" << endl;
+  { std::string name (varName + "[" + *it + "]");
+    // write name, then as attribute
+    output << name << endl << "name " << fill_blanks(name) << " ";
     // write attributes for each indicator
     output << "parent " << varName << " category " << *it << " ";
     if (!attributes.empty())
