@@ -36,7 +36,7 @@ prepare_data: prepare_data.o
 	$(GCC) $< $(LDLIBS) -o $@
 
 wiki.sdata: prepare_data the_vs_her.txt
-	./prepare_data BNC_word_list.txt 1000 < the_vs_her.txt > $@
+	./prepare_data --keyword-file=BNC_word_list.txt --min-frequency=1000 --num-tokens=49 --num-sentences=40 < the_vs_her.txt > $@
 
 ###########################################################################
 

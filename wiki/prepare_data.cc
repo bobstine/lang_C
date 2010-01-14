@@ -6,31 +6,19 @@
 #include <set>
 #include <map>
 #include <assert.h>
- 
+#include <getopt.h>
+
+
 //////////////////////////////////////////////////////////
-//  From the file:
+//  Format of the frequency file is (it includes the header line)
 //
 //        Word    PoS     Freq
 //        the     Det     61847
 //        of      Prep    29391
 //        and     Conj    26817
+//        ...
 //
-// A Description is the pair with last two items
 //////////////////////////////////////////////////////////
-
-class Description
-{
-public:
-  std::string m_class;
-  int m_count;
-};
-
-std::istream&
-operator>>(std::istream& in, Description& d)
-{
-  in >> d.m_class >> d.m_count;
-  return in;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////
 // The current format of the sentence file is a bit weird.  The last few tokens look like:
@@ -41,6 +29,13 @@ operator>>(std::istream& in, Description& d)
 // where the middle two mean that "the" is the correct answer.  These last tokens
 // are what the following function expects to analysis and returns a zero or a one.
 ///////////////////////////////////////////////////////////////////////////////////
+
+void
+parse_arguments(int argc, char** argv,
+		std::string &keywordFile,
+		int         &minFreq,
+		int         &numberOfSentences,
+		int         &numberOfTokens);    // context for response
 
 int
 parse_answer(std::istream& in)
@@ -83,83 +78,76 @@ int
 main(int argc, char** argv)
 {
 
-  //  Parse command line arguments
-  if(argc != 3)
-    std:: cout << "Oops: argc = " << argc
-	       << "\nProper usage: "  << argv[0]
-	       << " word_frequency_table frequency_limit < tokenized_lines > stream_format" << std::endl;
-  assert(argc == 3);
-  std::ifstream wordFrequencyFile (argv[1]);
-  int limit;
-  limit = cstring_to_int(argv[2]);
-  
-  // Read word frequencies: number of words determines the number of features
-  typedef std::multimap<std::string, Description> FrequencyTable;
-  FrequencyTable frequency;
-  std::set<std::string> words;
-  std::string header;
-  getline(wordFrequencyFile, header);
-  int numberOfWordsUsed (0);
-  while(!wordFrequencyFile.eof())
-  { Description value;
-    std::string key;
-    std::string one_line;
-    getline(wordFrequencyFile, one_line);
-    std::stringstream line(one_line);
-    getline(line, key, char(9));  // the leading \t
-    getline(line, key, char(9));  // everything up to the next \t
-    line >> value;
-    words.insert(key);
-    if(value.m_count > limit)
-    { frequency.insert(std::make_pair(key,value));
-      ++numberOfWordsUsed;
+  std::string   keywordFileName;
+  int           freqLimit        (1000);
+  int           numberOfSentences  (40);
+  int           numberOfTokens     (49);
+  parse_arguments(argc, argv, keywordFileName, freqLimit, numberOfSentences, numberOfTokens);
+
+  // Read word frequencies: number of words determines the number of features (pair is word, pos)
+  typedef std::multimap<int, std::pair<std::string, std::string> > FrequencyMap;
+  FrequencyMap freqMap;
+  std::set<std::string> keywords;
+  { 
+    std::ifstream keywordFile (keywordFileName.c_str());
+    std::string header;
+    getline(keywordFile, header);          // dump header line
+    while(!keywordFile.eof())
+    { 
+      std::string keyword;
+      std::string pos;
+      int         freq;
+      std::string one_line;
+      getline(keywordFile, one_line);
+      std::stringstream line(one_line);
+      getline(line, keyword, char(9));  // the leading \t
+      line >> keyword >> pos >> freq;
+      if(freq > freqLimit)
+      { keywords.insert(keyword);
+	freqMap.insert(std::make_pair(freq, std::make_pair(keyword,pos)));
+      }
     }
   }
-  
-
-  //                          DEBUGGING
-  // Let's see what the table looks like:
-  //  for(FrequencyTable::const_iterator i = frequency.begin(); i != frequency.end(); ++i)
-  //    if(i->second.m_count > 10000)
-  //      std::cout << "most frequent: " << i->first << " POS=" << i->second.m_class
-  //                << " @ " << i->second.m_count << std::endl;
-
-
-  
+  if (freqMap.empty())
+  { std::cerr << "ERRR: No keyword has frequency larger than minimum (" << freqLimit << ")\n";
+    return -1;
+  }
+    
   // Initialize empty set of data: bag size = number of features
-  int numberOfSentences = 44;
-  std::map<std::string, std::vector<double> > table;
-  for(std::set<std::string>::const_iterator i = words.begin(); i != words.end(); ++i)
-    table.insert(std::make_pair(*i,std::vector<double>(numberOfSentences,0)));
+  //     count those keywords that appear in each sentence
+
+  std::map<std::string, std::vector<double> > counts;
+  for(std::set<std::string>::const_iterator i = keywords.begin(); i != keywords.end(); ++i)
+    counts.insert(std::make_pair(*i,std::vector<double>(numberOfSentences,0)));
 
 
-  // Read sentences: each sentence is an observation, response is 0/1 binary
+  // Read sentences from stdin: each sentence is an observation, response is 0/1 binary
   std::vector<int> y(numberOfSentences);
-  const int numberOfTokens (49);                    // tokens in prior sentence context
-  int sentenceNumber = 0;
-  while(!std::cin.eof())
-  {
-    for(int i = 0; i < numberOfTokens; ++i)
-    { std::string token;
-      std::cin >> token;
-      if(words.find(token) != words.end())
-	++table[token][sentenceNumber];
+  { 
+    int sentenceNumber = 0;
+    while(sentenceNumber < numberOfSentences && !std::cin.eof())
+    {
+      for(int i = 0; i < numberOfTokens; ++i)
+      { std::string token;
+	std::cin >> token;
+	if(keywords.find(token) != keywords.end())
+	  ++counts[token][sentenceNumber];
+      };
+      y.at(sentenceNumber) = parse_answer(std::cin);
+      std::cin >> std::ws;
+      ++sentenceNumber;
     };
-    y.at(sentenceNumber) = parse_answer(std::cin);
-    std::cin >> std::ws;
-    ++sentenceNumber;
-  };
+    if (numberOfSentences != sentenceNumber)
+    { std::cerr << "ERROR: Not enough sentences(" << sentenceNumber << "<" << numberOfSentences <<") found on input.\n";
+      return -2;
+    }
+  }
 
   
   // Write out in streaming format
-  // First sort bag counts by frequency
-  typedef std::multimap<int, std::pair<std::string, std::string> > SortMap;
-  SortMap sorted;
-  for(FrequencyTable::const_iterator i = frequency.begin(); i != frequency.end(); ++i)
-    sorted.insert(std::make_pair(i->second.m_count, std::make_pair(i->first, i->second.m_class)));
 
   // Write n,p+1
-  std::cout << numberOfSentences << " " << 1+numberOfWordsUsed << std::endl;
+  std::cout << numberOfSentences << " " << freqMap.size() << std::endl;
   
   // Print out Y
   std::cout << "is_her" << std::endl;
@@ -169,17 +157,92 @@ main(int argc, char** argv)
   std::cout << std::endl;
 
   // Print out the X's
-  for(SortMap::const_reverse_iterator i = sorted.rbegin();i != sorted.rend(); ++i)
+  for(FrequencyMap::const_reverse_iterator i = freqMap.rbegin();i != freqMap.rend(); ++i)
   {
-    std::string token = i->second.first;
-    if(!is_all_zeros(table[token]))
+    std::string keyword = i->second.first;
+    if(!is_all_zeros(counts[keyword]))
     {
       std::string pos = i->second.second;
-      std::cout << token << std::endl;  // name of the variable
+      std::cout << keyword << std::endl;  // name of the variable
       std::cout << "stream " << pos << " frequency " << i->first << std::endl;  // properties
       for(int j = 0; j < numberOfSentences; ++j)
-	std::cout << table[token][j] << " ";
+	std::cout << counts[keyword][j] << " ";
       std::cout << std::endl;
     };
   }
+}
+
+
+
+
+void
+parse_arguments(int argc, char** argv,
+		std::string &keywordFile,
+		int         &minFreq,
+		int         &numSentences,
+		int         &numTokens)
+{
+  int key;
+  while (1)                                  // read until empty key causes break
+    {
+      int option_index = 0;
+      static struct option long_options[] = {
+	  {"keyword-file",      1, 0, 'f'},  // has arg,
+	  {"min-frequency",     1, 0, 'm'},  // has arg,
+	  {"num-sentences",     1, 0, 'n'},  // has arg,
+	  {"num-tokens",        1, 0, 't'},  // has arg,
+	  {"help",              0, 0, 'h'},  // no  arg, 
+	  {0, 0, 0, 0}                       // terminator 
+	};
+	key = getopt_long (argc, argv, "f:m:n:t:h", long_options, &option_index);
+	if (key == -1)
+	  break;
+	// std::cout << "MAIN: Parsing key " << char(key) << " with option_index " << option_index << std::endl;
+	switch (key)
+	  {
+	  case 'f' :                                    
+	    {
+	      std::string name(optarg);
+	      // std::cout << "Read name from optional args..." << name << std::endl;
+	      keywordFile = name;
+	      break;
+	    }
+	  case 'm' :
+	    {
+	      std::istringstream is(optarg);
+	      is >> minFreq;
+	      break;
+	    }
+	  case 'n' :
+	    {
+	      std::istringstream is(optarg);
+	      is >> numSentences;
+	      break;
+	    }
+	  case 't' :
+	    {
+	      std::istringstream is(optarg);
+	      is >> numTokens;
+	      break;
+	    }
+	  case 'h' :
+	    {
+	      std::cout << "switches: (sentences read from stdin, data to stdout)" << std::endl << std::endl;
+	      std::cout << "      --keyword-file=foo       file defining keywords" << std::endl;
+	      std::cout << "      -ffoo" << std::endl << std::endl;
+	      std::cout << "      --min-frequency=#        minimum observed frequency to be used as keyword" << std::endl;
+	      std::cout << "      -m1000" << std::endl << std::endl;
+	      std::cout << "      --num-sentences=#        number of sentences to read from std input" << std::endl;
+	      std::cout << "      -n1000" << std::endl << std::endl;
+	      std::cout << "      --num-tokens=#           number of tokens before y word" << std::endl;
+	      std::cout << "      -t49" << std::endl << std::endl;
+	      std::cout << "      --help                   generates this message" << std::endl;
+	      std::cout << "      -h" << std::endl << std::endl;
+	      exit(0);
+	      break;
+	    }
+	  }
+    }
+  std::clog << "PARSE: keyword-file=" << keywordFile << ", min-frequency=" << minFreq << ", num-sentences=" << numSentences
+	    << ", num-tokens=" << numTokens << std::endl;
 }
