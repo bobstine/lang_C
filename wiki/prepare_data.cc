@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <getopt.h>
 
+#include "read_utils.h"
+
 
 //////////////////////////////////////////////////////////
 //  Format of the frequency file is (it includes the header line)
@@ -18,9 +20,6 @@
 //        and     Conj    26817
 //        ...
 //
-//////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////
 // The current format of the sentence file is a bit weird.  The last few tokens look like:
 //     ...  her the 0
 //     ...  her the 1
@@ -61,16 +60,6 @@ is_all_zeros(const T& v)
     if(*i != 0)
       result = false;
   return result;
-}
-
-
-int
-cstring_to_int (char *s)
-{
-  std::istringstream ss (s);
-  int i;
-  ss >> i;
-  return i;
 }
 
 
@@ -174,7 +163,6 @@ main(int argc, char** argv)
 
 
 
-
 void
 parse_arguments(int argc, char** argv,
 		std::string &keywordFile,
@@ -209,20 +197,17 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'm' :
 	    {
-	      std::istringstream is(optarg);
-	      is >> minFreq;
+	      minFreq = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'n' :
 	    {
-	      std::istringstream is(optarg);
-	      is >> numSentences;
+	      numSentences = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 't' :
 	    {
-	      std::istringstream is(optarg);
-	      is >> numTokens;
+	      numTokens = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'h' :

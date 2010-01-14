@@ -12,6 +12,8 @@ PROJECT_NAME = wiki
 
 OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
+USES = utils 
+
 
 ###########################################################################
 #

@@ -16,6 +16,45 @@
 #include <cstdio>
 
 
+// string stream io
+
+namespace read_utils
+{
+  template <typename To, typename From>
+    To
+    lexical_cast(From x)
+  {
+    std::stringstream ss;
+    ss << x;
+    To y;
+    ss >> y;
+    return y;
+  }
+  
+  template <typename To>
+    To
+    lexical_cast(char * x)
+  {
+    std::istringstream ss(x);
+    To y;
+    ss >> y;
+    return y;
+  }
+  
+  
+  template <typename To>
+    To
+    lexical_cast(std::string x)
+  {
+    std::istringstream ss(x);
+    To y;
+    ss >> y;
+    return y;
+  }
+}
+
+
+
 // Read rest of current file line into c char string of indicated length
 
 int

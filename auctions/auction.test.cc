@@ -34,6 +34,7 @@
 // from utils; debug has the printing facility
 #include "column.h"
 #include "debug.h"
+#include "read_utils.h"
 
 // from gsl_tools
 #include "gsl_model.h"
@@ -48,8 +49,31 @@
 #include <getopt.h>
 
 
-std::pair< std::pair<int,double>, std::pair<int,double> >
-initialize_sums_of_squares(std::vector<Column> y);
+
+class FiniteCauchyShare
+{
+private:
+  double mTotalAlpha;
+  int    mCount;
+  double mSum;
+
+public:
+  FiniteCauchyShare (double alpha, int count) :  mTotalAlpha(alpha), mCount(count), mSum(0.0)
+  { for (int j=0; j<mCount; ++j)
+      mSum = mSum + p(j);
+  }
+
+  double operator()(int j)
+  { assert(j >= 0);
+    assert(j < mCount);
+    return mTotalAlpha * p(j) / mSum;
+  }
+  
+private:
+  double p(int j)
+  { return 1.0/(double)((j+1)*(j+1)); }
+};
+
 
 void
 parse_arguments(int argc, char** argv,
@@ -58,11 +82,17 @@ parse_arguments(int argc, char** argv,
 		int &protection,
 		int &nRounds, double &totalAlpha, int &df);
 
+std::pair< std::pair<int,double>, std::pair<int,double> >
+initialize_sums_of_squares(std::vector<Column> y);
+
 gslData*
 build_model_data(std::vector<Column> const& y);
 
 bool
 data_has_selector(std::string const& dataFileName, std::ostream&);
+
+
+
 
 int
 main(int argc, char** argv)
@@ -161,22 +191,28 @@ main(int argc, char** argv)
   debug("AUCT",0) << "Assembling experts"  << std::endl;
 
   // slice alpha: 3/4 to columns input, 1/4 saved for parasites
-  double columnAlphaShare   (0.75 * totalAlphaToSpend / featureVectorMap.size());
-  double parasiteAlphaShare (0.25 * totalAlphaToSpend / 3.0);
+  FiniteCauchyShare alphaShare          (0.75 * totalAlphaToSpend, (int)featureVectorMap.size());
+  double            parasiteAlphaShare  (0.25 * totalAlphaToSpend / 3.0);
   
   // add a column expert and an interaction expert for each column stream
   typedef  FiniteStream      < FeatureVector > FStream;
   typedef  InteractionStream < FeatureVector > IStream;
-  for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
-  { theAuction.add_expert(make_expert(0, columnAlphaShare * 0.51,      // priority, alpha
-				      UniversalBoundedBidder<FStream>(), 
-				      make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
-				      ));
-  // main interactions
-    theAuction.add_expert(make_expert(0, columnAlphaShare * 0.49, // slightly less 
-				      UniversalBoundedBidder<IStream>(),
-				      make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
-				      ));
+
+  { // allocate alpha over input streams with an interaction for each as well
+    int stream (0);
+    for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
+    { 
+      theAuction.add_expert(make_expert(0, alphaShare(stream) * 0.52,      // priority, alpha
+					UniversalBoundedBidder<FStream>(), 
+					make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
+					));
+      // interactions within each input feature stream
+      theAuction.add_expert(make_expert(0, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
+					UniversalBoundedBidder<IStream>(),
+					make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
+					));
+      ++stream;
+    }
   }
   
   // parasitic experts betting on winners
@@ -326,14 +362,12 @@ parse_arguments(int argc, char** argv,
 	  {
 	  case 'a' : 
 	    {
-	      std::istringstream is(optarg);
-	      is >> totalAlpha;
+	      totalAlpha = read_utils::lexical_cast<double>(optarg);
 	      break;
 	    }
 	  case 'c' : 
 	    {
-	      std::istringstream is(optarg);
-	      is >> nDF;
+	      nDF = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'f' :                                    
@@ -350,14 +384,12 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'p' :
 	    {
-	      std::istringstream is(optarg);
-	      is >> protection;
+	      protection = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'r' :
 	    {
-	      std::istringstream is(optarg);
-	      is >> nRounds;
+	      nRounds = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'h' :
