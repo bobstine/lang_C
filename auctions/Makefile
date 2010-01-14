@@ -26,7 +26,7 @@ EXTERNAL_USES = gsl gslcblas
 level_0   = featureABC.o       bidders.o
 level_1   = features.o
 level_2   = adapter.o          feature_streams.o
-level_3   = experts.o          instantiation.o
+level_3   = experts.o
 level_4   = auction.o
 
 ############################################################################
@@ -59,6 +59,7 @@ baseball_test: auction.test data/baseball.dat
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
+wiki_test: auction.test 
 
 
 stop: auction.test.o

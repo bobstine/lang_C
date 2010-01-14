@@ -101,7 +101,7 @@ cleanall:
 
 
 
-all: $(LIBRARIES) $(PROJECT_NAME).test 
+libs: $(LIBRARIES)
 
 
 
