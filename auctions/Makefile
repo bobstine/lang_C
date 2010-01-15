@@ -60,7 +60,7 @@ crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
 wiki_test: auction.test 
-
+	./auction.test -f ../wiki/wiki.sdata -r 100 -a 1 -p 3 -c 0
 
 stop: auction.test.o
 	echo "Stopping"
