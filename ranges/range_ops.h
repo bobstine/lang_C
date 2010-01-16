@@ -36,15 +36,17 @@ namespace range_ops
   template <class R, class Pred>   typename range_traits<R>::difference_type       count_if (R range, Pred pred);
   template <class R>               typename range_traits<R>::const_iterator        min_element(const R& range);
   template <class R>               typename range_traits<R>::const_iterator        max_element(const R& range);
+
   template <class R, class I>      I                                               copy (const R& range, I it);
   template <class R, class F>      F                                               for_each (const R& range, F f);
   template <class R>               void                                            fill(R r, typename range_traits<R>::value_type value);
+  
   template <class R>               typename range_traits<R>::value_type            simple_accumulate (const R&, typename range_traits<R>::value_type);
-
   template <class R, class Result>                           Result                accumulate (const R&, Result init);
   template <class R1, class R2, class C>                     C                     inner_product (const R1&, const R2&, C init);
   template <class R1, class R2, class R3, class C>           C                     weighted_inner_product (const R1&,const R2&,const R3& wts,C initial);
-  template <class R, class I, class UnaryOp>                 void                  transform (R const&, I, UnaryOp f);
+
+  template <class R, class I, class UnaryOp>                 void                  transform (R const&, I iter, UnaryOp f);
   template <class R1, class R2, class I, class BinaryOp>     void                  transform (R1 const& x, R2 const& y, I iter,  BinaryOp f);
 }
 
