@@ -1,21 +1,86 @@
-// $Id: cyclic_iterator.h,v 1.4 2005/12/09 20:42:31 bob Exp $-*- c++ -*-
-
-#ifndef _cyclic_iterator_h_
-#define _cyclic_iterator_h_
+#ifndef _iterators_h_
+#define _iterators_h_
 
 #include <vector>
 #include <iterator>
 
 
 /*
- 
+
+  18 Jan 10 ... Add concat iterator.
    6 Dec 05 ... Add fixed-point iterator.
   26 Jan 04 ... Add the cyclic from wavelets.
 
+  Note:  Many of these are pretty old and linked directly to vectors.
+  
+  Cyclic
   Only supports ++ and * operators, so you can only use these methods
   to walk a double vector in a forward direction.
 
+  Concat
+  Only supports forward direction as an efficiency hack: the only test
+  comes at operator== which inserts iterator from second block. Resembles
+  the car/cdr format of lisp pairs.
+
 */
+
+template<typename Type>
+class JumpIteratorABC: public std::iterator<std::forward_iterator, Type>
+{
+ public:
+  typedef Type value_type;
+
+  virtual void ~JumpIteratorABC() {};
+  
+  virtual JumpIteratorABC& operator++() = 0;
+  virtual value_type       operator*() const = 0;
+};
+
+
+template<typename FromIter, typename ToIter>
+  class JumpIterator: public JumpIteratorABC<std::iterator_traits<Iter>::value_type>
+{
+  FromIter mIter;
+  ToIter   mToIter;
+  
+ public:
+
+ JumpIterator(FromIter const& from, ToIter const& to): mIter(from), mToIter(to) { };
+
+  JumpIterator& operator++()       { ++mIter; }
+  value_type    operator*() const  { return *mIter; }
+  
+};
+  
+
+  
+
+template <typename I1, typename I2>  // better have the same value type
+  class concat_iterator: public std::iterator<std::forward_iterator_tag, std::iterator_traits<I1>::value_type>
+{
+  typedef typename std::iterator_traits<I1>::value_type  value_type;
+ private:
+  hidden_iterator_ABC *mAt;
+  
+  I1 const mBegin1;
+  I1 const mEnd1;
+  I2 const mBegin2;
+  I2 const mEnd2;
+ public:
+
+ concat_iterator(concat_iterator const& i)
+   : mBegin1(i.mBegin1), mEnd1(i.mEnd1), mBegin2(i.mBegin2), mEnd2(i.mEnd2) { }
+  
+ concat_iterator(I1 const& begin1, I1 const& end1, I2 const& begin2, I2 const& end2)
+   : mBegin1(begin1), mEnd1(end1), mBegin2(begin2), mEnd2(end2)     { }
+  
+  concat_iterator& operator++()          
+    value_type       operator*()   const { return *(*mAt); }
+
+};
+
+
+//  Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   
 
 class cyclic_iterator: public std::iterator<std::forward_iterator_tag, double>
 {
@@ -38,6 +103,7 @@ private:
 };
 
 
+// Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   
 // Question... how would you assign to a position?
 
 template <class Data, class Permutation>  // containers
@@ -60,6 +126,7 @@ public:
 
 
 
+//  Periodic   Periodic   Periodic   Periodic   Periodic   Periodic   Periodic   Periodic   Periodic
 
 class periodic_iterator: public std::iterator<std::forward_iterator_tag, int>
 {
@@ -79,6 +146,10 @@ public:
   periodic_iterator& operator++()          { if (mAt==mEnd) mAt = mBegin; else ++mAt; return *this; }
   int operator*()                 const    { return mAt; }
 };
+
+
+
+//  Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   
 
 template <class T>
 class constant_iterator: public std::iterator<std::forward_iterator_tag, T>

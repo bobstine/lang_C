@@ -1,7 +1,5 @@
-// $Id: my_features.h,v 3.9 2008/01/31 23:31:03 bob Exp $
-
-#ifndef _MY_FEATURES_H_
-#define _MY_FEATURES_H_
+#ifndef _FEATURES_H_
+#define _FEATURES_H_
 
 /* 
   Feature is a wrapper class that has a pointer to the actual feature.  This works nicely

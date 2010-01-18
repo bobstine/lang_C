@@ -16,6 +16,11 @@ int main()
   test.push_back(3.0);
   test.push_back(4.0);
 
+
+  // Note that *all* of the following tests use an integer limit to control
+  // the duration of the loop, so one never has to compare whether an
+  // iterator has reached the "end".   Not very STL compliant.
+
   // Iterate through a vector by explict ++ operation
   cyclic_iterator it  (test.begin(), test.end());
   for(int i = 0;i <10;++i)
