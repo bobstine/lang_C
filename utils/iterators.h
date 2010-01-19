@@ -1,6 +1,7 @@
 #ifndef _iterators_h_
 #define _iterators_h_
 
+#include <assert.h>
 #include <vector>
 #include <iterator>
 
@@ -24,62 +25,70 @@
 
 */
 
-template<typename Type>
-class JumpIteratorABC: public std::iterator<std::forward_iterator, Type>
+template<class VT>
+class AnyIteratorABC: public std::iterator<std::forward_iterator_tag, VT>
 {
  public:
-  typedef Type value_type;
-
-  virtual void ~JumpIteratorABC() {};
+  virtual ~AnyIteratorABC() {};
   
-  virtual JumpIteratorABC& operator++() = 0;
-  virtual value_type       operator*() const = 0;
+  virtual AnyIteratorABC&  operator++()      = 0;
+  virtual VT               operator*() const = 0;
+  virtual bool             operator==(AnyIteratorABC const&) = 0;
+};
+
+template<class Iter>
+class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::value_type >
+{
+  Iter mIter;
+
+ public:
+  typedef          AnyIterator<Iter>                      type_of_this;
+  typedef typename std::iterator_traits<Iter>::value_type value_type;
+  
+ AnyIterator(Iter it) : mIter(it) { }
+
+  AnyIterator& operator++()      { ++mIter; return *this; }
+  value_type   operator*() const { return *mIter; }
+  bool         operator==(AnyIteratorABC<value_type> const& it) { return mIter == dynamic_cast<type_of_this>(*it.base_iterator()); }
 };
 
 
 template<typename FromIter, typename ToIter>
-  class JumpIterator: public JumpIteratorABC<std::iterator_traits<Iter>::value_type>
+  class JumpIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<FromIter>::value_type>
 {
-  FromIter mIter;
-  ToIter   mToIter;
-  
  public:
+  typedef typename std::iterator_traits<FromIter>::value_type value_type;
 
- JumpIterator(FromIter const& from, ToIter const& to): mIter(from), mToIter(to) { };
-
-  JumpIterator& operator++()       { ++mIter; }
-  value_type    operator*() const  { return *mIter; }
-  
-};
-  
-
-  
-
-template <typename I1, typename I2>  // better have the same value type
-  class concat_iterator: public std::iterator<std::forward_iterator_tag, std::iterator_traits<I1>::value_type>
-{
-  typedef typename std::iterator_traits<I1>::value_type  value_type;
  private:
-  hidden_iterator_ABC *mAt;
+  bool     mJumped;
+  FromIter mFromIter;
+  ToIter   mToIter;
+  AnyIteratorABC<value_type> *mIt;
   
-  I1 const mBegin1;
-  I1 const mEnd1;
-  I2 const mBegin2;
-  I2 const mEnd2;
  public:
 
- concat_iterator(concat_iterator const& i)
-   : mBegin1(i.mBegin1), mEnd1(i.mEnd1), mBegin2(i.mBegin2), mEnd2(i.mEnd2) { }
+  ~JumpIterator() { if (mIt) delete(mIt);}
+    
+  JumpIterator(FromIter const& from, ToIter const& to)
+    : mJumped(false), mFromIter(from), mToIter(to) { mIt = new AnyIterator<FromIter>(from); }
   
- concat_iterator(I1 const& begin1, I1 const& end1, I2 const& begin2, I2 const& end2)
-   : mBegin1(begin1), mEnd1(end1), mBegin2(begin2), mEnd2(end2)     { }
-  
-  concat_iterator& operator++()          
-    value_type       operator*()   const { return *(*mAt); }
-
+  JumpIterator& operator++()       { ++(*mIt); }
+  value_type    operator*() const  { return *(*mIt); }
+  bool          operator==(JumpIterator<FromIter, ToIter> const& end)
+  {
+    if (mJumped)  // check end condition on second iter
+      return (mIt->mIter) == end.mToIter; 
+    // swap iterators if reach end of first
+    if (mIt->mIter == end.mFromIter)
+    { assert(mIt);
+      delete mIt;
+      mIt = new AnyIterator<ToIter>(mToIter);
+    }
+    return false;
+  }
 };
 
-
+  
 //  Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   
 
 class cyclic_iterator: public std::iterator<std::forward_iterator_tag, double>
@@ -104,8 +113,9 @@ private:
 
 
 // Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   
-// Question... how would you assign to a position?
 
+
+// Question... how would you assign to a position?
 template <class Data, class Permutation>  // containers
 class permutation_iterator: public std::iterator<std::forward_iterator_tag, int>
 {

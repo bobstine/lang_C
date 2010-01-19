@@ -1,5 +1,3 @@
-// $Id: anonymous_iterator.Template.h,v 1.12 2005/06/14 21:14:24 bob Exp $ -+- c++-mode -+-
-
 #ifndef _ANONYMOUS_ITERATORS_TEMPLATE_H_
 #define _ANONYMOUS_ITERATORS_TEMPLATE_H_
 

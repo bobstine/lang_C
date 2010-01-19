@@ -1,8 +1,6 @@
-// $Id: cyclic_iterator.cc,v 1.3 2005/12/07 03:49:40 bob Exp $-*- c++ -*-
-
 #include <vector>
 
-#include "cyclic_iterator.h"
+#include "iterators.h"
 
 cyclic_iterator& cyclic_iterator::operator++() 
 {

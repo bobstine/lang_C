@@ -5,7 +5,7 @@
 #include <numeric>
 #include <iostream>
 
-#include "cyclic_iterator.h"
+#include "iterators.h"
 
 int main()
 {
@@ -16,7 +16,13 @@ int main()
   test.push_back(3.0);
   test.push_back(4.0);
 
+  { // test of the iterator over to containers
+    typedef std::vector<double>::const_iterator Iterator;
+    
+    JumpIterator<Iterator, Iterator>(test.begin(), test.begin());
 
+
+  }
   // Note that *all* of the following tests use an integer limit to control
   // the duration of the loop, so one never has to compare whether an
   // iterator has reached the "end".   Not very STL compliant.
@@ -66,6 +72,4 @@ int main()
       std::cout << *cIter << " ";
     std::cout << std::endl;
   }
-  
-  
 }
