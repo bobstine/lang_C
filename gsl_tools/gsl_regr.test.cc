@@ -89,7 +89,8 @@ main (void)
   
   // Start by building the data.  Then add predictors, one at a time.
   // In the second block, add the variables all at once.
-  
+
+  int protection = 2;
   { //using namespace debugging;
     // debug_init(std::cout,0);
     
@@ -98,7 +99,7 @@ main (void)
     gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
     // gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
     
-    gslRegression< gslData,wlsEngine > regr(&theData);
+    gslRegression< gslData,wlsEngine > regr(&theData, protection);
     std::cout << regr;
     
     // add predictor, check with usual F test and bennett of Z[0]

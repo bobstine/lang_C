@@ -206,7 +206,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   // logistic regression has pseudo-y as the response, pseudo-resids as the residuals
   // evaluate_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
   // return if the model is singular with p-value larger than 1
-  GSLR::prepare_predictors(c);
+  prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
   // call bennett using the 
   const double     *pMu (estimated_probability(GSLR::mN));
