@@ -19,8 +19,13 @@ int main()
   { // test of the iterator over to containers
     typedef std::vector<double>::const_iterator Iterator;
     
-    JumpIterator<Iterator, Iterator>(test.begin(), test.begin());
+    JumpIterator<Iterator, Iterator> start(test.begin(), test.begin());
+    JumpIterator<Iterator, Iterator> stop (test.end(),   test.end());
 
+    std::cout << "Jump iterator: ";
+    for (JumpIterator<Iterator, Iterator> i = start; i != stop; ++i)
+      std::cout << *i << " ";
+    std::cout << std::endl;
 
   }
   // Note that *all* of the following tests use an integer limit to control

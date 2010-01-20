@@ -28,28 +28,30 @@
 template<class VT>
 class AnyIteratorABC: public std::iterator<std::forward_iterator_tag, VT>
 {
+  typename std::iterator<std::forward_iterator_tag, VT> *mIter;
+  
  public:
   virtual ~AnyIteratorABC() {};
   
   virtual AnyIteratorABC&  operator++()      = 0;
   virtual VT               operator*() const = 0;
-  virtual bool             operator==(AnyIteratorABC const&) = 0;
+  virtual bool             operator==(AnyIteratorABC const*) = 0;
 };
 
 template<class Iter>
 class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::value_type >
 {
   Iter mIter;
-
+  
  public:
   typedef          AnyIterator<Iter>                      type_of_this;
   typedef typename std::iterator_traits<Iter>::value_type value_type;
   
  AnyIterator(Iter it) : mIter(it) { }
 
-  AnyIterator& operator++()      { ++mIter; return *this; }
-  value_type   operator*() const { return *mIter; }
-  bool         operator==(AnyIteratorABC<value_type> const& it) { return mIter == dynamic_cast<type_of_this>(*it.base_iterator()); }
+  AnyIterator& operator++()          { ++mIter; return *this; }
+  value_type   operator*()     const { return *mIter; }
+  bool         operator==(AnyIteratorABC<value_type> const* it) { return mIter == dynamic_cast<Iter>(it->mIter); }
 };
 
 
@@ -72,19 +74,20 @@ template<typename FromIter, typename ToIter>
   JumpIterator(FromIter const& from, ToIter const& to)
     : mJumped(false), mFromIter(from), mToIter(to) { mIt = new AnyIterator<FromIter>(from); }
   
-  JumpIterator& operator++()       { ++(*mIt); }
+  JumpIterator& operator++()       { ++(*mIt); return *this; }
   value_type    operator*() const  { return *(*mIt); }
-  bool          operator==(JumpIterator<FromIter, ToIter> const& end)
+
+  bool          operator!=(JumpIterator<FromIter, ToIter> const& end)
   {
     if (mJumped)  // check end condition on second iter
-      return (mIt->mIter) == end.mToIter; 
+      return (mIt->mIter) != end.mToIter; 
     // swap iterators if reach end of first
     if (mIt->mIter == end.mFromIter)
     { assert(mIt);
       delete mIt;
       mIt = new AnyIterator<ToIter>(mToIter);
     }
-    return false;
+    return true;
   }
 };
 
