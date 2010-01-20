@@ -11,6 +11,12 @@
 #include "read_utils.h"
 
 
+/*
+
+  19 Jan 10 ... Revise for new input format that has correct word at end.
+  
+*/
+
 //////////////////////////////////////////////////////////
 //  Format of the frequency file is (it includes the header line)
 //
@@ -20,35 +26,28 @@
 //        and     Conj    26817
 //        ...
 //
-// The current format of the sentence file is a bit weird.  The last few tokens look like:
-//     ...  her the 0
-//     ...  her the 1
-//     ...  the her 0
-//     ...  the her 1
-// where the middle two mean that "the" is the correct answer.  These last tokens
-// are what the following function expects to analysis and returns a zero or a one.
+// The current format of the sentence file puts the sought word last after a /t
+// 
 ///////////////////////////////////////////////////////////////////////////////////
 
 void
 parse_arguments(int argc, char** argv,
 		std::string &keywordFile,
+		std::string &targetWord,         // this last word coded 1, others coded 0
 		int         &minFreq,
 		int         &numberOfSentences,
 		int         &numberOfTokens);    // context for response
 
 int
-parse_answer(std::istream& in)
+parse_answer(std::istream& in, std::string target, std::set<std::string>& lastWords)
 {
-  std::string challenge1;
-  std::string challenge2;
-  int answer;
-  in >> challenge1 >> challenge2 >> answer;
-  assert((challenge1 == "her") || (challenge1 == "the"));
-  assert((challenge2 == "her") || (challenge2 == "the"));
-  assert(challenge1 != challenge2);
-  assert( (answer == 0) || (answer == 1) );
-  int binaryAnswer = ((challenge1 == "her") == (answer == 0));
-  return binaryAnswer;
+  std::string lastWord;
+  in >> lastWord;
+  lastWords.insert(lastWord);
+  if (lastWord == target)
+    return 1;
+  else
+    return 0;
 }
 
 template<class T>
@@ -68,10 +67,11 @@ main(int argc, char** argv)
 {
 
   std::string   keywordFileName;
+  std::string   targetWord;
   int           freqLimit        (1000);
   int           numberOfSentences  (40);
   int           numberOfTokens     (49);
-  parse_arguments(argc, argv, keywordFileName, freqLimit, numberOfSentences, numberOfTokens);
+  parse_arguments(argc, argv, keywordFileName, targetWord, freqLimit, numberOfSentences, numberOfTokens);
 
   // Read word frequencies: number of words determines the number of features (pair is word, pos)
   typedef std::multimap<int, std::pair<std::string, std::string> > FrequencyMap;
@@ -112,7 +112,8 @@ main(int argc, char** argv)
 
   // Read sentences from stdin: each sentence is an observation, response is 0/1 binary
   std::vector<int> y(numberOfSentences);
-  { 
+  {
+    std::set<std::string> lastWords;
     int sentenceNumber = 0;
     while(sentenceNumber < numberOfSentences && !std::cin.eof())
     {
@@ -122,7 +123,7 @@ main(int argc, char** argv)
 	if(keywords.find(token) != keywords.end())
 	  ++counts[token][sentenceNumber];
       };
-      y.at(sentenceNumber) = parse_answer(std::cin);
+      y.at(sentenceNumber) = parse_answer(std::cin, targetWord, lastWords);
       std::cin >> std::ws;
       ++sentenceNumber;
     };
@@ -130,8 +131,16 @@ main(int argc, char** argv)
     { std::cerr << "ERROR: Not enough sentences(" << sentenceNumber << "<" << numberOfSentences <<") found on input.\n";
       return -2;
     }
-  }
 
+    std::clog << "Found " << lastWords.size() << " last words { ";
+    for(std::set<std::string>::const_iterator it = lastWords.begin(); it !=lastWords.end(); ++it)
+      std::clog << *it << " ";
+    
+    int count(0);
+    for (int i = 0; i<numberOfSentences; ++i)
+      count += y[i];
+    std::clog << "}  with " << count << " equal to target word (" << targetWord << ").\n";
+  }
   
   // Write out in streaming format
 
@@ -139,7 +148,7 @@ main(int argc, char** argv)
   std::cout << numberOfSentences << " " << freqMap.size() << std::endl;
   
   // Print out Y
-  std::cout << "is_her" << std::endl;
+  std::cout << "is_" << targetWord << std::endl;
   std::cout << std::endl;  // no attributes
   for(int j = 0; j < numberOfSentences; ++j)
     std::cout << y[j] << " ";
@@ -166,6 +175,7 @@ main(int argc, char** argv)
 void
 parse_arguments(int argc, char** argv,
 		std::string &keywordFile,
+		std::string &targetWord,
 		int         &minFreq,
 		int         &numSentences,
 		int         &numTokens)
@@ -176,13 +186,14 @@ parse_arguments(int argc, char** argv,
       int option_index = 0;
       static struct option long_options[] = {
 	  {"keyword-file",      1, 0, 'f'},  // has arg,
+	  {"target-word",       1, 0, 'w'},  // has arg,
 	  {"min-frequency",     1, 0, 'm'},  // has arg,
 	  {"num-sentences",     1, 0, 'n'},  // has arg,
 	  {"num-tokens",        1, 0, 't'},  // has arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:m:n:t:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:w:m:n:t:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "MAIN: Parsing key " << char(key) << " with option_index " << option_index << std::endl;
@@ -193,6 +204,12 @@ parse_arguments(int argc, char** argv,
 	      std::string name(optarg);
 	      // std::cout << "Read name from optional args..." << name << std::endl;
 	      keywordFile = name;
+	      break;
+	    }
+	  case 'w' :    
+	    {
+	      std::string word(optarg);
+	      targetWord = word;
 	      break;
 	    }
 	  case 'm' :
@@ -215,6 +232,8 @@ parse_arguments(int argc, char** argv,
 	      std::cout << "switches: (sentences read from stdin, data to stdout)" << std::endl << std::endl;
 	      std::cout << "      --keyword-file=foo       file defining keywords" << std::endl;
 	      std::cout << "      -ffoo" << std::endl << std::endl;
+	      std::cout << "      --target-word=red        last word coded as 1" << std::endl;
+	      std::cout << "      -wred" << std::endl << std::endl;
 	      std::cout << "      --min-frequency=#        minimum observed frequency to be used as keyword" << std::endl;
 	      std::cout << "      -m1000" << std::endl << std::endl;
 	      std::cout << "      --num-sentences=#        number of sentences to read from std input" << std::endl;
@@ -228,6 +247,7 @@ parse_arguments(int argc, char** argv,
 	    }
 	  }
     }
-  std::clog << "PARSE: keyword-file=" << keywordFile << ", min-frequency=" << minFreq << ", num-sentences=" << numSentences
+  std::clog << "PARSE: keyword-file=" << keywordFile << ", target-word=" << targetWord
+	    << ", min-frequency=" << minFreq << ", num-sentences=" << numSentences
 	    << ", num-tokens=" << numTokens << std::endl;
 }

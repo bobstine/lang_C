@@ -194,10 +194,9 @@ gslRegression<Data,Engine>::compute_partial_coef_z()
   const gsl_vector      *ze (&gsl_vector_const_subvector(mZE,0,mDimZ).vector);
   const gsl_matrix      *zz (&gsl_matrix_const_submatrix(mZZ,0,0,mDimZ,mDimZ).matrix);
   gsl_vector            *c  (&gsl_vector_subvector(mC,0,mDimZ).vector);
+  gsl_vector_set_zero(c);
   if (mZIsSingular)
-  { gsl_vector_set_zero(c);
     return;  
-  }
   if (1 == mDimZ)
   { gsl_vector_set(c,0,gsl_vector_get(ze,0)/gsl_matrix_get(zz,0,0));
     return;
@@ -211,7 +210,7 @@ gslRegression<Data,Engine>::compute_partial_coef_z()
       gsl_set_error_handler(builtIn);
     }
     if (gslError) 
-      debug("GSLR",3) << " *** Error *** Cholesky decomp of Z'Z finds not PSD. Return c = 0.\n";
+      debug("GSLR",3) << "*** Error *** Cholesky decomp of Z'Z is not PSD. Return c = 0.\n";
     else
       gsl_linalg_cholesky_solve (tzz, ze, c);
   }

@@ -29,7 +29,7 @@
 #include "anonymous_iterator.h"
 
 // for constant iterator 
-#include "cyclic_iterator.h"
+#include "iterators.h"
 
 // from utils; debug has the printing facility
 #include "column.h"
