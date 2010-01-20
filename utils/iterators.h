@@ -28,7 +28,6 @@
 template<class VT>
 class AnyIteratorABC: public std::iterator<std::forward_iterator_tag, VT>
 {
-  typename std::iterator<std::forward_iterator_tag, VT> *mIter;
   
  public:
   virtual ~AnyIteratorABC() {};
@@ -51,6 +50,8 @@ class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::v
 
   AnyIterator& operator++()          { ++mIter; return *this; }
   value_type   operator*()     const { return *mIter; }
+
+  bool         operator==(AnyIterator<Iter> const& it)          { return mIter == it;}
   bool         operator==(AnyIteratorABC<value_type> const* it) { return mIter == dynamic_cast<Iter>(it->mIter); }
 };
 
@@ -80,9 +81,10 @@ template<typename FromIter, typename ToIter>
   bool          operator!=(JumpIterator<FromIter, ToIter> const& end)
   {
     if (mJumped)  // check end condition on second iter
-      return (mIt->mIter) != end.mToIter; 
+      // return (mIt->mIter) != end.mToIter;
+      return (*mIt) == AnyIterator<ToIter>(end.mToIter);
     // swap iterators if reach end of first
-    if (mIt->mIter == end.mFromIter)
+    if ((*mIt) == AnyIterator<FromIter>(end.mFromIter))
     { assert(mIt);
       delete mIt;
       mIt = new AnyIterator<ToIter>(mToIter);
