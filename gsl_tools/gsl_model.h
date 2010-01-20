@@ -34,7 +34,7 @@ public:
   inline std::string  name() const { return "Linear Model";}
   inline Data        *data() const { return GSLR::mpData; }
   inline int    protection() const { return GSLR::mProtection; }
-  inline int   residual_df() const { return n()-1-q(); }
+  inline int   residual_df() const { return GSLR::df_residual(); }
   inline int        n()      const { return GSLR::mN; }
   inline int        q()      const { return GSLR::mQ; }
   inline double    s2()      const { return GSLR::mRSS/residual_df(); }  
@@ -83,11 +83,13 @@ public:
     mLL0 = mLL1 = calc_initial_log_likelihood();                             // Sets xb = log(n1/n0)
   }
   
-  inline Data  *data()       { return GSLR::mpData; }
-  inline int    protection() const { return GSLR::mProtection; }
-  inline int    n()          const { return GSLR::mN; }
-  inline int    q()          const { return GSLR::mQ; }
-  inline double gof()        const { return (mLL0-mLL1)/mLL0; }  // G2 for linear
+  inline std::string  name()        const { return "Logistic Model";}
+  inline Data        *data()              { return GSLR::mpData; }
+  inline int          protection()  const { return GSLR::mProtection; }
+  inline int          n()           const { return GSLR::mN; }
+  inline int          q()           const { return GSLR::mQ; }
+  inline int          residual_df() const { return GSLR::df_residual(); }
+  inline double       gof()         const { return (mLL0-mLL1)/mLL0; }  // G2 for linear
   
   double          initial_log_likelihood() const { return mLL0; }
   double          current_log_likelihood() const { return mLL1; }
@@ -100,7 +102,8 @@ public:
                               TestResult check_calibration(int df = 5) const;
     
   template <class Iter> void fill_with_se(Iter begin, int origin) const; 
-  template <class Iter> void fill_with_predictions(Iter it);                 // export tracks 0/1 compression
+  template <class Iter> void fill_with_fit(Iter it);                 // export tracks 0/1 compression
+  int                        fit_length()           const { return GSLR::len(); }
 
   void   print_to    (std::ostream& os, bool useHTML=false) const;
   void   print_gof_to(std::ostream& os) const;

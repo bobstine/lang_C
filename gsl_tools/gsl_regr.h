@@ -84,6 +84,7 @@ public:
   
   int                  q()  const { return mQ; }
   int                  n()  const { return mN; }
+  int        residual_df()  const { return mN - 1 - mQ; }
   double            yBar()  const { return mYBar; }
   double             rss()  const { return mRSS; }
   gsl_vector const*    y()  const { return mY; }

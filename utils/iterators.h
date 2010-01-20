@@ -5,6 +5,7 @@
 #include <vector>
 #include <iterator>
 
+#include <iostream>  // debugging
 
 /*
 
@@ -34,7 +35,7 @@ class AnyIteratorABC: public std::iterator<std::forward_iterator_tag, VT>
   
   virtual AnyIteratorABC&  operator++()      = 0;
   virtual VT               operator*() const = 0;
-  virtual bool             operator==(AnyIteratorABC const*) = 0;
+
 };
 
 template<class Iter>
@@ -48,46 +49,59 @@ class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::v
   
  AnyIterator(Iter it) : mIter(it) { }
 
-  AnyIterator& operator++()          { ++mIter; return *this; }
-  value_type   operator*()     const { return *mIter; }
-
-  bool         operator==(AnyIterator<Iter> const& it)          { return mIter == it;}
-  bool         operator==(AnyIteratorABC<value_type> const* it) { return mIter == dynamic_cast<Iter>(it->mIter); }
+  AnyIterator& operator++()                                  { ++mIter; return *this; }
+  value_type   operator*()                             const { return *mIter; }
+  bool         operator==(AnyIterator<Iter> const& it) const { bool result (mIter == it.mIter);
+							       double k = mIter;
+							       double kk = it.mIter;
+							       std::cout << "EQUAL... returns "; if(result) std::cout << "true\n"; else std::cout << "false\n";
+							       return result; }
+  bool         operator!=(AnyIterator<Iter> const& it) const { return mIter != it.mIter;}
 };
 
 
-template<typename FromIter, typename ToIter>
-  class JumpIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<FromIter>::value_type>
+template<typename Iter1, typename Iter2>
+  class JumpIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<Iter1>::value_type>
 {
  public:
-  typedef typename std::iterator_traits<FromIter>::value_type value_type;
+  typedef typename std::iterator_traits<Iter1>::value_type value_type;
 
  private:
-  bool     mJumped;
-  FromIter mFromIter;
-  ToIter   mToIter;
-  AnyIteratorABC<value_type> *mIt;
+          AnyIterator<Iter1>  mIter1;
+  mutable AnyIterator<Iter2>  mIter2;
+  mutable bool                       mJumped;
+  mutable AnyIteratorABC<value_type> *mIt;
   
  public:
 
-  ~JumpIterator() { if (mIt) delete(mIt);}
+  ~JumpIterator() { }
     
-  JumpIterator(FromIter const& from, ToIter const& to)
-    : mJumped(false), mFromIter(from), mToIter(to) { mIt = new AnyIterator<FromIter>(from); }
-  
-  JumpIterator& operator++()       { ++(*mIt); return *this; }
-  value_type    operator*() const  { return *(*mIt); }
+ JumpIterator(Iter1 const& iter1, Iter2 const& iter2)
+   : mIter1(iter1),  mIter2(iter2), mJumped(false), mIt(&mIter1) {  }
 
-  bool          operator!=(JumpIterator<FromIter, ToIter> const& end)
-  {
-    if (mJumped)  // check end condition on second iter
-      // return (mIt->mIter) != end.mToIter;
-      return (*mIt) == AnyIterator<ToIter>(end.mToIter);
-    // swap iterators if reach end of first
-    if ((*mIt) == AnyIterator<FromIter>(end.mFromIter))
-    { assert(mIt);
-      delete mIt;
-      mIt = new AnyIterator<ToIter>(mToIter);
+  JumpIterator& operator++()       { ++(*mIt); return *this; }
+  value_type    operator*() const  { return **mIt; }
+
+  bool          operator==(JumpIterator<Iter1,Iter2> const& end) const
+  { 
+    if (mJumped)                           // check end condition on second iter
+      return mIter2 == end.mIter2;
+    if (mIter1 == end.mIter1)              // swap iterators when reach end of first
+    { std::cout << "JUMPING\n";
+      mJumped = true;                      // modify mutables
+      mIt = &mIter2;
+    }
+    return false;
+  }
+
+  bool          operator!=(JumpIterator<Iter1,Iter2> const& end) const
+  { 
+    if (mJumped)                           // check end condition on second iter
+      return mIter2 != end.mIter2;
+    if (mIter1 == end.mIter1)              // swap iterators when reach end of first
+    { std::cout << "JUMPING != \n";
+      mJumped = true;                      // modify mutables
+      mIt = &mIter2;
     }
     return true;
   }

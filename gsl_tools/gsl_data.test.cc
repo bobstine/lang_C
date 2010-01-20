@@ -17,7 +17,7 @@
 #include "print_utils.h"
 
 // for constant iterator
-#include "cyclic_iterator.h"
+#include "iterators.h"
 #include "anonymous_iterator.h"
 
 #include <iostream>
@@ -56,7 +56,7 @@ main (void)
   
   // make a vector of columns
   std::vector<Column> columns;
-  Column yCol ("y", y, y+LEN);
+  Column yCol ("y", "desc", LEN, y);
   columns.push_back(yCol);
   
   // create anonymous iterators
@@ -71,7 +71,7 @@ main (void)
   // y is begin of an anonymous range is fine     theData(begin(yRange),...)
   // y is memory from a column                    theData(yCol.memory(),...
   gslData  empty;
-  gslData  theData(columns[0].begin(), noSelection, noWeights, LEN, 100); 
+  gslData  theData(columns[0]->begin(), noSelection, noWeights, LEN, 100); 
 
   // add a bunch of columns
   

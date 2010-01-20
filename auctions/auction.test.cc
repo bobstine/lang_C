@@ -1,3 +1,4 @@
+//#define LINEAR_MODEL
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
@@ -168,11 +169,14 @@ main(int argc, char** argv)
   gslData *theData (build_model_data(yColumns));
   
   // --- build model and initialize auction with stream for log
+#ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection);
   Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF, debug(0));
+#else
   // --- build logisitic model and auction
-  // LogisticModel <gslData> theRegr(theData);
-  // Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF);
+  LogisticModel <gslData> theRegr(theData, protection);
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF, debug(0));
+#endif
 
   // convert columns into features, organized as a map[stream] = feature vector
   std::map< std::string, FeatureVector > featureVectorMap;

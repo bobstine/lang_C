@@ -17,7 +17,7 @@
 // printing vectors
 #include "print_utils.h"
 // for constant iterator 
-#include "cyclic_iterator.h"
+#include "iterators.h"
 
 #include <fstream>
 #include <iostream>
@@ -86,20 +86,18 @@ main (void)
   // This iterator used in setting initial weights in logistic
   constant_iterator<double> equalWeights (1.0);
   
+  // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
+  bool protection (3);
+  
   // Test adding a sequence of variables to a linear regression
   if (true) {
-    // Start by building the data.  Then add predictors, one at a time.
     gslData  theData(y, b, weights, LEN, gslRegression_Max_Q);            // uses b to subset data
-    // gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
-    bool protection (3);
     LinearModel <gslData, olsEngine> regr(&theData, protection);
     std::cout << regr;
       
     // add predictor, check with usual F test and bennett of Z[0]
     std::cout << "TEST: Evaluate first predictor.\n";
-    regr.prepare_predictor(x1);
-    std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
-    regr.add_current_predictors();
+    std::cout << "TEST: " << regr.add_predictor_if_useful("x1", x1, 0.05);
     std::cout << regr;
     
     // check the calibration of the current model
@@ -107,9 +105,7 @@ main (void)
     
     // add second predictor
     std::cout << "TEST: Evaluate second predictor.\n";
-    regr.prepare_predictor(x2);
-    std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
-    regr.add_current_predictors();
+    std::cout << "TEST: " << regr.add_predictor_if_useful("x2", x2, 0.05);
     std::cout << regr;
     
     // check the calibration of the current model
@@ -120,10 +116,9 @@ main (void)
     
     // add third predictor
     std::cout << "TEST: Evaluate third predictor.\n";
-    regr.prepare_predictor(x3);
-    std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
-    regr.add_current_predictors();
+    std::cout << "TEST: " << regr.add_predictor_if_useful("x3", x3, 0.05);
     std::cout << regr;
+
     
     // write data to desktop for JMP
     std::ofstream out ("/Users/bob/Desktop/test.dat");
@@ -131,7 +126,7 @@ main (void)
     
     // read predictions from the model
     std::vector<double> preds (LEN);
-    regr.fill_with_predictions (preds.begin());
+    regr.fill_with_fit (preds.begin());
     if (false) {
       std::cout << "TEST: Predictions are \n" ;
       std::copy (preds.begin(), preds.begin() + LEN, std::ostream_iterator<double>(std::cout, "\n"));
@@ -155,7 +150,7 @@ main (void)
     std::cout << regr;
     
     //  Now with all 3 at once
-    LinearModel <gslData, olsEngine> regr3(&theData);
+    LinearModel <gslData, olsEngine> regr3(&theData, protection);
     std::vector<double*> predictors;
     predictors.push_back(x1);
     predictors.push_back(x2);
@@ -168,38 +163,34 @@ main (void)
     
   std::cout << "\n\n\n\nTEST: Testing logistic regression: \n";  
   if (true) {  
-    // Start by building the data.  Then add predictors, one at a time.
-    std::cout << "TEST: Add sequence of predictors to a logistic regression.\n\n";
     gslData  theData(y, b, equalWeights, LEN, gslRegression_Max_Q); 
-    LogisticModel <gslData> regr(&theData);
+    std::cout << "TEST: Add sequence of predictors to a logistic regression.\n\n";
+    LogisticModel <gslData> regr(&theData, protection);
     std::cout << regr;
     
     // Evaluate a predictor
     std::cout << "TEST: about to evaluate first predictor.\n";
-    regr.add_predictor_if_useful(x1,1.1);   // calls prepare_predictor
+    regr.add_predictor_if_useful("x1", x1,1.1); 
     std::cout << regr;
  
     // Check that adding predictor again triggers singularity
     std::cout << "TEST: about to evaluate redundant predictor.\n";
-    regr.add_predictor_if_useful(x1,1.1);  
+    regr.add_predictor_if_useful("x1", x1,1.1);  
     std::cout << regr;
  
     // Evaluate second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
-    regr.add_predictor_if_useful(x2,1.1);  
+    regr.add_predictor_if_useful("x2", x2,1.1);  
     std::cout << regr;
     
     // Evaluate third predictor
     std::cout << "TEST: about to evaluate third predictor.\n";
-    regr.prepare_predictor(x3);
-    std::cout << "TEST: " << regr.f_test_evaluation()  << std::endl;
-    regr.add_current_predictors();
-    std::cout << "TEST: " <<regr.maximize_log_likelihood(1);
+    regr.add_predictor_if_useful("x3", x3,1.1);  
     std::cout << regr;
 
     // write predictions if need to cut and paste to other application
      std::vector<double> preds (LEN);
-     regr.fill_with_predictions (preds.begin());
+     regr.fill_with_fit (preds.begin());
      if (false) {
        std::cout << "TEST: Predictions are \n" ;
        std::copy (preds.begin(), preds.begin() + LEN, std::ostream_iterator<double>(std::cout, "\n"));
@@ -225,7 +216,7 @@ main (void)
     std::cout << "\n\nTEST: Add a bundle of 3 predictors at once.\n";
     // Start by building the data.  
     gslData  theData(y, b, equalWeights, LEN, gslRegression_Max_Q); 
-    LogisticModel <gslData> regr(&theData);
+    LogisticModel <gslData> regr(&theData, protection);
     std::cout << regr;
     
     // Add predictors, three at a time.

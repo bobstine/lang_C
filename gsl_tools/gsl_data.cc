@@ -15,7 +15,7 @@
 
 
 gsl_matrix* 
-gslData::temp_mat(int nRows, int nCols)
+gslData::temp_mat(int nRows, int nCols) const
 {
   assert((nRows < gslDataTempSize) && (nCols < gslDataTempSize));
   mTempMatView = gsl_matrix_view_array(mScratch,nRows,nCols);

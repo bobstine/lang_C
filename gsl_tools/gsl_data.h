@@ -31,9 +31,9 @@ private:
   
   std::vector <std::string> mNames;  // names of predictor columns
   
-  double *         mScratch;         // hold temporary calculations
-  gsl_matrix_view  mTempMatView;
-  std::vector<gsl_vector *> mTempVec;
+  mutable double *         mScratch;         // hold temporary calculations
+  mutable gsl_matrix_view  mTempMatView;
+  mutable std::vector<gsl_vector *> mTempVec;
   
 public:
     ~gslData () { free(); }
@@ -97,8 +97,8 @@ public:
 
   void set_name_of_predictor(std::string const& name, int index) { mNames[index] = name; }
       
-  gsl_matrix* temp_mat(int nRows, int nCols);  
-  gsl_vector* temp_vec(int j){ return mTempVec[j]; }
+  gsl_matrix* temp_mat(int nRows, int nCols) const;                            // const relies on mutable
+  gsl_vector* temp_vec(int j)                const { return mTempVec[j]; }
   
   // used for full input and output
   template<class Iter> 

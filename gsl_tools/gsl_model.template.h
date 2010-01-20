@@ -274,7 +274,7 @@ LogisticModel<Data>::fill_with_se(Iter begin, int origin) const
 template <class Data>
 template <class Iter> 
 void 
-LogisticModel<Data>::fill_with_predictions(Iter it)
+LogisticModel<Data>::fill_with_fit(Iter it)
 { 
   int         len    (GSLR::mpData->length());
   double      *pProb (estimated_probability(len));  // these are held in temp_vec(0)

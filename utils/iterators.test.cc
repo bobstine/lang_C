@@ -11,20 +11,23 @@ int main()
 {
 
   std::vector<double> test;
-  test.push_back(1.0);
-  test.push_back(2.0);
-  test.push_back(3.0);
-  test.push_back(4.0);
-
+  std::vector<double> test2;
+  for(int i = 0 ; i<3; ++i)
+  { test.push_back(2 * i);
+    test2.push_back(1 + 2*i);
+  }
+  
   { // test of the iterator over to containers
     typedef std::vector<double>::const_iterator Iterator;
     
-    JumpIterator<Iterator, Iterator> start(test.begin(), test.begin());
-    JumpIterator<Iterator, Iterator> stop (test.end(),   test.end());
-
-    std::cout << "Jump iterator: ";
+    JumpIterator<Iterator, Iterator> start(test.begin(), test2.begin());
+    JumpIterator<Iterator, Iterator> stop (test.end(),   test2.end());
+    
+    int count (0);
     for (JumpIterator<Iterator, Iterator> i = start; i != stop; ++i)
-      std::cout << *i << " ";
+    { std::cout << *i << " ";
+      if (++count > 10) break;
+    }
     std::cout << std::endl;
 
   }
@@ -42,11 +45,11 @@ int main()
   std::cout << std::endl;
 
   // Compute dot product using an iterator as an argument
-  std::vector<double> test2;
-  test2.push_back(1.0);
-  test2.push_back(1.0);
+  std::vector<double> testpair;
+  testpair.push_back(1.0);
+  testpair.push_back(1.0);
 
-  cyclic_iterator it2 (test2.begin(), test2.end());
+  cyclic_iterator it2 (testpair.begin(), testpair.end());
 
   std::cout << "inner product is "
        << std::inner_product(test.begin(), test.end(), it2, 0.0)
