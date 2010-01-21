@@ -220,10 +220,10 @@ main (void)
     std::cout << regr;
     
     // Add predictors, three at a time.
-    std::vector<double*> predictors;
-    predictors.push_back(x1);
-    predictors.push_back(x2);
-    predictors.push_back(x3);
+    std::vector<std::pair<std::string, double*> > predictors;
+    predictors.push_back(std::make_pair("x1",x1));
+    predictors.push_back(std::make_pair("x2",x2));
+    predictors.push_back(std::make_pair("x3",x3));
     regr.add_predictors_if_useful(predictors, 0.5);
     std::cout << regr << std::endl;  
   }

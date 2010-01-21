@@ -170,10 +170,10 @@ LinearModel<Data,Engine>::print_to    (std::ostream& os, bool useHTML) const
 
 template <class Data>
 double *
-LogisticModel<Data>::estimated_probability (int num)
+LogisticModel<Data>::estimated_probability (int num) const
 {
-  double      *  xb  (data()->Xb()->data);
-  double      * prob (data()->temp_vec(0)->data);                  // note the use of temp
+  double      const*  xb  (data()->Xb()->data);
+  double           * prob (data()->temp_vec(0)->data);                  // note the use of temp which is mutable
   std::transform(xb, xb+num, prob, Function_Utils::LogisticNeg());
   return prob;
 }
@@ -208,32 +208,48 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   // return if the model is singular with p-value larger than 1
   prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
-  // call bennett using the 
-  const double     *pMu (estimated_probability(GSLR::mN));
-  // need to unweight Z's
-  gsl_vector       *pZ  (gsl_vector_alloc(GSLR::mN));
-  gsl_vector       *pZW (&gsl_matrix_const_column(GSLR::mZResids,0).vector);  // ZW includes weights;
-  gsl_vector_memcpy(pZ, pZW);
-  GSLR::mEngine.unweight(pZ);
-  const double     * z (gsl_vector_const_ptr(pZ,0));
-  const double     * y (gsl_vector_const_ptr(mOriginalY,0));        
-  result = GSLR::Bennett_evaluation(z, y, pMu, 0, 1);                     //  result = GSLR::f_test_evaluation();
-  std::cout << "TEST: bennett returns " << result.first << " " << result.second << std::endl;
-  // Insert test code (from below) here
-  if (result.second > pToEnter)  { return result;  }
-  std::cout << "LOGM: Predictor passes initial evaluation; p-value " << result.second << pToEnter << std::endl;
+  // if no protection, return raw p-value; otherwise exit if looks too poor
+  result = GSLR::f_test_evaluation();
+  // further testing if higher protection
+  if (protection() == 0)
+  { if (result.second > pToEnter) return result;        // exit
+    debug("LOGM",3) << "Predictor passes F-test; p-value " << result.second << " < " << pToEnter << std::endl;
+  }
+  else
+  { if (result.second > 2 * pToEnter)   return result;  // exit without further testing
+    debug("LINM",3) << "Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
+    // call bennett using the 
+    const double     *pMu (estimated_probability(GSLR::mN));
+    // need to unweight Z's
+    gsl_vector       *pZ  (gsl_vector_alloc(GSLR::mN));
+    gsl_vector       *pZW (&gsl_matrix_const_column(GSLR::mZResids,0).vector);  // ZW includes weights;
+    gsl_vector_memcpy(pZ, pZW);
+    GSLR::mEngine.unweight(pZ);
+    const double     * z (gsl_vector_const_ptr(pZ,0));
+    const double     * y (gsl_vector_const_ptr(mOriginalY,0));        
+    result = GSLR::Bennett_evaluation(z, y, pMu, 0, 1);
+    // std::cout << "TEST: bennett returns " << result.first << " " << result.second << std::endl;
+    // Insert test code (from below) here
+    gsl_vector_free(pZ);
+    if (result.second > pToEnter)  { return result;  }
+    debug("LOGM",3) << "Predictor passes second evaluation;  p-value " << result.second << " <  " << pToEnter << std::endl;
+  }
   // if passes, then maximize likelihood with z included
   gslRegressionState state (GSLR::state());                              // save in case need to back out
   GSLR::add_current_predictors();
   result = maximize_log_likelihood(1); 
   if (result.second > pToEnter)  
-  { std::cout << "LOGM: Predictor fails to maximize likelihood;  p-value " << result.second << std::endl;
+  { std::cout << debug("LOGM",3) << "Predictor fails to maximize likelihood;  p-value " << result.second << std::endl;
     GSLR::restore_state(state);
   } 
-  else std::cout << "LOGM: Predictor improves likelihood; added to model\n";
-  gsl_vector_free(pZ);
+  else debug("LOGM",3) << "Predictor improves likelihood; added to model\n";
   return result;
 }
+
+
+
+
+
 
 // Test code to verify logistic calculations
   /*
@@ -274,10 +290,10 @@ LogisticModel<Data>::fill_with_se(Iter begin, int origin) const
 template <class Data>
 template <class Iter> 
 void 
-LogisticModel<Data>::fill_with_fit(Iter it)
+LogisticModel<Data>::fill_with_fit(Iter it) const
 { 
   int         len    (GSLR::mpData->length());
-  double      *pProb (estimated_probability(len));  // these are held in temp_vec(0)
+  double      *pProb (estimated_probability(len));  // these are held in temp_vec(0) which is mutable
   //  GSLR::mpData->permuted_copy_to_iterator(GSLR::mpData->temp_vec(0), it, len);
   GSLR::mpData->permuted_copy_to_iterator(pProb, it, len);
 }   

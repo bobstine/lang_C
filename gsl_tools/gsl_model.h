@@ -84,7 +84,7 @@ public:
   }
   
   inline std::string  name()        const { return "Logistic Model";}
-  inline Data        *data()              { return GSLR::mpData; }
+  inline Data        *data()        const { return GSLR::mpData; }
   inline int          protection()  const { return GSLR::mProtection; }
   inline int          n()           const { return GSLR::mN; }
   inline int          q()           const { return GSLR::mQ; }
@@ -102,7 +102,7 @@ public:
                               TestResult check_calibration(int df = 5) const;
     
   template <class Iter> void fill_with_se(Iter begin, int origin) const; 
-  template <class Iter> void fill_with_fit(Iter it);                 // export tracks 0/1 compression
+  template <class Iter> void fill_with_fit(Iter it) const;                   // export tracks 0/1 compression
   int                        fit_length()           const { return GSLR::len(); }
 
   void   print_to    (std::ostream& os, bool useHTML=false) const;
@@ -112,7 +112,7 @@ private:
   void allocate() { mOriginalY = gsl_vector_alloc(n()); }
   void free    () { if (mOriginalY) gsl_vector_free(mOriginalY); }
   
-  double * estimated_probability (int num);                                  // uses temp space 0, so beware (also means cannot be const)
+  double * estimated_probability (int num) const;                                  // uses temp space 0, so beware (mutable allows const)
   
   LogisticModel& operator=(LogisticModel const& m);
 };

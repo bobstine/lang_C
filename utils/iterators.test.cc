@@ -1,6 +1,7 @@
 // $Id: cyclic_iterator.test.cc,v 1.3 2005/12/07 03:49:40 bob Exp $-*- c++ -*-
 
 #include <vector>
+#include <list>
 #include <algorithm>
 #include <numeric>
 #include <iostream>
@@ -9,24 +10,24 @@
 
 int main()
 {
-
   std::vector<double> test;
-  std::vector<double> test2;
+  std::list<double> test2;
   for(int i = 0 ; i<3; ++i)
-  { test.push_back(2 * i);
+  { test.push_back(2 * (i+1));
     test2.push_back(1 + 2*i);
   }
   
   { // test of the iterator over to containers
     typedef std::vector<double>::const_iterator Iterator;
+    typedef std::list<double>::const_iterator Iterator2;
     
-    JumpIterator<Iterator, Iterator> start(test.begin(), test2.begin());
-    JumpIterator<Iterator, Iterator> stop (test.end(),   test2.end());
+    JumpIterator<Iterator, Iterator2> start(test.begin(), test2.begin());
+    JumpIterator<Iterator, Iterator2> stop (test.end(),   test2.end());
     
     int count (0);
-    for (JumpIterator<Iterator, Iterator> i = start; i != stop; ++i)
+    for (JumpIterator<Iterator, Iterator2> i = start; i != stop; ++i)  // this step introduces a copy constructor
     { std::cout << *i << " ";
-      if (++count > 10) break;
+      if (++count > 100) break;   // to stop if runs away when debugging
     }
     std::cout << std::endl;
 

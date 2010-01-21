@@ -51,13 +51,11 @@ class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::v
 
   AnyIterator& operator++()                                  { ++mIter; return *this; }
   value_type   operator*()                             const { return *mIter; }
-  bool         operator==(AnyIterator<Iter> const& it) const { bool result (mIter == it.mIter);
-							       double k = mIter;
-							       double kk = it.mIter;
-							       std::cout << "EQUAL... returns "; if(result) std::cout << "true\n"; else std::cout << "false\n";
-							       return result; }
+
+  bool         operator==(AnyIterator<Iter> const& it) const { return mIter == it.mIter; }
   bool         operator!=(AnyIterator<Iter> const& it) const { return mIter != it.mIter;}
 };
+
 
 
 template<typename Iter1, typename Iter2>
@@ -73,12 +71,14 @@ template<typename Iter1, typename Iter2>
   mutable AnyIteratorABC<value_type> *mIt;
   
  public:
-
   ~JumpIterator() { }
     
- JumpIterator(Iter1 const& iter1, Iter2 const& iter2)
-   : mIter1(iter1),  mIter2(iter2), mJumped(false), mIt(&mIter1) {  }
+  JumpIterator(Iter1 const& iter1, Iter2 const& iter2)
+    : mIter1(iter1),  mIter2(iter2), mJumped(false), mIt(&mIter1) { }
 
+  JumpIterator(JumpIterator<Iter1, Iter2> const& ji)
+    : mIter1(ji.mIter1), mIter2(ji.mIter2), mJumped(ji.mJumped) { mIt = &mIter1; }
+  
   JumpIterator& operator++()       { ++(*mIt); return *this; }
   value_type    operator*() const  { return **mIt; }
 
@@ -87,8 +87,7 @@ template<typename Iter1, typename Iter2>
     if (mJumped)                           // check end condition on second iter
       return mIter2 == end.mIter2;
     if (mIter1 == end.mIter1)              // swap iterators when reach end of first
-    { std::cout << "JUMPING\n";
-      mJumped = true;                      // modify mutables
+    { mJumped = true;                      // modify mutables
       mIt = &mIter2;
     }
     return false;
@@ -99,8 +98,7 @@ template<typename Iter1, typename Iter2>
     if (mJumped)                           // check end condition on second iter
       return mIter2 != end.mIter2;
     if (mIter1 == end.mIter1)              // swap iterators when reach end of first
-    { std::cout << "JUMPING != \n";
-      mJumped = true;                      // modify mutables
+    { mJumped = true;                      // modify mutables
       mIt = &mIter2;
     }
     return true;
