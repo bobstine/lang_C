@@ -1,0 +1,165 @@
+\documentclass[12pt]{article}
+\usepackage[longnamesfirst]{natbib}
+\usepackage[usenames]{color}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\input{/Users/bob/work/papers/standard}
+
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+
+% --- Paragraph split
+\setlength{\parskip}{0.00in}
+
+% --- Line spacing
+\renewcommand{\baselinestretch}{1.4}
+
+% --- Hypthenation
+\sloppy  % fewer hyphenated
+\hyphenation{stan-dard}
+\hyphenation{among}
+
+% --- Customized commands, abbreviations
+\newcommand{\TIT}{{\it  {\small Implementing the Auction}}}
+
+\newcommand{\ras}[1]{\noindent{\textcolor{red}{\{{\bf ras:} \em #1\}}}}
+
+% --- Header
+\pagestyle{myheadings}
+\markright{\TIT}
+
+
+
+% --- Title
+
+\title{  
+         Implementing the Auction
+}
+
+\author{
+        Robert A. Stine                                      \\
+        Department of Statistics                             \\
+        The Wharton School of the University of Pennsylvania \\
+        Philadelphia, PA 19104-6340                          \\
+}
+
+\date{\today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle 
+
+\vspace{-0.5in} \centerline{\bf Abstract} 
+
+\clearpage
+
+\section{Tests in Least Squares} % -----------------------------------------------------------
+
+ The value of the variable {\tt protection} (which is set in the constructor of
+ an auction) determines how the code treats the various test statistics.  The
+ higher the level of the protection, the more conservative the computation of
+ the p-value associated with a test.  The current implementation uses the
+ following methods, assumming that the current model includes $k$ predictors
+ with an intercept and has residuals in the $n$-vector $e$.  Consider testing
+ the effect of adding $k_{new}$ predictors that produce residuals $e_{new}$.
+
+\begin{enumerate}
+\setcounter{enumi}{-1}
+
+\item No protection.  Construct the usual $F$ statistic for the added
+ variable(s),
+\begin{equation}
+    F_0 = \frac{ dSS/k_{new} }{(e'e-dSS)/(n-1-k-k_{new})} \;.
+\label{eq:f0}
+\end{equation}
+ Obtain the p-value by comparing $F_0$ to the $F$-distribution with $k_new$ and
+ $n-1-k-k_{new}$ degrees of freedom.  Equation \eqn{eq:dss} gives the familiar
+ expression for the change in the regression sum-of-squares obtained by adding
+ the additional variables.
+
+\item White estimator, standard $F$ test. In this case, the White estimator is
+ used to compute the regression sum-of-squares, with an ``F-like'' statistic
+\begin{equation}
+    F_1 = \frac{ dSS_{white}/k_{new} }{(e'e-dSS_{white})/(n-1-k-k_{new})} \;.
+\label{eq:f1}
+\end{equation}
+ Expression \eqn{eq:wdss} gives the White estimator used in the numerator of
+ $F_1$.  The denominator of $F_1$ matches that of $F_0$.  As before, obtain the
+ p-value by comparing $F_1$ to the $F$-distribution with the indicated degrees
+ of freedom.
+
+\item White estimator, conservative $F$ test. The White estimator is again used
+ to find the regression SS, but now the denominator uses the residual sum of
+ squares {\em without} adding the new variable,
+\begin{equation}
+    F_2 = \frac{ dSS_{white}/k_{new} }{e'e/(n-1-k-k_{new})} \;.
+\label{eq:fstat}
+\end{equation}
+ Calcuate the p-value as for $F_1$.
+
+\item Conservative p-value.  Not yet implemented.  The idea is to use a more
+ robust procedure to find the p-value in place of the F-distribution.  I guess I
+ was thinking of something like a Bennett p-value here applied to the White F
+ stat.  That seems way too conservative at this point, and it probably makes
+ more sense to adjust for possible dependence using a block calculation.
+
+\end{enumerate}
+
+\subsection{White variance estimates} % ---------     ----------     ---------
+
+ Once the protection level in a least squares regression is larger than 0, we
+ use a White (or sandwich) estimator to find the numerator of the $F$-statistic
+ that is used to measure the statistical significance of an added variable(s).
+
+ Consider the impact of adding new explanatory variables $X_{new}$ to a
+ regression model that alread contains the variables $X$ and has residuals
+ $e$. The first stage of testing sweeps out the prior explanatory variables $X$
+ from the new variables, forming (Dean and Dong Yu omit this for speed.)
+\begin{displaymath}
+  Z = (I-X(X'X)^{-1}X') X_{new} = (I-H_X) X_{new}  \;.
+\end{displaymath}
+ Next we find the residual sum-of-squares of the augmented model.  Regress the
+ current residuals $e$ on $Z$, obtaining the partial coefficients $c =
+ (Z'Z)^{-1}Z'e$.  The increase in the regression sum-of-squares due to this
+ partial regression is then the quadratic form
+\begin{eqnarray}
+  dSS &=& (Zc)'Zc = c'(Z'Z)c \cr
+      &=& e'Z(Z'Z)^{-1}(Z'Z)(Z'Z)^{-1}Z'e \cr
+      &=&  e'Z(Z'Z)^{-1}Z'e
+\label{eq:dss}
+\end{eqnarray}
+ Note that $dSS$ is a $k\times k$ matrix if one adds $k$ variables. (The method
+ {\tt change\_in\_rss} in gsl\_regr computes $dSS$ for the current regression.)
+
+
+ To obtain the White version of this expression for $dSS$, begin by thinking a
+ little differently about the matrix $(Z'Z)^{-1}$ in \eqn{eq:dss}. Using the
+ usual OLS expressions for the partial regression, $\var(c) = s^2 (Z'Z)^{-1}$.
+  Hence, we equate $(Z'Z)^{-1}$ with $\var(c)/s^2$. To get the White
+ estimator that corresponds to $Z'Z$, we form the White estimate for $\var(c)$.
+  The sandwich formula for the variance of the coefficients is
+\begin{displaymath}
+  \var(c) = (Z'Z)^{-1} Z'DZ (Z'Z)^{-1}, \quad D_{ij} = \delta_{ij} e_i^2\;.
+\end{displaymath}
+ Hence, the White estimator corresponding to $dSS$ in \eqn{eq:dss} replaces
+$Z'Z$ with
+\begin{equation}
+ dSS_{white} = e'Z\left[\smfrac{1}{s^2}(Z'Z)^{-1} Z'DZ (Z'Z)^{-1}\right] Z'e  \;.
+\label{eq:wdss}
+\end{equation}
+ This expression (and the resulting test) reduce to the usual sandwich test in
+ the scalar case.  (The function {\tt white\_change\_in\_rss} passes the matrix
+ shown in brackets in \eqn{eq:wdss} to the function {\tt change\_in\_rss}.)
+
+
+\section{Tests in Logistic Regression} % --------------------------------------
+
+ The current implementation resembles the protections offered in linear models,
+ using the fact that a logistic regression is computed as a weighted least
+ squares.
+
+
+\end{document}

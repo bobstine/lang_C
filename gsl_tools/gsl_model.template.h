@@ -44,6 +44,7 @@ LinearModel<Data,Engine>::add_predictor_if_useful (std::string const& name, Iter
    3  2 + conservative p-value  (not yet implemented)
 */
 
+
 template <class Data, class Engine>
 template <class Collection> 
 std::pair<double,double>  

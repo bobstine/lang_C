@@ -303,11 +303,11 @@ gslRegression<Data,Engine>::white_change_in_rss()
   }
   gsl_matrix * temp  (gsl_matrix_alloc(mDimZ, mDimZ));
   gsl_matrix * temp2 (gsl_matrix_alloc(mDimZ, mDimZ));
-  for (int j=0; j<mDimZ; ++j)               // (Z'D Z)º (Z'Z), one column at a time
+  for (int j=0; j<mDimZ; ++j)               // (Z'D Z)º (Z'Z), one column at a time (note s2 embedded in zdz)
   { gsl_vector_const_view vzzj (gsl_matrix_const_column(symZZ,j));
     gsl_linalg_cholesky_solve (zdz, &vzzj.vector, &gsl_matrix_column(temp,j).vector);
   }  
-  gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, symZZ, temp, 0.0, temp2); // /(Z'Z) (Z'D Z)º (Z'Z)
+  gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, symZZ, temp, 0.0, temp2); // s2 (Z'Z) (Z'D Z)º (Z'Z)
   double dSS (change_in_rss(temp2));
   gsl_matrix_free (symZZ);
   gsl_matrix_free (temp);
