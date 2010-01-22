@@ -21,11 +21,11 @@ int main()
     typedef std::vector<double>::const_iterator Iterator;
     typedef std::list<double>::const_iterator Iterator2;
     
-    JumpIterator<Iterator, Iterator2> start(test.begin(), test2.begin());
-    JumpIterator<Iterator, Iterator2> stop (test.end(),   test2.end());
+    JoinIterator<Iterator, Iterator2> start(test.begin(), test2.begin());
+    JoinIterator<Iterator, Iterator2> stop (test.end(),   test2.end());
     
     int count (0);
-    for (JumpIterator<Iterator, Iterator2> i = start; i != stop; ++i)  // this step introduces a copy constructor
+    for (JoinIterator<Iterator, Iterator2> i = start; i != stop; ++i)  // this step introduces a copy constructor
     { std::cout << *i << " ";
       if (++count > 100) break;   // to stop if runs away when debugging
     }

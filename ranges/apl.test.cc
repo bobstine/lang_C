@@ -1,5 +1,3 @@
-// $Id: apl.test.cc,v 1.16 2004/08/30 02:27:36 foster Exp $  -*- c++ -*-
-
 #include "apl.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"

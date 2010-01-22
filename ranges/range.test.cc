@@ -22,10 +22,12 @@ operator<<(std::ostream& os, const range<Iter>& r)
 
 int main()
 {
+  std::vector<double> ii;
   std::vector<double> iz;
   for(int i=0; i<5; ++i)
+  { ii.push_back(i+1);
     iz.push_back(10 * i);
-  
+  }
   range<std::vector<double>::const_iterator> rng(iz.begin(),iz.end());
   std::cout << "\n Direct access to ends: " << *begin(rng) << " -- " << *(end(rng)-1) << std::endl;
   std::cout << "\n Direct access to ends: " << *begin(iz) << " -- " << *(end(iz)-1) << std::endl;
@@ -37,6 +39,8 @@ int main()
   std::cout << "\n Test with 5 doubles  :  " << make_range(make_pair(iz.begin(),iz.end()));
   std::cout << "\n Test with 5 doubles  :  " << make_range(iz.begin(),iz.end());
 
+  std::cout << "\n Test join two        :  " << join_ranges(make_range(iz), make_range(ii));
+  
   {
     std::cout << "\nTest assignment to range" << std::endl;
     

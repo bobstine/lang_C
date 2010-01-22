@@ -59,7 +59,7 @@ class AnyIterator: public AnyIteratorABC< typename std::iterator_traits<Iter>::v
 
 
 template<typename Iter1, typename Iter2>
-  class JumpIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<Iter1>::value_type>
+  class JoinIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<Iter1>::value_type>
 {
  public:
   typedef typename std::iterator_traits<Iter1>::value_type value_type;
@@ -71,18 +71,18 @@ template<typename Iter1, typename Iter2>
   mutable AnyIteratorABC<value_type> *mIt;
   
  public:
-  ~JumpIterator() { }
+  ~JoinIterator() { }
     
-  JumpIterator(Iter1 const& iter1, Iter2 const& iter2)
+  JoinIterator(Iter1 const& iter1, Iter2 const& iter2)
     : mIter1(iter1),  mIter2(iter2), mJumped(false), mIt(&mIter1) { }
 
-  JumpIterator(JumpIterator<Iter1, Iter2> const& ji)
+  JoinIterator(JoinIterator<Iter1, Iter2> const& ji)
     : mIter1(ji.mIter1), mIter2(ji.mIter2), mJumped(ji.mJumped) { mIt = &mIter1; }
   
-  JumpIterator& operator++()       { ++(*mIt); return *this; }
+  JoinIterator& operator++()       { ++(*mIt); return *this; }
   value_type    operator*() const  { return **mIt; }
 
-  bool          operator==(JumpIterator<Iter1,Iter2> const& end) const
+  bool          operator==(JoinIterator<Iter1,Iter2> const& end) const
   { 
     if (mJumped)                           // check end condition on second iter
       return mIter2 == end.mIter2;
@@ -93,7 +93,7 @@ template<typename Iter1, typename Iter2>
     return false;
   }
 
-  bool          operator!=(JumpIterator<Iter1,Iter2> const& end) const
+  bool          operator!=(JoinIterator<Iter1,Iter2> const& end) const
   { 
     if (mJumped)                           // check end condition on second iter
       return mIter2 != end.mIter2;

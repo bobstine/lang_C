@@ -19,7 +19,8 @@
 #ifndef _RANGE_H_
 #define _RANGE_H_
 
-#include <utility>   // pairs
+#include <utility>    // pairs
+#include "iterators.h"  
 
 namespace Ranges 
 {
@@ -73,44 +74,58 @@ public:
 
 // MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  
 
-template <typename Container>
-range<typename Container::const_iterator>
-make_range(Container const& c)
-{
-  return range<typename Container::const_iterator>(c.begin(),c.end());
-}
+  template <typename Container>
+  range<typename Container::const_iterator>
+  make_range(Container const& c)
+  {
+    return range<typename Container::const_iterator>(c.begin(),c.end());
+  }
+  
+  template <typename Container>
+  range<typename Container::iterator>
+  make_range(Container *c)
+  {
+    return range<typename Container::iterator>(c->begin(),c->end());
+  }
+  
+  template <class Iter>
+  range<Iter>
+  make_range(std::pair<Iter, Iter> r)
+  {
+    return range<Iter>(r.first, r.second);
+  }
+  
+  
+  template <class Iter>
+  range<Iter>
+  make_range(Iter b, Iter e)
+  {
+    return range<Iter>(b, e);
+  }
+  
 
-template <typename Container>
-range<typename Container::iterator>
-make_range(Container *c)
-{
-  return range<typename Container::iterator>(c->begin(),c->end());
-}
+  template <class Iter>
+  range<Iter>
+  make_range(range<Iter> r)
+  {
+    return r;
+  }
+  
+  // JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN
 
-template <class Iter>
-range<Iter>
-make_range(std::pair<Iter, Iter> r)
-{
-  return range<Iter>(r.first, r.second);
-}
+  
+  template <typename I1, typename I2>
+  range< JoinIterator<I1, I2> >
+  join_ranges(range<I1> r1, range<I2> r2)
+  {
+    typedef JoinIterator<I1, I2> JoinIter;
+    return range<JoinIter> (JoinIter(begin(r1), begin(r2)), JoinIter(end(r1), end(r2)));
+  }
 
-
-template <class Iter>
-range<Iter>
-make_range(Iter b, Iter e)
-{
-  return range<Iter>(b, e);
-}
+  
 
 
-template <class Iter>
-range<Iter>
-make_range(range<Iter> r)
-{
-  return r;
-}
-
-// BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN
+  // BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN
 
 
 
