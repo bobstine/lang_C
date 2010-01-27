@@ -1,5 +1,3 @@
-// -*- c++ -*-
-// $Id: gsl_engine.h,v 1.13 2008/01/07 04:06:38 bob Exp $
 #ifndef _GSL_ENGINE_H_
 #define _GSL_ENGINE_H_
 

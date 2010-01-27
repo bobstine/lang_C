@@ -112,7 +112,7 @@ private:
   void allocate() { mOriginalY = gsl_vector_alloc(n()); }
   void free    () { if (mOriginalY) gsl_vector_free(mOriginalY); }
   
-  double * estimated_probability (int num) const;                                  // uses temp space 0, so beware (mutable allows const)
+  double * estimated_probability (int num) const;                    // uses mutable temp space 0, so beware
   
   LogisticModel& operator=(LogisticModel const& m);
 };

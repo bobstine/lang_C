@@ -184,7 +184,7 @@ $Z'Z$ with
 \begin{displaymath}
   f(x) \approx f(x_0) + f'(x_0)(x-x_0)
 \end{displaymath}
-implies that (since $f(x) = 0$)
+ implies that (since $f(x) = 0$)
 \begin{equation}
   x = x_0 + \frac{f(x)-f(x_0)}{f'(x_0)} = x_0-\frac{f(x_0)}{f'(x_0)} \;.
 \label{eq:newton}
@@ -210,13 +210,14 @@ implies that (since $f(x) = 0$)
 
 
  Rather than directly follow this Newton iteration, we use weighted least
- squares.  At the convergence of Newton's method, we reach a fixed point for
+ squares.  At the convergence of Newton's method, we reach a fixed point $b$ at
  which
 \begin{displaymath}
   b = b - (X'VX)^{-1}X'(y-p) \;.
 \end{displaymath}
- In order to write this as a (weighted) least squares, note that the associated
- variance matrix appears twice in the general form of a GLS estimator:
+ (Note: this expression suggests a way to form the sandwich estimator.) In order
+ to write this as a (weighted) least squares, note that the associated variance
+ matrix appears twice in the general form of a GLS estimator:
 \begin{displaymath}
   \hat\beta = (X'WX)^{-1}X'WY \;.
 \end{displaymath}
@@ -228,11 +229,9 @@ implies that (since $f(x) = 0$)
 \label{eq:irls}
 \end{equation}
 
-  For testing, however, the weights are fixed at the values obtained by the
+ For testing, however, the weights are fixed at the values obtained by the
  current model only, without an update for the variable underconsideration.
-
-
- This is in keeping with the second level of protection used in the linear
+  This is in keeping with the second level of protection used in the linear
  model.  We have found this sufficiently useful in logistic regression as to
  omit the more traditional updating.  (It also keeps the code much simpler.)
   The key function in the interface is {\tt add\_predictors\_if\_useful}.
@@ -241,20 +240,60 @@ implies that (since $f(x) = 0$)
 \begin{enumerate}
 \setcounter{enumi}{-1}
 
-\item No protection.  Construct the Wald $F$ statistic for the improvement in
- the model.  We prefer the Wald statistic (based on a change in the
- log-likilihood) to the score test (the coefficient estimates) to avoid problems
- in which the slope is poorly determined but highly useful (\eg, a separating
- hyperplane -- or nearly so -- has been found.
+\item No protection.  Construct the Wald $F$ statistic which is the
+ change in the log of the likelihood for the improvement in the model.
+  We prefer the Wald statistic to the score test (basically, $t$
+ statistics for the coefficient estimates) to avoid problems in which
+ the slope is poorly determined but highly useful (\eg, a separating
+ hyperplane -- or nearly so -- has been found).
 
-\item Use Bennett's inequality.  {\bf the current version only works for one
- dim}.  The values $y_i$ of the response are assumed to be bounded within the
- range $m \le y_i \le M$.
-
+\item Use Bennett's inequality.  {\bf the current version only works
+ for one dim}.  The values $y_i$ of the response are assumed to be
+ bounded within the range $m \le y_i \le M$.  If there's only one
+ explanatory variable, the expression for the new slope introduced
+ into the logistic regression by adding the new variable $x_new$
+ becomes (simplifying the formula \ref{eq:irls})
+\begin{displaymath}
+  b_{new} = \frac{z'y}{z'z}
+\end{displaymath}
+ where $z$ and $y$ have been swept of the current explanatory variables in the
+ weighted inner product define by the current variables.  That is, express the
+WLS \eqn{eq:irls} estimate as the solution to an OLS with the weights
+incorporated into the variables 
+\begin{equation}
+  b_1 = (X_v'X_v)^{-1}X_v'y^{*}_{v}, 
+    \quad X_v = V_0^{1/2}X, y^{*}_v = V_0^{1/2}y^{*} \;.
+\label{eq:wls}
+\end{equation}
+ Alternatively, return to the Newton iteration shown in \eqn{eq:newton}.  One
+ need only test the size of the increment $(X'V_0X)^{-1}X'(y-p_0)$ in order to
+ decide whether to consider adding the proposed variable.
 
 \end{enumerate}
 
+\subsection{Some comments on the code}
 
+ The same code base handles both linear and logistic regression.  At the top
+ level in {\tt gsl\_model}, both linear and logistic regressions inherit from the
+ {\tt gsl\_regression} object.  The distinction likes in the default choice of
+ the ``engine'' that handles the details of the calculations.  Specifically,
+ engines are distinguished by how they define the inner product for all
+ calculations. (All regressions rely on the underlying model for inner products
+ such as matrix multiplication, inversion, and solving systems of equations.)
+  For a linear model, we use a standard engine that has the common dot-product
+ $\ip{x}{y} = \sum_i x_i y_i = x'y$.  For a logistic regression, we use a
+ weighted dot product $\ip{x}{y} = \sum_i x_i y_i w_i$.  The added complication
+ is that the weights change in a logistic regression; hence, there are
+ convenience functions that ``reweight'' the engine.  Engines in the code (see
+ gsl\_engine.h) do not inherit from a common base (we never need a list of
+ engines); rather they implement common {\em policies}.  
+
+ Functions handled by engines include those that seem clear ({\tt average,
+ sum\_of\_squares, blas\_ddot}) as well as the otherwise innocuous functions
+\begin{itemize}
+  \item {\tt prepare\_vector\_for\_analysis}
+  \item {\tt insert\_analysis\_matrix}
+\end{itemize}
 
 
 \end{document}
