@@ -159,7 +159,102 @@ $Z'Z$ with
 
  The current implementation resembles the protections offered in linear models,
  using the fact that a logistic regression is computed as a weighted least
- squares.
+ squares.  The distinction is with the White estimator: we use a Bennett bound
+ for logistic regression.  The weights are used from the {\em prior} estimates
+ rather than endogenously.  As in linear models, the variable {\tt protection}
+ determines the nature of the testing procedure (really, the calculation of the
+ p-value).  
+
+ Given a set of explanatory varibles in the model $X$, the logistic regression
+ solves the nonlinear estimating equations for $b$,
+\begin{equation}
+  X'y = X'p, \quad \mbox{ where } p = \frac{1}{1+\exp(-X'b)} \;.
+\label{eq:esteq}
+\end{equation}
+ Note the similarity to the estimating equation (\aka, normal equation $X'y =
+ X'(Xb)$) used in linear equations; in both cases, we choose $b$ so that the
+ estimated values (either the probabilty $p$ or the fit $Xb$ reproduce the
+ correlation of $Y$ with the explanatory variables.  
+
+ Given a set of explanatory variables, we solve \eqn{eq:esteq} by using
+ iteratively reweighted least squares.  The idea is a multivariate version of
+ using a linear approximation to find the zero of a function.  Assume $f$ is an
+ arbitrary function and we'd like to find a point $x^{*}$ for which $f(x^{*}) =
+ 0$.  Our current guess is $x_0$. Then a linear Taylor approximation gives us
+\begin{displaymath}
+  f(x) \approx f(x_0) + f'(x_0)(x-x_0)
+\end{displaymath}
+implies that (since $f(x) = 0$)
+\begin{equation}
+  x = x_0 + \frac{f(x)-f(x_0)}{f'(x_0)} = x_0-\frac{f(x_0)}{f'(x_0)} \;.
+\label{eq:newton}
+\end{equation}
+ For logistic regression, $f$ is the derivative of the log of the likelihood.
+  Let $p$ denote the estimated probabilities from the current fit; define the
+ associated variance estimates as the diagonal of the matrix $V$,
+\begin{displaymath}
+  V_{ii} = p_i (1-p_i), \quad i=1,\ldots, n\;.
+\end{displaymath}
+ The estimating equation \eqn{eq:esteq} is the first derivative of the log of
+ the likelihood function.  Deviations of $f(b) = X'(y-p_b)$ at the current
+ solution mean that we need to change $b$ to improve the solution. The second
+ derivative of the log-likelihood (which is the slope of the first derivative)
+ is the matrix $X'VX$.  Hence, following the script of \eqn{eq:newton} we have
+ the classic Newton iteration
+\begin{equation}
+  b_1 = b_0 - (X'V_0X)^{-1}X'(y-p_0) \;,
+\label{eq:newton}
+\end{equation}
+ where $V_0$ is the diagonal matrix computed from $p_0 = 1/(1+e^{-x'b_0})$,
+ which is the estimated probability at $b_0$.
+
+
+ Rather than directly follow this Newton iteration, we use weighted least
+ squares.  At the convergence of Newton's method, we reach a fixed point for
+ which
+\begin{displaymath}
+  b = b - (X'VX)^{-1}X'(y-p) \;.
+\end{displaymath}
+ In order to write this as a (weighted) least squares, note that the associated
+ variance matrix appears twice in the general form of a GLS estimator:
+\begin{displaymath}
+  \hat\beta = (X'WX)^{-1}X'WY \;.
+\end{displaymath}
+ We need to squeeze another $V$ into the Newton step \eqn{eq:newton}.  We can
+ write this as a weighted least squares by forming a so-called pseudo-response
+ $y^{*} = Xb + V^{-1}(y-p)$. We then compute the next iteration as
+\begin{equation}
+  b_1 = (X'V_0X)^{-1}X'V_0y^{*} \;.
+\label{eq:irls}
+\end{equation}
+
+  For testing, however, the weights are fixed at the values obtained by the
+ current model only, without an update for the variable underconsideration.
+
+
+ This is in keeping with the second level of protection used in the linear
+ model.  We have found this sufficiently useful in logistic regression as to
+ omit the more traditional updating.  (It also keeps the code much simpler.)
+  The key function in the interface is {\tt add\_predictors\_if\_useful}.
+ 
+
+\begin{enumerate}
+\setcounter{enumi}{-1}
+
+\item No protection.  Construct the Wald $F$ statistic for the improvement in
+ the model.  We prefer the Wald statistic (based on a change in the
+ log-likilihood) to the score test (the coefficient estimates) to avoid problems
+ in which the slope is poorly determined but highly useful (\eg, a separating
+ hyperplane -- or nearly so -- has been found.
+
+\item Use Bennett's inequality.  {\bf the current version only works for one
+ dim}.  The values $y_i$ of the response are assumed to be bounded within the
+ range $m \le y_i \le M$.
+
+
+\end{enumerate}
+
+
 
 
 \end{document}

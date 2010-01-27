@@ -1,5 +1,4 @@
-/*   -*- c++ -*-
-     $Id: gsl_regr.template.h,v 1.29 2008/01/16 03:28:08 bob Exp $
+/* 
 
  *  Created by Robert Stine on 12/12/05.
  *  Copyright 2005. All rights reserved.

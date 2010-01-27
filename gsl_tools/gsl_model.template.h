@@ -190,12 +190,12 @@ LogisticModel<Data>::add_predictor_if_useful (std::string const& name, Iter x, d
   return add_predictors_if_useful(v,pToEnter);
 }
 
-  
+namespace {  
   class Sqrt : public std::unary_function<double,double> {
   public:
     double operator()(double x) const { if (x >= 0) return sqrt(x); else return -7.7; }
   };
-
+}
 
 template <class Data>
 template <class Collection> 
@@ -205,7 +205,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   std::pair<double,double> result (std::make_pair(0.0,1.1));
   // use bennett to screen before revising likelihood
   // logistic regression has pseudo-y as the response, pseudo-resids as the residuals
-  // evaluate_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
+  // prepare_predictors leaves centered vars in Z, sweeps X and weights Zres, and leaves (Zres)'W(Zres) in mZZ
   // return if the model is singular with p-value larger than 1
   prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
@@ -219,7 +219,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   else
   { if (result.second > 2 * pToEnter)   return result;  // exit without further testing
     debug("LINM",3) << "Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
-    // call bennett using the 
+    // call bennett
     const double     *pMu (estimated_probability(GSLR::mN));
     // need to unweight Z's
     gsl_vector       *pZ  (gsl_vector_alloc(GSLR::mN));
@@ -246,11 +246,6 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   else debug("LOGM",3) << "Predictor improves likelihood; added to model\n";
   return result;
 }
-
-
-
-
-
 
 // Test code to verify logistic calculations
   /*
