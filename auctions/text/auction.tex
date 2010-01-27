@@ -294,6 +294,18 @@ incorporated into the variables
   \item {\tt prepare\_vector\_for\_analysis}
   \item {\tt insert\_analysis\_matrix}
 \end{itemize}
+ Preparing a vector is a simple copy (ols engine) or a copy plus scaling by the
+ square root of the weights (for the WLS engine, as seen in the expression for
+ the estimation shown in above).
+
+
+ When a weighted engine is configured, the input includes a data object (one
+ that supports the required data policy).  The weighted engine then extracts a
+ {\em pointer} from the data object to the initial weights to use in
+ calculations.  Changes to these weights affect subsequent calculations, but
+ changes should be accompanied by telling the engine ({\tt
+ weights\_have\_changed}).
+
 
 
 \end{document}

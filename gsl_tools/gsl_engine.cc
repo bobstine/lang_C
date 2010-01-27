@@ -108,6 +108,7 @@ wlsEngine::weights_have_changed ()
 }
 
 
+
 double 
 wlsEngine::average (gsl_vector const* v) const
 {
