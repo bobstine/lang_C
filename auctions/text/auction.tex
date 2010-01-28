@@ -168,13 +168,16 @@ $Z'Z$ with
  Given a set of explanatory varibles in the model $X$, the logistic regression
  solves the nonlinear estimating equations for $b$,
 \begin{equation}
-  X'y = X'p, \quad \mbox{ where } p = \frac{1}{1+\exp(-X'b)} \;.
+  X'y = X'p_b, \quad \mbox{ where } p_b = \frac{1}{1+\exp(-X'b)} \;.
 \label{eq:esteq}
 \end{equation}
  Note the similarity to the estimating equation (\aka, normal equation $X'y =
  X'(Xb)$) used in linear equations; in both cases, we choose $b$ so that the
  estimated values (either the probabilty $p$ or the fit $Xb$ reproduce the
- correlation of $Y$ with the explanatory variables.  
+ correlation of $Y$ with the explanatory variables.  (We subscript $p$ by the
+ coefficient $b$ as a reminder of this dependence; later we simplify this to
+ $p_1$ if the estimates are $b_1$. The same convention applies to other terms
+ such as matrices constructed from the estimated probabilities.)
 
  Given a set of explanatory variables, we solve \eqn{eq:esteq} by using
  iteratively reweighted least squares.  The idea is a multivariate version of
@@ -182,9 +185,10 @@ $Z'Z$ with
  arbitrary function and we'd like to find a point $x^{*}$ for which $f(x^{*}) =
  0$.  Our current guess is $x_0$. Then a linear Taylor approximation gives us
 \begin{displaymath}
-  f(x) \approx f(x_0) + f'(x_0)(x-x_0)
+  f(x) \approx f(x_0) + f'(x_0)(x - x_0)
 \end{displaymath}
- implies that (since $f(x) = 0$)
+ implies that (since $f(x^{*}) = 0$ and we hope that the zero of $f$ is $\approx
+ x^{*}$)
 \begin{equation}
   x = x_0 + \frac{f(x)-f(x_0)}{f'(x_0)} = x_0-\frac{f(x_0)}{f'(x_0)} \;.
 \label{eq:newton}
@@ -209,25 +213,38 @@ $Z'Z$ with
  which is the estimated probability at $b_0$.
 
 
- Rather than directly follow this Newton iteration, we use weighted least
- squares.  At the convergence of Newton's method, we reach a fixed point $b$ at
- which
+ Rather than directly follow this Newton iteration, we convert the estimation to
+ a regression problem so that we can use weighted least squares.  (This allows
+ us to use the same code base for fitting linear and logistic regression
+ models.)  Convergence of Newton's method produces a fixed point $b$ that
+ satisfies
 \begin{displaymath}
   b = b - (X'VX)^{-1}X'(y-p) \;.
 \end{displaymath}
  (Note: this expression suggests a way to form the sandwich estimator.) In order
- to write this as a (weighted) least squares, note that the associated variance
- matrix appears twice in the general form of a GLS estimator:
+ to write this as a (weighted) least squares, note that in the usual expression
+ for a GLS estimator, the variance matrix appears twice:
 \begin{displaymath}
-  \hat\beta = (X'WX)^{-1}X'WY \;.
+  \hat\beta = (X'W^{-1}X)^{-1}X'W^{-1}Y \;.
 \end{displaymath}
  We need to squeeze another $V$ into the Newton step \eqn{eq:newton}.  We can
  write this as a weighted least squares by forming a so-called pseudo-response
- $y^{*} = Xb + V^{-1}(y-p)$. We then compute the next iteration as
+\begin{equation}
+ y^{*} = Xb + V^{-1}(y-p) \;.
+\label{eq:ystar}
+\end{equation}
+  We then compute the next iteration as
 \begin{equation}
   b_1 = (X'V_0X)^{-1}X'V_0y^{*} \;.
 \label{eq:irls}
 \end{equation}
+ Notice that the variance matrix $V_0$ appears in the expression for $b_1$
+ without an inverse that one might expect from the corresponding expression for
+ the WLS estimator.  The explanation is the formation of the pseudo-response.
+  If we treat $Xb$ on the r.h.s. of \eqn{eq:irls} as fixed, then heuristically
+ $\var(y^{*}) = V^{-1}V V^{-1} = V^{-1}$ so $V_0$ {\em is} the inverser of the
+ variance matrix of $y^{*}$.
+
 
  For testing, however, the weights are fixed at the values obtained by the
  current model only, without an update for the variable underconsideration.
@@ -271,7 +288,7 @@ incorporated into the variables
 
 \end{enumerate}
 
-\subsection{Some comments on the code}
+\subsection{Comments on the implementation}
 
  The same code base handles both linear and logistic regression.  At the top
  level in {\tt gsl\_model}, both linear and logistic regressions inherit from the
@@ -296,7 +313,9 @@ incorporated into the variables
 \end{itemize}
  Preparing a vector is a simple copy (ols engine) or a copy plus scaling by the
  square root of the weights (for the WLS engine, as seen in the expression for
- the estimation shown in above).
+ the estimation shown in \eqn{eq:irls} above).  Inserting a matrix copies the
+ matrix and scales the columns by the square root of the current weights
+ $\sqrt{w_i}$.
 
 
  When a weighted engine is configured, the input includes a data object (one
@@ -307,5 +326,17 @@ incorporated into the variables
  weights\_have\_changed}).
 
 
+ When a candidate feature is offered to a logistic model via {\tt
+ add\_predictor\_if\_useful}, the following steps occur: (Multiple features are
+ handled similarly.)
+\begin{description}
+ \item{Data preparation} ({\tt prepare\_predictors}) The proposed feature (call
+ it $z$ is copied into local storage (from an iterator into a GSL matrix),
+ centered (with its mean stored, a weighted mean if $W_0 \ne I$), and scaled by
+ $\sqrt(W_0)$.
+ \item{Sweep current model} Current explanatory variables are swept from the
+ proposed new variable, producing ``residuals'' $z_{res}$.  This is done using
+ the current weights $W_0$.
+\end{description}
 
 \end{document}
