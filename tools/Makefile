@@ -30,6 +30,10 @@ level_0 = dummy.o
 #
 ###########################################################################
 
+build_national_trendata: build_national_trendata.o
+	$(GCC) build_national_trendata.o $(LDLIBS) -o $@
+	cp -f $@ ~/data/TrenData/national/build_national_data
+
 cols_to_rows: columns_to_rows.o
 	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor
