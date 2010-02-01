@@ -16,7 +16,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O2 -DNDEBUG
+# OPT = -O2 -DNDEBUG
 
 USES = ranges utils random
 
