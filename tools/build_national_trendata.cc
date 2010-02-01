@@ -1,8 +1,10 @@
 /*
-  Use this function to process the national TrenData files.  Each of the two files
-  named raw_data_1.csv and raw_data_2.csv is assumed to have a header line (which
-  is skipped over) followed by lines with three values,
-     quarter, var label, var value
+  Use this function to process the national TrenData files.  The input
+  file named raw_data_1.csv is assumed to have a header line (which is
+  skipped over) followed by lines with three values,
+
+            quarter, var label, var value
+
   with each appearing in quotes.
 
   The output data table (national_trendata.csv) is tabular in a format suitable for
@@ -42,74 +44,69 @@ main()
   const int    num_quarters  (71);                              //   1992:1 .. 2009:3
   const double missing_value (-7.777777);
   
-  std::vector<std::string> dataFileNames;
-  dataFileNames.push_back("raw_data_1.csv");
-  //  dataFileNames.push_back("raw_data_2.csv");
+  std::string dataFileName ("raw_data_1.csv");
     
   typedef std::map<std::string, std::vector<double> > VariableMap;
   VariableMap data;
   std::set<std::string> varNames;
   int lineCount (0);
   
-  for(std::vector<std::string>::const_iterator f = dataFileNames.begin(); f != dataFileNames.end(); ++f)
-  {
-    std::cout << "Opening file " << *f << " for reading..." << std::endl;
-    std::ifstream dataFile (f->c_str());
-    std::string header;
-    getline(dataFile, header);                                   // dump header line
-    std::cout << "Dumping header line: " << header << std::endl;
-    while(!dataFile.eof())
-    { // keep track of lines read
-      ++lineCount;
-      if (0 == lineCount % 1000) std::cout << "Line Count @ " << lineCount << std::endl;
-      // read whole line from file
-      std::string line;                
-      getline(dataFile, line);
-      // std::cout << "Read line " << line << std::endl;
-      if(line.empty()) break;
-      // process quoted tokens
-      std::vector<std::string> strs (3);
-      int s (0);
-      std::string::const_iterator i (line.begin());
-      if (*i != '"')
-      { std::cerr << "Leading character is not a double quote; ending.\n";
-	break;
-      }
-      ++i;                                                      // skip initial "
-      while(s<3)
-      { // std::cout << "top with *i = " << *i << std::endl;
-	if (*i == '"')
-	{ ++s;
-	  if (s < 3)
-	  { ++i;
-	    assert (*i==',');
-	    i = i+2;                                            // skip ,"
-	  }
-	}
-	else
-	{ //std::cout << "Pushing back " << *i << std::endl;
-	  strs[s].push_back(*i);
-	  ++i;
-	}
-      }
-      // convert to values
-      // std::cout << "Converting: " << strs[0] << "  " << strs[1] << "  " << strs[2] << std::endl;
-      int row = row_number(strs[0]);
-      assert (row <= num_quarters);
-      assert (0 <= row);
-      double value   (read_utils::lexical_cast<double>(strs[2].c_str()));
-      // store in map 
-      if (varNames.find(strs[1]) == varNames.end())       // add vector initialized with missing value
-      { std::cout << "Found new variable:  " << strs[1] << std::endl;
-	varNames.insert(strs[1]);
-	data[strs[1]] = std::vector<double>(num_quarters, missing_value);
-      }
-      // std::cout << "Insert " << value << " -> " << strs[1] << "[" << row << "]\n";
-      data[strs[1]][row] = value;
+  std::cout << "Opening file " << dataFileName << " for reading..." << std::endl;
+  std::ifstream dataFile (dataFileName.c_str());
+  std::string header;
+  getline(dataFile, header);                                   // dump header line
+  std::cout << "Dumping header line: " << header << std::endl;
+  while(!dataFile.eof())
+  { // keep track of lines read
+    ++lineCount;
+    if (0 == lineCount % 1000) std::cout << "Line Count @ " << lineCount << std::endl;
+    // read whole line from file
+    std::string line;                
+    getline(dataFile, line);
+    // std::cout << "Read line " << line << std::endl;
+    if(line.empty()) break;
+    // process quoted tokens
+    std::vector<std::string> strs (3);
+    int s (0);
+    std::string::const_iterator i (line.begin());
+    if (*i != '"')
+    { std::cerr << "Leading character is not a double quote; ending.\n";
+      break;
     }
-    std::cout << "Completed reading file: " << *f
-	      << ".  Read " << lineCount << " input lines with " << varNames.size() << " variables.\n";
+    ++i;                                                      // skip initial "
+    while(s<3)
+    { // std::cout << "top with *i = " << *i << std::endl;
+      if (*i == '"')
+      { ++s;
+	if (s < 3)
+	{ ++i;
+	  assert (*i==',');
+	  i = i+2;                                            // skip ,"
+	}
+      }
+      else
+      { //std::cout << "Pushing back " << *i << std::endl;
+	strs[s].push_back(*i);
+	++i;
+      }
+    }
+    // convert to values
+    // std::cout << "Converting: " << strs[0] << "  " << strs[1] << "  " << strs[2] << std::endl;
+    int row = row_number(strs[0]);
+    assert (row <= num_quarters);
+    assert (0 <= row);
+    double value   (read_utils::lexical_cast<double>(strs[2].c_str()));
+    // store in map 
+    if (varNames.find(strs[1]) == varNames.end())       // add vector initialized with missing value
+    { std::cout << "Found new variable:  " << strs[1] << std::endl;
+      varNames.insert(strs[1]);
+      data[strs[1]] = std::vector<double>(num_quarters, missing_value);
+    }
+    // std::cout << "Insert " << value << " -> " << strs[1] << "[" << row << "]\n";
+    data[strs[1]][row] = value;
   }
+  std::cout << "Completed reading file: " << dataFileName
+	    << ".  Read " << lineCount << " input lines with " << varNames.size() << " variables.\n";
   std::cout << "Preparing to write data to file national.td\n";
   // write data out, starting with var names
   std::ofstream output ("national.td");

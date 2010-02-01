@@ -30,6 +30,10 @@ level_0 = dummy.o
 #
 ###########################################################################
 
+build_state_trendata: build_state_trendata.o
+	$(GCC) build_state_trendata.o $(LDLIBS) -o $@
+	cp -f $@ ~/data/TrenData/state/build_state_data
+
 build_national_trendata: build_national_trendata.o
 	$(GCC) build_national_trendata.o $(LDLIBS) -o $@
 	cp -f $@ ~/data/TrenData/national/build_national_data
