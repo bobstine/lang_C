@@ -3,4 +3,5 @@ rows_to_cols
 cutt
 insert_column
 mands
-build_*_trendata
+trendata_build_*
+

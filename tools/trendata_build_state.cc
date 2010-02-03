@@ -28,66 +28,13 @@
 
 #include "read_utils.h"
 
-
-typedef std::map<std::string, std::vector<double> > TimeSeriesMap;   // state x time series
-
-const int    number_of_quarters  (71);                               //   1992:1 .. 2009:3
-const double missing_value (-7.777777);
-
-
-
-int
-quarter_number(std::string date)               // format is 1992.1, 1992.2, 1992.3, 1992.4, 1993.1, ...
-{
-  date[4] = ' ';
-  int iyear   ;
-  int quarter ;
-  std::istringstream input(date);
-  input >> iyear >> quarter;
-  return 4*(iyear-1992)+quarter-1;
-}
-
-void
-parse_line(std::string line, std::vector<std::string> & strs)
-{
-  int nFields (strs.size());
-  int s (0);
-  std::string::const_iterator i (line.begin());
-  assert (*i == '"');
-  ++i;                                                      // skip initial "
-  while(s<nFields)
-  { // std::cout << "top with *i = " << *i << std::endl;
-    if (*i == '"')
-    { ++s;
-      if (s < nFields)
-      { ++i;
-	assert (*i==',');
-	i = i+2;                                            // skip ,"
-      }
-    }
-    else
-    { //std::cout << "Pushing back " << *i << std::endl;
-      strs[s].push_back(*i);
-      ++i;
-    }
-  }
-}
-
-void
-insert_value(TimeSeriesMap &m, std::string state, int quarter, std::string value)
-{
-  // std::cout << "Inserting " << value << " into time series for " << state << " @ q= " << quarter << std::endl;
-  if (m.find(state) == m.end()) // insert empty vector
-  { // std::cout << "   initialize vector for state " << state << std::endl;
-    m[state] = std::vector<double>(number_of_quarters, missing_value);
-  }
-  m[state][quarter] = read_utils::lexical_cast<double>(value.c_str());
-}
+#include "trendata.h"
 
 
 int
 main()
 {
+  const int number_of_fields (5);
   const int    iVarName   (1);
   const int    iValue     (2);
   const int    iState     (3);
@@ -96,14 +43,18 @@ main()
   std::set<std::string> states;
   
   std::set<std::string> variableNames;                         // build state tables for these variables
-  variableNames.insert("BCNARB");
-  variableNames.insert("BCPB60M");
-  variableNames.insert("BIPB60M");
-  variableNames.insert("MTPB60M");
-  variableNames.insert("REAU");
-  variableNames.insert("RTTDB");
-  variableNames.insert("TMMEAN");
+  // key default rates
+  variableNames.insert("REPB60M");        // 60+ days past due, revolving
+  variableNames.insert("INPB60M");        // installment
+  variableNames.insert("MTPB60M");        // mortgage
+  // main summary variables
+  variableNames.insert("ATTDC");          // total debt per consumer
+  variableNames.insert("RENARB");         // revolving per borrower
+  variableNames.insert("REAU");           // utilization of revolving
+  variableNames.insert("MTDTD");          // mortgage as percentage of total debt
+  variableNames.insert("MTNAB");          // mortgages per borrower
 
+  
   std::map<std::string, int> varValueCount;
   
   std::map<std::string, TimeSeriesMap>  data;
@@ -118,10 +69,9 @@ main()
   std::string header;
   getline(dataFile, header);                                   // dump header line
 
-  const int number_of_fields (5);
   while(!dataFile.eof())
   { ++lineCount;
-    if (0 == lineCount % 10000) std::cout << "Line Count @ " << lineCount << std::endl;
+    if (0 == lineCount % 25000) std::cout << "Line Count @ " << lineCount << std::endl;
     std::string line;                
     getline(dataFile, line);
     // std::cout << "Read line " << line << std::endl;
@@ -158,7 +108,7 @@ main()
     std::ofstream output (fileName.c_str());
     output << "State";
     for (int q=0; q<number_of_quarters; ++q)
-      output << "\t" << 1992 + ((int)(q/4)) << "." << (1+q%4);
+      output << "\t \"" << 1992 + ((int)(q/4)) << "." << (1+q%4) << "\"";
     output << std::endl;
     for(std::set<std::string>::const_iterator state=states.begin(); state != states.end(); ++state)
     { output << *state;

@@ -26,6 +26,9 @@
 
 #include "read_utils.h"
 
+const double missing_value (-7.777777);
+
+
 int
 row_number(std::string date)               // format is 1992.1, 1992.2, 1992.3, 1992.4, 1993.1, ...
 {
@@ -37,12 +40,19 @@ row_number(std::string date)               // format is 1992.1, 1992.2, 1992.3, 
   return 4*(iyear-1992)+quarter-1;
 }
 
+void
+write_value (double x, std::ostream& os)
+{
+  if (x == missing_value)
+    os << " NA ";
+  else
+    os << x;
+}
 
 int
 main()
 {
   const int    num_quarters  (71);                              //   1992:1 .. 2009:3
-  const double missing_value (-7.777777);
   
   std::string dataFileName ("raw_data_1.csv");
     
@@ -117,12 +127,10 @@ main()
   for(int q=0; q < num_quarters; ++q)
   { output << "\n";
     name = varNames.begin();
-    output << data[*name][q];
+    write_value(data[*name][q], output);
     for(++name; name != varNames.end(); ++name)
-    { if (data[*name][q] == missing_value)
-	output << "\t NA";
-      else
-	output << "\t " << data[*name][q];
+    { output << "\t ";
+      write_value(data[*name][q], output);
     }
   }
 }
