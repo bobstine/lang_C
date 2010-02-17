@@ -38,6 +38,7 @@ main()
   const int    iVarName   (1);
   const int    iValue     (2);
   const int    iState     (3);
+  const int    iFIPS      (4);
   
   std::string dataFileName("raw_data_1.csv");
   std::set<std::string> states;
