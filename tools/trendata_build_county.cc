@@ -157,11 +157,9 @@ main()
       if (variableNames.find(strs[iVarName]) != variableNames.end())
       { // keep track of found county names
 	std::string county (strs[iState] + "," + strs[iCounty]);
-	//
-	//  Fix this so that the county does not have ' char embedded
-	//  Fix so that we remove the space in 'mc culluch' type names
-	zz;
-	//
+	// remove embedded '
+	size_t found (county.find("'"));
+	if(found < county.size()) county.erase(found, 1);
 	fipsMap[county] = read_utils::lexical_cast<int>(strs[iFIPS]);
 	counties.insert(county);
 	++varValueCount[strs[iVarName]];
