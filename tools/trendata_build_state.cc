@@ -13,7 +13,8 @@
   reading into R for analysis. Data stored as a map of vectors. these vectors are columns
   written to csv file.  
 
-   1 Feb 10 ... Created from national source.
+  4 Feb 10 ... Include FIPS code in output file.
+  1 Feb 10 ... Created from national source.
 
 */
 
@@ -39,9 +40,8 @@ main()
   const int    iValue     (2);
   const int    iState     (3);
   const int    iFIPS      (4);
-  
+
   std::string dataFileName("raw_data_1.csv");
-  std::set<std::string> states;
   
   std::set<std::string> variableNames;                         // build state tables for these variables
   // key default rates
@@ -63,6 +63,9 @@ main()
   { TimeSeriesMap aMap;
     data[*v] = aMap;
   }
+
+  std::map<std::string, int> fipsMap;
+  std::set<std::string> states;
 
   int lineCount (0);
   std::cout << "Opening file " << dataFileName << " for reading..." << std::endl;
@@ -90,6 +93,7 @@ main()
     assert (0 <= q);
     // keep track of found states
     states.insert(strs[iState]);
+    fipsMap[strs[iState]] = read_utils::lexical_cast<int>(strs[iFIPS]);
     // store value if find sought variable
     if (variableNames.find(strs[iVarName]) != variableNames.end())
     { ++varValueCount[strs[iVarName]];
@@ -107,12 +111,12 @@ main()
     std::cout << "Preparing to write data to " << fileName << std::endl;
     // write data out, starting with quarter labels
     std::ofstream output (fileName.c_str());
-    output << "State";
+    output << "State\tFIPS";
     for (int q=0; q<number_of_quarters; ++q)
       output << "\t \"" << 1992 + ((int)(q/4)) << "." << (1+q%4) << "\"";
     output << std::endl;
     for(std::set<std::string>::const_iterator state=states.begin(); state != states.end(); ++state)
-    { output << *state;
+    { output << *state << "\t" << fipsMap[*state];
       for (int q=0; q<number_of_quarters; ++q)
       { double value (data[*v][*state][q]);
 	if (value == missing_value)
