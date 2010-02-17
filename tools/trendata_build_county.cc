@@ -18,12 +18,13 @@
 
 
   For each chosen variable the program writes a tab-delimined output table with
-  about 3100 lines, one for each county.  Each output data table
+  about 3140 lines, one for each county.  Each output data table
   (county_trendata_xxxx.csv) is tabular in a format suitable for reading into R
   for analysis. Within this C++ code, each variable is held as a named map of
   vectors. These vectors are columns written to csv file.
 
-   1 Feb 10 ... Created from national source.
+  16 Feb 10 ... Update to remove chars that were a problem in R.
+   1 Feb 10 ... Created from national and state source code.
 
 */
 
@@ -156,10 +157,15 @@ main()
       // store value if find sought variable
       if (variableNames.find(strs[iVarName]) != variableNames.end())
       { // keep track of found county names
-	std::string county (strs[iState] + "," + strs[iCounty]);
-	// remove embedded '
-	size_t found (county.find("'"));
-	if(found < county.size()) county.erase(found, 1);
+	std::string county (strs[iCounty]);
+	// remove embedded ' symbol, embedded blank in 'Mc Cullugh' type names
+	unsigned int pos;
+	pos = county.find("'");
+	if(pos < county.size()) county.erase(pos,1);
+	pos = county.find("Mc ");
+	if(pos < county.size()-2) county.erase(pos+2,1);
+	// combine state with county
+	county = strs[iState] + "," + county;
 	fipsMap[county] = read_utils::lexical_cast<int>(strs[iFIPS]);
 	counties.insert(county);
 	++varValueCount[strs[iVarName]];
