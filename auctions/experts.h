@@ -1,4 +1,4 @@
-/* $Id: experts.h,v 1.9 2008/01/28 23:21:47 bob Exp $
+/* 
  *  expert.h
  *  auctions
  *

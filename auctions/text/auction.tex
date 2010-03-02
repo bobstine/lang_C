@@ -1,3 +1,4 @@
+% -*- mode: LaTex; outline-regexp: "\\\\section\\|\\\\subsection";fill-column: 80; -*- 
 \documentclass[12pt]{article}
 \usepackage[longnamesfirst]{natbib}
 \usepackage[usenames]{color}
@@ -23,7 +24,6 @@
 % --- Customized commands, abbreviations
 \newcommand{\TIT}{{\it  {\small Implementing the Auction}}}
 
-\newcommand{\ras}[1]{\noindent{\textcolor{red}{\{{\bf ras:} \em #1\}}}}
 
 % --- Header
 \pagestyle{myheadings}
@@ -55,6 +55,54 @@
 \vspace{-0.5in} \centerline{\bf Abstract} 
 
 \clearpage
+
+\section{Experts} % --------------------------------------------------------------------------
+
+ The auction uses two types of experts.  {\em Source experts} produce new
+ features for consideration; in general, source experts build variables from the
+ columns of an input data array.  {\em Parasitic experts} (or perhaps more
+ politely called {\em derived experts}) construct features from those that have
+ already made an appearance in the auction.  These might be, for instance,
+ various spatial interactions of a feature that was initially rejected from the
+ auction previously or interactions of features that were accepted as
+ predictors.
+
+
+ The auction funds source experts during the initialization process, allocating
+ the total initial alpha-wealth given to the auction among them (typically
+ equally).  The auction funds parasitic experts later during the bidding and
+ evaluation process.  Parasitic experts that bid on rejected features are funded
+ by a ``tax'' on bids placed in the auction.  For example, suppose a source
+ expert $\cal E$ bids $\alpha = 0.01$ for the feature $X$. The auction taxes
+ this bid at, say, 5\% and distributes the tax revenue $0.01 \times 0.05 =
+ 0.0005$ among those experts that bid on rejected features.  The auction funds
+ those that bid on accepted features by taxing (at some possibly different rate)
+ the payout $\omega$ made to an expert when a feature is accepted into the
+ model.
+
+
+ {\em Aside.}  For a time, I was thinking that parasitic experts might also have
+ a ``scope'' attribute.  That is, one might have something like a ``knot
+ expert'' that offered possible places to segment the effect of a variable
+ (think turbo smoothing).  This expert would, in my thinking, have been bound to
+ a specific feature.  I am not too high on this approach right now.  Tying an
+ expert to an individual feature presents all sorts of complications,
+ particularly in the funding.  If an expert is tied to one specific feature,
+ then it would seem that it should only be funded from that feature.  So, if
+ feature $X$ comes with a knot-expert ${\cal E}$, then it seems only natural to
+ fund $\cal E$ from whatever happens to $X$, and $X$ alone.  $\cal E$, unlike
+ other parasitic experts would get funded from the bid that came on $X$ if $X$
+ gets rejected, and get funded from the payout on $X$ if $X$ is accepted.  The
+ complication: none of the other experts get funding from this (OK, we could
+ split the funding to reserve some for the ``community'' of experts). Not only
+ would there be a lot of ambiguity as to when to assign such specific experts,
+ but the coding that allocates tax revenue would become a lot more messy as well
+ (not to mention proving this is a good thing).  I've decided to keep the
+ parasites generic, at least for the time being, and instead focus on getting
+ more types of experts in place.  Rather than assigning a knot-expert here and
+ there, we'll just have one (if any) that works with accepted variables and
+ leave it at that.
+
 
 \section{Tests in Least Squares} % -----------------------------------------------------------
 
@@ -155,7 +203,7 @@ $Z'Z$ with
  shown in brackets in \eqn{eq:wdss} to the function {\tt change\_in\_rss}.)
 
 
-\section{Tests in Logistic Regression} % --------------------------------------
+\section{Tests in Logistic Regression} % -----------------------------------------------------
 
  The current implementation resembles the protections offered in linear models,
  using the fact that a logistic regression is computed as a weighted least

@@ -13,6 +13,7 @@
 	-p  level of protection              (default is level 3)
 	-c  calibration df                   (default is no calibration)
 
+   2 Mar 10 ... Look at 'dynamically' funding experts via tax on bids and earnings
   22 Mar 09 ... Remove validation option by recognizing file pattern; add debugging from Dean
    5 Sep 08 ... Add the validation option.
   14 Oct 04 ... (dpf) added make_20_geometric bidders
