@@ -31,51 +31,57 @@ main()
   std::cout << "TEST: Initialization converted " << columns.size() << " columns into features.\n";
   std::cout << "TEST: Converted columns to vector... \n " << features << std::endl;
   
+  // make streams
   typedef  FiniteStream< std::vector<FeatureABC*> >      FS;
   typedef  InteractionStream< std::vector<FeatureABC*> > IS;
-  
-  FS finiteStream (make_finite_stream("Columns", features));
-  IS interStream  (make_interaction_stream("Col interactions", features));
-  
-  Expert<UniversalBidder, InteractionStream< std::vector<FeatureABC*> > > expert(0.05, UniversalBidder(), interStream);
-  
-  std::vector<ExpertABC*> theExperts;
-  theExperts.push_back(make_expert(0.05, FiniteBidder(0.05/finiteStream.number_remaining()), finiteStream));
-  theExperts.push_back(make_expert(0.05, UniversalBidder(), interStream));
-  theExperts.push_back(make_expert(0.05, UniversalBidder(), make_cross_product_stream("cp", features, features)));
+  typedef  CrossProductStream< std::vector<FeatureABC*>,std::vector<FeatureABC*> > CP;
+  FS finiteStream (make_finite_stream("Columns", features, 1));                   // one pass
+  IS interStream  (make_interaction_stream("Col interactions", features, true));  // use squares 
+
+  int priority (1);
+  double alpha (0.05);
+  std::vector<Expert> theExperts;
+  theExperts.push_back(Expert(priority, alpha, FiniteBidder<FS>(), finiteStream));
+  theExperts.push_back(Expert(priority, alpha, UniversalBidder<IS>(), interStream));
+  theExperts.push_back(Expert(priority, alpha, UniversalBidder<CP>(), make_cross_product_stream("cp", features, features)));
   std::cout << "TEST: the experts are :\n" << theExperts << std::endl;
                        
   double bid;
-  ExpertABC* e (theExperts[2]);
+  Expert e (theExperts[2]);
+
+  std::deque<double> history;
+  std::vector<Feature> accepted, rejected;
   
-  bid = e->place_bid();
+
+
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_declined();
-  bid = e->place_bid();
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_accepted();
-  std::cout << e->features() << std::endl;
+  std::cout << e->feature_vector() << std::endl;
   e->payoff(0.05);
   
-  bid = e->place_bid();
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_declined();
-  bid = e->place_bid();
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_accepted();
-  std::cout << e->features() << std::endl;
+  std::cout << e->feature_vector() << std::endl;
   e->payoff(-bid/(1-bid));
 
-  bid = e->place_bid();
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_accepted();
-  std::cout << e->features() << std::endl;
+  std::cout << e->feature_vector() << std::endl;
   e->payoff(-bid/(1-bid));
   
-  bid = e->place_bid();
+  bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_accepted();
-  std::cout << e->features() << std::endl;
+  std::cout << e->feature_vector() << std::endl;
   e->payoff(-bid/(1-bid));
   
   return 0;

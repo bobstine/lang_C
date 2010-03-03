@@ -54,14 +54,14 @@
 #include <vector>
 
 
-template<class Op>
-class UnaryFeature;
+//template<class Op> class UnaryFeature;
 
 
 ////  Envelope class
 
 class Feature
 {
+  
  private:
   FeatureABC *mFP;
 
@@ -70,11 +70,11 @@ class Feature
 
   
   // copy
-  Feature(Feature const& f)    : mFP(f.mFP)                { ++f.mFP->mRefCount;  }
+  Feature(Feature const& f)    : mFP(f.mFP)     { ++f.mFP->mRefCount;  }
 
   //  empty has a null column
   Feature();
-  
+
   //  column feature
   Feature(Column const &c);
   
@@ -83,7 +83,7 @@ class Feature
 
   //  linear combination
   Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
-
+   
   //  unary feature
   template<class Op>
     Feature(Op const& op, Feature const &x);
@@ -94,9 +94,7 @@ class Feature
 
   
   Feature&    operator=(Feature const& f);
-  FeatureABC* operator->()                 const       { return mFP; }
-
-  
+  FeatureABC* operator->()                 const       { return mFP; }  
 };
 
 inline
@@ -107,6 +105,15 @@ operator<< (std::ostream& os, Feature const& feature)
   return os;
 }
 
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::vector<Feature> const& featureVec)
+{
+  for(std::vector<Feature>::const_iterator i=featureVec.begin(); i!=featureVec.end(); ++i)
+    (*i)->print_to(os);
+  return os;
+}
 
 
 ////  Column feature

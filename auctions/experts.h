@@ -21,13 +21,18 @@ will be collections of features.  The expert never holds the features
 explicitly.  It leaves them in the stream until a bid is accepted and
 then it pops the feature off of the stream.
 
- */
+  3 Mar 2010 ... Move to having a wrapper class with a ref counted pointer.
+  
+  
+*/
+
 #ifndef _EXPERTS_H_
 #define _EXPERTS_H_
 
 
 #include <assert.h>
 #include <deque>
+#include <map>
 
 #include "debug.h"
 
@@ -35,12 +40,19 @@ then it pops the feature off of the stream.
 #include "bidders.h"
 
 
-// need ABC since will need to have a collection of experts
+// need ABC since have a collection of experts due to templating
+
+class Expert;
+
 class ExpertABC
 {
-  typedef     std::vector<Feature>  FeatureVector;
+  friend class Expert;
+
+  typedef     std::vector<Feature>               FeatureVector;
+  typedef     std::map<std::string, std::string> Attributes;
   
 protected:
+  int         mRefCount;
   int         mPriority;             //  higher jumps to top of auction
   double      mAlpha;
   double      mCurrentBid;
@@ -51,22 +63,25 @@ public:
   virtual ~ExpertABC () { }
   
  ExpertABC(int priority, double alpha)
-   : mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+   : mRefCount(1),
+     mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
-  int                    priority()     const { return mPriority; }
-  double                 alpha()        const { return mAlpha; }
-  double                 current_bid()  const { return mCurrentBid; }
-  std::pair<int,int>     performance()  const { return mBidHistory.bid_results_summary(); }
+  int                    priority()                 const { return mPriority; }
+  double                 alpha()                    const { return mAlpha; }
+  double                 increment_alpha(double a)        { mAlpha += a; return mAlpha; }
+  double                 current_bid()              const { return mCurrentBid; }
+  std::pair<int,int>     performance()              const { return mBidHistory.bid_results_summary(); }
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   virtual double         place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped) = 0; 
-  virtual std::string    name()               const = 0;
-  virtual std::string    feature_name()       const = 0;
-  virtual FeatureVector  feature_vector()     = 0;
-  virtual void           bid_accepted()       { mLastBidAccepted = true; }
-  virtual void           bid_declined()       { mLastBidAccepted = false; }
-  
+  virtual std::string    name()                     const = 0;
+  virtual std::string    feature_name()             const = 0;
+  virtual FeatureVector  feature_vector()                 = 0;
+  virtual void           bid_accepted()                       { mLastBidAccepted = true; }
+  virtual void           bid_declined()                       { mLastBidAccepted = false; }
+
+  virtual void           print_to(std::ostream& os) const     { os << "Expert[" << mRefCount <<"]: " << name() << " with alpha " << mAlpha; }
 
  protected:
   double                 max_bid      ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
@@ -74,9 +89,10 @@ public:
 };
 
 
+// Stream expert combines bidder with a stream source for features
 
 template <class Bidder, class Stream> 
-class Expert : public ExpertABC
+class StreamExpert : public ExpertABC
 {
 
 private:
@@ -84,9 +100,9 @@ private:
   Stream      mStream;
   
 public:
-  virtual ~Expert () { };
+  virtual ~StreamExpert () { };
   
-  Expert (int priority, double alpha, Bidder b, Stream s)
+  StreamExpert (int priority, double alpha, Bidder b, Stream s)
     : ExpertABC(priority, alpha), mBidder(b), mStream(s) { }
   
   Bidder const&    bidder()       const { return mBidder; }
@@ -102,38 +118,13 @@ public:
 };
 
 
-inline
-std::ostream&
-operator<< (std::ostream& os, ExpertABC const* expert)
-{
-  os << expert->name() << " with alpha=" << expert->alpha() << " ";
-  return os;
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, std::vector<ExpertABC*> const& experts)
-{
-  for (int i=0; i<(int)experts.size(); ++i)
-    os << "      " << experts[i] << std::endl;
-  return os;
-}
-
-template<class Bidder, class Stream>
-inline
-Expert<Bidder,Stream>*
-make_expert(int priority, double alpha, Bidder b, Stream s)
-{
-  return new Expert<Bidder, Stream>(priority, alpha, b, s); 
-}
-
 
 ////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE 
-// .Template is here since so little
+
 
 template<class Bidder, class Stream>
 double
-  Expert<Bidder,Stream>::place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped)
+  StreamExpert<Bidder,Stream>::place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped)
 {
   //  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
@@ -146,5 +137,49 @@ double
   return mCurrentBid;
 }
 
+
+////  Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    
+
+class Expert
+{
+ private:
+  ExpertABC *mpExpert;
+
+ public:
+  ~Expert() { if(--mpExpert->mRefCount <= 0) delete mpExpert; }
+  
+  // copy
+  Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  
+
+  
+  // feature-specific expert
+  template <class Bidder>
+    Expert(Bidder const& b, Feature const& f);
+  
+  // stream expert
+  template <class Bidder, class Stream>
+    Expert(int priority, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (priority, alpha, b, s); }
+
+  
+  Expert&    operator=(Expert const& e);
+  ExpertABC* operator->()                 const       { return mpExpert; }  
+};
+
+inline
+std::ostream&
+operator<< (std::ostream& os, Expert const& expert)
+{
+  expert->print_to(os);
+  return os;
+}
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::vector<Expert> const& experts)
+{
+  for (int i=0; i<(int)experts.size(); ++i)
+    os << "      " << experts[i] << std::endl;
+  return os;
+}
 
 #endif

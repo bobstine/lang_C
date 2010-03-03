@@ -1,6 +1,5 @@
 
-//  Feature constructors
-
+//  Feature constructors  (define after defining the different types of features)
 
 template<class Op>
 Feature::Feature(Op const& op, Feature const &x)

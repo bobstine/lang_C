@@ -19,3 +19,15 @@ ExpertABC::payoff (double w)
   if (mAlpha<0.0)
     std::cout << "XPRT:  *** Error. ***   Expert " << name() << " has negative alpha=" << mAlpha << std::endl;
 }
+
+
+
+
+Expert&
+Expert::operator=(Expert const& e)
+{
+  if( (--mpExpert->mRefCount <= 0) && (mpExpert != e.mpExpert) ) delete mpExpert;
+  mpExpert = e.mpExpert;
+  mpExpert->mRefCount++;
+  return *this;
+}

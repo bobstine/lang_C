@@ -196,7 +196,7 @@ main(int argc, char** argv)
   debug("AUCT",0) << "Assembling experts"  << std::endl;
 
   // slice alpha: 3/4 to columns input, 1/4 saved for parasites
-  FiniteCauchyShare alphaShare          (0.75 * totalAlphaToSpend, (int)featureVectorMap.size());
+  FiniteCauchyShare alphaShare          (0.75 * totalAlphaToSpend, (int)featureVectorMap.size());   // spreads wealth among streams
   double            parasiteAlphaShare  (0.25 * totalAlphaToSpend / 3.0);
   
   // add a column expert and an interaction expert for each column stream

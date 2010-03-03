@@ -9,8 +9,6 @@
 #include <set>
 
 
-//  Feature Envelope
-
 
 Feature::Feature()
 {
@@ -21,17 +19,18 @@ Feature::Feature()
 Feature::Feature(Column const &c)
 {
   mFP = new ColumnFeature(c);
-}
+}  
 
 Feature::Feature(Feature const& f1, Feature const& f2)
 {
   mFP = new InteractionFeature(f1,f2);
 }
 
-Feature::Feature(int n, std::vector<double> b, std::vector<Feature> const& fv)
+Feature::Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv)
 {
   mFP = new LinearCombinationFeature(n, b, fv);
 }
+
 
 
 Feature&
