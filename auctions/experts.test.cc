@@ -38,12 +38,11 @@ main()
   IS interStream  (make_interaction_stream("Col interactions", features, true));  // use squares 
 
   // build several experts
-  int priority (1);
   double alpha (0.05);
   std::vector<Expert> theExperts;
-  theExperts.push_back(Expert(priority, alpha, FiniteBidder<FS>(), finiteStream));
-  theExperts.push_back(Expert(priority, alpha, UniversalBidder<IS>(), interStream));
-  theExperts.push_back(Expert(priority, alpha, UniversalBidder<CP>(), make_cross_product_stream("cp", features, features)));
+  theExperts.push_back(Expert(source, alpha, FiniteBidder<FS>(), finiteStream));
+  theExperts.push_back(Expert(source, alpha, UniversalBidder<IS>(), interStream));
+  theExperts.push_back(Expert(parasite, alpha, UniversalBidder<CP>(), make_cross_product_stream("cp", features, features)));
   std::cout << "TEST: the experts are :\n" << theExperts << std::endl;
 
   // state of auction defined in bidder.h

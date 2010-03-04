@@ -197,14 +197,12 @@ main(int argc, char** argv)
 
   typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
   // parasitic experts
-  theAuction.add_expert(parasite,
-			Expert(0, 0,
+  theAuction.add_expert(Expert(parasite, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Skipped-feature interactions", featureVectorMap["main"], theAuction.rejected_features())
 			       ));
   
-  theAuction.add_expert(parasite,
-			Expert(0, 0,
+  theAuction.add_expert(Expert(parasite, 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
@@ -217,13 +215,11 @@ main(int argc, char** argv)
     typedef  InteractionStream < FeatureVector > IStream;
     for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
     { 
-      theAuction.add_expert(source,
-			    Expert(0, alphaShare(stream) * 0.52,      // priority, alpha
+      theAuction.add_expert(Expert(source, alphaShare(stream) * 0.52,      // priority, alpha
 				   UniversalBoundedBidder<FStream>(), 
 				   make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
 				   ));
-      theAuction.add_expert(source,
-			    Expert(0, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
+      theAuction.add_expert(Expert(source, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
 				   UniversalBoundedBidder<IStream>(),
 				   make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
 				   ));
@@ -231,16 +227,14 @@ main(int argc, char** argv)
     }
   }
 			
-  theAuction.add_expert(source,
-			Expert(0, 0,
+  theAuction.add_expert(Expert(source, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.accepted_features())
 			       ));
   
   // calibration expert
   std::string signature("Y_hat_");
-  theAuction.add_expert(source,
-			Expert(1, 100,
+  theAuction.add_expert(Expert(calibrate, 100,
 			       FitBidder(4, signature),  // delay between bursts
 			       make_fit_stream(theRegr, signature)));
   

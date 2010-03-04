@@ -41,6 +41,8 @@ then it pops the feature off of the stream.
 
 // need ABC since have a collection of experts due to templating
 
+enum    ExpertRole       { source, parasite, calibrate };
+
 class Expert;
 
 class ExpertABC
@@ -52,7 +54,7 @@ class ExpertABC
   
 protected:
   int         mRefCount;
-  int         mPriority;             //  higher jumps to top of auction
+  ExpertRole  mRole;
   double      mAlpha;
   double      mCurrentBid;
   bool        mLastBidAccepted;
@@ -62,14 +64,15 @@ public:
   virtual ~ExpertABC () { }
   
  ExpertABC()
-   : mRefCount(1),
-     mPriority(0), mAlpha(0), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+   : mRefCount(1), mRole(source), mAlpha(0),
+    mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
- ExpertABC(int priority, double alpha)
-   : mRefCount(1),
-     mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+ ExpertABC(ExpertRole role, double alpha)
+   : mRefCount(1), mRole(role),  mAlpha(alpha),
+    mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
-  int                    priority()                 const { return mPriority; }
+  int                    priority()                 const { if (mRole == calibrate) return 1; else return 0; }
+  ExpertRole             role()                     const { return mRole; }
   double                 alpha()                    const { return mAlpha; }
   double                 increment_alpha(double a)        { mAlpha += a; return mAlpha; }
   double                 current_bid()              const { return mCurrentBid; }
@@ -84,11 +87,13 @@ public:
   virtual void           bid_accepted()                       { mLastBidAccepted = true; }
   virtual void           bid_declined()                       { mLastBidAccepted = false; }
 
-  virtual void           print_to(std::ostream& os) const     { os << "Expert[" << mRefCount <<"]: " << name() << " with alpha " << mAlpha; }
+  virtual void           print_to(std::ostream& os) const;
 
  protected:
   double                 max_bid      ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
   virtual bool           has_feature  (AuctionState const& state) = 0;
+ private:
+  std::string            role_string() const;
 };
 
 
@@ -105,8 +110,8 @@ private:
 public:
   virtual ~StreamExpert () { };
   
-  StreamExpert (int priority, double alpha, Bidder b, Stream s)
-    : ExpertABC(priority, alpha), mBidder(b), mStream(s) { }
+  StreamExpert (ExpertRole role, double alpha, Bidder b, Stream s)
+    : ExpertABC(role, alpha), mBidder(b), mStream(s) { }
   
   Bidder const&    bidder()       const { return mBidder; }
   Stream const&    stream()       const { return mStream; }
@@ -160,7 +165,7 @@ class Expert
   
   // stream expert
   template <class Bidder, class Stream>
-    Expert(int priority, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (priority, alpha, b, s); }
+    Expert(ExpertRole role, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (role, alpha, b, s); }
 
   // copy
   Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  

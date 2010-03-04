@@ -92,11 +92,11 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
        << ", " << total_expert_alpha();
   }
   Expert       winningExpert;
+  double       highBid               (-7.7);
   Expert       priorityExpert;
-  double       highBid               (-7.7);     
-  double       priorityBid           (0.0);
+  double       priorityBid;
   AuctionState state (auction_state());
-  for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
+  for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid(state);               // pass information to experts
     if (os)
       if (bid > 0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
@@ -104,6 +104,10 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
     if (bid > highBid)
     { highBid = bid;
       winningExpert = *it;
+    }
+    if (bid>0 && (calibrate == (*it)->role()))
+    { priorityExpert = *it;
+      priorityBid    = bid;
     }
   }
   if (!priorityExpert.empty())                          // override results
@@ -113,8 +117,8 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   }
   if(os)
     os << ", " << winningExpert->name() << ", " << highBid;
-    winningExpert->bid_accepted();                     // inform experts whether win/lose auction
-  for(ExpertIterator it = mExperts.begin(); it != mExperts.end(); ++it)
+  winningExpert->bid_accepted();                     // inform experts whether win/lose auction
+  for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != winningExpert) (*it)->bid_declined();
   return std::make_pair(winningExpert, highBid);
 }

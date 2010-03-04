@@ -10,6 +10,24 @@
 #include "experts.h"
 
 
+std::string
+ExpertABC::role_string () const
+{
+  switch(mRole) {
+  case source   : { return "source"; }
+  case parasite : { return "parasite"; }
+  case calibrate: { return "calibrate"; }
+  }
+  return "not found";
+}
+
+
+void
+ExpertABC::print_to(std::ostream& os) const
+{
+  os << "Expert[" << role_string() << "," << mRefCount <<"]: " << name() << " with alpha " << mAlpha; 
+}
+
 
 void 
 ExpertABC::payoff (double w)    

@@ -22,22 +22,18 @@ template <class Model>
 class Auction
 {
  public:
-  typedef Auction                                     AuctionClass;
-  typedef Model                                       ModelClass;
-  typedef typename std::vector<Expert>                ExpertVector;
-  typedef typename std::vector<Expert>::iterator      ExpertIterator;
-  typedef typename std::vector<Feature>               FeatureVector;
-  typedef typename std::vector<Feature>::iterator     FeatureIterator;
-  typedef typename std::pair<double,double>           TestResult;
-
-  enum    ExpertRole       { source, parasite, calibrate };
+  typedef Auction                            AuctionClass;
+  typedef Model                              ModelClass;
+  typedef typename std::vector<Feature>      FeatureVector;
+  typedef typename std::vector<Expert>       ExpertVector;
+  typedef typename std::pair<double,double>  TestResult;
   
 private:
+  const double        mPayoff;            // payoff for a winning bid
   bool                mHasActiveExpert;
   bool                mCalibrateFit;      // use calibration
   int                 mRound;          
   std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
-  const double        mPayoff;            // payoff for a winning bid
   ExpertVector        mExperts;
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
@@ -52,7 +48,7 @@ private:
     }
     
   Auction (Model& m, bool calibrate, std::ostream& logStream)
-    : mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mPayoff(0.05),
+    : mPayoff(0.05), mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(),
       mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
