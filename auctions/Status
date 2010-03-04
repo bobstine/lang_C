@@ -1,3 +1,5 @@
+Next... Get tax revenue into experts.
+
 Need to 
 
      Deans requests
@@ -81,6 +83,13 @@ Need to
 	return vector views of the "n" items in use for estimation rather than the 
 	"length" items held in both training and test data.
 
+
+------------------------------------------------------------------------------
+ 3 Mar 10
+ 
+      Experts now have a role attribute and are more lightweight, with an
+      envelope implementation like that of features.
+    
 
 ------------------------------------------------------------------------------
  3 Jul 09    
