@@ -8,6 +8,19 @@
 #include <math.h>
 
 
+
+void
+AuctionState::print_to (std::ostream & os) const
+{
+    os << "Auction State:  \n"
+       << "    payoffs [" << mPayoffHistory.size()    << "] : ";
+    for(std::vector<double>::const_iterator i=mPayoffHistory.begin(); i != mPayoffHistory.end(); ++i)
+      os << " " << *i;
+    os << std::endl
+       << "    accepts [" << mAcceptedFeatures.size() << "] : " << std::endl << mAcceptedFeatures << std::endl
+       << "    rejects [" << mRejectedFeatures.size() << "] : " << std::endl << mRejectedFeatures << std::endl;
+  }
+
 //  BidHistory    BidHistory    BidHistory    BidHistory    BidHistory    BidHistory    BidHistory   
 
 void               

@@ -26,7 +26,8 @@ ExpertABC::payoff (double w)
 Expert&
 Expert::operator=(Expert const& e)
 {
-  if( (--mpExpert->mRefCount <= 0) && (mpExpert != e.mpExpert) ) delete mpExpert;
+  if( mpExpert // watch for an empty expert
+      && (--mpExpert->mRefCount <= 0) && (mpExpert != e.mpExpert) ) delete mpExpert;
   mpExpert = e.mpExpert;
   mpExpert->mRefCount++;
   return *this;

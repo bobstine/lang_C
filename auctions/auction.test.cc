@@ -195,55 +195,55 @@ main(int argc, char** argv)
   // build vector of experts that work directly from input variables
   debug("AUCT",0) << "Assembling experts"  << std::endl;
 
-  // slice alpha: 3/4 to columns input, 1/4 saved for parasites
-  FiniteCauchyShare alphaShare          (0.75 * totalAlphaToSpend, (int)featureVectorMap.size());   // spreads wealth among streams
-  double            parasiteAlphaShare  (0.25 * totalAlphaToSpend / 3.0);
+  typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
+  // parasitic experts
+  theAuction.add_expert(parasite,
+			Expert(0, 0,
+			       UniversalBidder<CPStream>(),
+			       make_cross_product_stream("Skipped-feature interactions", featureVectorMap["main"], theAuction.rejected_features())
+			       ));
   
-  // add a column expert and an interaction expert for each column stream
-  typedef  FiniteStream      < FeatureVector > FStream;
-  typedef  InteractionStream < FeatureVector > IStream;
+  theAuction.add_expert(parasite,
+			Expert(0, 0,
+			       UniversalBidder< PolynomialStream<FeatureVector> >(),
+			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
+			       ));
 
-  { // allocate alpha over input streams with an interaction for each as well
+  // add a source column and interaction expert for each column stream  
+  { 
+    FiniteCauchyShare alphaShare (totalAlphaToSpend, (int)featureVectorMap.size());   // spreads wealth among streams
     int stream (0);
+    typedef  FiniteStream      < FeatureVector > FStream;
+    typedef  InteractionStream < FeatureVector > IStream;
     for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
     { 
-      theAuction.add_expert(make_expert(0, alphaShare(stream) * 0.52,      // priority, alpha
-					UniversalBoundedBidder<FStream>(), 
-					make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
-					));
-      // interactions within each input feature stream
-      theAuction.add_expert(make_expert(0, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
-					UniversalBoundedBidder<IStream>(),
-					make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
-					));
+      theAuction.add_expert(source,
+			    Expert(0, alphaShare(stream) * 0.52,      // priority, alpha
+				   UniversalBoundedBidder<FStream>(), 
+				   make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
+				   ));
+      theAuction.add_expert(source,
+			    Expert(0, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
+				   UniversalBoundedBidder<IStream>(),
+				   make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
+				   ));
       ++stream;
     }
   }
-  
-  // parasitic experts betting on winners
-  typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
-  theAuction.add_expert(make_expert(0, parasiteAlphaShare,
-				    UniversalBidder<CPStream>(),
-				    make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.model_features())
-				    ));
-  
-  theAuction.add_expert(make_expert(0, parasiteAlphaShare/2, 
-				    UniversalBidder<CPStream>(),
-				    make_cross_product_stream("Skipped-feature interactions", featureVectorMap["main"], theAuction.skipped_features())
-				    ));
-  
-  typedef  PolynomialStream  < FeatureVector > PolyStream;  
-  theAuction.add_expert(make_expert(0, parasiteAlphaShare/2, 
-				    UniversalBidder<PolyStream>(),
-				    make_polynomial_stream("Skipped-feature polynomial", theAuction.skipped_features(), 3)     // poly degree
-				    ));
+			
+  theAuction.add_expert(source,
+			Expert(0, 0,
+			       UniversalBidder<CPStream>(),
+			       make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.accepted_features())
+			       ));
   
   // calibration expert
   std::string signature("Y_hat_");
-  theAuction.add_expert(make_expert(1, 100,
-				    FitBidder(4, signature),  // delay between bursts
-				    make_fit_stream(theRegr, signature)));
-
+  theAuction.add_expert(source,
+			Expert(1, 100,
+			       FitBidder(4, signature),  // delay between bursts
+			       make_fit_stream(theRegr, signature)));
+  
     
   /*
     Principle component type features are temp turned off

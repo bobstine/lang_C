@@ -32,15 +32,52 @@
 #include "coding.h"
 #include "debug.h"
 
+#include "features.h"
+
 #include <iostream>
 #include <vector>
-#include <deque>
+
+
+
+//   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState
+//
+//   This is the information available about the current state of the auction that bidders
+//   can use in forming their bids.
+//
+
+class AuctionState
+{
+  std::vector<double>  const& mPayoffHistory;
+  std::vector<Feature> const& mAcceptedFeatures;
+  std::vector<Feature> const& mRejectedFeatures;
+
+ public:
+  AuctionState (std::vector<double>  const& payoffs,
+		std::vector<Feature> const& accepted,
+		std::vector<Feature> const& rejected)
+    : mPayoffHistory(payoffs), mAcceptedFeatures(accepted), mRejectedFeatures(rejected) { }
+  
+  std::vector<double>  const&  payoff_history()    const { return mPayoffHistory; }
+  std::vector<Feature> const&  rejected_features() const { return mRejectedFeatures; }
+  std::vector<Feature> const&  accepted_features() const { return mAcceptedFeatures;}
+
+  void print_to (std::ostream & os) const;
+};
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, AuctionState const& state)
+{
+  state.print_to(os);
+  return os;
+}
 
 
 //   BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  BidHistory  
-/*
- This is the 0/1 vector from JRSS paper, held separately within each expert
- */
+//
+//      This is the 0/1 vector from JRSS paper, held separately within each expert
+//
 
 class BidHistory 
 {
@@ -49,15 +86,13 @@ class BidHistory
   int mNumSuccessfulBids;
   
 public:
-    BidHistory ()
-    : mResults(), mBidsSinceLastSuccess(0), mNumSuccessfulBids(0) { }
+    BidHistory ()    : mResults(), mBidsSinceLastSuccess(0), mNumSuccessfulBids(0) { }
   
   std::vector<int> const&  results()                       const { return mResults; }
   std::pair<int,int>       bid_results_summary()           const { int n (mResults.size()); return std::make_pair(mNumSuccessfulBids, n-mNumSuccessfulBids); }
   int                      number_bids_since_last_sucess() const { return mBidsSinceLastSuccess; }
 
   void                     append_bid_outcome (bool success);
-
 };
 
 
@@ -71,7 +106,7 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, AuctionState const&) const
   {
     const double maxbid = 0.25;
     int n (stream.number_remaining());
@@ -110,10 +145,11 @@ class FitBidder
   std::string name() const { return "Fit bidder [" + mSignature + "]"; }
   
   template <class Stream>
-    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, std::deque<double> const& auctionPayoffs)
+    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, AuctionState const& state)
   {
     debugging::debug("BIDR",1) << "Fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
-    if(!auctionPayoffs.empty() && auctionPayoffs.back() > 0)         // last variable was added to model
+    std::vector<double> payoffs (state.payoff_history());
+    if(!payoffs.empty() && payoffs.back() > 0)                       // last variable was added to model
       if (lastBidAccepted)                                           // it was mine, so pick the same bid
 	return (mCountDown == mDelayInterval) ? 0.25 : 0.025;
       else                                                           // was not mine, so adjust countdown
@@ -146,7 +182,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, AuctionState const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * mRate; 
@@ -170,7 +206,7 @@ public:
   
   std::string name() const { return "Universal bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, AuctionState const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * universalPDF(history.number_bids_since_last_sucess());
@@ -200,7 +236,7 @@ public:
   
   std::string name() const { return "Universal bounded bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, std::deque<double> const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, AuctionState const&) const
   {
     const double maxbid = 0.25;
     int n (stream.number_remaining());

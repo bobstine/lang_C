@@ -31,7 +31,6 @@ then it pops the feature off of the stream.
 
 
 #include <assert.h>
-#include <deque>
 #include <map>
 
 #include "debug.h"
@@ -62,6 +61,10 @@ protected:
 public:
   virtual ~ExpertABC () { }
   
+ ExpertABC()
+   : mRefCount(1),
+     mPriority(0), mAlpha(0), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+
  ExpertABC(int priority, double alpha)
    : mRefCount(1),
      mPriority(priority), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
@@ -74,7 +77,7 @@ public:
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
-  virtual double         place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped) = 0; 
+  virtual double         place_bid (AuctionState const& state) = 0; 
   virtual std::string    name()                     const = 0;
   virtual std::string    feature_name()             const = 0;
   virtual FeatureVector  feature_vector()                 = 0;
@@ -85,7 +88,7 @@ public:
 
  protected:
   double                 max_bid      ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
-  virtual bool           has_feature  (FeatureVector const& used, FeatureVector const& skipped) = 0;
+  virtual bool           has_feature  (AuctionState const& state) = 0;
 };
 
 
@@ -109,12 +112,12 @@ public:
   Stream const&    stream()       const { return mStream; }
   std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
   
-  double           place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped);
-  std::string      feature_name()   const     { return mStream.feature_name(); }       
-  FeatureVector    feature_vector()           { return mStream.pop(); }                // stream pop must return feature *vector*
+  double           place_bid (AuctionState const& state);
+  std::string      feature_name()                const     { return mStream.feature_name(); }       
+  FeatureVector    feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
  protected:
-  bool             has_feature(FeatureVector const& used, FeatureVector const& skipped) { return mStream.has_feature(used, skipped); }
+  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
 };
 
 
@@ -124,11 +127,11 @@ public:
 
 template<class Bidder, class Stream>
 double
-  StreamExpert<Bidder,Stream>::place_bid (std::deque<double> const& auctionPayoffHistory, FeatureVector const& used, FeatureVector const& skipped)
+  StreamExpert<Bidder,Stream>::place_bid (AuctionState const& state)
 {
   //  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
-  if ( (mAlpha>0.0) && (has_feature(used, skipped)) )
-  { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, auctionPayoffHistory)); 
+  if ( (mAlpha>0.0) && (has_feature(state))  )
+  { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, state)); 
     double m (max_bid()); 
     mCurrentBid = (b<m) ? b:m;
   }    
@@ -146,11 +149,10 @@ class Expert
   ExpertABC *mpExpert;
 
  public:
-  ~Expert() { if(--mpExpert->mRefCount <= 0) delete mpExpert; }
+  ~Expert() { if(mpExpert && (--mpExpert->mRefCount <= 0)) delete mpExpert; }
   
-  // copy
-  Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  
-
+  // empty
+    Expert() : mpExpert(NULL) {  }
   
   // feature-specific expert
   template <class Bidder>
@@ -160,9 +162,17 @@ class Expert
   template <class Bidder, class Stream>
     Expert(int priority, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (priority, alpha, b, s); }
 
-  
+  // copy
+  Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  
+
+  // assign
   Expert&    operator=(Expert const& e);
-  ExpertABC* operator->()                 const       { return mpExpert; }  
+
+  ExpertABC* operator->()                 const       { return mpExpert; }
+
+  bool       operator==(Expert const& e)  const       { return mpExpert == e.mpExpert; }
+  bool       operator!=(Expert const& e)  const       { return mpExpert != e.mpExpert; }
+  bool       empty()                      const       { return mpExpert == NULL; }       
 };
 
 inline

@@ -110,8 +110,18 @@ inline
 std::ostream&
 operator<< (std::ostream& os, std::vector<Feature> const& featureVec)
 {
-  for(std::vector<Feature>::const_iterator i=featureVec.begin(); i!=featureVec.end(); ++i)
-    (*i)->print_to(os);
+  int max (10);
+  int n   (featureVec.size());
+  int show = (max < n) ? max : n;
+  for (int i = 0; i < show; ++i)
+  { featureVec[i]->print_to(os);
+    os << std::endl;
+  }
+  if (max < n)
+  { os << "   ..... " << n-show-1 << " .....\n";
+    featureVec[n-1]->print_to(os);
+    os << std::endl;
+  }
   return os;
 }
 
