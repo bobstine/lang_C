@@ -76,8 +76,8 @@ public:
     const double maxbid = 0.25;
     int n (stream.number_remaining());
     if (n>0)
-    { bid = alpha/n;
-      return (bid < maxbid) ? bid : maxbid;
+    { double b = alpha/n;
+      return (b < maxbid) ? b : maxbid;
     }
     else
       return 0.0;

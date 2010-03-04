@@ -20,10 +20,11 @@
  a file, and so forth.
 
  Feature streams (along with bidders) are held in experts that participate in the
- auction. The *only* calls that come down from the expert are calls to
+ auction. The *only* calls that come down from the expert are calls to the method
  
         has_feature()
 
+ This response is handled by the RegulatedStream that sits over the underlying stream.
  The bidder at higher level may ask for the number remaining (number_remaining).  If the
  stream has a feature, then a winning bidder will call
  
@@ -194,7 +195,6 @@ public:
   
   std::string             name()                              const { return mName; }
   
-  bool                    has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();                      
   
@@ -207,8 +207,10 @@ protected:
   bool  indicators_from_same_parent(Feature const& f1, Feature const& f2)                                    const;
   void  increment_position();
 private:
+  bool  has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   void  build_current_feature_name();
 };
+
 
 template <class Source>
 RegulatedStream< InteractionStream<Source> >
@@ -235,11 +237,9 @@ public:
   CrossProductStream(std::string name, Source1 const& fixedSrc, Source2 const& dynSrc)
     : mName(name), mCurrentFeatureName(""), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0)  { build_current_feature_name(); }
   
-  std::string             name()                              const { return mName; }
-  
-  bool                    has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
+  std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  std::vector<Feature> pop();                      
+  std::vector<Feature>    pop();     
   
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
@@ -249,7 +249,8 @@ protected:
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
 private:
-  void build_current_feature_name();
+  bool  has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
+  void  build_current_feature_name();
 };
 
 
@@ -269,6 +270,7 @@ make_cross_product_stream (std::string const& name, Source1 const& fixedSrc, Sou
 //               Canonical example of a stream that builds several features
 //               from a subset of features in a different stream.
 //
+//               Beware... not yet regulated.
 
 template<class Source>
 class PolynomialStream 
@@ -284,18 +286,21 @@ public:
     : mName(name), mSource(src), mPos(0), mDegree(degree) { }
   
   std::string name()      const { return mName; }
-  
-  bool                    has_feature(std::vector<Feature> const&, std::vector<Feature> const&);
   std::string             feature_name() const;
-  std::vector<Feature> pop();                      
+  std::vector<Feature>    pop();
   
+  bool has_feature(std::vector<Feature> const&, std::vector<Feature> const&);  
+
   int                     number_remaining()           const { return (mSource.size()-mPos); }
   void                    print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
   
 private:
   void increment_position();
   bool feature_meets_conditions(Feature const& feature) const;
+
+
 };
+
 
 template <class Source>
 inline

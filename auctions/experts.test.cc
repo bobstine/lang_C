@@ -19,22 +19,21 @@ int
 main()
 {
   // build vector of columns from file
-  const std::string columnFileName ("/Users/bob/C/seq_regr/data/bank_small.dat");
+  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   
   // extract column features
-  std::vector<FeatureABC*> features;
+  std::vector<Feature> features;
   for (std::vector<Column>::const_iterator it = columns.begin(); it != columns.end(); ++it)
-    features.push_back(new ColumnFeature(*it));
+    features.push_back(Feature(*it));
   std::cout << "TEST: Initialization converted " << columns.size() << " columns into features.\n";
-  std::cout << "TEST: Converted columns to vector... \n " << features << std::endl;
   
   // make streams
-  typedef  FiniteStream< std::vector<FeatureABC*> >      FS;
-  typedef  InteractionStream< std::vector<FeatureABC*> > IS;
-  typedef  CrossProductStream< std::vector<FeatureABC*>,std::vector<FeatureABC*> > CP;
+  typedef  RegulatedStream< FiniteStream      < std::vector<Feature> > >      FS;
+  typedef  RegulatedStream< InteractionStream < std::vector<Feature> > >      IS;
+  typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
   FS finiteStream (make_finite_stream("Columns", features, 1));                   // one pass
   IS interStream  (make_interaction_stream("Col interactions", features, true));  // use squares 
 
@@ -52,32 +51,30 @@ main()
   std::deque<double> history;
   std::vector<Feature> accepted, rejected;
   
-
-
   bid = e->place_bid(history, accepted, rejected);
-  std::cout << "TEST: Bid is " << bid << std::endl;
+  std::cout << "TEST: Bid 0 = " << bid << " (bid gets declined) " << std::endl;
   e->bid_declined();
+
   bid = e->place_bid(history, accepted, rejected);
-  std::cout << "TEST: Bid is " << bid << std::endl;
+  std::cout << "TEST: Bid 1 = " << bid << " (bid gets declined) " << std::endl;
+  e->bid_declined();
+
+  bid = e->place_bid(history, accepted, rejected);
+  std::cout << "TEST: Bid 2 = " << bid << " (bid gets accepted, 0.05 payout) " << std::endl;
   e->bid_accepted();
   std::cout << e->feature_vector() << std::endl;
   e->payoff(0.05);
   
   bid = e->place_bid(history, accepted, rejected);
-  std::cout << "TEST: Bid is " << bid << std::endl;
+  std::cout << "TEST: Bid 3 = " << bid << " (bid gets declined) " << std::endl;
   e->bid_declined();
+  
   bid = e->place_bid(history, accepted, rejected);
-  std::cout << "TEST: Bid is " << bid << std::endl;
+  std::cout << "TEST: Bid 4 = " << bid << std::endl;
   e->bid_accepted();
   std::cout << e->feature_vector() << std::endl;
   e->payoff(-bid/(1-bid));
 
-  bid = e->place_bid(history, accepted, rejected);
-  std::cout << "TEST: Bid is " << bid << std::endl;
-  e->bid_accepted();
-  std::cout << e->feature_vector() << std::endl;
-  e->payoff(-bid/(1-bid));
-  
   bid = e->place_bid(history, accepted, rejected);
   std::cout << "TEST: Bid is " << bid << std::endl;
   e->bid_accepted();
