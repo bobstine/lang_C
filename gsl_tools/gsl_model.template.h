@@ -410,14 +410,20 @@ LogisticModel<Data>::print_to    (std::ostream& os, bool useHTML) const
     gsl_vector *se (gsl_vector_alloc(1+GSLR::mQ));
     gsl_vector_set(b,0,GSLR::intercept());
     GSLR::fill_with_beta(++begin(b));
+    // no se for intercept; skip over this element
     gsl_vector_set (se,0,0.0);
     fill_with_se (begin(se), 1);  // skip intercept
+    // add "intercept" name to output names
+    std::vector< std::string > predictorNames;
+    predictorNames.push_back("Intercept");
+    for (int i=0; i<GSLR::mQ; ++i)
+      predictorNames.push_back(GSLR::mpData->x_names()[i]);
     if (useHTML)
-    { print_stat_summary_table_in_html (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
+    { print_stat_summary_table_in_html (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se), os);
       os << "<HR>\n";
     }
     else
-    { print_stat_summary_table (1+GSLR::mQ, GSLR::mpData->x_names().begin(), begin(b), begin(se), os);
+    { print_stat_summary_table (1+GSLR::mQ, predictorNames.begin(), begin(b), begin(se), os);
       os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
     }
     gsl_vector_free(b);

@@ -27,9 +27,12 @@ class Auction
   typedef typename std::vector<Feature>      FeatureVector;
   typedef typename std::vector<Expert>       ExpertVector;
   typedef typename std::pair<double,double>  TestResult;
+
   
 private:
   const double        mPayoff;            // payoff for a winning bid
+  const double        mBidTaxRate;        // percentage taken from winning bid
+  const double        mPayoffTaxRate;     //                       payoff
   bool                mHasActiveExpert;
   bool                mCalibrateFit;      // use calibration
   int                 mRound;          
@@ -48,7 +51,8 @@ private:
     }
     
   Auction (Model& m, bool calibrate, std::ostream& logStream)
-    : mPayoff(0.05), mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(),
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.05),
+      mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(),
       mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
@@ -78,10 +82,11 @@ private:
 
  private:
   std::pair<Expert,double> collect_bids(std::ostream&);
-  double                       pay_highest_bidder (Expert, double bid, double pValue);
-  FeatureABC *                 xb_feature(std::vector<double> const& b)  const;
-  FeatureABC *                 calibration_feature()                     const;
-  void                         print_features(FeatureVector const& fv)   const;
+  double                   tax_bid(Expert e, double bid);
+  double                   pay_highest_bidder (Expert, double bid, bool accepted, bool singular);
+  FeatureABC *             xb_feature(std::vector<double> const& b)  const;
+  FeatureABC *             calibration_feature()                     const;
+  void                     print_features(FeatureVector const& fv)   const;
 };
 
 

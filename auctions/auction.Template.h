@@ -30,53 +30,57 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<Expert,double> winner (collect_bids(os));  
-  Expert  winningExpert = winner.first;
-  double  highBid       = winner.second;
-  if (0.0 == highBid) 
+  Expert  expert = winner.first;
+  double  bid    = winner.second;
+  // handle tax on bid
+  double afterTaxBid = tax_bid(expert, bid);
+  if (0.0 == afterTaxBid) 
   { mHasActiveExpert = false;
     debug("AUCT",3) << "Auction does not have an active expert to bid; terminating.\n";
     if (os) os << std::endl;
     return false;
   } 
   // extract chosen features
-  std::vector<Feature> features  (winningExpert->feature_vector()) ;
+  std::vector<Feature> features  (expert->feature_vector()) ;
   if (features.empty())
-  { debug("AUCT",3) << "*** ERROR **** Winning expert " << winningExpert->name() << " did not provide features.\n";
+  { debug("AUCT",3) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
   else
-  { debug("AUCT",0) << "Winning expert  " << winningExpert->name() << " bids $" << highBid <<  " on ";
+  { debug("AUCT",0) << "Winning expert  " << expert->name()
+		    << " bids $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features);
   }
   // build variables for testing
   std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
   for (unsigned int j=0; j<features.size(); ++j)
     namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
-  TestResult result (mModel.add_predictors_if_useful (namedIterators, highBid));
+  TestResult result (mModel.add_predictors_if_useful (namedIterators, afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
   // report bid result
-  double payoff = pay_highest_bidder(winningExpert, highBid, result.second);            // result.second is p-value
-  bool addedPredictors (payoff > 0.0);
+  bool singular (result.second > 1);                                  // result.second is p-value
+  bool accepted (result.second < afterTaxBid);
+  double payoff = pay_highest_bidder(features, expert, bid, accepted, singular);
   if (os)
-    if (addedPredictors)
+    if (accepted)
     { std::pair<double,double> rss (mModel.sums_of_squares());
       os << "," << features[0]->name() << "," << payoff << "," << rss.first << "," << rss.second;
     }
     else
       os <<               ", ,"               << payoff <<           ", , ";
   for (unsigned int j=0; j<features.size(); ++j)
-  { features[j]->set_model_results(addedPredictors, result.second);                      // save attributes in feature for printing
-    if (addedPredictors) 
+  { features[j]->set_model_results(accepted, result.second);    // save attributes in feature for printing
+    if (accepted) 
     { mLogStream << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
     else      
       mSkippedFeatures.push_back(features[j]);
   }
-  return addedPredictors;
+  return accepted;
 }
 
 
@@ -91,10 +95,8 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
        << ", " << model_goodness_of_fit()
        << ", " << total_expert_alpha();
   }
-  Expert       winningExpert;
-  double       highBid               (-7.7);
-  Expert       priorityExpert;
-  double       priorityBid;
+  Expert       winningExpert,    priorityExpert;
+  double       highBid (-7.7),   priorityBid (0.0);
   AuctionState state (auction_state());
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
   { double bid = (*it)->place_bid(state);               // pass information to experts
@@ -126,15 +128,42 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
 
 template<class ModelClass>
 double
-Auction<ModelClass>::pay_highest_bidder (Expert winningExpert, double bid, double pValue)
+Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
 {
-  if (pValue > 1.0)
+  if (winningExpert->role() == calibrate)    // do nothing to calibrator bid ???  Is that right? overfit calibration?
+    return bid;
+  else
+  { double tax (mBidTaxRate * bid);
+    int  parasiteCount (0);
+    for (ExpertVector::iterator i=mExperts.begin(); i!=mExperts.end(); ++i) // count parasitic bidders
+      if( (*i)->role() == parasite)
+	++parasiteCount;
+    debug("AUCT",4) << "Distributing bid tax $" << tax << " among " << parasiteCount << " parasites.\n";
+    if (parasiteCount == 0)
+      return bid;
+    else
+    { for (ExpertVector::iterator i=mExperts.begin(); i!=mExperts.end(); ++i) // distribute tax among parasitic bidders
+	if( (*i)->role() == parasite)
+	  (*i)->increment_alpha(tax/parasiteCount);
+      return bid-tax;
+    }
+  }
+}
+
+template<class ModelClass>
+double
+Auction<ModelClass>::pay_highest_bidder (FeatureVector features, Expert winningExpert, double bid,
+					 bool accepted, bool singular)
+{
+  if (singular)
   { winningExpert->payoff(0.0);                       // singularity in predictors
     mPayoffHistory.push_back(0.0);
     return 0.0;
   }
-  if (pValue < bid)                                    // add variable to model
-  { winningExpert->payoff(mPayoff);
+  if (accepted)                                       // add variable to model
+  {
+    double tax = mPayoffTaxRate * mPayoff;
+    double winningExpert->payoff(mPayoff-tax);        // RAS now need to build some sort of expert for interations
     mPayoffHistory.push_back(mPayoff);
     return mPayoff;
   }

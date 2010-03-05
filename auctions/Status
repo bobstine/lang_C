@@ -1,4 +1,11 @@
-Next... Get tax revenue into experts.
+Next... 
+
+	- Get tax revenue into experts. 
+
+	- Spawn new experts, such as those for interactions with variables
+	  that get entered into the auction (rather than one for all of them).
+	  This will mean adding a new type of expert 'cross-product' that has
+	  one variable in one col and a stream in the other.
 
 Need to 
 
@@ -38,7 +45,6 @@ Need to
         EG: add a units, "domain" to the variables to suggest heuristic groups to
         attempt to use in PC analysis (ie, dont combine unless common domain).
 
-
      Experts
 
         Improve the auction history information (bid history, auction payoff history) by
@@ -74,6 +80,12 @@ Need to
 	version of the calibration adjustment? (For example, there's still the xb_feature
 	function that builds a feature of the predicted values.)
 
+     
+     Printing, miscellaneous
+
+        Fix printing on model summary for the intercept business, push more of the 'messy'
+	things down into the stat_utils object rather than leaving in the gsl_regr object.
+	Need a SE for the intercept at some point anyway?
 
      Numerics
 
@@ -89,6 +101,10 @@ Need to
  
       Experts now have a role attribute and are more lightweight, with an
       envelope implementation like that of features.
+
+      Parasitic experts that bid on rejected features now paid from bids,
+      those that bid on used features created and paid from winnings on 
+      initial bids.
     
 
 ------------------------------------------------------------------------------
