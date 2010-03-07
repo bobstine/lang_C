@@ -51,7 +51,7 @@ private:
     }
     
   Auction (Model& m, bool calibrate, std::ostream& logStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.05),
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25),
       mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(),
       mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 
   
@@ -83,7 +83,7 @@ private:
  private:
   std::pair<Expert,double> collect_bids(std::ostream&);
   double                   tax_bid(Expert e, double bid);
-  double                   pay_highest_bidder (Expert, double bid, bool accepted, bool singular);
+  double                   pay_highest_bidder (FeatureVector const& fv, Expert e, double bid, bool accepted, bool singular);
   FeatureABC *             xb_feature(std::vector<double> const& b)  const;
   FeatureABC *             calibration_feature()                     const;
   void                     print_features(FeatureVector const& fv)   const;

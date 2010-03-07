@@ -63,7 +63,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   // report bid result
   bool singular (result.second > 1);                                  // result.second is p-value
   bool accepted (result.second < afterTaxBid);
-  double payoff = pay_highest_bidder(features, expert, bid, accepted, singular);
+  double payoff = pay_highest_bidder(features, expert, bid, accepted, singular);  // installs experts as needed
   if (os)
     if (accepted)
     { std::pair<double,double> rss (mModel.sums_of_squares());
@@ -152,7 +152,7 @@ Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
 
 template<class ModelClass>
 double
-Auction<ModelClass>::pay_highest_bidder (FeatureVector features, Expert winningExpert, double bid,
+Auction<ModelClass>::pay_highest_bidder (FeatureVector const& features, Expert winningExpert, double bid,
 					 bool accepted, bool singular)
 {
   if (singular)
@@ -161,10 +161,14 @@ Auction<ModelClass>::pay_highest_bidder (FeatureVector features, Expert winningE
     return 0.0;
   }
   if (accepted)                                       // add variable to model
-  {
-    double tax = mPayoffTaxRate * mPayoff;
-    double winningExpert->payoff(mPayoff-tax);        // RAS now need to build some sort of expert for interations
+  { double tax = mPayoffTaxRate * mPayoff;
+    winningExpert->payoff(mPayoff-tax);        
     mPayoffHistory.push_back(mPayoff);
+    for(int i=0; i<(int)features.size(); ++i)         // add expert for interaction with other added features
+      add_expert(Expert(source, tax/features.size(),
+			UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
+			make_feature_product_stream(features[i], accepted_features())
+			));
     return mPayoff;
   }
   else

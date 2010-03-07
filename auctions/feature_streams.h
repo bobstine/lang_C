@@ -38,16 +38,17 @@
 	
  Streams should be *lightweight*.  They will be copied heavily in the
  auction.  Basically act as a stack/queue, a type of iterator really.
- The stream itself does not hold data.
+ The stream itself does *not* hold data.
 
  Flavors
 
-    Finite        chooses variables from a fixed set of columns
-    Fit           builds features depending on state of model (such as just added var)
-    Interaction   interactions from a fixed set
-    Cross-product interactions between dynamic and fixed set
-    Polynomial    bundle of several powers at once
-    Subspace      several variables as a bundle
+    Finite           chooses variables from a fixed set of columns
+    Fit              builds features depending on state of model (such as just added var)
+    Interaction      interactions among features from a source of fixed size
+    Feature-product  interactions between a feature and a set of increasing size (dynamic)
+    Cross-product    interactions between fixed set of features and a set of increasing size
+    Polynomial       bundle of several powers at once
+    Subspace         several variables as a bundle
 
 */
 
@@ -70,7 +71,7 @@
 
 /*
   A regulated stream injects the method 'has_feature' into a stream object.  That stream
-  object must implement the three functions 'is_empty, current_feature_is_ok and
+  object must implement the three functions empty, current_feature_is_ok and
   increment_position.  The stream will then have the chance to bid in the auction and
   submit a feature to the model.
 
@@ -88,7 +89,7 @@ public:
   
   bool has_feature (std::vector<Feature> const& used, std::vector<Feature> const& skipped)
   {
-    while(!Stream::is_empty())                            // is_empty signals to leave stream alone
+    while(!Stream::empty())                            // empty signals to leave stream alone
     { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
 	return true;
       else
@@ -124,7 +125,7 @@ public:
   int                     number_remaining()                  const { int m = mSource.size(); return m - mPosition + mCyclesLeft*m; }
   
 protected:
-  bool  is_empty()                                                                                       const;
+  bool  empty()                                                                                       const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   void  increment_position();
 };
@@ -160,7 +161,7 @@ public:
   std::vector<Feature>    pop();
 
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
-  bool  is_empty();
+  bool  empty();
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
   void  increment_position()                                                                   const { };
 };
@@ -172,7 +173,6 @@ make_fit_stream (Model const& m, std::string signature)
 {
   return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature));
 }
-
 
 
 //  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  
@@ -202,7 +202,7 @@ public:
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  is_empty                    ()                                                                       const;
+  bool  empty                    ()                                                                       const;
   bool  current_feature_is_okay    (std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   bool  indicators_from_same_parent(Feature const& f1, Feature const& f2)                                    const;
   void  increment_position();
@@ -217,6 +217,47 @@ RegulatedStream< InteractionStream<Source> >
 make_interaction_stream (std::string const& name, Source const& s, bool useSquares)
 {
   return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, s, useSquares));
+}
+
+
+
+//  FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    
+
+template<class DynSource>
+class FeatureProductStream 
+{
+  std::string       mName;
+  std::string       mCurrentFeatureName;
+  Feature           mFeature;
+  DynSource const&  mDynSource;
+  int               mDynPos;
+  
+public:
+    
+  FeatureProductStream(Feature f, DynSource const& dynSrc)
+    : mName(""), mCurrentFeatureName(""), mFeature(f), mDynSource(dynSrc), mDynPos(0)  { mName = f->name() + " x DynSrc";
+                                                                                         build_current_feature_name(); }
+  
+  std::string             name()                              const { return mName; }  
+  std::string             feature_name()                      const { return mCurrentFeatureName; }
+  std::vector<Feature>    pop();
+  int                     number_remaining()                  const { return mDynSource.size() - mDynPos; }
+  void                    print_to(std::ostream& os)          const { os << "FPFS: " << name() << " @ " << mDynPos << " "; }
+  
+protected:
+  bool  empty() const;
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
+  void  increment_position();
+private:
+  void  build_current_feature_name();
+};
+
+
+template <class DynSource>
+RegulatedStream< FeatureProductStream<DynSource> >
+make_feature_product_stream (Feature f, DynSource const& dynSrc)
+{
+  return RegulatedStream< FeatureProductStream<DynSource> >(FeatureProductStream<DynSource>(f, dynSrc));
 }
 
 
@@ -245,7 +286,7 @@ public:
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 protected:
-  bool  is_empty() const;
+  bool  empty() const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
 private:

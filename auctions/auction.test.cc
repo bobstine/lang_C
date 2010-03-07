@@ -226,12 +226,14 @@ main(int argc, char** argv)
       ++stream;
     }
   }
-			
-  theAuction.add_expert(Expert(source, 0,
+
+  
+  /*  old version: one expert for all interactions; new code adds when variable is added (see auction.Template.h
+    theAuction.add_expert(Expert(source, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.accepted_features())
 			       ));
-  
+  */
   // calibration expert
   std::string signature("Y_hat_");
   theAuction.add_expert(Expert(calibrate, 100,

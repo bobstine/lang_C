@@ -1,11 +1,9 @@
 Next... 
 
-	- Get tax revenue into experts. 
+	Implementation in the context of longitudinal data.
+	Add exper to build the 'spatial interaction' variables.
 
-	- Spawn new experts, such as those for interactions with variables
-	  that get entered into the auction (rather than one for all of them).
-	  This will mean adding a new type of expert 'cross-product' that has
-	  one variable in one col and a stream in the other.
+	Get in the robust standard errors.
 
 Need to 
 
@@ -105,6 +103,11 @@ Need to
       Parasitic experts that bid on rejected features now paid from bids,
       those that bid on used features created and paid from winnings on 
       initial bids.
+      
+      Introduce FeatureProductStreams to build interactions between features
+      added to the model and other features in the model.  These are added
+      to the collection of experts 'on the fly' as variables are added to the
+      model.
     
 
 ------------------------------------------------------------------------------

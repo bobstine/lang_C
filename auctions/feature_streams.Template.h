@@ -1,5 +1,3 @@
-// $Id: feature_streams.Template.h,v 1.14 2008/02/22 19:39:47 bob Exp $
-
 #include "debug.h"
 
 #include "adapter.h"
@@ -27,7 +25,7 @@ namespace {
 
 template<class Source>
 bool
-FiniteStream<Source>::is_empty() const
+FiniteStream<Source>::empty() const
 {
   // std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left.\n";
   return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
@@ -78,7 +76,7 @@ FiniteStream<Source>::pop()
 
 template<class Model>
 bool
-FitStream<Model>::is_empty()
+FitStream<Model>::empty()
 {
   if (mLastQ == mModel.q())
     return true;
@@ -136,7 +134,7 @@ template<class Source>
 void
 InteractionStream<Source>::build_current_feature_name()
 {
-  if (is_empty())
+  if (empty())
     mCurrentFeatureName = "";
   else
     mCurrentFeatureName = Feature(mSource[mPos1], mSource[mPos2])->name();
@@ -144,7 +142,7 @@ InteractionStream<Source>::build_current_feature_name()
 
 template<class Source>
 bool
-InteractionStream<Source>::is_empty() const
+InteractionStream<Source>::empty() const
 {
   return (mPos2 >= (int) mSource.size());
 }
@@ -215,11 +213,70 @@ InteractionStream<Source>::pop()
 
 
 
-///  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream
+
+///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
+
+template<class DynSource>
+bool
+FeatureProductStream<DynSource>::empty() const
+{
+  return (mDynSource.empty() || (int)mDynSource.size()==mDynPos);
+}
+
+template<class DynSource>
+void
+FeatureProductStream<DynSource>::build_current_feature_name()
+{
+  if (empty())
+    mCurrentFeatureName = "";
+  else
+    mCurrentFeatureName = Feature(mFeature, mDynSource[mDynPos])->name();  // Feature(a,b) builds interaction
+}
+
+
+template<class DynSource>
+void
+FeatureProductStream<DynSource>::increment_position()
+{
+  if (mDynPos < (int)(mDynSource.size()-1))
+    ++ mDynPos;
+  build_current_feature_name();
+}
+
+
+template<class DynSource>
+bool
+FeatureProductStream<DynSource>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
+{
+  if (mDynSource[mDynPos]->is_constant())
+    return false;
+  if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
+    build_current_feature_name();
+  if (found_feature_name_in_vector(mCurrentFeatureName, used, "used"))  // skip if has been used already
+    return false;
+  return true;
+}
+
+
+template<class DynSource>
+typename std::vector<Feature>
+FeatureProductStream<DynSource>::pop()
+{
+  debugging::debug("FPST",0) << name() << " stream making product of "<< mFeature->name() << " x dyn[" << mDynPos << "].\n";
+  Feature  xd (mDynSource[mDynPos]);  // pop must increment counter *after* reading off top
+  increment_position();
+  std::vector<Feature> result;
+  result.push_back(Feature(mFeature,xd));
+  return(result);
+}
+
+
+
+//  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream
 
 template<class Source1, class Source2>
 bool
-CrossProductStream<Source1, Source2>::is_empty() const
+CrossProductStream<Source1, Source2>::empty() const
 {
   return ((int)mFixedSource.size() <= mFixedPos) || (mDynSource.size() == 0);
 }
@@ -228,7 +285,7 @@ template<class Source1, class Source2>
 void
 CrossProductStream<Source1, Source2>::build_current_feature_name()
 {
-  if (is_empty())
+  if (empty())
     mCurrentFeatureName = "";
   else
     mCurrentFeatureName = Feature(mFixedSource[mFixedPos], mDynSource[mDynPos])->name();
