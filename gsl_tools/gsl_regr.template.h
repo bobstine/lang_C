@@ -706,8 +706,12 @@ gslRegression<Data,Engine>::restore_state(gslRegressionState const& state)
   gsl_vector_memcpy (&view.vector, state.res());
   view = gsl_vector_subvector(mpData->live_w(),0,mN);
   gsl_vector_memcpy (&view.vector, state.wts());
-  view = gsl_vector_subvector(mBeta,0,mQ);
-  gsl_vector_memcpy (&view.vector, state.beta());
+  if (mQ > 0)
+  { view = gsl_vector_subvector(mBeta,0,mQ);
+    gsl_vector_memcpy (&view.vector, state.beta());
+    view = gsl_vector_subvector(mXBar,0,mQ);
+    gsl_vector_memcpy (&view.vector, state.xBar());
+  }
   mXtXinvIsCurrent = false;
 }
 

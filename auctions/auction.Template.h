@@ -61,24 +61,27 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
   // report bid result
-  bool singular (result.second > 1);                                  // result.second is p-value
+  double amount;
   bool accepted (result.second < afterTaxBid);
-  double payoff = pay_highest_bidder(features, expert, bid, accepted, singular);  // installs experts as needed
+  if (accepted)
+    amount = pay_winning_expert(expert, features);                          // installs experts as needed
+  else
+    amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
   if (os)
     if (accepted)
     { std::pair<double,double> rss (mModel.sums_of_squares());
-      os << "," << features[0]->name() << "," << payoff << "," << rss.first << "," << rss.second;
+      os << "," << features[0]->name() << "," << amount << "," << rss.first << "," << rss.second;
     }
     else
-      os <<               ", ,"               << payoff <<           ", , ";
+      os <<               ", ,"               << amount <<           ", , ";
   for (unsigned int j=0; j<features.size(); ++j)
-  { features[j]->set_model_results(accepted, result.second);    // save attributes in feature for printing
+  { features[j]->set_model_results(accepted, result.second);           // save attributes in feature for printing
     if (accepted) 
     { mLogStream << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
     else      
-      mSkippedFeatures.push_back(features[j]);
+      mRejectedFeatures.push_back(features[j]);
   }
   return accepted;
 }
@@ -152,31 +155,47 @@ Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
 
 template<class ModelClass>
 double
-Auction<ModelClass>::pay_highest_bidder (FeatureVector const& features, Expert winningExpert, double bid,
-					 bool accepted, bool singular)
+Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& features)
 {
-  if (singular)
-  { winningExpert->payoff(0.0);                       // singularity in predictors
-    mPayoffHistory.push_back(0.0);
-    return 0.0;
-  }
-  if (accepted)                                       // add variable to model
-  { double tax = mPayoffTaxRate * mPayoff;
-    winningExpert->payoff(mPayoff-tax);        
-    mPayoffHistory.push_back(mPayoff);
-    for(int i=0; i<(int)features.size(); ++i)         // add expert for interaction with other added features
-      add_expert(Expert(source, tax/features.size(),
+  double tax = mPayoffTaxRate * mPayoff;
+  expert->payoff(mPayoff-tax);        
+  if (expert->role() != calibrate)
+  { 
+    for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f) // add expert for interaction with other added features
+    { double taxForEach = tax/features.size();
+      if ((*f)->has_attribute("interacts"))
+      {	FeatureVector fv = features_with_attribute((*f)->attribute_str_value("interact"));
+	if (fv.size() == 0)
+	  debug("AUCT",4) << "Warning: no features with attribute " << (*f)->attribute_str_value("interact") << std::endl;
+	else
+	{ taxForEach /= 2;
+	  add_expert(Expert(custom, taxForEach,
+			    UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
+			    make_feature_product_stream(*f, fv)  ));
+	}
+      }
+      add_expert(Expert(parasite, taxForEach,
 			UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-			make_feature_product_stream(features[i], accepted_features())
-			));
-    return mPayoff;
+			make_feature_product_stream(*f, model_features())  ));
+    }
   }
+  mPayoffHistory.push_back(mPayoff);
+  return mPayoff;
+}
+
+
+template<class ModelClass>
+double
+Auction<ModelClass>::collect_from_losing_expert (Expert expert, double bid, bool singular)
+{
+  double cost (0.0);
+  if (singular)                  // pays for tax on bid if singular
+    cost = - bid * mBidTaxRate;
   else
-  { double cost = -bid/(1.0-bid);
-    winningExpert->payoff(cost);
-    mPayoffHistory.push_back(cost);
-    return cost;
-  }
+    cost = - bid/(1-bid);
+  expert->payoff(cost);
+  mPayoffHistory.push_back(cost);
+  return cost;
 }
   
 
@@ -191,6 +210,18 @@ Auction<ModelClass>::total_expert_alpha () const
   return total;
 }
 
+template <class ModelClass>
+std::vector< Feature >
+Auction<ModelClass>::features_with_attribute (std::string attr) const
+{
+  std::vector< Feature > fv;
+
+  for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
+    if ( (*f)->has_attribute(attr) )
+      fv.push_back(*f);
+  return fv;
+}
+ 
 
 // Output
 

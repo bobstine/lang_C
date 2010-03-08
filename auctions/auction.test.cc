@@ -107,7 +107,7 @@ main(int argc, char** argv)
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         protection           (3);
-  int         numberRounds         (300); 
+  int         numberRounds         (200); 
   int         splineDF             (0);
   
   // parse arguments from command line  (pass in at main, open file for printing messages)
@@ -168,21 +168,13 @@ main(int argc, char** argv)
     
   // initialize data object held in underlying model [y and optional selector]
   gslData *theData (build_model_data(yColumns));
-  
-  // --- build model and initialize auction with stream for log
-#ifdef LINEAR_MODEL
-  LinearModel <gslData, olsEngine> theRegr(theData, protection);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, splineDF, debug(0));
-#else
-  // --- build logisitic model and auction
-  LogisticModel <gslData> theRegr(theData, protection);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, splineDF, debug(0));
-#endif
 
   // convert columns into features, organized as a map[stream] = feature vector
   std::map< std::string, FeatureVector > featureVectorMap;
+  std::vector< Feature > sourceFeatures;
   { for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     { Feature f(*it);
+      sourceFeatures.push_back(f);
       std::string stream (f->attribute_str_value("stream"));
       if (stream.size() == 0) stream = "main";
       featureVectorMap[stream].push_back(f);
@@ -191,6 +183,17 @@ main(int argc, char** argv)
     for (std::map<std::string,FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
       debug(1) << "       " << it->first << " with " << it->second.size() << " features\n";
   }
+    
+  // --- build model and initialize auction with stream for log
+#ifdef LINEAR_MODEL
+  LinearModel <gslData, olsEngine> theRegr(theData, protection);
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
+#else
+  // --- build logisitic model and auction
+  LogisticModel <gslData> theRegr(theData, protection);
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
+#endif
+
 
   // build vector of experts that work directly from input variables
   debug("AUCT",0) << "Assembling experts"  << std::endl;
@@ -510,4 +513,4 @@ initialize_sums_of_squares( std::vector<Column> y)
   }
   return std::make_pair( std::make_pair(n1, inSS), std::make_pair(n0, outSS) );
 }
-
+  

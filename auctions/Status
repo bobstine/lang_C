@@ -1,13 +1,15 @@
 Next... 
 
-	Implementation in the context of longitudinal data.
-	Add exper to build the 'spatial interaction' variables.
+	Add expert to build the 'spatial interaction' variables.
 
-	Get in the robust standard errors.
+	Get in the robust standard errors (the jackknife type).
 
 Need to 
 
      Deans requests
+
+        Need to fix the format of the output CSV file since the number of experts
+	changes as the auction runs.
 
 
      Memory (leaks, problems)
@@ -92,6 +94,26 @@ Need to
 	Need better, cleaner way to access the data held by the data object, such as
 	return vector views of the "n" items in use for estimation rather than the 
 	"length" items held in both training and test data.
+
+
+------------------------------------------------------------------------------
+ 7 Mar 10
+ 
+	When a variable gets added to the model, where do you put the knowledge
+	of what new streams (and experts) ought to join the auction?
+  	  Seems that a feature would 'know' the most about what to add next (eg, a
+	variable would know it is spatial, and so suggest adding spatial
+	interactions).  But features don't know about streams.  Nor is it easy
+	to see how to import the information about features at the time that the
+	file is read.
+
+	Approach is to interpret an attribute 'interact' of a feature as giving
+	the attribute of other variables to combine it with.  This is done by
+	having the auction have a list of all source features that can be scanned
+	to identify 'raw' features with the indicated attribute.
+
+	Clean up NaN problem that was happening in logistic regression when a 
+	case would be assigned weight 0.
 
 
 ------------------------------------------------------------------------------

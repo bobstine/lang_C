@@ -1,6 +1,4 @@
 // -*- c++ -*-
-// $Id: feature_streams.h,v 1.18 2008/02/22 19:39:47 bob Exp $
-
 #ifndef _FEATURE_STREAMS_H_
 #define _FEATURE_STREAMS_H_
 
@@ -26,7 +24,7 @@
 
  This response is handled by the RegulatedStream that sits over the underlying stream.
  The bidder at higher level may ask for the number remaining (number_remaining).  If the
- stream has a feature, then a winning bidder will call
+ stream has a feature, then a winning expert will call
  
         pop()
  
@@ -89,7 +87,7 @@ public:
   
   bool has_feature (std::vector<Feature> const& used, std::vector<Feature> const& skipped)
   {
-    while(!Stream::empty())                            // empty signals to leave stream alone
+    while(!Stream::empty())                               // empty signals to leave stream alone
     { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
 	return true;
       else

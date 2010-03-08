@@ -61,7 +61,6 @@ class FeatureABC
   bool                operator== (FeatureABC const* f)          const { return name() == f->name(); }
 
   int                 size()                                    const { return mSize; }
-
   Attributes          attributes()                              const { return mAttributes; }
   bool                has_attribute(std::string attr)           const;
   void                add_attribute(std::string name, std::string value);
@@ -135,7 +134,6 @@ operator<<(std::ostream& os, std::vector<FeatureABC*> const& fv)
   std::copy(fv.begin(), fv.end(), std::ostream_iterator<FeatureABC*>(os, "\n      "));
   return os;
 }
-
 
 
 #endif

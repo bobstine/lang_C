@@ -1,5 +1,4 @@
 // -*- c++ -*-
-// $Id: gsl_regr.h,v 1.48 2008/01/16 03:28:08 bob Exp $
 
 #ifndef _GSL_REGR_H_
 #define _GSL_REGR_H_
@@ -74,12 +73,13 @@ private:
   int mN;
   double mYBar, mRSS;
   gsl_vector* mY;
+  gsl_vector* mXBar;
   gsl_vector* mRes;
   gsl_vector* mWts;
   gsl_vector* mBeta;
 public:
-   gslRegressionState (int q, double yBar, gsl_vector const* beta, double rss, gslData const* data) 
-    :  mQ(q), mN(data->n()), mYBar(yBar), mRSS(rss) { initialize(beta,data); }
+  gslRegressionState (int q, double yBar, gsl_vector const* xbar, gsl_vector const* beta, double rss, gslData const* data) 
+    :  mQ(q), mN(data->n()), mYBar(yBar), mRSS(rss) { initialize(xbar, beta, data); }
   ~gslRegressionState () { free(); }
   
   int                  q()  const { return mQ; }
@@ -88,12 +88,13 @@ public:
   double            yBar()  const { return mYBar; }
   double             rss()  const { return mRSS; }
   gsl_vector const*    y()  const { return mY; }
+  gsl_vector const* xBar()  const { return mXBar; }
   gsl_vector const*  res()  const { return mRes; }
   gsl_vector const*  wts()  const { return mWts; }
   gsl_vector const* beta()  const { return mBeta; }
   
 private:
-  void initialize(gsl_vector const* beta, gslData const* data);
+  void initialize(gsl_vector const* xBar, gsl_vector const* beta, gslData const* data);
   void free();
   gsl_vector* copy_vector (gsl_vector const* v, int n);
   gslRegressionState& operator=(const gslRegressionState& state);
@@ -180,7 +181,7 @@ public:
   int add_current_predictors ();                                                    // return size of expanded model
   
   //  save and restore state
-  gslRegressionState state() const { return gslRegressionState(mQ, mYBar, mBeta, mRSS, mpData); }
+  gslRegressionState state()                                const { return gslRegressionState(mQ, mYBar, mXBar, mBeta, mRSS, mpData); }
   void       restore_state(gslRegressionState const& state);
   
   //  printing and output

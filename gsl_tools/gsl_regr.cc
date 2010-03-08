@@ -58,12 +58,13 @@ gsl_linalg_partial_QR_decomp (gsl_matrix * A, gsl_vector * tau, size_t start)
 //////////////////  GSL Regression State
 
 void
-gslRegressionState::initialize(gsl_vector const* beta, gslData const* data)
+gslRegressionState::initialize(gsl_vector const* xBar, gsl_vector const* beta, gslData const* data)
 {
   mY    = copy_vector(data->y(),mN);
   mRes  = copy_vector(data->e(),mN);
   mWts  = copy_vector(data->w(),mN);
-  mBeta = (mQ == 0) ? 0 : copy_vector(beta,     mQ);
+  mXBar = (mQ == 0) ? 0 : copy_vector(xBar, mQ);
+  mBeta = (mQ == 0) ? 0 : copy_vector(beta, mQ);
 }
 
 gsl_vector* 
@@ -79,12 +80,10 @@ void
 gslRegressionState::free()
 {
   debug("GSLR",0) << "Freeing state object.\n";
-  if (mY) gsl_vector_free (mY);
-  if (mRes) gsl_vector_free (mRes);
-  if (mWts) gsl_vector_free (mWts);
+  if (mXBar) gsl_vector_free (mXBar);
+  if (mY)    gsl_vector_free (mY);
+  if (mRes)  gsl_vector_free (mRes);
+  if (mWts)  gsl_vector_free (mWts);
   if (mBeta) gsl_vector_free (mBeta);
 };
-
-
-
 

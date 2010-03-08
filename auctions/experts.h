@@ -41,7 +41,7 @@ then it pops the feature off of the stream.
 
 // need ABC since have a collection of experts due to templating
 
-enum    ExpertRole       { source, parasite, calibrate };
+enum    ExpertRole       { source, parasite, calibrate, custom }; 
 
 class Expert;
 
@@ -122,8 +122,7 @@ public:
   FeatureVector    feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
  protected:
-  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
-};
+  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }};
 
 
 
@@ -158,10 +157,6 @@ class Expert
   
   // empty
     Expert() : mpExpert(NULL) {  }
-  
-  // feature-specific expert
-  template <class Bidder>
-    Expert(Bidder const& b, Feature const& f);
   
   // stream expert
   template <class Bidder, class Stream>

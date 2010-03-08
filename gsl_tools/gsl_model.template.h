@@ -240,7 +240,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   GSLR::add_current_predictors();
   result = maximize_log_likelihood(1); 
   if (result.second > pToEnter)  
-  { std::cout << debug("LOGM",3) << "Predictor fails to maximize likelihood;  p-value " << result.second << std::endl;
+  { debug("LOGM",3) << "Predictor fails to maximize likelihood;  p-value " << result.second << std::endl;
     GSLR::restore_state(state);
   } 
   else debug("LOGM",3) << "Predictor improves likelihood; added to model\n";
@@ -305,34 +305,40 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
   gsl_vector  *  ys  (data()->temp_vec(2));     
   std::cout << "LOGM: Maximizing likelihood, starting from " << mLL1 << std::endl;
   // iterate until no change in log like or until reach max_iterations
-  double saveLL (mLL1);
-  int iter (0);
-  while(iter++ < max_iterations) {
-    double log_like_0 (mLL1); 
-    std::transform(xb, xb+n(), prob, Function_Utils::LogisticNeg());  // 1/(1+e(-x))
+  int    iter    (0);
+  double saveLL  (mLL1);
+  double logLike (mLL1);
+  while(iter++ < max_iterations)
+  { std::transform(xb, xb+n(), prob, Function_Utils::LogisticNeg());  // 1/(1+e(-x))
     for (int i=0; i<n(); ++i) {
       double pi (prob[i]);
       double wi (pi*(1.0-pi));
+      if (wi <= 0.0 || wi >= 1.0) debug("GSLM",0) << "Error. Weights awry at case " << i << " with w[i]=" << wi << std::endl;
       gsl_vector_set(wts,i, wi );
       gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  // pseudo-y response
     }
     GSLR::reweight(wts, ys);        // calls QR factorization, pseudo-y residuals
-    mLL1 = calc_log_likelihood();   
-    std::cout << "LOGM: At step " << iter << "   Log-likelihood = " << mLL1 << ", beta = ";
-    for(int j=0; j<GSLR::mQ; ++j) std::cout << gsl_vector_get(GSLR::mBeta,j) << " ";  
-    std::cout << std::endl;
-    if (mLL1 < log_like_0) 
-      std::cout << "LOGM: *** Warning ***  Step did not improve log likelihood; continuing.\n";
-    else if ((mLL1 - log_like_0) < 0.01) break; 
+    logLike = calc_log_likelihood();   
+    if (logLike != logLike) {
+      debug("GSLM",0) << "Error.  Likelihood = NaN\n";
+      return std::make_pair(0.0,1.0);
+    }
+    else if (logLike <= mLL1)
+    { std::cout << "LOGM: *** Warning ***  Step did not improve log likelihood; exiting.\n";
+      break;
+    }
+    else
+    { mLL1 = logLike;
+      std::cout << "LOGM: At step " << iter << "   Log-likelihood = " << logLike << ", beta = ";
+      for(int j=0; j<GSLR::mQ; ++j) std::cout << gsl_vector_get(GSLR::mBeta,j) << " ";  
+      std::cout << std::endl;
+    }
   }
-  if (mLL1 <= saveLL) 
-    std::cout << "LOGM: **** Error ****  IRLS did not improve log likelihood.\n";
-  else // only update if likelihood has improved
-    GSLR::update_XtXinv();
+  GSLR::update_XtXinv();
   if (iter == max_iterations) 
     std::cout << "LOGM: **** Error ****  Did not converge in " << max_iterations << " steps.\n";
   double dLL (mLL1 - saveLL);
-  return std::make_pair(dLL, gsl_cdf_chisq_Q(2.0*dLL, df));    // return change in log-like, chi-squre probability
+  return std::make_pair(dLL, gsl_cdf_chisq_Q(2.0*dLL, df));    // return change in log-like, chi-square probability
 }
 
 

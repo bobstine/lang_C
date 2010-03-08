@@ -99,12 +99,14 @@ wlsEngine::configure(gslData *data)
 void         
 wlsEngine::weights_have_changed ()
 {
-  for (int i=0; i<mN; ++i) {
-    double wi (gsl_vector_get(mWeights,i));
-    if (0.0 == wi) 
-      std::cout << "WLSE:   Warning. Case " << i << " assigned weight 0. Ought to exclude.\n";
-    else
-      gsl_vector_set(mSqrtW,i,sqrt(wi));  }
+  for (int i=0; i<mN; ++i)
+  { double wi (gsl_vector_get(mWeights,i));
+    if (wi <= 0.0)
+    { std::cout << "WLSE:   Warning. Case " << i << " assigned weight 0. Ought to exclude.\n";
+      wi = 0.000000001; 
+    }
+    gsl_vector_set(mSqrtW,i,sqrt(wi));
+  }
 }
 
 
@@ -114,10 +116,11 @@ wlsEngine::average (gsl_vector const* v) const
 {
   double num  (0.0);
   double den  (0.0);
-  for (int i=0; i<mN; ++i) {
-    double w (gsl_vector_get(mWeights,i));
+  for (int i=0; i<mN; ++i)
+  { double w (gsl_vector_get(mWeights,i));
     num += gsl_vector_get(v,i) * w;
-    den += w;   }
+    den += w;
+  }
   return (num/den);  
 }
 

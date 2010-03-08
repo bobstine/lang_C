@@ -40,7 +40,8 @@ private:
   ExpertVector        mExperts;
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
-  FeatureVector       mSkippedFeatures;   // tried and not used
+  FeatureVector       mRejectedFeatures;  // tried and not used
+  FeatureVector       mSourceFeatures; 
   std::ostream&       mLogStream;         // send log messages
 
   
@@ -50,10 +51,10 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, bool calibrate, std::ostream& logStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25),
-      mHasActiveExpert(true), mCalibrateFit(calibrate), mRound(0), mPayoffHistory(),
-      mExperts(), mModel(m), mModelFeatures(), mSkippedFeatures(), mLogStream(logStream) {  } 
+  Auction (Model& m, FeatureVector const& sourceFeatures, bool calibrate, std::ostream& logStream)
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mHasActiveExpert(true),
+      mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
+      mModelFeatures(), mRejectedFeatures(), mSourceFeatures(sourceFeatures), mLogStream(logStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
 
@@ -63,10 +64,10 @@ private:
   bool                   has_active_expert()        const { return mHasActiveExpert; }  
 									 
   int                    number_of_predictors()     const { return mModel.q(); }
-  int                    number_of_features_tried() const { return mModelFeatures.size() + mSkippedFeatures.size(); }
-  FeatureVector const&   accepted_features()        const { return mModelFeatures; }
-  FeatureVector const&   rejected_features()        const { return mSkippedFeatures; }
-  AuctionState           auction_state()            const { return AuctionState(mPayoffHistory, mModelFeatures, mSkippedFeatures); }
+  int                    number_of_features_tried() const { return mModelFeatures.size() + mRejectedFeatures.size(); }
+  FeatureVector const&   model_features()           const { return mModelFeatures; }
+  FeatureVector const&   rejected_features()        const { return mRejectedFeatures; }
+  AuctionState           auction_state()            const { return AuctionState(mPayoffHistory, mModelFeatures, mRejectedFeatures); }
   Model const&           model()                    const { return mModel; }
 
   bool                   auction_next_feature (std::ostream&);          // write to output csv file if not null
@@ -83,10 +84,12 @@ private:
  private:
   std::pair<Expert,double> collect_bids(std::ostream&);
   double                   tax_bid(Expert e, double bid);
-  double                   pay_highest_bidder (FeatureVector const& fv, Expert e, double bid, bool accepted, bool singular);
-  FeatureABC *             xb_feature(std::vector<double> const& b)  const;
-  FeatureABC *             calibration_feature()                     const;
-  void                     print_features(FeatureVector const& fv)   const;
+  double                   pay_winning_expert (Expert e, FeatureVector const& fv);
+  double                   collect_from_losing_expert (Expert e, double bid, bool singular);
+  FeatureVector            features_with_attribute (std::string attr) const;
+  FeatureABC *             xb_feature(std::vector<double> const& b)   const;
+  FeatureABC *             calibration_feature()                      const;
+  void                     print_features(FeatureVector const& fv)    const;
 };
 
 

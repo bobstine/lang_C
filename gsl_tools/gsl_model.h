@@ -68,7 +68,7 @@ class LogisticModel : public gslRegression<Data,wlsEngine> {
   
 private:
   gsl_vector* mOriginalY;  // need to preserve for IRLS calculation
-  double      mLL0, mLL1;  // log likelihood
+  double      mLL0, mLL1;  // initial log likelihood, current log likelihood
   
 public:
   typedef gslRegression<Data,wlsEngine> GSLR;

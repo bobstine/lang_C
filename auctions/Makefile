@@ -39,8 +39,8 @@ include ../rules_for_makefiles
 
 auction_test: model/costs
 
-quick_test: auction.test
-	./auction.test -f test/bank_post45.dat -r 100 -c 5
+logistic_test: auction.test
+	./auction.test -f test/logistic_test.dat -r 10 -c 0 -a 2
 
 data/%.dat: data/%.csv
 	rm -rf $@

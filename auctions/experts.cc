@@ -17,6 +17,7 @@ ExpertABC::role_string () const
   case source   : { return "source"; }
   case parasite : { return "parasite"; }
   case calibrate: { return "calibrate"; }
+  case custom   : { return "custom"; }
   }
   return "not found";
 }
