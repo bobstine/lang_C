@@ -1,5 +1,14 @@
 Next... 
 
+	How did variables get in the credit_test run twice?  Without
+	causing a singularity???  REAU.3 shows up twice, and is not very
+	similar (view model results with JMP).  Problem occurs from the
+	FeatureProductStream when the dyn[1] or dyn[2] output (namely, the
+	length of the stream) is 1 or 2.
+
+	BUG is in the name when you interact a unary feature with a column feature.
+
+
 	Add expert to build the 'spatial interaction' variables.
 
 	Get in the robust standard errors (the jackknife type).
@@ -28,6 +37,9 @@ Need to
 
 	In parsing options, remove the [] option terms and use these to set attributes,
 	as in type = indicator; label = xxx
+
+	Build a tool to sample rows generated in modeling large files to make
+	the JMP import faster.
 
      Streams 
 

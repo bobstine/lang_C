@@ -176,7 +176,7 @@ InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& u
       )
     return false;
   std::string name (feature_name());
-  if (found_feature_name_in_vector(name, used, "used features") || found_feature_name_in_vector(name,skipped, "skipped features"))
+  if (found_feature_name_in_vector(name, used, "model features") || found_feature_name_in_vector(name,skipped, "skipped features"))
     return false;
   return true;
 }
@@ -252,7 +252,7 @@ FeatureProductStream<DynSource>::current_feature_is_okay(std::vector<Feature> co
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
-  if (found_feature_name_in_vector(mCurrentFeatureName, used, "used"))  // skip if has been used already
+  if (found_feature_name_in_vector(mCurrentFeatureName, used, "model features"))  // skip if has been used already
     return false;
   return true;
 }
@@ -262,8 +262,13 @@ template<class DynSource>
 typename std::vector<Feature>
 FeatureProductStream<DynSource>::pop()
 {
-  debugging::debug("FPST",0) << name() << " stream making product of "<< mFeature->name() << " x dyn[" << mDynPos << "].\n";
   Feature  xd (mDynSource[mDynPos]);  // pop must increment counter *after* reading off top
+  debugging::debug("FPST",0) << name() << " stream making product of "
+			     << mFeature->name() << " x dyn[" << mDynPos << "] (" << xd->name() << ").\n";
+
+  Feature test(mFeature,xd);
+  debugging::debug("FPST",1) << "testing " <<  test->name() << " with xd from " << xd->class_name() << std::endl;
+
   increment_position();
   std::vector<Feature> result;
   result.push_back(Feature(mFeature,xd));
@@ -317,7 +322,7 @@ CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Featur
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
-  if (found_feature_name_in_vector(mCurrentFeatureName, used, "used"))  // try those that have been skipped before again
+  if (found_feature_name_in_vector(mCurrentFeatureName, used, "model features"))  // try those that have been skipped before again
     return false;
   return true;
 }

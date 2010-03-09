@@ -163,10 +163,10 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   { 
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f) // add expert for interaction with other added features
     { double taxForEach = tax/features.size();
-      if ((*f)->has_attribute("interacts"))
-      {	FeatureVector fv = features_with_attribute((*f)->attribute_str_value("interact"));
+      if ((*f)->has_attribute("interact_with"))
+      { FeatureVector fv = features_with_attribute((*f)->attribute_str_value("interact_with"),"*");
 	if (fv.size() == 0)
-	  debug("AUCT",4) << "Warning: no features with attribute " << (*f)->attribute_str_value("interact") << std::endl;
+	  debug("AUCT",4) << "Warning: no features have attribute " << (*f)->attribute_str_value("interact_with") << std::endl;
 	else
 	{ taxForEach /= 2;
 	  add_expert(Expert(custom, taxForEach,
@@ -212,13 +212,18 @@ Auction<ModelClass>::total_expert_alpha () const
 
 template <class ModelClass>
 std::vector< Feature >
-Auction<ModelClass>::features_with_attribute (std::string attr) const
+Auction<ModelClass>::features_with_attribute (std::string attr, std::string value) const
 {
   std::vector< Feature > fv;
 
-  for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
-    if ( (*f)->has_attribute(attr) )
-      fv.push_back(*f);
+  if (value == "*")   // ignore value
+    for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
+      if ( (*f)->has_attribute(attr) )
+	fv.push_back(*f);
+  else
+    for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
+      if ( (*f)->has_attribute(attr) && ((*f)->attribute_str_value(attr)==value) )
+	fv.push_back(*f);
   return fv;
 }
  

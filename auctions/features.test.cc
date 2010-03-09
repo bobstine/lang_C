@@ -18,18 +18,25 @@ main ()
   
   // define the base data with name string and vector of numbers
   std::string name1("x1");
+  std::string name2("x2");
   double*     x1 = new double[n];
+  double*     x2 = new double[n];
   for (int i=0; i<n; ++i)
-    x1[i] = i;
-  std::cout << "TEST: X initialized with name " << name1 << std::endl;  
+  { x1[i] = i;
+    x2[i] = 2 * i;
+  }
+  std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
   // make two columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
-  std::cout << xColumn1 << std::endl;
+  Column  x2Column  (name2.c_str(), "x2 column",n, x2);
+  std::cout << xColumn1 << std::endl << x2Column << std::endl;
+  
    
   // make a feature from a column, add some attributes
   Feature x   (xColumn1);
+  Feature xx2 (x2Column);
   Feature dup (xColumn2);
   x->add_attribute ("test", "value of test");
   x->add_attribute ("test_int", "23423");
@@ -45,10 +52,13 @@ main ()
 
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
-  Feature x2 ((Function_Utils::Square) Function_Utils::Square(), x);
-  std::cout << "      " << x2 << std::endl;
-  x2->write_to(std::cout);
-  
+  Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);
+  std::cout << "      " << xSq << std::endl;
+  xSq->write_to(std::cout);  
+
+  // make an interaction with the unary feature
+  Feature x2xSq (xx2, xSq);
+  std::cout << "TEST: interaction of xx2 with square is " << x2xSq << std::endl;
 
   // make an interaction
   Feature inter (x, dup);
@@ -66,6 +76,10 @@ main ()
   Feature xxxx(xx, xx);
   std::cout << "TEST: center of xxxx interaction feature is " << xxxx->center() << std::endl;
   std::cout << "      " << xxxx << std::endl;
+
+  // an interaction with odd names
+  Feature another(xx2,x);
+  std::cout << "TEST: interaction with odd name is " << another << std::endl;
 
   
   // a linear combination of several

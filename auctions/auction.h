@@ -86,7 +86,7 @@ private:
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
-  FeatureVector            features_with_attribute (std::string attr) const;
+  FeatureVector            features_with_attribute (std::string attr, std::string value) const;
   FeatureABC *             xb_feature(std::vector<double> const& b)   const;
   FeatureABC *             calibration_feature()                      const;
   void                     print_features(FeatureVector const& fv)    const;

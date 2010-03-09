@@ -58,50 +58,89 @@
 
 \section{Experts} % --------------------------------------------------------------------------
 
- The auction uses two types of experts.  {\em Source experts} produce new
- features for consideration; in general, source experts build variables from the
- columns of an input data array.  {\em Parasitic experts} (or perhaps more
- politely called {\em derived experts}) construct features from those that have
- already made an appearance in the auction.  These might be, for instance,
- various spatial interactions of a feature that was initially rejected from the
- auction previously or interactions of features that were accepted as
- predictors.
+ The auction uses several types of experts.  (In the code, these are identified
+ by an enumerated type.)  Experts provide a way to search in a more 'depth
+ first' rather than 'breadth first' manner.  With experts, one does not have to
+ examine, for example, every linear effect before considering a second-order
+ effect.
+\begin{description}
+
+\item[Source experts] produce new features for consideration; in general, source
+ experts build variables from the columns of an input data array.  The features
+ from a source expert could be generated from an algorithm or some other
+ mechanism, but not from the progress of the auction itself.  Each problem
+ generally has several source experts (as identified by the 'stream' attribute
+ in the data file).  Splitting the data into several sources allows the auction
+ to discover collections of variables of more interest rather than having to
+ proceed through them all at once.  Source experts are assigned $\alpha$-wealth
+ at the time that the auction is initialized.
+
+\item[Parasitic experts] (or perhaps more politely called derived experts)
+ construct features from those that have already made an appearance in the
+ auction.  These might be, for instance, various spatial interactions of a
+ feature that was initially rejected from the auction previously.  Some versions
+ of the auction have used parasites that form interactions among variables in
+ the model; these are now handled elsewhere.  The idea is that parasites ought
+ to be the ``voice of the forgotten'' or rejected features.  Parasites obtain
+ $\alpha$-wealth from a tax on bids.  The tax on bids is small since we expect a
+ lot of bids relative to the number of accepted features.
+
+\item[Custom experts] are spawned when a feature is added to the model.  By
+ default, the addition of a feature to the model generates an expert that offers
+ an interaction in that feature and any other features in the model.  The
+ feature may itself add other experts as well.  For example, a feature might add
+ time lagsa segmentation of itself (to allow spatial heterogeneity, for
+ example), or perhaps specify interactions with a specific collection of
+ features.  Custom features allow the original expert to focus on a simple task,
+ say picking features from a large data source, rather than having the
+ distraction of following the status of features that join the model.  Custom
+ experts are funded from the payout received when a variable joins the model.
+
+ As an example, one might have introduce a ``knot expert'' that offered possible
+ places to segment the effect of a feature (think turbo smoothing).  This expert
+ would be bound to a specific feature accepted into the model.  Because the
+ expert is tied to one specific feature, it is funded from that feature.
+  Suppose that the expert $\cal F$ recommends the feature $X$ to the auction,
+ placing some bid amount $b$.  The variable $X$ joins the auction, earning
+ payout $\omega$.  Some fraction of this payout goes directly back to the
+ recommending expert $\cal F$, the rest of the payout goes to experts related to
+ $X$.  By default, $X$ is bound to an expert that builds interactions of $X$
+ with other features in the model.  Assume that $X$ also comes with a custom
+ expert $\cal E$ that segments $X$ in the model, allowing nonlinear effects for
+ $X$.  $\cal E$ unlike parasitic experts, gets created and funded from a tax on
+ the payout on $X$ when $X$ is accepted.\footnote{The code that builds custom
+ experts is in {\tt auction.Template.h}, specifically {\tt
+ pay\_winning\_expert}.  Any feature added to the model automatically creates an
+ expert that builds interactions among variables added to the model. In
+ addition, a feature $X$ that has the attribute {\tt interact\_with} will also
+ generate an interaction between $X$ and all features that have an attribute
+ named by {\tt interact\_with}.  For example, if {\tt interact\_with} has value
+ {\tt quarter}, then $X$ will be crossed with any feature that has the attribute
+ {\tt quarter}.}
+
+\item[Calibration experts] serve a very narrow role of calibrating the fit of
+ the current model.  These are funded at initialization and operate by-and-large
+ outside the usual auction process.  They are experts more in name alone to
+ unify the coding.
+\end{description}
 
 
- The auction funds source experts during the initialization process, allocating
- the total initial alpha-wealth given to the auction among them (typically
- equally).  The auction funds parasitic experts later during the bidding and
- evaluation process.  Parasitic experts that bid on rejected features are funded
- by a ``tax'' on bids placed in the auction.  For example, suppose a source
- expert $\cal E$ bids $\alpha = 0.01$ for the feature $X$. The auction taxes
- this bid at, say, 5\% and distributes the tax revenue $0.01 \times 0.05 =
- 0.0005$ among those experts that bid on rejected features.  The auction funds
- those that bid on accepted features by taxing (at some possibly different rate)
+ It is worthwhile to review the funding of experts.  The current algorithm funds
+ experts using ``taxes'' in order to avoid adding further wealth beyound the
+ initial wealth allocated at initialization.  The auction funds source during
+ the initialization process, allocating the total initial $\alpha$-wealth given
+ to the auction among them (typically equally).  (Calibration experts are also
+ funded at initialization, but out of a separate pool of wealth.)  The auction
+ funds parasitic experts during the bidding process.  Because parasitic experts
+ bid on features that are rejected, these are funded by a ``tax'' on bids placed
+ in the auction.  For example, suppose a source expert $\cal E$ bids $\alpha =
+ 0.01$ for the feature $X$. The auction taxes this bid at, say, 5\% and
+ distributes the tax revenue $0.01 \times 0.05 = 0.0005$ among those experts
+ that bid on rejected features.  The auction funds custom experts that bid on
+ accepted features by taxing (at some possibly different -- and higher -- rate)
  the payout $\omega$ made to an expert when a feature is accepted into the
  model.
 
-
- {\em Aside.}  For a time, I was thinking that parasitic experts might also have
- a ``scope'' attribute.  That is, one might have something like a ``knot
- expert'' that offered possible places to segment the effect of a variable
- (think turbo smoothing).  This expert would, in my thinking, have been bound to
- a specific feature.  I am not too high on this approach right now.  Tying an
- expert to an individual feature presents all sorts of complications,
- particularly in the funding.  If an expert is tied to one specific feature,
- then it would seem that it should only be funded from that feature.  So, if
- feature $X$ comes with a knot-expert ${\cal E}$, then it seems only natural to
- fund $\cal E$ from whatever happens to $X$, and $X$ alone.  $\cal E$, unlike
- other parasitic experts would get funded from the bid that came on $X$ if $X$
- gets rejected, and get funded from the payout on $X$ if $X$ is accepted.  The
- complication: none of the other experts get funding from this (OK, we could
- split the funding to reserve some for the ``community'' of experts). Not only
- would there be a lot of ambiguity as to when to assign such specific experts,
- but the coding that allocates tax revenue would become a lot more messy as well
- (not to mention proving this is a good thing).  I've decided to keep the
- parasites generic, at least for the time being, and instead focus on getting
- more types of experts in place.  Rather than assigning a knot-expert here and
- there, we'll just have one (if any) that works with accepted variables and
- leave it at that.
 
 
 \section{Tests in Least Squares} % -----------------------------------------------------------

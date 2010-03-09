@@ -1,5 +1,3 @@
-// $Id: my_features.cc,v 3.3 2008/01/30 03:57:01 bob Exp $
-
 #include "features.h"
 
 #include "range_stats.h"
