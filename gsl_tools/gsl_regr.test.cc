@@ -73,7 +73,7 @@ main (void)
   std::cout << std::endl;
   
   // write data to desktop for other applications
-  std::ofstream out ("/Users/bob/Desktop/test.dat");
+  std::ofstream out ("/Users/bob/Desktop/test_gsl.txt");
   out << "y    x1    x2    x3   weights use\n";
   for (int i=0; i<LEN; ++i)
     out << y[i] << " " << x1[i] << " " << x2[i] << " " << x3[i] << " " << weights[i] << " " << b[i] << std::endl;
@@ -99,15 +99,15 @@ main (void)
     gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
     // gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
     
-    gslRegression< gslData,wlsEngine > regr(&theData, protection);
+    gslRegression< gslData,olsEngine > regr(&theData, protection);
     std::cout << regr;
     
     // add predictor, check with usual F test and bennett of Z[0]
     std::cout << "TEST: about to evaluate first predictor.\n";
-    bool useTSS (true);
+
     regr.prepare_predictor("X1",x1);
-    std::cout << "         F " << regr.f_test_evaluation()     << std::endl;
-    std::cout << "     White " << regr.White_evaluation(useTSS)<< std::endl;
+    std::cout << "         F " << regr.f_test( )               << std::endl;
+    std::cout << "     White " << regr.white_f_test()          << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1) << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
@@ -115,17 +115,17 @@ main (void)
     // add second predictor
     std::cout << "TEST: about to evaluate second predictor.\n";
     regr.prepare_predictor("X2",x2);
-    std::cout << "         F " << regr.f_test_evaluation()      << std::endl;
-    std::cout << "     White " << regr.White_evaluation(useTSS) << std::endl;
+    std::cout << "         F " << regr.f_test()                 << std::endl;
+    std::cout << "     White " << regr.white_f_test()           << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1)  << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
     
     // add third predictor
-    std::cout << "TEST: about to evaluate second predictor.\n";
+    std::cout << "TEST: about to evaluate third predictor.\n";
     regr.prepare_predictor("X3",x3);
-    std::cout << "         F " << regr.f_test_evaluation()      << std::endl;
-    std::cout << "     White " << regr.White_evaluation(useTSS) << std::endl;
+    std::cout << "         F " << regr.f_test()                 << std::endl;
+    std::cout << "     White " << regr.white_f_test()           << std::endl;
     std::cout << "   Bennett " << regr.Bennett_evaluation(0,1)  << std::endl;
     regr.add_current_predictors();
     std::cout << regr;
@@ -150,23 +150,21 @@ main (void)
     regr.fill_with_diagonal_XtXinv (stdErr.begin());
     std::cout << "TEST: SE are " << stdErr << std::endl;
     
-    /*
-      { // Add three predictors at once  (Note: y in data has been centered.)
-      std::cout << "\n\n\n\n =====================\nTEST: Adding all three at once\n";
-      gslRegression<gslData,olsEngine> regr(&theData);
-      std::cout << regr;
-      
-      // add predictors
-      std::vector<double *> predVec;
-      predVec.push_back(x1); predVec.push_back(x2); predVec.push_back(x3);
-      regr.prepare_predictors(predVec);
-      std::cout << "         F " << regr.f_test_evaluation()  << std::endl;
-      std::cout << "     White " << regr.White_evaluation()   << std::endl;
-      if (eval.first)
-        regr.add_current_predictors();
-      std::cout << regr;
-    }
-    */
+    // Add three predictors at once  (Note: y in data has been centered.)
+    std::cout << "\n\n\n\n =====================\nTEST: Adding all three at once\n";
+    gslRegression<gslData,olsEngine> regr3(&theData, protection);
+    
+    // add predictors
+    std::vector< std::pair<std::string, double *> > predVec;
+    predVec.push_back(std::make_pair("x1", x1));
+    predVec.push_back(std::make_pair("x2", x2));
+    predVec.push_back(std::make_pair("x3", x3));
+    regr3.prepare_predictors(predVec);
+    std::cout << "         F " << regr3.f_test()         << std::endl;
+    std::cout << "     White " << regr3.white_f_test()   << std::endl;
+    if (eval.first)
+      regr3.add_current_predictors();
+    std::cout << regr;
   }
   return 0;
 }

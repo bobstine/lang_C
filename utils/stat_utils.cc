@@ -9,6 +9,7 @@
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_cdf.h>
 
+using namespace Stat_Utils;
 
 namespace {
 
@@ -26,7 +27,7 @@ namespace {
 }
 
 std::pair<double,double>
-mands (const std::vector<double>& x)
+Stat_Utils::mands (const std::vector<double>& x)
 {
   assert (x.size() > 1);
   double xBar = accumulate(x.begin(), x.end(), 0.0)/x.size();
@@ -34,7 +35,7 @@ mands (const std::vector<double>& x)
 }
 
 double
-standard_deviation (std::vector<double> const& x, double avg)
+Stat_Utils::standard_deviation (std::vector<double> const& x, double avg)
 {
   double ss = std::accumulate(x.begin(), x.end(), 0.0, CenterSquare(avg));
   assert (ss >= 0);
@@ -44,7 +45,7 @@ standard_deviation (std::vector<double> const& x, double avg)
 ////  Tests and p-values
 
 std::pair<double,double>
-t_test(double tStat, int df)
+Stat_Utils::t_test(double tStat, int df)
 {
   if (isnan(tStat) || isinf(tStat))
     return std::make_pair(0.0,1.001);
@@ -52,7 +53,15 @@ t_test(double tStat, int df)
 }
 
 std::pair<double,double> 
-f_test(double numSS, int numDF, double denSS, int denDF)
+Stat_Utils::f_test(double f, int numDF, int denDF)
+{
+  if ( isnan(f) || isinf(f) || (f <= 0) )
+    return std::make_pair(0.0,1.01);
+  return std::make_pair(f, gsl_cdf_fdist_Q(f, numDF, denDF));    
+}
+
+std::pair<double,double> 
+Stat_Utils::f_test(double numSS, int numDF, double denSS, int denDF)
 {
   if ( ( isnan(numSS) || isnan(denSS) ) ||
        ( isinf(numSS) || isinf(denSS) ) ||

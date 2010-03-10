@@ -163,16 +163,15 @@ public:
   //      Pass in predictor at this step, then call routines to evaluate these predictors
   //      Each predictor is a pair<string, begin iterator> 
  
-  template<class Iter> bool prepare_predictor(std::string const& name, Iter Z);                         // returns mZIsSingular indicator
+  template<class Iter> bool prepare_predictor(std::string const& name, Iter Z);                     // returns mZIsSingular indicator
   template<class C>    bool prepare_predictors(C predictor_collection);
   
   template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;  // get std error
   
   typedef typename std::pair<double,double> TestResult;  // test stat, p-value
   
-  TestResult  f_test_evaluation() const     { double drss(      change_in_rss()); return(f_test(drss, mDimZ, mRSS-drss, df_residual()-mDimZ)); }
-  TestResult  White_evaluation (bool useTSS){ double drss(white_change_in_rss());
-                                              double den (useTSS?mRSS:mRSS-drss); return(f_test(drss, mDimZ, den      , df_residual()-mDimZ)); }
+  TestResult  f_test()           const     { double dss (change_in_rss()); return Stat_Utils::f_test(dss, mDimZ, mRSS-dss, df_residual()-mDimZ); }
+  TestResult  white_f_test()               { return Stat_Utils::f_test(white_f_stat(), mDimZ, df_residual()-mDimZ); }
   
   TestResult  Bennett_evaluation ()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
   TestResult  Bennett_evaluation (double m, double M);                               // response must be of form m <= y <= M       
@@ -203,8 +202,8 @@ private:   // ------------------------------------------------------------------
   void compute_partial_coef_z();  
   void compute_fitted_values(int nUse);
   
-  double change_in_rss       (gsl_matrix const* sandwich = 0)   const;  // optional matrix for sandwich estimator
-  double white_change_in_rss () ;
+  double change_in_rss ()   const; 
+  double white_f_stat  () ;
 
   int  qr_decomposition ();
   int  qr_decomposition (int first, int size);

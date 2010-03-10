@@ -230,43 +230,17 @@ gslRegression<Data,Engine>::compute_fitted_values(int nUse)
 
 /////////////////////////////////////////////////////////////////////////////////  Added Sums of Squares, dRSS
 
-/*
- For an OLS regression, the change in the residual SS obtained by adding an explanatory
- variable is found by first sweeping out the prior variables from the new variable (say Z).
- Then regress the current residuals e on Z, with estimate c = (Z'Z)ºZ'e and fit Zc. 
- The explained SS of this partial regression is then (º for inverse)
- 
-      dSS = (Zc)'Zc = c' (Z'Z) c        [= e'Z(Z'Z)º (Z'Z) (Z'Z)º Z'e =  e'Z (Z'Z)º Z'e]
- 
- The function change_in_rss computes dSS for the current regression in this way if the 
- input matrix is nil.  Otherwise, it uses the input matrix in place of Z'Z. 
- 
- The matrix Z'Z is s2 times the inverse of Var(c) in the OLS case. In the White case,
- the sandwich formula for the variance of the coefficients is
- 
-      Var(c) = (Z'Z)º Z'DZ (Z'Z)º    with inverse    (Z'Z) (Z'DZ)º (Z'Z)
- 
- Hence, the White form for dSS is
- 
-      s2 (Z'Z) (Z'DZ)º (Z'Z)
- 
- The function white_change_in_rss() passes this matrix to the function change_in_rss.
- 
- */
+
 template <class Data, class Engine>
 double
-gslRegression<Data,Engine>::white_change_in_rss() 
+gslRegression<Data,Engine>::white_f_stat()
 {
   if (mZIsSingular) return 0.0;
-  // find Z'D Z
-  gsl_matrix_const_view    vZ  (gsl_matrix_const_submatrix(mZResids, 0,0, mN, mDimZ));
-  const gsl_matrix         *z  (&vZ.matrix);
+  // find Z'EE Z = Z'DZ
+  gsl_matrix       const*   z  (&gsl_matrix_const_submatrix(mZResids, 0,0, mN, mDimZ).matrix);
   gsl_matrix             *zdz  (mpData->temp_mat(mDimZ, mDimZ)); 
   gsl_matrix_set_zero(zdz);
   mEngine.blas_dsyr(z, mpData->e(), zdz);
-  // scale for s2 effect
-  double s2 (mRSS / df_residual());
-  gsl_matrix_scale(zdz, 1.0/s2);
   // scalar case avoids matrices
   if (1 == mDimZ)
   { double zz00   (gsl_matrix_get(mZZ,0,0));
@@ -275,10 +249,10 @@ gslRegression<Data,Engine>::white_change_in_rss()
     { debug("GSLR",2) << "Warning; near singular White variance. Setting to zero.\n";
       return 0.0;
     }
-    double c (zz00 * gsl_vector_get(mC,0));
-    return c * c / zdz00;   // s2 imbedded in zdz
+    double ze (zz00 * gsl_vector_get(mC,0));
+    return ze * ze / zdz00;   // s2 imbedded in zdz
   }
-  // compute (Z'Z) (Z'DZ)º (Z'Z)
+  // invert (Z'DZ)º  with cholesky decomp
   int gslError (0);  
   { gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     gslError = gsl_linalg_cholesky_decomp(zdz);
@@ -288,40 +262,27 @@ gslRegression<Data,Engine>::white_change_in_rss()
   { debug("GLSR",3) << " *** Error ***   Z'DZ not PSD in Cholesky decomp. Return dRSS = 0.\n";
     return 0.0;
   }
-  // fill in ZZ matrix (which was lower triangular)
-  gsl_matrix_const_view   vZZ  (gsl_matrix_const_submatrix(mZZ, 0,0, mDimZ, mDimZ));
-  const gsl_matrix        *zz  (&vZZ.matrix);
-  gsl_matrix * symZZ (gsl_matrix_alloc(mDimZ, mDimZ));
-  for (int i=0; i<mDimZ; ++i)
-  { gsl_matrix_set(symZZ,i,i,gsl_matrix_get(zz,i,i));
-    for (int j=0; j<i; ++j)
-    { double x (gsl_matrix_get(zz,i,j));
-      gsl_matrix_set(symZZ,i,j,x);
-      gsl_matrix_set(symZZ,j,i,x);
-    }
-  }
-  gsl_matrix * temp  (gsl_matrix_alloc(mDimZ, mDimZ));
-  gsl_matrix * temp2 (gsl_matrix_alloc(mDimZ, mDimZ));
-  for (int j=0; j<mDimZ; ++j)               // (Z'D Z)º (Z'Z), one column at a time (note s2 embedded in zdz)
-  { gsl_vector_const_view vzzj (gsl_matrix_const_column(symZZ,j));
-    gsl_linalg_cholesky_solve (zdz, &vzzj.vector, &gsl_matrix_column(temp,j).vector);
-  }  
-  gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, symZZ, temp, 0.0, temp2); // s2 (Z'Z) (Z'D Z)º (Z'Z)
-  double dSS (change_in_rss(temp2));
-  gsl_matrix_free (symZZ);
-  gsl_matrix_free (temp);
-  gsl_matrix_free (temp2);
-  return dSS;
+  //  e'Z (Z'DZ)º (Z'e)
+  gsl_vector  const* ze (&gsl_vector_const_subvector(mZE,0,mDimZ).vector);
+  gsl_vector       *tmp (gsl_vector_alloc(mDimZ));
+  gsl_linalg_cholesky_solve (zdz, ze, tmp);   // e'Z (ZDZ)º
+  double fStat;
+  gsl_blas_ddot(ze,tmp,&fStat);               // e'Z (Z'Z) Z'e
+  gsl_vector_free (tmp);
+  return fStat/mDimZ;
 }
+
 
 template <class Data, class Engine>
 double 
-gslRegression<Data,Engine>::change_in_rss (gsl_matrix const* sandwich)  const 
+gslRegression<Data,Engine>::change_in_rss ()  const 
 {
-  if (mZIsSingular) return 0.0;
+  if (mZIsSingular)
+  { debug("GSLR",0) << "Singularity among added predictors\n";
+    return 0.0;
+  }
   const gsl_matrix *zz;
-  if (sandwich) zz = sandwich;
-  else          zz = &(gsl_matrix_const_submatrix (mZZ,0,0,mDimZ, mDimZ)).matrix;
+  zz = &(gsl_matrix_const_submatrix (mZZ,0,0,mDimZ, mDimZ)).matrix;
   if (1 == mDimZ) 
   { double c (gsl_vector_get(mC,0));
     return c * c * gsl_matrix_get(zz,0,0);

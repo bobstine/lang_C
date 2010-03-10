@@ -15,7 +15,7 @@ main(void)
   std::cout << "Print a vector " << std::endl
 	    << x << std::endl;
 
-  std::cout << "Mean and SD of vector " << mands(x) << std::endl;
+  std::cout << "Mean and SD of vector " << Stat_Utils::mands(x) << std::endl;
   
   return 0;
 }

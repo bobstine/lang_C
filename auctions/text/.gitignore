@@ -1,3 +1,5 @@
 auction.pdf
 *.aux
 *.log
+*.bbl
+*.blg

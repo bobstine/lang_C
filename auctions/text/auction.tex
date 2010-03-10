@@ -23,7 +23,7 @@
 
 % --- Customized commands, abbreviations
 \newcommand{\TIT}{{\it  {\small Implementing the Auction}}}
-
+\newcommand{\eps}{\epsilon}
 
 % --- Header
 \pagestyle{myheadings}
@@ -89,12 +89,12 @@
  default, the addition of a feature to the model generates an expert that offers
  an interaction in that feature and any other features in the model.  The
  feature may itself add other experts as well.  For example, a feature might add
- time lagsa segmentation of itself (to allow spatial heterogeneity, for
+ time lags segmentation of itself (to allow spatial heterogeneity, for
  example), or perhaps specify interactions with a specific collection of
  features.  Custom features allow the original expert to focus on a simple task,
  say picking features from a large data source, rather than having the
  distraction of following the status of features that join the model.  Custom
- experts are funded from the payout received when a variable joins the model.
+ experts are funded from the pay-out received when a variable joins the model.
 
  As an example, one might have introduce a ``knot expert'' that offered possible
  places to segment the effect of a feature (think turbo smoothing).  This expert
@@ -102,13 +102,13 @@
  expert is tied to one specific feature, it is funded from that feature.
   Suppose that the expert $\cal F$ recommends the feature $X$ to the auction,
  placing some bid amount $b$.  The variable $X$ joins the auction, earning
- payout $\omega$.  Some fraction of this payout goes directly back to the
- recommending expert $\cal F$, the rest of the payout goes to experts related to
+ pay-out $\omega$.  Some fraction of this pay-out goes directly back to the
+ recommending expert $\cal F$, the rest of the pay-out goes to experts related to
  $X$.  By default, $X$ is bound to an expert that builds interactions of $X$
  with other features in the model.  Assume that $X$ also comes with a custom
  expert $\cal E$ that segments $X$ in the model, allowing nonlinear effects for
  $X$.  $\cal E$ unlike parasitic experts, gets created and funded from a tax on
- the payout on $X$ when $X$ is accepted.\footnote{The code that builds custom
+ the pay-out on $X$ when $X$ is accepted.\footnote{The code that builds custom
  experts is in {\tt auction.Template.h}, specifically {\tt
  pay\_winning\_expert}.  Any feature added to the model automatically creates an
  expert that builds interactions among variables added to the model. In
@@ -126,7 +126,7 @@
 
 
  It is worthwhile to review the funding of experts.  The current algorithm funds
- experts using ``taxes'' in order to avoid adding further wealth beyound the
+ experts using ``taxes'' in order to avoid adding further wealth beyond the
  initial wealth allocated at initialization.  The auction funds source during
  the initialization process, allocating the total initial $\alpha$-wealth given
  to the auction among them (typically equally).  (Calibration experts are also
@@ -138,7 +138,7 @@
  distributes the tax revenue $0.01 \times 0.05 = 0.0005$ among those experts
  that bid on rejected features.  The auction funds custom experts that bid on
  accepted features by taxing (at some possibly different -- and higher -- rate)
- the payout $\omega$ made to an expert when a feature is accepted into the
+ the pay-out $\omega$ made to an expert when a feature is accepted into the
  model.
 
 
@@ -149,7 +149,7 @@
  an auction) determines how the code treats the various test statistics.  The
  higher the level of the protection, the more conservative the computation of
  the p-value associated with a test.  The current implementation uses the
- following methods, assumming that the current model includes $k$ predictors
+ following methods, assuming that the current model includes $k$ predictors
  with an intercept and has residuals in the $n$-vector $e$.  Consider testing
  the effect of adding $k_{new}$ predictors that produce residuals $e_{new}$.
 
@@ -185,7 +185,7 @@
     F_2 = \frac{ dSS_{white}/k_{new} }{e'e/(n-1-k-k_{new})} \;.
 \label{eq:fstat}
 \end{equation}
- Calcuate the p-value as for $F_1$.
+ Calculate the p-value as for $F_1$.
 
 \item Conservative p-value.  Not yet implemented.  The idea is to use a more
  robust procedure to find the p-value in place of the F-distribution.  I guess I
@@ -201,46 +201,211 @@
  use a White (or sandwich) estimator to find the numerator of the $F$-statistic
  that is used to measure the statistical significance of an added variable(s).
 
- Consider the impact of adding new explanatory variables $X_{new}$ to a
- regression model that alread contains the variables $X$ and has residuals
+ The White estimate is generally proposed as a method of estimating a
+ heteroscedastic-robust standard error.  It is used in finding a more robust
+ t-statistic.  Consider the impact of adding one or more new features $X_{new}$
+ to a regression model that already contains the variables $X$ and has residuals
  $e$. The first stage of testing sweeps out the prior explanatory variables $X$
- from the new variables, forming (Dean and Dong Yu omit this for speed.)
+ from $X_{new}$, forming $Z$ defined as (Dean and Dong Yu omit this for speed.)
 \begin{displaymath}
   Z = (I-X(X'X)^{-1}X') X_{new} = (I-H_X) X_{new}  \;.
 \end{displaymath}
- Next we find the residual sum-of-squares of the augmented model.  Regress the
- current residuals $e$ on $Z$, obtaining the partial coefficients $c =
+
+
+ As motivation, consider testing the value of adding only one new feature, which
+ after sweeping out $X$ is the column vector $z$.  The slope for the added
+ variable is $\hat\gamma = (z'e)/(z'z)$.  The White estimate of the variance of
+ $\hat\gamma$ is
+\begin{displaymath}
+  \var_w(\hat\gamma) = \frac{\sum_i (z_ie_i)^2} {(z'z)^2} 
+   = \frac{z'E^2z} {(z'z)^2} \;,
+\end{displaymath}
+ where $E$ is an $n \times n$ diagonal matrix with elements $E_{ii}=e_i$.  (Note
+ that we use the residuals from the fit with $X$ alone, {\em not} both $X$ and
+ $z$. See \citet{fosterstine04:bank} for an explanation of this choice.)  Hence, the
+ square of the robust $t$-statistic is
+\begin{equation}
+  t^2 = \frac{\hat\gamma^2}{\var_w(\hat\gamma)} 
+      = \frac{(z'e)^2}{z'E^2z} \;.
+\label{eq:t2}
+\end{equation}
+ Alternatively, we can obtain the same test statistic using the approach found
+ in building an $F$-statistic.  This will be useful since we will consider
+ adding bundles of several features, and we will test these bundles as a group
+ rather than one at a time.  Generally, an $F$-statistic in regression is the
+ ratio the change in the regression mean-squares to the residual mean-squares.
+  When adding $z$ to the model, the regression sum-of-squares increases by
+ $\hat\gamma' z'z \hat\gamma$.  We need to change this expression to obtain an
+ $F$-statistic that corresponds to the robust $t$-statistic.  In particular,
+ think of $z'z$ in $\hat\gamma' (z'z) \hat\gamma$ as proportional to the inverse
+ of the variance of $\hat\gamma$.  We then replace the usual least squares
+ expression by that provided by the White estimator.  The resulting $F$-like
+ statistic replaces
+\begin{equation}
+  \frac{\hat\gamma' (z'z) \hat\gamma}{(e'e)/(n-q)}=
+  \hat\gamma\left(\frac{z'z}{(e'e)/(n-q)}\right) \hat\gamma 
+\end{equation}
+by
+\begin{equation}
+  \hat\gamma' (\var_w(\hat\gamma))^{-1} \hat\gamma = 
+  \left(\frac{z'e}{z'z}\right) \left(\frac{z'E^2z}{(z'z)^2}\right)^{-1}
+  \left(\frac{z'e}{z'z}\right) = \frac{(z'e)^2}{z'E^2z} \;,
+\label{eq:F2}
+\end{equation}
+ which matches the squared robust $t$-statistic in \eqn{eq:t2}.
+
+
+ In the case of several added variables, we need to form the corresponding
+ matrices.  The calculations are more messy, but follow the same steps.  We
+ start by finding the increase in the regression sum-of-squares.  Regress the
+ current residuals $e$ on $Z$, obtaining the partial coefficients $\hat\gamma =
  (Z'Z)^{-1}Z'e$.  The increase in the regression sum-of-squares due to this
  partial regression is then the quadratic form
 \begin{eqnarray}
-  dSS &=& (Zc)'Zc = c'(Z'Z)c \cr
-      &=& e'Z(Z'Z)^{-1}(Z'Z)(Z'Z)^{-1}Z'e \cr
-      &=&  e'Z(Z'Z)^{-1}Z'e
+   \hat\gamma'(Z'Z)\hat\gamma \;,
 \label{eq:dss}
 \end{eqnarray}
- Note that $dSS$ is a $k\times k$ matrix if one adds $k$ variables. (The method
- {\tt change\_in\_rss} in gsl\_regr computes $dSS$ for the current regression.)
-
-
- To obtain the White version of this expression for $dSS$, begin by thinking a
- little differently about the matrix $(Z'Z)^{-1}$ in \eqn{eq:dss}. Using the
- usual OLS expressions for the partial regression, $\var(c) = s^2 (Z'Z)^{-1}$.
-  Hence, we equate $(Z'Z)^{-1}$ with $\var(c)/s^2$. To get the White
- estimator that corresponds to $Z'Z$, we form the White estimate for $\var(c)$.
-  The sandwich formula for the variance of the coefficients is
-\begin{displaymath}
-  \var(c) = (Z'Z)^{-1} Z'DZ (Z'Z)^{-1}, \quad D_{ij} = \delta_{ij} e_i^2\;.
-\end{displaymath}
- Hence, the White estimator corresponding to $dSS$ in \eqn{eq:dss} replaces
-$Z'Z$ with
+ and the $F$0-statistic normalizes this expression by an estimate of the error
+ variation.\footnote{The method {\tt change\_in\_rss} in gsl\_regr computes
+ $\Delta SS$ for the current regression.}  The associated $F$-statistic for
+ adding $m$ new features to the model is
 \begin{equation}
- dSS_{white} = e'Z\left[\smfrac{1}{s^2}(Z'Z)^{-1} Z'DZ (Z'Z)^{-1}\right] Z'e  \;.
-\label{eq:wdss}
+  F = \frac{\Delta SS}{m \; s^2} 
+    = \frac{1}{m} \; \hat\gamma' \var(\hat\gamma)^{-1} \hat\gamma \;,
+\label{eq:F}
 \end{equation}
- This expression (and the resulting test) reduce to the usual sandwich test in
- the scalar case.  (The function {\tt white\_change\_in\_rss} passes the matrix
- shown in brackets in \eqn{eq:wdss} to the function {\tt change\_in\_rss}.)
+where, if we continue to conservatively estimate the scale, $s^2 = (e'e)/(n-q)$.
 
+
+ To obtain the White version of the $F$-test, replace the variance estimate in
+ \eqn{eq:F} with the corresponding White estimator.  The sandwich formula for
+ the variance of the coefficients is
+\begin{displaymath}
+  \var_w(\hat\gamma) = (Z'Z)^{-1} Z'E^2Z (Z'Z)^{-1}, 
+  \quad E_{ij} = \delta_{ij} e_i\;.
+\end{displaymath}
+ Hence, the White version of the $F$-statistic \eqn{eq:F} is
+\begin{eqnarray}
+  F_w
+ &=& \smfrac{1}{m} \;
+     e'Z(Z'Z)^{-1}\left[(Z'Z)^{-1}Z'E^2Z(Z'Z)^{-1}\right]^{-1}(Z'Z)^{-1}Z'e \cr
+ &=& \smfrac{1}{m} \; e'Z (Z'E^2Z)^{-1} Z'e 
+\label{eq:Fw}
+\end{eqnarray}
+ (Compare to the scalar version \eqn{eq:F2}.)\footnote{The function {\tt
+ white\_change\_in\_rss} passes the matrix shown in brackets in \eqn{eq:wdss} to
+ the function {\tt change\_in\_rss}.}
+
+\subsection{White with Blocks}
+
+ Suppose that we treat the observations as possibly dependent in blocks.  That
+ is, assume that the data $Y' = (Y_1', Y_2', \ldots, Y_K')$ come in $K$ clusters
+ with covariance matrix $V_k$ within the $k$th group:
+\begin{displaymath}
+  Y = \mu + \epsilon, \quad \Var(\epsilon) = 
+     \left(
+     \begin{array}{ccccc}
+       V_1     & 0      & \cdots & 0      \cr
+        0      & V_2    & \cdots & 0      \cr
+       \vdots  & \vdots & \ddots & \vdots \cr
+        0      & 0      & \cdots & V_K   
+     \end{array}  
+     \right)
+\end{displaymath}
+ The usual White estimator is robust to heteroscedasticity, but not
+ dependence. In this case, such as longitudinal data, we form a blocked White
+ estimator. 
+
+ For convenience, suppose that each of the $K$ groups is of size $b$ so that $n
+ = K b$.  The blocked White estimate of the variance of the least squares
+estimates $\hat\beta$ based on a collection of $q$ features $X$ is
+\begin{equation}
+  \var(\hat\beta) = (X'X)^{-1} \left(\sum_k X_k'e_ke_k'X_k\right) (X'X)^{-1},
+\label{eq:blockwhite}
+\end{equation}
+ where $e_k$ are the residuals within the $k$th block.  To express these more
+ directly, let $B_k$ denote an $b \times n$ matrix with an $b\times b$ identity
+ matrix $I_b$ positioned to extract rows associated with block $k$:
+\begin{equation}
+  B_k = \left(
+   \begin{array}{ccccccc}
+     0  & \cdots & 0 & \underbrace{I_b}_{\mbox{\scriptsize block $k$}} & 0 & \cdots & 0 
+   \end{array}
+   \right) \;.
+\label{eq:Bk}
+\end{equation}
+ If $e = Y - X \hat\beta$ denote the residuals from the current fit, then $B_ke
+ = e_k$, the residuals in block $k$.  The expression for the blocked variance
+estimate \eqn{eq:blockwhite} then becomes
+\begin{eqnarray}
+  \var(\hat\beta) 
+  &=& (X'X)^{-1} \left(\sum_k X_k' B_k e \, e' B_k' X_k\right) (X'X)^{-1} \cr
+  &=& (X'X)^{-1} \left(\sum_k X_k' B_k (I-H)YY'(I-H) B_k' X_k\right)(X'X)^{-1}.
+\label{eq:blockwhite1}
+\end{eqnarray}
+ If $\ev Y = \mu$ lies in the column span of the current features $X$, then $H
+ \mu = \mu$ so that $(I - H)Y = \epsilon$, and the variance expression becomes
+\begin{eqnarray}
+  \var(\hat\beta) 
+  &=& (X'X)^{-1} \left(\sum_k X_k' B_k \eps \eps' B_k' X_k\right)(X'X)^{-1}\cr
+  &=& (X'X)^{-1} \left(\sum_k X_k' \eps_k \eps_k' X_k\right)(X'X)^{-1}
+\label{eq:blockwhite2}
+\end{eqnarray}
+ Taking expected values, the estimator is unbiased for the variance of the
+ estimator (ignoring issues of selection, of course)
+\begin{equation}
+  \ev \var(\hat\beta) 
+  = (X'X)^{-1} \left(\sum_k X_k' V_k X_k\right)(X'X)^{-1}.
+\label{eq:blockwhite3}
+\end{equation}
+
+ To gain some intuition about the blocked White estimator defined in
+ \eqn{eq:blockwhite}, it is helpful to compare it to a direct estimator of the
+ variance of the slope.  Let $\hat\beta_k$ denote the estimated slope computed
+ within the $k$th block.  It is then possible to show that blocked White
+ variance approximates the observed variance of $\hat\beta_k$ under some
+ conditions \citep{fosterlin10}.  For convenience, assume that the features $X$
+ are identical within each block,
+\begin{displaymath}
+   X = 
+    \left( \begin{array}{c}
+       X_1 \cr  X_2 \cr \vdots \cr X_K 
+    \end{array} \right)
+    = 
+    \left( \begin{array}{c}
+       X_1 \cr  X_1 \cr \vdots \cr X_1 
+    \end{array} \right)
+\end{displaymath}
+ With this conformity, $\hat\beta_k = (X_1'X_1)^{-1}X_1'Y_k$, and the
+ overall slope fit to all of the data is the average of the $\hat\beta_k$:
+\begin{displaymath}
+  \hat\beta = (X'X)^{-1}X'Y 
+       = \frac{1}{K} \underbrace{(X_1'X_1)^{-1} \sum_k X_1'Y_k}_{\hat\beta_k}
+       = (X_1'X_1)^{-1} X_1' \ol{Y} \;,
+\end{displaymath}
+ where the $b \times 1$ vector $\ol{Y}$ is the mean response under the repeated
+ conditions. Since the first row, for example, of each block is the same, the
+ estimator simply averages the first $y$'s and uses the average in the
+ regression.
+
+ This homogeneity shows up in the blocked White estimator as well. The variance
+ estimate \eqn{eq:blockwhite} reduces to
+\begin{eqnarray}
+  \var(\hat\beta) 
+   &=& \frac{1}{K^2}
+       (X_1'X_1)^{-1} \left(\sum_k X_1'e_k e_k'X_1\right) (X_1'X_1)^{-1} \cr
+   &=& \frac{1}{K^2}\sum_k (X_1'X_1)^{-1}X_1'(Y_k-X_1\hat\beta)
+                           (Y_k-X_1\hat\beta)'X_1 (X_1'X_1)^{-1} \cr
+   &=& \frac{1}{K^2}\sum_k (\hat\beta_k-\hat\beta)(\hat\beta_k-\hat\beta)'\cr
+   &=& \frac{1}{K^2}\sum_k (\hat\beta_k-\ol{\hat\beta_k})
+                           (\hat\beta_k-\ol{\hat\beta_k})'  \cr
+   &=& \frac{K-1}{K^2} \var(\hat\beta_k) \;,
+\end{eqnarray}
+ as in $\var(\ol{x}) = s_x^2/n$.  The difference between the direct estimator
+ and the blocked White estimator lies in the information matrix $X_k'X_k$ for
+ the blocks.  The larger the differences among the blocks, the greater the
+ difference between the direct and White estimates. \citet{fosterlin10} discuss
+ these differences further.
 
 \section{Tests in Logistic Regression} % -----------------------------------------------------
 
@@ -252,7 +417,7 @@ $Z'Z$ with
  determines the nature of the testing procedure (really, the calculation of the
  p-value).  
 
- Given a set of explanatory varibles in the model $X$, the logistic regression
+ Given a set of explanatory variables in the model $X$, the logistic regression
  solves the nonlinear estimating equations for $b$,
 \begin{equation}
   X'y = X'p_b, \quad \mbox{ where } p_b = \frac{1}{1+\exp(-X'b)} \;.
@@ -260,7 +425,7 @@ $Z'Z$ with
 \end{equation}
  Note the similarity to the estimating equation (\aka, normal equation $X'y =
  X'(Xb)$) used in linear equations; in both cases, we choose $b$ so that the
- estimated values (either the probabilty $p$ or the fit $Xb$ reproduce the
+ estimated values (either the probability $p$ or the fit $Xb$ reproduce the
  correlation of $Y$ with the explanatory variables.  (We subscript $p$ by the
  coefficient $b$ as a reminder of this dependence; later we simplify this to
  $p_1$ if the estimates are $b_1$. The same convention applies to other terms
@@ -334,7 +499,7 @@ $Z'Z$ with
 
 
  For testing, however, the weights are fixed at the values obtained by the
- current model only, without an update for the variable underconsideration.
+ current model only, without an update for the variable under consideration.
   This is in keeping with the second level of protection used in the linear
  model.  We have found this sufficiently useful in logistic regression as to
  omit the more traditional updating.  (It also keeps the code much simpler.)
@@ -398,7 +563,7 @@ incorporated into the variables
   \item {\tt prepare\_vector\_for\_analysis}
   \item {\tt insert\_analysis\_matrix}
 \end{itemize}
- Preparing a vector is a simple copy (ols engine) or a copy plus scaling by the
+ Preparing a vector is a simple copy (OLS engine) or a copy plus scaling by the
  square root of the weights (for the WLS engine, as seen in the expression for
  the estimation shown in \eqn{eq:irls} above).  Inserting a matrix copies the
  matrix and scales the columns by the square root of the current weights
@@ -425,5 +590,9 @@ incorporated into the variables
  proposed new variable, producing ``residuals'' $z_{res}$.  This is done using
  the current weights $W_0$.
 \end{description}
+
+
+\bibliography{/Users/bob/work/references/stat}
+\bibliographystyle{/Users/bob/work/papers/bst/rss}
 
 \end{document}

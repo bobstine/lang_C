@@ -5,15 +5,18 @@
 
 /////////////////////  Mean and SD summary  ////////////////
 
-double                    standard_deviation (std::vector<double> const& x, double avg);
+namespace Stat_Utils {
 
-std::pair<double,double>  mands (std::vector<double> const& x);
-
-
-// p-values
-
-std::pair<double,double> t_test(double tStat, int df);
-std::pair<double,double> f_test(double numSS, int numDF, double denSS, int denDF); 
-
+  double                    standard_deviation (std::vector<double> const& x, double avg);
+  
+  std::pair<double,double>  mands (std::vector<double> const& x); 
+  
+  // p-values
+  
+  std::pair<double,double> t_test(double tStat, int df);
+  
+  std::pair<double,double> f_test(double f,     int numDF,               int denDF); 
+  std::pair<double,double> f_test(double numSS, int numDF, double denSS, int denDF); 
+}
 
 #endif
