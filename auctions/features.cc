@@ -69,22 +69,6 @@ InteractionFeature::make_name()
   mName[mName.size()-1]=' ';
 }
     
-FeatureABC::Arguments
-InteractionFeature::arguments()    const
-{
-  Arguments argMap;
-  bool raw1 (mFeature1->class_name() == "ColumnFeature");
-  bool raw2 (mFeature2->class_name() == "ColumnFeature");
-  if (raw1)
-    argMap[mFeature1->name()] = 1;
-  else
-    argMap = mFeature1->arguments();
-  if (raw2)
-    argMap[mFeature2->name()] += 1;  // need += in case of square
-  else
-    argMap = join_arguments(argMap, mFeature2->arguments());
-  return argMap;
-}
 
 
 void

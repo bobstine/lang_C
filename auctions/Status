@@ -1,14 +1,5 @@
 Next... 
 
-	How did variables get in the credit_test run twice?  Without
-	causing a singularity???  REAU.3 shows up twice, and is not very
-	similar (view model results with JMP).  Problem occurs from the
-	FeatureProductStream when the dyn[1] or dyn[2] output (namely, the
-	length of the stream) is 1 or 2.
-
-	BUG is in the name when you interact a unary feature with a column feature.
-
-
 	Add expert to build the 'spatial interaction' variables.
 
 	Get in the robust standard errors (the jackknife type).
@@ -126,6 +117,12 @@ Need to
 
 	Clean up NaN problem that was happening in logistic regression when a 
 	case would be assigned weight 0.
+
+	Fix bug in constructing names of variables.  The arguments object was 
+	used in the interaction object, but not all of the other features
+	were filling this name in.  As a result, it "looked like" variables
+	were entering the model more than once.  That was just a problem with
+	the names: interactions only had the names of one of the parts.
 
 
 ------------------------------------------------------------------------------

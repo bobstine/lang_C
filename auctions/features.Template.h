@@ -19,6 +19,30 @@ Feature::Feature(Op const& op, Feature const &x1, Feature const& x2)
 
 
 template<class Op>
+FeatureABC::Arguments
+UnaryFeature<Op>::arguments()  const
+{
+  Arguments a;
+  std::string opName (operator_traits<Op>::name());
+  std::string fName  (mFeature->name());
+  
+  if (opName == "square")
+    a[fName] = 2;
+  else if (opName == "cube")
+    a[fName] = 3;
+  else if (opName == "fourth")
+    a[fName] = 4;
+  else if (opName == "fifth")
+    a[fName] = 5;
+  else if (opName == "sixth")
+    a[fName] = 6;
+  else
+    a[name()] = 1;
+  return a;
+}
+
+
+template<class Op>
 void
 UnaryFeature<Op>::write_to (std::ostream& os) const
 {

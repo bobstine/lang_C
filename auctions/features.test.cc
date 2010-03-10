@@ -1,4 +1,3 @@
-
 #include "features.h"
 #include "column.h"
 
@@ -48,7 +47,7 @@ main ()
   std::cout << "      feature attribute {test}     = " << x->attribute_str_value("test") << std::endl;
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
-  
+   
 
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
@@ -57,8 +56,8 @@ main ()
   xSq->write_to(std::cout);  
 
   // make an interaction with the unary feature
-  Feature x2xSq (xx2, xSq);
-  std::cout << "TEST: interaction of xx2 with square is " << x2xSq << std::endl;
+  Feature prod (xx2, xSq);
+  std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
 
   // make an interaction
   Feature inter (x, dup);

@@ -65,6 +65,23 @@ operator_traits< std::divides<double> >::parameters(std::divides<double> const&)
 
 // Powers
 
+
+using Function_Utils::Square;
+
+template<> 
+std::string
+operator_traits< Square >::name()   { return "square"; }
+
+template<> 
+std::string
+operator_traits< Square >::symbol() { return "^2"; }
+
+template<> 
+std::string
+operator_traits< Square >::parameters(Square const&) { return ""; }
+
+
+
 using Function_Utils::CenteredSquare;
 
 template<> 
