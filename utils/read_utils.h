@@ -16,6 +16,33 @@
 #include <cstdio>
 
 
+//  trim strings
+
+
+inline std::string trim_right(const std::string &source , const std::string& t = " ")
+{
+  std::string str = source;
+  return str.erase( str.find_last_not_of(t) + 1);
+}
+
+inline std::string trim_left( const std::string& source, const std::string& t = " ")
+{
+  std::string str = source;
+  return str.erase(0 , source.find_first_not_of(t) );
+}
+
+inline std::string trim(const std::string& source, const std::string& t = " ")
+{
+  std::string str = source;
+  if(!source.empty())
+    return trim_left( trim_right( str , t) , t );
+  else
+    return source;
+}
+
+
+
+
 // string stream io
 
 namespace read_utils

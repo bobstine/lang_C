@@ -46,6 +46,10 @@ trendata_build_nation: trendata_build_nation.o trendata.h
 	$(GCC) trendata_build_nation.o $(LDLIBS) -o $@
 	cp -f $@ ~/data/TrenData/nation/build_data
 
+
+csv_to_table: csv_to_table.o
+	$(GCC) csv_to_table.o $(LDLIBS) -o $@
+
 cols_to_rows: columns_to_rows.o
 	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
 	cp -f $@ ~/bin/ctor

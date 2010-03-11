@@ -29,6 +29,15 @@
 int
 main()
 {
+
+  // test string trim
+  std::string both("  both  ");
+  std::string left("   left");
+  std::string right("right  ");
+  std::cout << "Trim:  [" << both  << "]  ->  [" << trim(both)  << "]\n";
+  std::cout << "Trim:  [" << left  << "]  ->  [" << trim(left)  << "]\n";
+  std::cout << "Trim:  [" << right << "]  ->  [" << trim(right) << "]\n";
+  
   std::string       fileName("/Users/bob/C/utils/test/big_test.dat");
   std::string prefixFileName("/Users/bob/C/utils/test/prefix_test.dat");
   const int maxLength (1023);
