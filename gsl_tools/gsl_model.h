@@ -22,13 +22,15 @@
  */
 
 template <class Data, class Engine>
-class LinearModel : public gslRegression<Data,Engine> {
+class LinearModel : public gslRegression<Data,Engine>
+{
   typedef gslRegression<Data,Engine> GSLR;
   typedef std::pair<double,double> TestResult;
     
 public:
   
-  LinearModel (gslData *data, int protection) : gslRegression<Data,Engine>(data, protection) { }
+  LinearModel (gslData *data, int protection, int blockSize=1)
+    : gslRegression<Data,Engine>(data, protection, blockSize) { }
 
   
   inline std::string  name() const { return "Linear Model";}
@@ -76,7 +78,8 @@ public:
 
   ~LogisticModel() { free(); }
   
-  LogisticModel (gslData *data, int protection) : gslRegression<Data,wlsEngine>(data, protection), mLL0(0), mLL1(0)   
+  LogisticModel (gslData *data, int protection, int blockSize=1)
+  : gslRegression<Data,wlsEngine>(data, protection, blockSize), mLL0(0), mLL1(0)   
   { allocate();
     gsl_vector_memcpy(mOriginalY, &(gsl_vector_const_subvector(GSLR::mpData->y(),0,n()).vector));
     gsl_vector_add_constant(mOriginalY, GSLR::mYBar);                        // Yuk ... have to add back ???

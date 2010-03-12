@@ -87,19 +87,16 @@ main (void)
   double x1y   (dot(x1,y,b)-LEN*yBar*x1Bar);
   std::cout << "TEST: mean of x1 " << x1Bar << "   ss " << x1SS << "  xy " << x1y << std::endl;
   
-  // Start by building the data.  Then add predictors, one at a time.
-  // In the second block, add the variables all at once.
+  // Start by building the data.  Then add predictors, one at a time.  Then add all at once.
 
   int protection = 2;
-  { //using namespace debugging;
-    // debug_init(std::cout,0);
-    
-    constant_iterator<bool> noSelection(true);
+  { constant_iterator<bool> noSelection(true);
     
     gslData  theData(y, noSelection, weights, LEN, gslRegression_Max_Q);  // no subsetting
     // gslData  theData(y,       b    , weights, LEN, gslRegression_Max_Q);  // subsetting
-    
-    gslRegression< gslData,olsEngine > regr(&theData, protection);
+
+    int blockSize (20);
+    gslRegression< gslData,olsEngine > regr(&theData, protection, blockSize);
     std::cout << regr;
     
     // add predictor, check with usual F test and bennett of Z[0]
@@ -152,7 +149,7 @@ main (void)
     
     // Add three predictors at once  (Note: y in data has been centered.)
     std::cout << "\n\n\n\n =====================\nTEST: Adding all three at once\n";
-    gslRegression<gslData,olsEngine> regr3(&theData, protection);
+    gslRegression<gslData,olsEngine> regr3(&theData, protection, blockSize);
     
     // add predictors
     std::vector< std::pair<std::string, double *> > predVec;

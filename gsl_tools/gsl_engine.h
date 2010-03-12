@@ -54,7 +54,8 @@ public:
   // dot product
   void   blas_ddot (gsl_vector const* x, gsl_vector const* y, double *dp)                      const;
   // accumulate sum e_i^2 z z'
-  void   blas_dsyr (gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz) const;
+  void   blas_dsyr (               gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz) const;
+  void   blas_dsyr (int blockSize, gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz) const;
   
   // smoothing spline returns SS around mean of smooth
   double smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const;
@@ -98,6 +99,7 @@ public:
    
   void   blas_ddot (gsl_vector const* x, gsl_vector const* y, double *dp)                      const;
   void   blas_dsyr (gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz)                 const;
+  void   blas_dsyr (int blockSize, gsl_matrix const* z, gsl_vector const* e, gsl_matrix *zdz)  const;
 
   // smoothing spline returns SS around mean of smooth
   double   smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const;

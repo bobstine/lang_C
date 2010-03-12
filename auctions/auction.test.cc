@@ -83,6 +83,7 @@ parse_arguments(int argc, char** argv,
 		std::string& inputDataFile, 
 		std::string& outputPath,
 		int &protection,
+		int &blockSize,
 		int &nRounds, double &totalAlpha, int &df);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
@@ -100,7 +101,7 @@ data_has_selector(std::string const& dataFileName, std::ostream&);
 int
 main(int argc, char** argv)
 {
-  using namespace debugging;
+  using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
   
   // build vector of columns from file; set default parameter values
@@ -108,11 +109,12 @@ main(int argc, char** argv)
   std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         protection           (3);
+  int         blockSize            (1);
   int         numberRounds         (200); 
   int         splineDF             (0);
   
   // parse arguments from command line  (pass in at main, open file for printing messages)
-  parse_arguments(argc,argv, columnFileName, outputPath, protection, numberRounds, totalAlphaToSpend, splineDF);
+  parse_arguments(argc,argv, columnFileName, outputPath, protection, blockSize, numberRounds, totalAlphaToSpend, splineDF);
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -126,7 +128,7 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",4) << "Version build 0.90 (27 May 2009)\n";
   debug("AUCT",4) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
-		  << " --protect=" << protection << " --rounds=" << numberRounds
+		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
 		  << std::endl;
   
@@ -187,11 +189,11 @@ main(int argc, char** argv)
     
   // --- build model and initialize auction with stream for log
 #ifdef LINEAR_MODEL
-  LinearModel <gslData, olsEngine> theRegr(theData, protection);
+  LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
   Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
 #else
   // --- build logisitic model and auction
-  LogisticModel <gslData> theRegr(theData, protection);
+  LogisticModel <gslData> theRegr(theData, protection, blockSize);
   Auction<  LogisticModel <gslData> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
 #endif
 
@@ -341,6 +343,7 @@ parse_arguments(int argc, char** argv,
 		std::string& inputFile,
 		std::string& outputPath,
 		int    &protection,
+		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &nDF)
@@ -355,11 +358,12 @@ parse_arguments(int argc, char** argv,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
+	  {"blocksize",         1, 0, 'b'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:c:f:o:p:r:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:c:f:o:p:b:r:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -390,6 +394,11 @@ parse_arguments(int argc, char** argv,
 	  case 'p' :
 	    {
 	      protection = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
+	  case 'b' :
+	    {
+	      blockSize = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'r' :

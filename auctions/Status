@@ -1,8 +1,12 @@
 Next... 
 
+	Have no interactions among quarters, but do have interactions of the 
+	quarters with the other factors.
+
 	Add expert to build the 'spatial interaction' variables.
 
-	Get in the robust standard errors (the jackknife type).
+	Get the dogleg time factor variables, linear spline variables.
+
 
 Need to 
 
@@ -12,7 +16,10 @@ Need to
 	changes as the auction runs.
 
 
-     Memory (leaks, problems)
+     Memory leaks, exceptions
+
+	Need way to throw an exception at time objects are initialized
+	to signal all is not well (eg: blockSize in gsl_regression).
 
 
      General
@@ -26,17 +33,17 @@ Need to
 
 	Interactions within a variable are a mess with things like State.
 
+	Allow a variable to indicate the blocks rather than force
+	equal block size as in current version.
+
 	In parsing options, remove the [] option terms and use these to set attributes,
 	as in type = indicator; label = xxx
 
 	Build a tool to sample rows generated in modeling large files to make
 	the JMP import faster.
 
-     Streams 
 
-     	Multiple input files, with a file associated with a bidder.
-	Have decided on a single input stream, but use :: to separate
-	the variables into distinct streams.
+     Streams 
 
 	Interface code (such as current_feature) would be cleaner if the object
 	providing used, skipped were made available to the streams that need it, and
@@ -47,6 +54,7 @@ Need to
         At a minimum, use regular expression to avoid dummy variable products.
         EG: add a units, "domain" to the variables to suggest heuristic groups to
         attempt to use in PC analysis (ie, dont combine unless common domain).
+
 
      Experts
 
@@ -61,6 +69,7 @@ Need to
 
 
      Logistic regression
+
      	Get the cross-validation to run for least squares and logistic regression.
         Leave out subset works, but it is not plugged into any further.
 
@@ -90,6 +99,7 @@ Need to
 	things down into the stat_utils object rather than leaving in the gsl_regr object.
 	Need a SE for the intercept at some point anyway?
 
+
      Numerics
 
         Check the gsl_engine code for "validation leakage" where it might use some
@@ -98,6 +108,14 @@ Need to
 	return vector views of the "n" items in use for estimation rather than the 
 	"length" items held in both training and test data.
 
+
+
+------------------------------------------------------------------------------
+12 Mar 10
+
+       Have the blocked white test in place, with 3000 counties so can try
+       other blocking sizes (original number 3023 was prime!).
+ 
 
 ------------------------------------------------------------------------------
  7 Mar 10

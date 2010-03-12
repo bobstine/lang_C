@@ -1,5 +1,3 @@
-# $Id: Makefile,v 3.3 2005/09/02 02:38:42 bob Exp $
-
 include ../c_flags
 
 ###########################################################################
@@ -47,23 +45,23 @@ data/%.dat: data/%.csv
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
 
-crash_test: auction.test
-	./auction.test -f data/crash.dat -r 100 -c 5
-
 anes_test: auction.test data/anes2008.dat
 	./auction.test -f data/anes2008.dat -r 2500 -c 5
 
 baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -p 1 -r 300 -c 5
 
+crash_test: auction.test
+	./auction.test -f data/crash.dat -r 100 -c 5
+
+credit_test: auction.test
+	./auction.test -f data/credit/credit.txt -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 0
+
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
 wiki_test: auction.test 
 	./auction.test -f ../wiki/wiki.sdata -o ../wiki/auction_output/ -r 1000 -a 1 -p 3 -c 0
-
-credit_test: auction.test
-	./auction.test -f data/credit/credit.txt -o data/credit/ -r 100 -a 0.5 -p 3 -c 0
 
 stop: auction.test.o
 	echo "Stopping"

@@ -50,7 +50,8 @@
  
  Shapes:
        X and Z held in usual form, with one row per case
-  
+
+  10 Mar 10 ... Clean up code for the White estimator to just do the F.
    5 Jan 08 ... Check calibration of the fit using a spline.
   29 Nov 07 ... After trying more complicated methods, revert to sqrt(w) approach to WLS. Works nicely.
    5 Dec 05 ... Selection weighting added.
@@ -109,6 +110,7 @@ protected:
   Engine        mEngine;                  // Model speclializes certain matrix arithmetic on n dim vectors, goodness of fit   
   Data   *const mpData;                   // See interface of gslData for example of necessary policy
   const int     mProtection;
+  const int     mBlockSize;               // Blocking that allows for dependence within blocks
   
   int           mN, mQ, mMaxQ, mDimZ;     
   double        mTSS, mRSS;
@@ -134,7 +136,8 @@ private:
 public:
   ~gslRegression ();
 
-  gslRegression (gslData *data, int protection) : mEngine(data), mpData(data), mProtection(protection) { initialize(); }
+  gslRegression (gslData *data, int protection, int blockSize=1)
+    : mEngine(data), mpData(data), mProtection(protection), mBlockSize(blockSize) { initialize(); }
   
   //  --- Change weights ---
   void reweight(gsl_vector const* w);
@@ -203,7 +206,7 @@ private:   // ------------------------------------------------------------------
   void compute_fitted_values(int nUse);
   
   double change_in_rss ()   const; 
-  double white_f_stat  () ;
+  double white_f_stat  ();
 
   int  qr_decomposition ();
   int  qr_decomposition (int first, int size);

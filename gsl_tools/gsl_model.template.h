@@ -65,10 +65,10 @@ LinearModel<Data,Engine>::add_predictors_if_useful (Collection c, double pToEnte
   else
   { if (result.second > 2 * pToEnter)   return result;  // exit
     // do more computational bennett or white test before adding
-    debug("LINM",3) << "Predictor passes initial evaluation; p-value " << result.second << " <  2 * " << pToEnter << std::endl;
+    debug("LINM",3) << "Predictor passes initial evaluation; p-value " << result.second << " <  2*" << pToEnter << std::endl;
     result = GSLR::white_f_test();
     if (result.second > pToEnter)   return result;  
-    debug("LINM",3) << "Predictor passes second evaluation;  p-value " << result.second << " <  " << pToEnter << std::endl;
+    debug("LINM",3) << "Predictor passes White test (block=" << GSLR::mBlockSize<< "); p-value " << result.second << " < " << pToEnter << std::endl;
   }
   // add them to the model for those that get this far
   GSLR::add_current_predictors();
@@ -209,7 +209,7 @@ LogisticModel<Data>::add_predictors_if_useful (Collection c, double pToEnter)
   prepare_predictors(c);
   if (GSLR::mZIsSingular) return result;
   // if no protection, return raw p-value; otherwise exit if looks too poor
-  result = GSLR::f_test_evaluation();
+  result = GSLR::f_test();
   // further testing if higher protection
   if (protection() == 0)
   { if (result.second > pToEnter) return result;        // exit

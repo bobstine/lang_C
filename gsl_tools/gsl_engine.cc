@@ -9,17 +9,20 @@
 // smoothing
 #include "smoothing_spline.h"
 
+#include "debug.h"
+
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 
+using debugging::debug;
 
 //   Ordinary GSL Engine      Ordinary GSL Engine      Ordinary GSL Engine      Ordinary GSL Engine      
 
 void 
 olsEngine::configure (gslData *data)
 { 
-  std::cout << "OLSE: Configuring OLS engine with n = " << mN << " with gslData pointer " << data << std::endl;
+  debug("OLSE",0) << "Configuring OLS engine with n = " << mN << " with gslData pointer " << data << std::endl;
 }
 
 
@@ -62,6 +65,7 @@ olsEngine::blas_ddot (gsl_vector const* x, gsl_vector const* y, double *dp) cons
 }
 
 
+
 void
 olsEngine::blas_dsyr(gsl_matrix const* z, gsl_vector const*e, gsl_matrix *zdz) const
 {
@@ -71,6 +75,27 @@ olsEngine::blas_dsyr(gsl_matrix const* z, gsl_vector const*e, gsl_matrix *zdz) c
     gsl_blas_dsyr(CblasLower, ei*ei, &zi.vector, zdz);
   }
 }
+
+void
+olsEngine::blas_dsyr(int blockSize, gsl_matrix const* Z, gsl_vector const*e, gsl_matrix *zdz) const
+{
+  int nBlocks (mN/blockSize);
+  if (nBlocks*blockSize != mN)
+  { debug("OLSE",0) << "Invalid block size " << blockSize << " in blas_dsyr\n";
+    return;
+  }
+  int k (Z->size2);
+  gsl_vector * Zpe (gsl_vector_alloc(k));  // Z'e
+  for (int b=0; b<nBlocks; ++b)
+  { int iStart = b * blockSize;
+    gsl_vector_set_zero(Zpe);
+    for (int i=iStart; i<iStart+blockSize; ++i) 
+      gsl_blas_daxpy (gsl_vector_get(e,i), &gsl_matrix_const_row(Z,i).vector, Zpe);
+    gsl_blas_dsyr(CblasLower, 1.0, Zpe, zdz);
+    iStart += blockSize;
+  }
+}
+
 
 double
 olsEngine::smooth (int df, gsl_vector const*x, gsl_vector const* y, gsl_vector *smth) const
@@ -202,6 +227,8 @@ wlsEngine::blas_ddot(gsl_vector const* x, gsl_vector const* y, gsl_vector const*
 }
 
 
+// dont we need these to be weighted too???
+
 void
 wlsEngine::blas_dsyr(gsl_matrix const* z, gsl_vector const*e, gsl_matrix *zdz) const
 {
@@ -210,6 +237,27 @@ wlsEngine::blas_dsyr(gsl_matrix const* z, gsl_vector const*e, gsl_matrix *zdz) c
     gsl_vector_const_view  zi (gsl_matrix_const_row(z, i));
     gsl_blas_dsyr(CblasLower, ei*ei, &zi.vector, zdz);
   }
+}
+
+void
+wlsEngine::blas_dsyr(int blockSize, gsl_matrix const* Z, gsl_vector const*e, gsl_matrix *zdz) const
+{
+  int nBlocks (mN/blockSize);
+  if (nBlocks*blockSize != mN)
+  { debug("OLSE",0) << "Invalid block size " << blockSize << " in blas_dsyr\n";
+    return;
+  }
+  int k (Z->size2);
+  gsl_vector * Zpe (gsl_vector_alloc(k));  // Z'e
+  for (int b=0; b<nBlocks; ++b)
+  { int iStart = b * blockSize;
+    gsl_vector_set_zero(Zpe);
+    for (int i=iStart; i<iStart+blockSize; ++i) 
+      gsl_blas_daxpy (gsl_vector_get(e,i), &gsl_matrix_const_row(Z,i).vector, Zpe);
+    gsl_blas_dsyr(CblasLower, 1.0, Zpe, zdz);
+    iStart += blockSize;
+  }
+  gsl_vector_free(Zpe);
 }
 
 

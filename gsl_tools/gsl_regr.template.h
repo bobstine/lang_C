@@ -24,6 +24,11 @@ gslRegression<Data, Engine>::initialize()
   mN = mpData->n();
   mQ = 0;   mMaxQ = gslRegression_Max_Q;
   debug("GSLR",0) << "Initializing gsl regression object with n=" << mN << "  max q =" << mMaxQ << std::endl;
+  int nBlocks (mN/mBlockSize);
+  if (mN != mBlockSize*nBlocks)
+  { debug("GLSR",0) << "*** ERROR ***  Invalid block size; " << mBlockSize << " is not a divisor of n = " << mN << std::endl;
+    return;
+  }
   allocate_memory();
   mXtXinvIsCurrent = false;
   mYBar = center_data_vector(mpData->live_y());                             // centers y to mean zero
@@ -237,10 +242,13 @@ gslRegression<Data,Engine>::white_f_stat()
 {
   if (mZIsSingular) return 0.0;
   // find Z'EE Z = Z'DZ
-  gsl_matrix       const*   z  (&gsl_matrix_const_submatrix(mZResids, 0,0, mN, mDimZ).matrix);
-  gsl_matrix             *zdz  (mpData->temp_mat(mDimZ, mDimZ)); 
+  gsl_matrix             *zdz  (mpData->temp_mat(mDimZ, mDimZ));
   gsl_matrix_set_zero(zdz);
-  mEngine.blas_dsyr(z, mpData->e(), zdz);
+  gsl_matrix       const*   z  (&gsl_matrix_const_submatrix(mZResids, 0,0, mN, mDimZ).matrix);
+  if(mBlockSize == 1)
+    mEngine.blas_dsyr(z, mpData->e(), zdz);
+  else
+    mEngine.blas_dsyr(mBlockSize,z,mpData->e(), zdz);
   // scalar case avoids matrices
   if (1 == mDimZ)
   { double zz00   (gsl_matrix_get(mZZ,0,0));
