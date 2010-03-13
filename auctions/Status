@@ -3,6 +3,10 @@ Next...
 	Have no interactions among quarters, but do have interactions of the 
 	quarters with the other factors.
 
+	FeatureProductStream should only count down to the origin, starting
+	with the squared term and then terminate.  Like others, should not
+	square an indicator.
+
 	Add expert to build the 'spatial interaction' variables.
 
 	Get the dogleg time factor variables, linear spline variables.
@@ -11,9 +15,6 @@ Next...
 Need to 
 
      Deans requests
-
-        Need to fix the format of the output CSV file since the number of experts
-	changes as the auction runs.
 
 
      Memory leaks, exceptions
@@ -115,6 +116,12 @@ Need to
 
        Have the blocked white test in place, with 3000 counties so can try
        other blocking sizes (original number 3023 was prime!).
+
+       Have the validation data working.
+
+       Fix the progress.csv file so that aligns again; fixed error in calc
+       of the initial out-of-sample CVSS.  Now done internally to the model
+       rather than from the auction.test.cc file.
  
 
 ------------------------------------------------------------------------------

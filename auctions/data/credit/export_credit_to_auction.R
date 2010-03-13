@@ -21,9 +21,9 @@ load(".Rdata/County")   ; length(County)
 # functions
 source("functions.R")
 
-#-----------------------------------------------------------------------------------
-#      Define eligible places and time blocks, get to 3000 counties (nicely factors)
-#-----------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#      Define eligible places and time blocks, get to 3000 counties (which has many factors)
+#-------------------------------------------------------------------------------------------
 
 # --- exclude alaska and hawaii, small labor force, and missing employment/credit vars
 avoid <-                            which((County$state == "Alaska")|(County$state == "Hawaii"))
@@ -39,10 +39,10 @@ t.fit    <-  6:65
 t.predict<- 66:71
 
 
-#-----------------------------------------------------------------------
-#      Output regression data for auction/C++, 198000 values
-#-----------------------------------------------------------------------
-cat("Avoiding", length(avoid),"counties, leaving",length(eligible.counties))  # 142, leave 3000
+#-----------------------------------------------------------------------------------
+#      Output regression data for auction/C++, 198000 values (12,000 for validation)
+#-----------------------------------------------------------------------------------
+cat("Avoiding", length(avoid),"counties, leaving",length(eligible.counties),"counties.\n")  # 142, leave 3000
 
 quarters <- 6:71; 
 dims    <- dim(County$REPB60M[eligible.counties,quarters])
@@ -51,13 +51,25 @@ the.file <- "/Users/bob/C/auctions/data/credit/credit.txt"
 cat("n=",n <- dims[1]*dims[2],"\n")
 
 # --------------------------------------------
+#  check initial SS from C++ code
+# --------------------------------------------
+
+y <- fill.missing.mat(County$REPB60M)[eligible.counties,quarters]
+
+ in.sample <- as.vector(y[, 1:62]); length ( in.sample)
+out.sample <- as.vector(y[,63:66]); length (out.sample)
+
+sum(( in.sample - mean(in.sample))^2)  # 40.8765
+sum((out.sample - mean(in.sample))^2)  #  1.5655
+
+# --------------------------------------------
 #  write starts here
 # --------------------------------------------
 
-# write the header line
-cat(n,14+length(quarters), file=the.file)
+# write the header line  (1 for [in/out], 14 above)
+cat(n,1+14+length(quarters), file=the.file)
 
-# this function write later variables
+# this function writes variables
 write.q <- function(name,data,lag) {
 	cat("\n",name,sep="",                                       file=the.file, append=TRUE);
 	if (lag>0) cat(".",lag,sep="",                              file=the.file, append=TRUE);
@@ -65,8 +77,14 @@ write.q <- function(name,data,lag) {
 	cat(fill.missing.mat(data)[eligible.counties,quarters-lag], file=the.file, append=TRUE)
 }
 
+# write the selector; hold back q quarters
+q <- 4
+in.out <- matrix(1,nrow=dims[1],ncol=dims[2]); in.out[,(dims[2]-(q-1):0)]<-0;
+cat("\n[in/out][in]\nstream main\n", in.out, file=the.file, append=TRUE) 
+
 # now write the response  (71-6+1 quarters x 3023 counties = 199,518 )
 write.q("REPB60M",County$REPB60M,0)
+
 # add lags y
 write.q("REPB60M",County$REPB60M,1)
 write.q("REPB60M",County$REPB60M,2)
@@ -99,4 +117,4 @@ for (q in quarters) {
 # cumulative time period indicators  (as linear "spline-like" terms __/)
 #
 
-
+cat("\n   ------- DONE -------\n")

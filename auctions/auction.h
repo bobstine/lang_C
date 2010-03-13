@@ -37,6 +37,7 @@ private:
   bool                mCalibrateFit;      // use calibration
   int                 mRound;          
   std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
+  int                 mNumInitialExperts; // for building csv file  (set when prior to csv header is written)
   ExpertVector        mExperts;
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
@@ -78,18 +79,18 @@ private:
   void write_model_to            (std::ostream& os)                      const;
   void write_model_data_to       (std::ostream& os)                      const;
   
-  void write_csv_header_to       (std::ostream& os, double inSS, double outSS) const;
 
 
  private:
+  void write_csv_header_to (std::ostream& os)                                            const;
   std::pair<Expert,double> collect_bids(std::ostream&);
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
   FeatureVector            features_with_attribute (std::string attr, std::string value) const;
-  FeatureABC *             xb_feature(std::vector<double> const& b)   const;
-  FeatureABC *             calibration_feature()                      const;
-  void                     print_features(FeatureVector const& fv)    const;
+  FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
+  FeatureABC *             calibration_feature()                                         const;
+  void                     print_features(FeatureVector const& fv)                       const;
 };
 
 

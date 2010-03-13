@@ -166,9 +166,6 @@ main(int argc, char** argv)
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   debug("AUCT",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
 
-  // in-sample count and SS, out of sample count and SS
-  std::pair< std::pair<int,double>, std::pair<int,double> > inOut (initialize_sums_of_squares(yColumns));
-    
   // initialize data object held in underlying model [y and optional selector]
   gslData *theData (build_model_data(yColumns));
 
@@ -279,7 +276,6 @@ main(int argc, char** argv)
   {
     int round = 0;
     const int minimum_residual_df = 10;
-    theAuction.write_csv_header_to (progressStream, inOut.first.second, inOut.second.second);   // initial SS in and out of sample
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
@@ -291,7 +287,6 @@ main(int argc, char** argv)
     }
     debug(4) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
-
 
   // write model in HTML to a file
   {
@@ -458,7 +453,7 @@ data_has_selector(std::string const& dataFileName, std::ostream& os)
 {
   std::ifstream input (dataFileName.c_str());
   if (input)
-  { os << "Peeking at data file  " << dataFileName << " finds ";
+  { std::cout << "AUCT: Peeking at data file  " << dataFileName << " finds ";
     int i,j;
     std::string firstVarName;
     input >> i >> j >> firstVarName;
@@ -471,7 +466,7 @@ data_has_selector(std::string const& dataFileName, std::ostream& os)
   }
 }
 
-
+/*   No longer used...
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares( std::vector<Column> y)
 {
@@ -524,3 +519,4 @@ initialize_sums_of_squares( std::vector<Column> y)
   return std::make_pair( std::make_pair(n1, inSS), std::make_pair(n0, outSS) );
 }
   
+*/

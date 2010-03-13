@@ -141,11 +141,11 @@ public:
   
   //  --- Change weights ---
   void reweight(gsl_vector const* w);
-  void reweight(gsl_vector const* w, gsl_vector const* y);   // change both for IRLS
+  void reweight(gsl_vector const* w, gsl_vector const* y);               // change both for IRLS
   
   
   //  --- Accessors ---
-  int              n() const { return mN; }                  // n are used in estimation, len are available with cv
+  int              n() const { return mN; }                              // n are used in estimation, len are available with cv
   int            len() const { return mpData->length(); }
   int              q() const { return mQ; }
   int           maxQ() const { return mMaxQ; }
@@ -154,10 +154,10 @@ public:
 
         double        yBar() const { return mYBar; }
   const double*       xBar() const { return gsl_vector_ptr(mXBar,0); }
-  const double*       beta() const { return gsl_vector_ptr(mBeta,0); }        // no intercept
+  const double*       beta() const { return gsl_vector_ptr(mBeta,0); }   // no intercept
         double   intercept() const;
   
-  std::pair<double,double> sums_of_squares () const;
+  std::pair<double,double> sums_of_squares () const;                     // in-sample, out-of-sample
 
   template <class Iter> void fill_with_beta (Iter begin) const;  
   template <class Iter> void fill_with_fitted_values (Iter fit) const;
@@ -171,7 +171,7 @@ public:
   
   template<class Iter> void fill_with_diagonal_XtXinv(Iter begin, double scalingFactor=1.0) const;  // get std error
   
-  typedef typename std::pair<double,double> TestResult;  // test stat, p-value
+  typedef typename std::pair<double,double> TestResult;                                             // test stat, p-value
   
   TestResult  f_test()           const     { double dss (change_in_rss()); return Stat_Utils::f_test(dss, mDimZ, mRSS-dss, df_residual()-mDimZ); }
   TestResult  white_f_test()               { return Stat_Utils::f_test(white_f_stat(), mDimZ, df_residual()-mDimZ); }

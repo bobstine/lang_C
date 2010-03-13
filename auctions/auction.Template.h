@@ -6,18 +6,19 @@
  *
  */
 
-
 template <class Model>
 void
-Auction<Model>::write_csv_header_to(std::ostream& os, double ssIn, double ssOut) const
+Auction<Model>::write_csv_header_to(std::ostream& os) const
 {
   os << "Round, Time, Goodness of Fit, Total Alpha  ";
   for (int b=0; b<number_of_experts(); ++b)
     os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
-  os << ", Winning Expert, High Bid, p-value, Variable, Outcome, Payoff, RSS, CVSS\n";
+  os << ", Winning Expert, Winning Bid, p value, Variable, Outcome, Payoff, Res SS, CVSS" << std::endl;
+  // initial conditions
+  std::pair<double,double> ss =  mModel.sums_of_squares();
   os << " , , ,";
-  for (int b=0; b<number_of_experts(); ++b)    os << ",  , , ";
-  os << ", , , , , , , " << ssIn << "," << ssOut << std::endl;
+  for (int b=0; b<number_of_experts(); ++b)    os << ",,, ";
+  os << ", , , , , , , " << ss.first << "," << ss.second << std::endl;
 }
 
 
@@ -26,6 +27,10 @@ template <class ModelClass>
 bool
 Auction<ModelClass>::auction_next_feature (std::ostream& os)
 {
+  if (mRound == 0) // prior to first round
+  { mNumInitialExperts = number_of_experts();
+    write_csv_header_to (os);
+  }
   ++mRound;
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
@@ -70,6 +75,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   if (os)
     if (accepted)
     { std::pair<double,double> rss (mModel.sums_of_squares());
+      debug("AUCT",0) << "Residual SS.  In-sample = " << rss.first << "  Out-of-sample = " << rss.second << std::endl;
       os << "," << features[0]->name() << "," << amount << "," << rss.first << "," << rss.second;
     }
     else
@@ -87,11 +93,17 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
 }
 
 
+
+namespace {
+  double maximum (double a, double b) { return (a>b)?a:b; }
+}
+
+
 template <class ModelClass>
 std::pair<Expert,double>
 Auction<ModelClass>::collect_bids (std::ostream& os)
 {
-  if (os)
+  if (os)  // write time stamp info
   { const time_t tmpTime (time(0));
     std::string timeStr (asctime(localtime(&tmpTime)));
     os << mRound << ", " << timeStr.substr(0,timeStr.size()-5)
@@ -101,11 +113,13 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   Expert       winningExpert,    priorityExpert;
   double       highBid (-7.7),   priorityBid (0.0);
   AuctionState state (auction_state());
-  for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
+  int iExpert (0);
+  for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
   { double bid = (*it)->place_bid(state);               // pass information to experts
     if (os)
-      if (bid > 0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
-      else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
+      if (iExpert < mNumInitialExperts)
+	if (bid > 0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
+	else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
       winningExpert = *it;
@@ -121,7 +135,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
     debug(3) << "AUCT: Priority bidder takes bid " << highBid << std::endl;
   }
   if(os)
-    os << ", " << winningExpert->name() << ", " << highBid;
+    os << "," << winningExpert->name() << "," << highBid;
   winningExpert->bid_accepted();                     // inform experts whether win/lose auction
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != winningExpert) (*it)->bid_declined();
