@@ -436,7 +436,7 @@ build_model_data(std::vector<Column> const& y)
   
   if (useSubset)  // leading column is indicator of which cases to use in fitting
   {
-    debug("AUCT",1) << " Subset of cases defined by " << y[0] << "; response variable is " << y[1] << std::endl;
+    debug("AUCT",1) << " Subset of cases defined by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
     return new gslData(y[1]->begin(), y[0]->begin(), equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting

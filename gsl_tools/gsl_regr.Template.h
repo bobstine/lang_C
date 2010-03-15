@@ -26,7 +26,7 @@ gslRegression<Data, Engine>::initialize()
   debug("GSLR",0) << "Initializing gsl regression object with n=" << mN << "  max q =" << mMaxQ << std::endl;
   int nBlocks (mN/mBlockSize);
   if (mN != mBlockSize*nBlocks)
-  { debug("GLSR",0) << "*** ERROR ***  Invalid block size; " << mBlockSize << " is not a divisor of n = " << mN << std::endl;
+  { debug("GSLR",0) << "*** ERROR ***  Invalid block size; " << mBlockSize << " is not a divisor of n = " << mN << std::endl;
     return;
   }
   allocate_memory();
@@ -267,7 +267,7 @@ gslRegression<Data,Engine>::white_f_stat()
     gsl_set_error_handler(builtIn);
   }
   if (gslError) 
-  { debug("GLSR",3) << " *** Error ***   Z'DZ not PSD in Cholesky decomp. Return dRSS = 0.\n";
+  { debug("GSLR",3) << " *** Error ***   Z'DZ not PSD in Cholesky decomp. Return dRSS = 0.\n";
     return 0.0;
   }
   //  e'Z (Z'DZ)º (Z'e)
@@ -313,7 +313,7 @@ void
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)                            // changes the estimates
 {
   gsl_vector *weights  (mEngine.weights());
-  debug("GLSR",0) << "Reweighting; initial weights are " << gsl_vector_get(newWeights,0) << " " << gsl_vector_get(newWeights,1) << std::endl;
+  debug("GSLR",0) << "Reweighting; initial weights are " << gsl_vector_get(newWeights,0) << " " << gsl_vector_get(newWeights,1) << std::endl;
   gsl_vector_memcpy(weights, newWeights);
   mEngine.weights_have_changed();
   mYBar += center_data_vector(mpData->live_y());       // re-center Y
@@ -330,7 +330,7 @@ template <class Data, class Engine>
 void 
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights, gsl_vector const* newY)    // also inserts new response
 {
-  debug("GLSR",0) << "Replacing response in model with = " << mQ << " predictors.\n";
+  debug("GSLR",0) << "Replacing response in model with = " << mQ << " predictors.\n";
   gsl_vector_memcpy (mpData->live_y(), newY);
   mYBar = 0.0;          // reset in reweighting                                                    
   reweight(newWeights);
@@ -348,7 +348,7 @@ gslRegression<Data,Engine>::add_current_predictors ()
     return 0;
   }
   else  // NOTE: most recent predictors are in mDimZ past column mQ in mX
-  { debug("GLSR",1) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
+  { debug("GSLR",1) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
     int status (0);
     status = qr_decomposition();   // increments mQ += mDimZ if successful
     status += update_XtXinv();
@@ -381,7 +381,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   vQR = gsl_matrix_submatrix (mQR, 0,0, mN, newQ);
   gsl_vector_view  vTau  (gsl_vector_subvector(mTau, 0, newQ));
   if (0 == firstColumn) {
-    debug("GLSR",0) << "Refactoring matrix of " << mQ << " columns.\n";
+    debug("GSLR",0) << "Refactoring matrix of " << mQ << " columns.\n";
     gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     status = gsl_linalg_QR_decomp(&vQR.matrix, &vTau.vector); 
     gsl_set_error_handler(builtIn);  }
@@ -557,7 +557,7 @@ template <class Data, class Engine>
   gslRegression<Data,Engine>::Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M)
 {
   if (mDimZ != 1)
-    debug("GLSR",3) << "Warning. Bennett evaluation for first Z only. \n";
+    debug("GSLR",3) << "Warning. Bennett evaluation for first Z only. \n";
   
   // pick function that computes variance
   double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
@@ -659,7 +659,7 @@ template <class Data, class Engine>
 void
 gslRegression<Data,Engine>::restore_state(gslRegressionState const& state)
 {
-  debug("GLSR",0) << "Restoring state from external object.\n";
+  debug("GSLR",0) << "Restoring state from external object.\n";
   // can only restore to a smaller model with equal number cases
   if ((state.q() > mQ) || (state.n() != mN))
   { debug("GSLR",3) << "  *** Error ***   Cannot restore from object; its dimensions(" 
@@ -689,7 +689,7 @@ template <class Data, class Engine>
 void
 gslRegression<Data,Engine>::allocate_memory()
 {
-  debug("GLSR",0) << "Allocating memory with n = " << mN << ", max q = " << mMaxQ << std::endl;
+  debug("GSLR",0) << "Allocating memory with n = " << mN << ", max q = " << mMaxQ << std::endl;
   // regr terms
   mBeta    = gsl_vector_alloc(1+mMaxQ);                    // room for intercept
   mC       = gsl_vector_alloc(mMaxQ);

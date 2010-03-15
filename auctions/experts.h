@@ -71,19 +71,23 @@ public:
    : mRefCount(1), mRole(role),  mAlpha(alpha),
     mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
-  int                    priority()                 const { if (mRole == calibrate) return 1; else return 0; }
-  ExpertRole             role()                     const { return mRole; }
-  double                 alpha()                    const { return mAlpha; }
-  double                 increment_alpha(double a)        { mAlpha += a; return mAlpha; }
-  double                 current_bid()              const { return mCurrentBid; }
-  std::pair<int,int>     performance()              const { return mBidHistory.bid_results_summary(); }
+  int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
+  ExpertRole             role()                             const { return mRole; }
+  double                 alpha()                            const { return mAlpha; }
+  double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
+  bool                   finished(AuctionState const& state)      { if((mRole==parasite)||(mRole==calibrate)) return false;
+                                                                    return ((mAlpha <= 0.0) || !has_feature(state));}
+  double                 current_bid()                      const { return mCurrentBid; }
+  std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
-  virtual double         place_bid (AuctionState const& state) = 0; 
-  virtual std::string    name()                     const = 0;
-  virtual std::string    feature_name()             const = 0;
-  virtual FeatureVector  feature_vector()                 = 0;
+  
+  virtual bool           has_feature(AuctionState const& state) = 0;
+  virtual double         place_bid (AuctionState const& state)  = 0; 
+  virtual std::string    name()                           const = 0;
+  virtual std::string    feature_name()                   const = 0;
+  virtual FeatureVector  feature_vector()                       = 0;
   virtual void           bid_accepted()                       { mLastBidAccepted = true; }
   virtual void           bid_declined()                       { mLastBidAccepted = false; }
 
@@ -91,7 +95,6 @@ public:
 
  protected:
   double                 max_bid      ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
-  virtual bool           has_feature  (AuctionState const& state) = 0;
  private:
   std::string            role_string() const;
 };
@@ -116,13 +119,13 @@ public:
   Bidder const&    bidder()       const { return mBidder; }
   Stream const&    stream()       const { return mStream; }
   std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
-  
+
   double           place_bid (AuctionState const& state);
   std::string      feature_name()                const     { return mStream.feature_name(); }       
   FeatureVector    feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
- protected:
-  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }};
+  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
+};
 
 
 

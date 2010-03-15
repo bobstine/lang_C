@@ -3,7 +3,14 @@
 #include "adapter.h"
 
 namespace {
-
+  
+  bool indicators_from_same_parent(Feature const& f1, Feature const& f2)
+  {
+    return f1->has_attribute("category")
+      && f2->has_attribute("category")
+      && (f1->attribute_str_value("parent")==f2->attribute_str_value("parent"));
+  }
+  
   bool found_feature_name_in_vector (std::string const& name, std::vector<Feature> const& vec, std::string const& vecName)
   {
     // std::cout << "Looking for " << name << " in " ;
@@ -180,15 +187,6 @@ InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& u
     return false;
   return true;
 }
-  
-template<class Source>
-bool
-InteractionStream<Source>::indicators_from_same_parent(Feature const& f1, Feature const& f2) const
-{
-  return f1->has_attribute("category")
-    && f2->has_attribute("category")
-    && (f1->attribute_str_value("parent")==f2->attribute_str_value("parent"));
-}
 
 template<class Source>
 int   
@@ -216,62 +214,57 @@ InteractionStream<Source>::pop()
 
 ///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
 
-template<class DynSource>
+template<class Source>
 bool
-FeatureProductStream<DynSource>::empty() const
+FeatureProductStream<Source>::empty() const
 {
-  return (mDynSource.empty() || (int)mDynSource.size()==mDynPos);
+  return (mSource.empty() || (mPos < 0));
 }
 
-template<class DynSource>
+template<class Source>
 void
-FeatureProductStream<DynSource>::build_current_feature_name()
+FeatureProductStream<Source>::build_current_feature_name()
 {
   if (empty())
     mCurrentFeatureName = "";
   else
-    mCurrentFeatureName = Feature(mFeature, mDynSource[mDynPos])->name();  // Feature(a,b) builds interaction
+    mCurrentFeatureName = Feature(mFeature, mSource[mPos])->name();  // Feature(a,b) builds interaction
 }
 
 
-template<class DynSource>
+template<class Source>
 void
-FeatureProductStream<DynSource>::increment_position()
+FeatureProductStream<Source>::increment_position()
 {
-  if (mDynPos < (int)(mDynSource.size()-1))
-    ++ mDynPos;
+  --mPos;
   build_current_feature_name();
 }
 
 
-template<class DynSource>
+template<class Source>
 bool
-FeatureProductStream<DynSource>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
+FeatureProductStream<Source>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-  if (mDynSource[mDynPos]->is_constant())
-    return false;
-  if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
-    build_current_feature_name();
-  if (found_feature_name_in_vector(mCurrentFeatureName, used, "model features"))  // skip if has been used already
+  if ( mSource[mPos]->is_constant() ||                                            //  equiv to the internal feature
+       indicators_from_same_parent(mFeature, mSource[mPos]) ||                    //  save the effort 
+       found_feature_name_in_vector(mCurrentFeatureName, used, "model features")  //  skip if has been used already
+       )
     return false;
   return true;
 }
 
 
-template<class DynSource>
+template<class Source>
 typename std::vector<Feature>
-FeatureProductStream<DynSource>::pop()
+FeatureProductStream<Source>::pop()
 {
-  Feature  xd (mDynSource[mDynPos]);  // pop must increment counter *after* reading off top
+  Feature  xd (mSource[mPos]);  // pop must increment counter *after* reading off top
   debugging::debug("FPST",0) << name() << " stream making product of "
-			     << mFeature->name() << " x dyn[" << mDynPos << "] (" << xd->name() << ").\n";
-
-  Feature test(mFeature,xd);
-  debugging::debug("FPST",1) << "testing " <<  test->name() << " with xd from " << xd->class_name() << std::endl;
-
+			     << mFeature->name() << " x Source[" << mPos << "] (" << xd->name() << ").\n";
   increment_position();
   std::vector<Feature> result;
   result.push_back(Feature(mFeature,xd));
+  
   return(result);
 }
 

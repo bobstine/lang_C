@@ -43,7 +43,7 @@
     Finite           chooses variables from a fixed set of columns
     Fit              builds features depending on state of model (such as just added var)
     Interaction      interactions among features from a source of fixed size
-    Feature-product  interactions between a feature and a set of increasing size (dynamic)
+    Feature-product  interactions between a feature and a fixed set (counts down, as vars in model)
     Cross-product    interactions between fixed set of features and a set of increasing size
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
@@ -183,7 +183,7 @@ private:
   bool            mUseSquares;
   std::string     mName;
   std::string     mCurrentFeatureName;
-  Source const&   mSource;
+  Source const&   mSource;                     
   int             mPos1, mPos2;
   
 public:
@@ -200,9 +200,8 @@ public:
   void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  empty                    ()                                                                       const;
+  bool  empty ()                            const;
   bool  current_feature_is_okay    (std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
-  bool  indicators_from_same_parent(Feature const& f1, Feature const& f2)                                    const;
   void  increment_position();
 private:
   bool  has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
@@ -221,29 +220,29 @@ make_interaction_stream (std::string const& name, Source const& s, bool useSquar
 
 //  FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    
 
-template<class DynSource>
+template<class Source>
 class FeatureProductStream 
 {
-  std::string       mName;
-  std::string       mCurrentFeatureName;
-  Feature           mFeature;
-  DynSource const&  mDynSource;
-  int               mDynPos;
+  std::string  mName;
+  std::string  mCurrentFeatureName;
+  Feature      mFeature;
+  Source       mSource;              // not a reference; it holds the features... BIG BUG to put in a const&
+  int          mPos;
   
 public:
     
-  FeatureProductStream(Feature f, DynSource const& dynSrc)
-    : mName(""), mCurrentFeatureName(""), mFeature(f), mDynSource(dynSrc), mDynPos(0)  { mName = f->name() + " x DynSrc";
-                                                                                         build_current_feature_name(); }
+  FeatureProductStream(std::string name, Feature f, Source const& src)
+    : mName(""), mCurrentFeatureName(""), mFeature(f), mSource(src), mPos(mSource.size()-1)  { mName = name + ":" + f->name() + " x Source";
+                                                                                               build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();
-  int                     number_remaining()                  const { return mDynSource.size() - mDynPos; }
-  void                    print_to(std::ostream& os)          const { os << "FPFS: " << name() << " @ " << mDynPos << " "; }
+  int                     number_remaining()                  const { return mPos+1; }
+  void                    print_to(std::ostream& os)          const { os << "FPST: " << name() << " @ " << mPos << " "; }
   
 protected:
-  bool  empty() const;
+  bool  empty()  const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
 private:
@@ -251,11 +250,11 @@ private:
 };
 
 
-template <class DynSource>
-RegulatedStream< FeatureProductStream<DynSource> >
-make_feature_product_stream (Feature f, DynSource const& dynSrc)
+template <class Source>
+RegulatedStream< FeatureProductStream<Source> >
+make_feature_product_stream (std::string name, Feature f, Source const& Src)
 {
-  return RegulatedStream< FeatureProductStream<DynSource> >(FeatureProductStream<DynSource>(f, dynSrc));
+  return RegulatedStream< FeatureProductStream<Source> >(FeatureProductStream<Source>(name, f, Src));
 }
 
 
@@ -267,8 +266,8 @@ class CrossProductStream
 {
   std::string     mName;
   std::string     mCurrentFeatureName;
-  Source1 const&  mFixedSource;  // fixed number of features
-  Source2 const&  mDynSource;    // this one iterates most often (odometer style)
+  Source1 const&  mFixedSource;          // fixed number of features
+  Source2 const&  mDynSource;            // this one iterates most often (odometer style)
   int             mFixedPos, mDynPos;
   
 public:
@@ -284,7 +283,7 @@ public:
   void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 protected:
-  bool  empty() const;
+  bool  empty()                             const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
 private:

@@ -6,6 +6,10 @@
  *
  */
 
+// #include <functional>  mem_fun
+#include <algorithm>   # find_if
+
+
 template <class Model>
 void
 Auction<Model>::write_csv_header_to(std::ostream& os) const
@@ -33,6 +37,9 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   }
   ++mRound;
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
+  // reap empty experts
+  int emptyExperts (purge_empty_experts());
+  if (emptyExperts) debug("AUCT",2) << "Purged " << emptyExperts << " empty experts.\n";
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<Expert,double> winner (collect_bids(os));  
   Expert  expert = winner.first;
@@ -68,32 +75,61 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   // report bid result
   double amount;
   bool accepted (result.second < afterTaxBid);
-  if (accepted)
-    amount = pay_winning_expert(expert, features);                          // installs experts as needed
-  else
-    amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
-  if (os)
-    if (accepted)
-    { std::pair<double,double> rss (mModel.sums_of_squares());
-      debug("AUCT",0) << "Residual SS.  In-sample = " << rss.first << "  Out-of-sample = " << rss.second << std::endl;
-      os << "," << features[0]->name() << "," << amount << "," << rss.first << "," << rss.second;
-    }
-    else
-      os <<               ", ,"               << amount <<           ", , ";
   for (unsigned int j=0; j<features.size(); ++j)
-  { features[j]->set_model_results(accepted, result.second);           // save attributes in feature for printing
+  { features[j]->set_model_results(accepted, result.second);                // save attributes in feature for printing
     if (accepted) 
-    { mLogStream << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
+    { mLogStream << "+F+   " << features[j] << std::endl;                   // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
     else      
       mRejectedFeatures.push_back(features[j]);
   }
+  if (accepted)
+  { amount = pay_winning_expert(expert, features);                          // installs experts as needed
+    if (os)
+    { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss 
+      os << "," << features[0]->name() << "," << amount << "," << rss.first << "," << rss.second;
+    }
+  } else
+  { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
+    if (os)
+      os <<               ", ,"               << amount <<           ", , ";
+  }
   return accepted;
 }
 
+namespace {
+  class Empty {
+  private:
+    AuctionState mState;
+  public:
+    Empty(AuctionState const& s) : mState(s) { }
+    bool operator()(Expert & e) { return e->finished(mState); }
+  };
+}
 
 
+template<class ModelClass>
+int
+Auction<ModelClass>::purge_empty_experts()  // purges if does not have and not parasite
+{
+  int numberPurged (0);
+  Empty pred(auction_state());
+  while (true)
+  { ExpertVector::iterator ee (std::find_if(mExperts.begin(), mExperts.end(), pred ));
+    if(ee == mExperts.end())
+      break;
+    else
+    { mRecoveredAlpha += (*ee)->alpha();
+      debug("AUCT",0) << "Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
+      numberPurged += 1;
+      mExperts.erase(ee);
+    } 
+  }
+  return numberPurged;
+}   
+      
+					   
 namespace {
   double maximum (double a, double b) { return (a>b)?a:b; }
 }
@@ -178,19 +214,19 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f) // add expert for interaction with other added features
     { double taxForEach = tax/features.size();
       if ((*f)->has_attribute("interact_with"))
-      { FeatureVector fv = features_with_attribute((*f)->attribute_str_value("interact_with"),"*");
-	if (fv.size() == 0)
-	  debug("AUCT",4) << "Warning: no features have attribute " << (*f)->attribute_str_value("interact_with") << std::endl;
-	else
+      { std::string parent ((*f)->attribute_str_value("interact_with"));
+	FeatureVector fv = features_with_attribute("parent",parent);   // very specialized to 
+	debug("AUCT",4) << fv.size() << " features derived from " << parent << std::endl;
+	if (fv.size() > 0)
 	{ taxForEach /= 2;
 	  add_expert(Expert(custom, taxForEach,
 			    UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-			    make_feature_product_stream(*f, fv)  ));
+			    make_feature_product_stream(parent +" interactions", *f, fv)  ));
 	}
       }
-      add_expert(Expert(parasite, taxForEach,
-			UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-			make_feature_product_stream(*f, model_features())  ));
+      add_expert(Expert(custom, taxForEach,  // interacts winning feature with others in model stream
+			UniversalBoundedBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
+			make_feature_product_stream("model feature interact", *f, model_features())  ));
     }
   }
   mPayoffHistory.push_back(mPayoff);
@@ -231,13 +267,15 @@ Auction<ModelClass>::features_with_attribute (std::string attr, std::string valu
   std::vector< Feature > fv;
 
   if (value == "*")   // ignore value
-    for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
+  { for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
       if ( (*f)->has_attribute(attr) )
 	fv.push_back(*f);
+  }
   else
-    for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
+  { for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
       if ( (*f)->has_attribute(attr) && ((*f)->attribute_str_value(attr)==value) )
 	fv.push_back(*f);
+  }
   return fv;
 }
  

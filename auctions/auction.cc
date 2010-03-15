@@ -6,3 +6,10 @@
 */
 
 #include "auction.h"
+
+void
+set_breakpoint(void)
+{
+  int x = 2;
+  x = x + 1;
+}

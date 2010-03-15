@@ -33,6 +33,7 @@ private:
   const double        mPayoff;            // payoff for a winning bid
   const double        mBidTaxRate;        // percentage taken from winning bid
   const double        mPayoffTaxRate;     //                       payoff
+  double              mRecoveredAlpha;    // collected from experts that expired
   bool                mHasActiveExpert;
   bool                mCalibrateFit;      // use calibration
   int                 mRound;          
@@ -53,7 +54,7 @@ private:
     }
     
   Auction (Model& m, FeatureVector const& sourceFeatures, bool calibrate, std::ostream& logStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mHasActiveExpert(true),
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mRecoveredAlpha(0), mHasActiveExpert(true),
       mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mSourceFeatures(sourceFeatures), mLogStream(logStream) {  } 
   
@@ -61,7 +62,8 @@ private:
 
   int                    number_of_experts ()       const { return mExperts.size(); }
   int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
-  double                 total_expert_alpha ()      const;  
+  double                 total_expert_alpha ()      const;
+  double                 recovered_alpha()          const { return mRecoveredAlpha; }
   bool                   has_active_expert()        const { return mHasActiveExpert; }  
 									 
   int                    number_of_predictors()     const { return mModel.q(); }
@@ -82,11 +84,14 @@ private:
 
 
  private:
-  void write_csv_header_to (std::ostream& os)                                            const;
+  void                     write_csv_header_to (std::ostream& os)                        const;
+
+  int                      purge_empty_experts();
   std::pair<Expert,double> collect_bids(std::ostream&);
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
+
   FeatureVector            features_with_attribute (std::string attr, std::string value) const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
