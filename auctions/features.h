@@ -92,9 +92,11 @@ class Feature
   template<class Op>
     Feature(Op const& op, Feature const &x1, Feature const& x2);
 
+  bool operator==(Feature const& f)        const  { return mFP == f.mFP; }
+  bool operator< (Feature const& f)        const  { return mFP->name() < f.mFP->name(); }
   
   Feature&    operator=(Feature const& f);
-  FeatureABC* operator->()                 const       { return mFP; }  
+  FeatureABC* operator->()                 const  { return mFP; }  
 };
 
 inline

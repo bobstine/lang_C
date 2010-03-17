@@ -27,7 +27,7 @@ FeatureABC::has_attribute(std::string attr)           const
 void
 FeatureABC::add_attribute(std::string name, std::string value)
 {
-  mAttributes[name] = value;
+  mAttributes[name].insert(value);
 }
 
 
@@ -45,45 +45,47 @@ FeatureABC::add_attributes_from_paired_list (std::string list)
 }
 
 
-std::string
+std::set<std::string>
 FeatureABC::attribute_str_value(std::string attr) const
 {
-  AttrIter iter (mAttributes.find(attr));
-  if (iter != mAttributes.end())
-    return iter->second;
-  else
-    return "";
+  for(AttrIter it=mAttributes.begin(); it != mAttributes.end(); ++it)
+    if (it->first == attr)
+      return it->second;
+  std::set<std::string> s;
+  return s;
 }
       
 
-int
+std::set<int>
 FeatureABC::attribute_int_value(std::string attr) const
 {
-  AttrIter iter (mAttributes.find(attr));
-  if (iter != mAttributes.end())
-  { std::istringstream ss(iter->second);
-    int i;
-    ss >> i;
-    return i;
+  std::set<int> result;
+  std::set<std::string> strs (attribute_str_value(attr));
+  for (std::set<std::string>::const_iterator it=strs.begin(); it!=strs.end(); ++it)
+  { std::istringstream ss(*it);
+    int value;
+    ss >> value;
+    result.insert(value);
   }
-  else
-    return 0;
+  return result;
 }
       
 
-double
+
+std::set<double>
 FeatureABC::attribute_dbl_value(std::string attr) const
 {
-  AttrIter iter (mAttributes.find(attr));
-  if (iter != mAttributes.end())
-  { std::istringstream ss(iter->second);
-    double d;
-    ss >> d;
-    return d;
+  std::set<double> result;
+  std::set<std::string> strs (attribute_str_value(attr));
+  for (std::set<std::string>::const_iterator it=strs.begin(); it!=strs.end(); ++it)
+  { std::istringstream ss(*it);
+    double value;
+    ss >> value;
+    result.insert(value);
   }
-  else
-    return 0.0;
+  return result;
 }
+
 
 
 bool
@@ -109,7 +111,7 @@ FeatureABC::read_from (std::istream& is)
     std::string attributeValue;
     is >> attribute;
     is >> attributeValue;
-    mAttributes[attribute] =  attributeValue;
+    mAttributes[attribute].insert(attributeValue);
     --attributeCount;
   }
   is >> mTried;
@@ -125,7 +127,8 @@ FeatureABC::write_to (std::ostream& os)     const
 {
   os << "FeatureABC " << mAttributes.size() << " ";
   if (!mAttributes.empty())
-    os << mAttributes; // defined in featureABC.h
+    for (AttrIter pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
+      os << " [" << pA->first << " (" << pA->second << ")] ";
   os << mTried << " " << mInModel << " " << mEntryPValue << std::endl;
 }
 
@@ -135,7 +138,8 @@ FeatureABC::print_to(std::ostream& os) const
 {
   os << name() ;
   if (!mAttributes.empty())
-    os << mAttributes;
+    for (AttrIter pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
+      os << " [" << pA->first << " (" << pA->second << ")] ";
   if (! mTried)
     os << " (not tried).";
   else

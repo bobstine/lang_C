@@ -26,8 +26,9 @@
 
 #include <iostream>
 #include <map>
+#include <set>
 
-///
+
 class Feature;
 
 class FeatureABC
@@ -35,11 +36,11 @@ class FeatureABC
   friend class Feature;
   
  public:
-  typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double>  Iterator;
-  typedef range< Iterator >                                                    Range;
-  typedef std::map<std::string, int>                                           Arguments;   // map sorts names, second is power
-  typedef std::map<std::string, std::string>                                   Attributes;
-  typedef std::map<std::string, std::string>::const_iterator                   AttrIter;
+  typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double> Iterator;
+  typedef range< Iterator >                                                   Range;
+  typedef std::map<std::string, int>                                          Arguments;   // map sorts names, second is power
+  typedef std::map<std::string, std::set<std::string> >                       Attributes;  // allow multiple occurances of the attr 
+  typedef std::map<std::string, std::set<std::string> >::const_iterator       AttrIter;
   
  private:
   int            mRefCount;
@@ -66,9 +67,9 @@ class FeatureABC
   void                add_attribute(std::string name, std::string value);
   void                add_attributes_from_paired_list (std::string list);
 
-  std::string         attribute_str_value(std::string attr)     const;
-  int                 attribute_int_value(std::string attr)     const;
-  double              attribute_dbl_value(std::string attr)     const;
+  std::set<std::string> attribute_str_value(std::string attr)   const;
+  std::set<     int   > attribute_int_value(std::string attr)   const;
+  std::set<   double  > attribute_dbl_value(std::string attr)   const;
   
   bool                was_tried_in_model ()                     const { return mTried; }
   bool                is_used_in_model ()                       const { return mInModel; }
@@ -105,16 +106,28 @@ operator<< (std::ostream& os, FeatureABC const* feature)
   return os;
 }
 
+
 inline
 std::ostream&
-operator<< (std::ostream& os, std::map<std::string,std::string> const& attributes)
+operator<< (std::ostream& os, std::set<std::string> const& s)                 // default for *any* set of strings
+{
+  for(std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
+    os << " " << *it;
+  return os;
+}
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::map<std::string,std::set<std::string> > const& attributes)
 {
   os << " { ";
   for (FeatureABC::Attributes::const_iterator it = attributes.begin(); it !=attributes.end(); ++it)
-    os << " [" << it->first << "," << it->second << "] ";
+    os << " [" << it->first << " (" << it->second << ")]";
   os << "}";
   return os;
 }
+
 
 inline
 std::ostream&

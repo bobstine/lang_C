@@ -26,6 +26,7 @@ class Auction
   typedef Model                              ModelClass;
   typedef typename std::vector<Feature>      FeatureVector;
   typedef typename std::vector<Expert>       ExpertVector;
+  typedef typename std::set<std::string>     StringSet;
   typedef typename std::pair<double,double>  TestResult;
 
   
@@ -92,6 +93,7 @@ private:
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
 
+  FeatureVector            features_with_attributes(StringSet const& attrs)              const;
   FeatureVector            features_with_attribute (std::string attr, std::string value) const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;

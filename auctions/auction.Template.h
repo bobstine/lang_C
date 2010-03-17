@@ -7,6 +7,8 @@
  */
 
 // #include <functional>  mem_fun
+
+#include <set>
 #include <algorithm>   # find_if
 
 
@@ -213,15 +215,16 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   { 
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f) // add expert for interaction with other added features
     { double taxForEach = tax/features.size();
-      if ((*f)->has_attribute("interact_with"))
-      { std::string parent ((*f)->attribute_str_value("interact_with"));
-	FeatureVector fv = features_with_attribute("parent",parent);   // very specialized to 
-	debug("AUCT",4) << fv.size() << " features derived from " << parent << std::endl;
+      if ((*f)->has_attribute("interact_with_parent"))
+      { std::set<std::string> s ((*f)->attribute_str_value("interact_with_parent"));
+	std::string parent (*s.begin());  // only one parent
+	FeatureVector fv = features_with_attribute("parent",*s.begin());
+	debug("AUCT",4) << fv.size() << " features derived from interact_with attribute.\n";
 	if (fv.size() > 0)
 	{ taxForEach /= 2;
 	  add_expert(Expert(custom, taxForEach,
 			    UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-			    make_feature_product_stream(parent +" interactions", *f, fv)  ));
+			    make_feature_product_stream((*f)->name() + " interactions", *f, fv)  ));
 	}
       }
       add_expert(Expert(custom, taxForEach,  // interacts winning feature with others in model stream
@@ -260,6 +263,15 @@ Auction<ModelClass>::total_expert_alpha () const
   return total;
 }
 
+namespace {
+  bool found_string(std::string val, std::set<std::string> const& s)
+  { for (std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
+      if (val == *it)
+	return true;
+    return false;
+  }
+}
+ 
 template <class ModelClass>
 std::vector< Feature >
 Auction<ModelClass>::features_with_attribute (std::string attr, std::string value) const
@@ -273,12 +285,30 @@ Auction<ModelClass>::features_with_attribute (std::string attr, std::string valu
   }
   else
   { for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
-      if ( (*f)->has_attribute(attr) && ((*f)->attribute_str_value(attr)==value) )
+      if ( (*f)->has_attribute(attr) && (found_string(value, (*f)->attribute_str_value(attr))) )
 	fv.push_back(*f);
   }
   return fv;
 }
- 
+  
+template <class ModelClass>
+std::vector< Feature >
+Auction<ModelClass>::features_with_attributes (std::set<std::string> const& attrs) const
+{
+  std::set< Feature > features;
+
+  for(FeatureVector::const_iterator pf = mSourceFeatures.begin(); pf != mSourceFeatures.end(); ++pf)
+    for(std::set<std::string>::const_iterator s = attrs.begin(); s != attrs.end(); ++s)
+      if ( (*pf)->has_attribute(*s) )
+      {	features.insert(*pf);
+	break;
+      }
+  FeatureVector fv;
+  for(std::set<Feature>::const_iterator sv=features.begin(); sv!=features.end(); ++sv)
+    fv.push_back(*sv);
+  return fv;
+}
+
 
 // Output
 

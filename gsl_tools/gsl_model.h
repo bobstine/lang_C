@@ -134,3 +134,4 @@ operator<< (std::ostream& os, LogisticModel<gslData> const& m);
 #include "gsl_model.Template.h"
 
 #endif
+

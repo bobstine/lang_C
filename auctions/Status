@@ -112,6 +112,16 @@ Need to
 
 
 ------------------------------------------------------------------------------
+17 Mar 10
+
+       Replace attribute map by a multi-map and then a map<string,set>
+       to allow multiple values of a named attribute (eg, interacts_with).
+       Big ripple since use set here and there to collect features, so need
+       operator==, <.
+
+     
+
+------------------------------------------------------------------------------
 12 Mar 10
 
        Have the blocked white test in place, with 3000 counties so can try

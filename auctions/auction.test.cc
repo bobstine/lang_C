@@ -175,9 +175,12 @@ main(int argc, char** argv)
   { for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
     { Feature f(*it);
       sourceFeatures.push_back(f);
-      std::string stream (f->attribute_str_value("stream"));
-      if (stream.size() == 0) stream = "main";
-      featureVectorMap[stream].push_back(f);
+      std::set<std::string> streams (f->attribute_str_value("stream"));
+      if (streams.empty()) // default stream
+	featureVectorMap["main"].push_back(f);
+      else                    // could be in several
+	for(std::set<std::string>::const_iterator it=streams.begin(); it!=streams.end(); ++it)
+	  featureVectorMap[*it].push_back(f);
     }
     debug("AUCT",1) << "Initialization converted " << xColumns.size() << " columns into " << featureVectorMap.size() << " streams of features:\n";
     for (std::map<std::string,FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)

@@ -36,11 +36,12 @@ length(eligible.counties) # 3023
 
 
 #-----------------------------------------------------------------------------------
-#      Output regression data for auction/C++, 198000 values (12,000 for validation)
+#      Output regression data for auction/C++, 201000 values (21,000 for validation)
 #-----------------------------------------------------------------------------------
 cat("Avoiding", length(avoid),"counties, leaving",length(eligible.counties),"counties.\n")  # 142, leave 3000
 
-quarters <- 6:71; 
+# start at 5 to allow 4 lags, start on year boundary
+quarters <- 5:71; 
 dims    <- dim(County$REPB60M[eligible.counties,quarters])
 the.file <- "/Users/bob/C/auctions/data/credit/credit.txt"
 
@@ -52,11 +53,14 @@ cat("n=",n <- dims[1]*dims[2],"\n")
 
 y <- fill.missing.mat(County$REPB60M)[eligible.counties,quarters]
 
- in.sample <- as.vector(y[, 1:62]); length ( in.sample)
-out.sample <- as.vector(y[,63:66]); length (out.sample)
+q.in <- 1:60;
+q.out<-61:67;
 
-sum(( in.sample - mean(in.sample))^2)  # 40.8765
-sum((out.sample - mean(in.sample))^2)  #  1.5655
+ in.sample <- as.vector(y[, q.in ]); length ( in.sample)
+out.sample <- as.vector(y[, q.out]); length (out.sample)
+
+sum(( in.sample - mean(in.sample))^2)  # 40.05894
+sum((out.sample - mean(in.sample))^2)  #  2.90942
 
 # --------------------------------------------
 #  write starts here
@@ -74,31 +78,33 @@ write.q <- function(name,data,lag, attr="") {
 }
 
 # write the selector; hold back q quarters
-q <- 4
+q <- length(q.out)
 in.out <- matrix(1,nrow=dims[1],ncol=dims[2]); in.out[,(dims[2]-(q-1):0)]<-0;
+sum(in.out)  # number used in estimating
+
 cat("\n[in/out][in]\nstream main\n", in.out, file=the.file, append=TRUE) 
 
 # now write the response  (71-6+1 quarters x 3000 counties = 198,000 )
 write.q("REPB60M",County$REPB60M,0)
 
 # add lags y
-write.q("REPB60M",County$REPB60M,1,"interact_with quarter")
-write.q("REPB60M",County$REPB60M,2,"interact_with quarter")
-write.q("REPB60M",County$REPB60M,3,"interact_with quarter")
-write.q("REPB60M",County$REPB60M,4,"interact_with quarter")
+write.q("REPB60M",County$REPB60M,1,"interact_with_parent quarter")
+write.q("REPB60M",County$REPB60M,2,"interact_with_parent quarter")
+write.q("REPB60M",County$REPB60M,3,"interact_with_parent quarter")
+write.q("REPB60M",County$REPB60M,4,"interact_with_parent quarter")
 # lags of REAU
-write.q("REAU",County$REAU,1,"interact_with quarter")
-write.q("REAU",County$REAU,2,"interact_with quarter")
-write.q("REAU",County$REAU,3,"interact_with quarter")
-write.q("REAU",County$REAU,4,"interact_with quarter")
+write.q("REAU",County$REAU,1,"interact_with_parent quarter")
+write.q("REAU",County$REAU,2,"interact_with_parent quarter")
+write.q("REAU",County$REAU,3,"interact_with_parent quarter")
+write.q("REAU",County$REAU,4,"interact_with_parent quarter")
 # lags of unemp
-write.q("UNEMP",County$unemployment,0,"interact_with quarter")
-write.q("UNEMP",County$unemployment,1,"interact_with quarter")
+write.q("UNEMP",County$unemployment,0,"interact_with_parent quarter")
+write.q("UNEMP",County$unemployment,1,"interact_with_parent quarter")
 write.q("UNEMP",County$unemployment,2)
 write.q("UNEMP",County$unemployment,3)
 # lags of poverty
-write.q("POVERTY",County$poverty,0,"interact_with quarter")
-write.q("POVERTY",County$poverty,1,"interact_with quarter")
+write.q("POVERTY",County$poverty,0,"interact_with_parent quarter")
+write.q("POVERTY",County$poverty,1,"interact_with_parent quarter")
 write.q("POVERTY",County$poverty,2)
 write.q("POVERTY",County$poverty,3)
 # spline basis terms for selected quarters
