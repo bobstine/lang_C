@@ -49,13 +49,19 @@
    'convenience function' that avoids having to use the bracketed option
    {stream=stream_name} for every variable in the file.
 
-   If the first input column is a list of the labels "in" and "out", then the
-   parser will treat this column differently; it will treat this column as an
-   indicator of which cases are to be used in subsequent analysis.  Rather than
-   generate 2 indicators, it will only generate 1 and this single boolean
-   variable will be placed first in the file sent to the auction for
-   modeling. In the auction, only those cases marked "in" will be used for
-   estimation.  All will be predicted.
+   If the first input column is a list of two or more of the labels
+
+       "in", "out", or "na"
+
+   then the parser will treat this column differently; it will treat
+   this column as an indicator of which cases are to be used in
+   subsequent analysis.  Rather than generate 2 or 3 indicators (one
+   for every symbol), it will only generate 1 or 2.  These boolean
+   variables will be placed first in the file sent to the auction for
+   modeling. In the auction, only those cases marked "in" will be used
+   for estimation.  Those marked "na" have explanatory variables
+   available which can be employed in modeling, such as for lagged
+   variables or smoothing.  All will be predicted.
 
    Known limitations:
 

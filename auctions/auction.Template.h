@@ -55,22 +55,19 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
     return false;
   } 
   // extract chosen features
-  std::vector<Feature> features  (expert->feature_vector()) ;
+  FeatureVector features (expert->feature_vector());
   if (features.empty())
   { debug("AUCT",3) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
   else
-  { debug("AUCT",0) << "Winning expert  " << expert->name()
-		    << " bids $" << bid << "(net " << afterTaxBid <<  ")  on ";
+  { debug("AUCT",0) << "Winning expert " << expert->name()
+		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features);
   }
   // build variables for testing
-  std::vector< std::pair<std::string, FeatureABC::Iterator> > namedIterators;
-  for (unsigned int j=0; j<features.size(); ++j)
-    namedIterators.push_back( make_pair(features[j]->name(), features[j]->begin()));
-  TestResult result (mModel.add_predictors_if_useful (namedIterators, afterTaxBid));
+  TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", " << features[0]->name();
@@ -218,16 +215,25 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       if ((*f)->has_attribute("interact_with_parent"))
       { std::set<std::string> s ((*f)->attribute_str_value("interact_with_parent"));
 	std::string parent (*s.begin());  // only one parent
-	FeatureVector fv = features_with_attribute("parent",*s.begin());
+	FeatureVector fv = mFeatureSource.features_with_attribute("parent",*s.begin());
 	debug("AUCT",4) << fv.size() << " features derived from interact_with attribute.\n";
 	if (fv.size() > 0)
 	{ taxForEach /= 2;
-	  add_expert(Expert(custom, taxForEach,
+	  add_expert(Expert(custom, mFeatureSource.number_skipped_cases(), taxForEach,
 			    UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
 			    make_feature_product_stream((*f)->name() + " interactions", *f, fv)  ));
 	}
       }
-      add_expert(Expert(custom, taxForEach,  // interacts winning feature with others in model stream
+      else if ((*f)->has_attribute("max_lag"))
+      { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
+	int maxLag (*lagSet.begin());
+	taxForEach /= 2;
+	add_expert(Expert(custom, mFeatureSource.number_skipped_cases(), taxForEach,  // interacts winning feature with others in model stream
+			 UniversalBoundedBidder< RegulatedStream< LagStream > >(),
+			  make_lag_stream("Lag stream", *f, maxLag, mBlockSize, 2) ));  // 2 cycles over lags
+      }
+      // always add to interact winning feature with others in model stream
+      add_expert(Expert(custom, mFeatureSource.number_skipped_cases(), taxForEach,
 			UniversalBoundedBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
 			make_feature_product_stream("model feature interact", *f, model_features())  ));
     }
@@ -262,53 +268,6 @@ Auction<ModelClass>::total_expert_alpha () const
     total += mExperts[i]->alpha();
   return total;
 }
-
-namespace {
-  bool found_string(std::string val, std::set<std::string> const& s)
-  { for (std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
-      if (val == *it)
-	return true;
-    return false;
-  }
-}
- 
-template <class ModelClass>
-std::vector< Feature >
-Auction<ModelClass>::features_with_attribute (std::string attr, std::string value) const
-{
-  std::vector< Feature > fv;
-
-  if (value == "*")   // ignore value
-  { for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
-      if ( (*f)->has_attribute(attr) )
-	fv.push_back(*f);
-  }
-  else
-  { for(FeatureVector::const_iterator f = mSourceFeatures.begin(); f != mSourceFeatures.end(); ++f)
-      if ( (*f)->has_attribute(attr) && (found_string(value, (*f)->attribute_str_value(attr))) )
-	fv.push_back(*f);
-  }
-  return fv;
-}
-  
-template <class ModelClass>
-std::vector< Feature >
-Auction<ModelClass>::features_with_attributes (std::set<std::string> const& attrs) const
-{
-  std::set< Feature > features;
-
-  for(FeatureVector::const_iterator pf = mSourceFeatures.begin(); pf != mSourceFeatures.end(); ++pf)
-    for(std::set<std::string>::const_iterator s = attrs.begin(); s != attrs.end(); ++s)
-      if ( (*pf)->has_attribute(*s) )
-      {	features.insert(*pf);
-	break;
-      }
-  FeatureVector fv;
-  for(std::set<Feature>::const_iterator sv=features.begin(); sv!=features.end(); ++sv)
-    fv.push_back(*sv);
-  return fv;
-}
-
 
 // Output
 

@@ -1,5 +1,3 @@
-// $Id: anonymous_iterator.h,v 1.6 2007/12/19 01:02:41 bob Exp $
-
 #ifndef _ANONYMOUS_ITERATORS_H_
 #define _ANONYMOUS_ITERATORS_H_
 

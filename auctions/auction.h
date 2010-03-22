@@ -24,7 +24,6 @@ class Auction
  public:
   typedef Auction                            AuctionClass;
   typedef Model                              ModelClass;
-  typedef typename std::vector<Feature>      FeatureVector;
   typedef typename std::vector<Expert>       ExpertVector;
   typedef typename std::set<std::string>     StringSet;
   typedef typename std::pair<double,double>  TestResult;
@@ -34,6 +33,7 @@ private:
   const double        mPayoff;            // payoff for a winning bid
   const double        mBidTaxRate;        // percentage taken from winning bid
   const double        mPayoffTaxRate;     //                       payoff
+  const int           mBlockSize;
   double              mRecoveredAlpha;    // collected from experts that expired
   bool                mHasActiveExpert;
   bool                mCalibrateFit;      // use calibration
@@ -44,7 +44,7 @@ private:
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
   FeatureVector       mRejectedFeatures;  // tried and not used
-  FeatureVector       mSourceFeatures; 
+  FeatureSource       mFeatureSource; 
   std::ostream&       mLogStream;         // send log messages
 
   
@@ -54,10 +54,10 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, FeatureVector const& sourceFeatures, bool calibrate, std::ostream& logStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mRecoveredAlpha(0), mHasActiveExpert(true),
+  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, int blockSize, std::ostream& logStream)
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
       mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
-      mModelFeatures(), mRejectedFeatures(), mSourceFeatures(sourceFeatures), mLogStream(logStream) {  } 
+      mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mLogStream(logStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
 
@@ -93,8 +93,6 @@ private:
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
 
-  FeatureVector            features_with_attributes(StringSet const& attrs)              const;
-  FeatureVector            features_with_attribute (std::string attr, std::string value) const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
   void                     print_features(FeatureVector const& fv)                       const;

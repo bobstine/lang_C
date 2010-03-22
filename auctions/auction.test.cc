@@ -14,6 +14,8 @@
 	-p  level of protection              (default is level 3)
 	-c  calibration df                   (default is no calibration)
 
+
+  21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
    2 Mar 10 ... Look at 'dynamically' funding experts via tax on bids and earnings
   22 Mar 09 ... Remove validation option by recognizing file pattern; add debugging from Dean
    5 Sep 08 ... Add the validation option.
@@ -82,18 +84,18 @@ void
 parse_arguments(int argc, char** argv,
 		std::string& inputDataFile, 
 		std::string& outputPath,
-		int &protection,
-		int &blockSize,
-		int &nRounds, double &totalAlpha, int &df);
+		int &protection, int &blockSize,
+		int &nRounds, double &totalAlpha,
+		int &df, int &extraCases);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
 
 gslData*
-build_model_data(std::vector<Column> const& y);
+build_model_data(std::vector<Column> const& y, int skip, std::ostream& os);
 
-bool
-data_has_selector(std::string const& dataFileName, std::ostream&);
+int
+parse_column_format(std::string const& dataFileName, std::ostream&);
 
 
 
@@ -112,9 +114,12 @@ main(int argc, char** argv)
   int         blockSize            (1);
   int         numberRounds         (200); 
   int         splineDF             (0);
+  int         extraCases           (0);
   
   // parse arguments from command line  (pass in at main, open file for printing messages)
-  parse_arguments(argc,argv, columnFileName, outputPath, protection, blockSize, numberRounds, totalAlphaToSpend, splineDF);
+  parse_arguments(argc,argv, columnFileName, outputPath, protection, blockSize,
+		  numberRounds, totalAlphaToSpend,
+		  splineDF, extraCases);
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -129,7 +134,7 @@ main(int argc, char** argv)
   debug("AUCT",4) << "Version build 0.90 (27 May 2009)\n";
   debug("AUCT",4) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
-		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF
+		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
 		  << std::endl;
   
   // open additional files for output
@@ -138,18 +143,20 @@ main(int argc, char** argv)
   std::string modelDataFileName  (outputPath + "model_data.csv");
   debug("AUCT",3) << "Output going to these files:\n"
 #ifdef NDEBUG
-	   << "             log  --> " << debugFileName  << std::endl
+		  << "             log  --> " << debugFileName  << std::endl
 #endif
-	   << "      model data  --> " << modelDataFileName << std::endl
-	   << "       model.txt  --> " << modelTextFileName << std::endl;
+		  << "      model data  --> " << modelDataFileName << std::endl
+		  << "       model.txt  --> " << modelTextFileName << std::endl;
   
   /* 
      Read columns from a file. The file is laid out with one column of values per row.
      Line 1: gives the number of cases
      Line 2: name of the first variable (the response)
-     Line 3: data for the response
-     Line 4: name of the second variable  (X_1)
-     Line 5: data for the second variable
+          3: description of first variable     
+          4: data for the response
+     Line 5: name of the second variable  (X_1)
+          6: description of second variable (its property list)
+	  7: data for the second variable
      Line 6: name of the third variable (X_2) 
      ...
      
@@ -158,43 +165,27 @@ main(int argc, char** argv)
      values). The space used by columns is allocated on reading in the function
      FileColumnStream.  Spaced is managed within each column.
   */
-  int numberYColumns = 1;
-  if (data_has_selector(columnFileName, debug(0)))  // data for validation
-    numberYColumns = 2;
+  int numberYColumns (parse_column_format (columnFileName, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
   insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   debug("AUCT",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
-
+		      
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns));
-
-  // convert columns into features, organized as a map[stream] = feature vector
-  std::map< std::string, FeatureVector > featureVectorMap;
-  std::vector< Feature > sourceFeatures;
-  { for (std::vector<Column>::const_iterator it = xColumns.begin(); it != xColumns.end(); ++it)
-    { Feature f(*it);
-      sourceFeatures.push_back(f);
-      std::set<std::string> streams (f->attribute_str_value("stream"));
-      if (streams.empty()) // default stream
-	featureVectorMap["main"].push_back(f);
-      else                    // could be in several
-	for(std::set<std::string>::const_iterator it=streams.begin(); it!=streams.end(); ++it)
-	  featureVectorMap[*it].push_back(f);
-    }
-    debug("AUCT",1) << "Initialization converted " << xColumns.size() << " columns into " << featureVectorMap.size() << " streams of features:\n";
-    for (std::map<std::string,FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
-      debug(1) << "       " << it->first << " with " << it->second.size() << " features\n";
-  }
+  gslData *theData (build_model_data(yColumns, extraCases, debug("MAIN",1)));
+  
+  // organize data into feature streams
+  FeatureSource featureSrc (xColumns, extraCases);
+  featureSrc.print_summary(debug("AUCT",1));
     
   // --- build model and initialize auction with stream for log
 #ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
 #else
   // --- build logisitic model and auction
   LogisticModel <gslData> theRegr(theData, protection, blockSize);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, sourceFeatures, splineDF, debug(0));
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
 #endif
 
 
@@ -203,33 +194,40 @@ main(int argc, char** argv)
 
   typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
   // parasitic experts
-  theAuction.add_expert(Expert(parasite, 0,
+  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
 			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Skipped-feature interactions", featureVectorMap["main"], theAuction.rejected_features())
+			       make_cross_product_stream("Skipped-feature interactions",
+							 featureSrc.features_with_attribute("stream", "main"), theAuction.rejected_features())
 			       ));
   
-  theAuction.add_expert(Expert(parasite, 0,
+  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
 
-  // add a source column and interaction expert for each column stream  
-  { 
-    FiniteCauchyShare alphaShare (totalAlphaToSpend, (int)featureVectorMap.size());   // spreads wealth among streams
-    int stream (0);
+  // add a source column and interaction expert for each column stream *unless* its the context stream (used for neighbors)
+  { std::vector<std::string> streamNames (featureSrc.stream_names());
+    int numberBiddingStreams (0);
+    for(std::vector<std::string>::const_iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
+      if(*it != "context")
+	++numberBiddingStreams;
+    FiniteCauchyShare alphaShare (totalAlphaToSpend, numberBiddingStreams);   // spreads wealth among streams
     typedef  FiniteStream      < FeatureVector > FStream;
     typedef  InteractionStream < FeatureVector > IStream;
-    for (std::map<std::string, FeatureVector>::const_iterator it = featureVectorMap.begin(); it != featureVectorMap.end(); ++it)
-    { 
-      theAuction.add_expert(Expert(source, alphaShare(stream) * 0.52,      // priority, alpha
-				   UniversalBoundedBidder<FStream>(), 
-				   make_finite_stream("Columns of " + it->first, it->second, 2) // 2 cycles through these features
-				   ));
-      theAuction.add_expert(Expert(source, alphaShare(stream) * 0.48,     // slightly less to avoid tie 
-				   UniversalBoundedBidder<IStream>(),
-				   make_interaction_stream("Column interactions of " + it->first, it->second, false)  // skip squared terms
-				   ));
-      ++stream;
+    for (int s=0; s < (int) streamNames.size(); ++s)
+    { if (streamNames[s] != "context")
+      { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
+	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.52,      // priority, alpha
+				     UniversalBoundedBidder<FStream>(), 
+				     make_finite_stream("Columns of " + streamNames[s],
+							featureSrc.features_with_attribute("stream", streamNames[s]), 2) // 2 cycles through these features
+				     ));
+	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.48,     // slightly less to avoid tie 
+				     UniversalBoundedBidder<IStream>(),
+				     make_interaction_stream("Column interactions of " + streamNames[s],
+							     featureSrc.features_with_attribute("stream",streamNames[s]), false)  // skip squared terms
+				     ));
+      }
     }
   }
 
@@ -242,13 +240,13 @@ main(int argc, char** argv)
   */
   // calibration expert
   std::string signature("Y_hat_");
-  theAuction.add_expert(Expert(calibrate, 100,
+  theAuction.add_expert(Expert(calibrate, 0, 100,        // no skipping, lots of alpha
 			       FitBidder(4, signature),  // delay between bursts
 			       make_fit_stream(theRegr, signature)));
   
     
   /*
-    Principle component type features are temp turned off
+    Principle component type features
     theAuction.add_expert(make_expert(alphaShare, 
     UniversalBidder(),
     make_subspace_stream("Principal components", 
@@ -344,7 +342,8 @@ parse_arguments(int argc, char** argv,
 		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
-		int    &nDF)
+		int    &nDF,
+		int    &extraCases)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -358,10 +357,11 @@ parse_arguments(int argc, char** argv,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"blocksize",         1, 0, 'b'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
+	  {"extra-cases",       1, 0, 'x'},  // has arg
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:c:f:o:p:b:r:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:c:f:o:p:b:r:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -404,6 +404,11 @@ parse_arguments(int argc, char** argv,
 	      nRounds = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
+	  case 'x' :
+	    {
+	      extraCases = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
 	  case 'h' :
 	    {
 	      std::cout << "switches:" << std::endl << std::endl;
@@ -419,6 +424,8 @@ parse_arguments(int argc, char** argv,
 	      std::cout << "      -p#" << std::endl << std::endl;
 	      std::cout << "      --rounds=#               maximum number of rounds of auction" << std::endl;
 	      std::cout << "      -r#" << std::endl << std::endl;
+	      std::cout << "      --extra-cases=#          extra cases used in building features" << std::endl;
+	      std::cout << "      -x#" << std::endl << std::endl;
 	      std::cout << "      --help                   generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);
@@ -430,42 +437,43 @@ parse_arguments(int argc, char** argv,
 
 // reads in response, initialized data object
 gslData*
-build_model_data(std::vector<Column> const& y)
+build_model_data(std::vector<Column> const& y, int skip, std::ostream& os)
 {
   int                       nyCols       (y.size());
   bool                      useSubset    (nyCols == 2);
   constant_iterator<double> equalWeights (1.0);
-  int                       nRows        (y[0]->size());
+  int                       nRows        ((int)y[0]->size()-skip);
   
   if (useSubset)  // leading column is indicator of which cases to use in fitting
-  {
-    debug("AUCT",1) << " Subset of cases defined by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
-    return new gslData(y[1]->begin(), y[0]->begin(), equalWeights, nRows, gslRegression_Max_Q);
+  { os << " Subset of cases defined by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
+    return new gslData(y[1]->begin()+skip, y[0]->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting
-  {
-    constant_iterator<bool>   noSelection(true);
-    debug("AUCT",1) << "Response variable is " << y[0] << std::endl;
-    return new gslData(y[0]->begin(),  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
+  { constant_iterator<bool>   noSelection(true);
+    os << "Response variable is " << y[0] << std::endl;
+    return new gslData(y[0]->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
 
 
-bool
-data_has_selector(std::string const& dataFileName, std::ostream& os)
+int
+parse_column_format(std::string const& dataFileName, std::ostream& os)
 {
   std::ifstream input (dataFileName.c_str());
   if (input)
-  { std::cout << "AUCT: Peeking at data file  " << dataFileName << " finds ";
+  { os << "Peeking at data file  " << dataFileName << " finds ";
     int i,j;
     std::string firstVarName;
     input >> i >> j >> firstVarName;
     os << "nrow=" << i << " ncol=" << j <<". Name of first variable is " << firstVarName << std::endl;
-    return (firstVarName == "[in/out][in]");
+    if (firstVarName == "[in/out][in]")
+      return 2;
+    else
+      return 1;
   }
   else
   { std::cerr << "AUCT: *** Error ***  Could not open data file " << dataFileName << std::endl;
-    return false;
+    return 0;
   }
 }
 

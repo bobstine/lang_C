@@ -41,9 +41,9 @@ ColumnData::print_to (std::ostream &os) const
 void
 ColumnData::init_properties ()
 {
-  double *x = mBegin;
-  if ((!x) || (mN==0)) return;         // nothing to do 
+  if ((!mBegin) || (mN==0)) return;         // nothing to do 
   
+  double *x = mBegin;
   std::set<double> uniq;
   mAvg = 0.0;
   mMin = mMax = *x;

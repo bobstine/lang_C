@@ -35,6 +35,11 @@ gslRegression<Data, Engine>::initialize()
   gsl_vector_set_all(mpData->live_Xb(), mYBar);
   mRSS = mTSS = mEngine.sum_of_squares(&gsl_vector_const_subvector(mpData->y(),0,mN).vector);
   mEngine.prepare_vector_for_analysis (mpData->live_e(), mpData->y());      // weights resids if WLS
+  /*  peek at the first few y's
+      gsl_vector const* y (mpData->y());
+      for(int i=0; i<10; ++i)
+      std::cout << "gsl regr init y[" << i << "] = " << gsl_vector_get(y,i) << std::endl;
+  */
 }
 
 

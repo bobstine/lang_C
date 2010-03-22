@@ -26,13 +26,23 @@ main ()
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
-  // make two columns
+  // make three columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
   Column  x2Column  (name2.c_str(), "x2 column",n, x2);
   std::cout << xColumn1 << std::endl << x2Column << std::endl;
   
-   
+  
+  // feature source
+  std::vector<Column> colVec;
+  colVec.push_back(xColumn1);
+  colVec.push_back(xColumn2);
+  colVec.push_back(x2Column);
+
+  FeatureSource fs(colVec,0);
+  fs.print_summary(std::cout);
+  
+  
   // make a feature from a column, add some attributes
   Feature x   (xColumn1);
   Feature xx2 (x2Column);
@@ -47,8 +57,16 @@ main ()
   std::cout << "      feature attribute {test}     = " << x->attribute_str_value("test") << std::endl;
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
-   
 
+  // a lag feature
+  std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
+  Feature lag2  (x,2);
+  Feature lag4  (x,4);
+  Feature lag22 (x,2,2);
+  std::cout << lag2  << std::endl;
+  std::cout << lag4  << std::endl;
+  std::cout << lag22 << std::endl;
+  
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
   Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);

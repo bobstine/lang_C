@@ -19,6 +19,11 @@ Feature::Feature(Column const &c)
   mFP = new ColumnFeature(c);
 }  
 
+Feature::Feature(Feature const& f, size_t lag, size_t blockSize)
+{
+  mFP = new LagFeature(f,lag,blockSize);
+}
+	
 Feature::Feature(Feature const& f1, Feature const& f2)
 {
   mFP = new InteractionFeature(f1,f2);
@@ -50,6 +55,15 @@ ColumnFeature::write_to(std::ostream& os) const
   FeatureABC::write_to(os);
 }
 
+
+//  Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature
+
+void
+LagFeature::write_to(std::ostream& os) const
+{
+  os << class_name() << " " << name() << std::endl;
+  FeatureABC::write_to(os); 
+}
 
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 
@@ -164,6 +178,90 @@ LinearCombinationFeature::write_to (std::ostream& os) const
   for (unsigned int j=0; j<mBeta.size()-1; ++j)
     mFeatures[j]->write_to(os);
   FeatureABC::write_to(os);
+}
+
+
+//     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source
+
+void
+FeatureSource::initialize (std::vector<Column> cols)
+{ mStreams.push_back("main");       // default
+  StringSet streams;
+  streams.insert("main");
+  for (std::vector<Column>::const_iterator it = cols.begin(); it != cols.end(); ++it)
+  { Feature f(*it);
+    StringSet streamSet (f->attribute_str_value("stream"));
+    if (streamSet.empty())          // assign to default stream
+      f->add_attribute("stream", "main");
+    else                            // check for new stream
+      for(StringSet::const_iterator it=streamSet.begin(); it!=streamSet.end(); ++it)
+	if(streams.find(*it) == streams.end())
+	{ streams.insert(*it);
+	  mStreams.push_back(*it);  // add new stream name to ordered list of names
+	}
+    mFeatures.push_back(f);
+  }
+}
+
+void
+FeatureSource::print_summary (std::ostream& os)     const
+{ os << "FeatureSource (skip=" << mSkip << ") has " << number_of_features() << " features in " << number_of_streams() << " streams as follows.\n";
+  for(StringVector::const_iterator it=mStreams.begin(); it != mStreams.end(); ++it)
+    os << "      " << *it << " -- " << features_with_attribute("stream",*it).size() << std::endl;
+}
+
+
+
+
+namespace {
+  bool found_string(std::string val, std::set<std::string> const& s)
+  { for (std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
+      if (val == *it)
+	return true;
+    return false;
+  }
+}
+
+
+std::vector< Feature >
+FeatureSource::features_with_attribute (std::string attr) const
+{
+  std::vector< Feature > fv;
+
+  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
+    if ( (*f)->has_attribute(attr) )
+      fv.push_back(*f);
+  return fv;
+}
+
+
+std::vector< Feature >
+FeatureSource::features_with_attribute (std::string attr, std::string value) const
+{
+  std::vector< Feature > fv;
+
+  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
+    if ( (*f)->has_attribute(attr) && (found_string(value, (*f)->attribute_str_value(attr))) )
+      fv.push_back(*f);
+  return fv;
+}
+
+
+std::vector< Feature >
+FeatureSource::features_with_attributes (std::set<std::string> const& attrs) const
+{
+  std::set< Feature > features;
+
+  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
+    for(StringSet::const_iterator s = attrs.begin(); s != attrs.end(); ++s)
+      if ( (*f)->has_attribute(*s) )
+      {	features.insert(*f);
+	break;
+      }
+  FeatureVector fv;
+  for(std::set<Feature>::const_iterator sv=features.begin(); sv!=features.end(); ++sv)
+    fv.push_back(*sv);
+  return fv;
 }
 
 

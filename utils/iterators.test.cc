@@ -1,5 +1,3 @@
-// $Id: cyclic_iterator.test.cc,v 1.3 2005/12/07 03:49:40 bob Exp $-*- c++ -*-
-
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -12,12 +10,25 @@ int main()
 {
   std::vector<double> test;
   std::list<double> test2;
-  for(int i = 0 ; i<3; ++i)
+  for(int i = 0 ; i<10; ++i)
   { test.push_back(2 * (i+1));
     test2.push_back(1 + 2*i);
   }
+
+  { // test of lag iterator
+    std::cout << "TEST: lag iterator \n";
+    lag_iterator<std::vector<double>::iterator> b(test.begin(), 2);
+    lag_iterator<std::vector<double>::iterator> e(test.end(), 2);
+    while (b != e)
+    { std::cout << *b << " ";
+      ++b;
+    }
+    std::cout << std::endl;
+  }
   
   { // test of the iterator over to containers
+    std::cout << "TEST: join iterator\n";
+
     typedef std::vector<double>::const_iterator Iterator;
     typedef std::list<double>::const_iterator Iterator2;
     

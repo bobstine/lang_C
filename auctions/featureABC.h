@@ -109,9 +109,29 @@ operator<< (std::ostream& os, FeatureABC const* feature)
 
 inline
 std::ostream&
-operator<< (std::ostream& os, std::set<std::string> const& s)                 // default for *any* set of strings
+operator<< (std::ostream& os, std::set<std::string> const& s)                 // default for *any* set
 {
   for(std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
+    os << " " << *it;
+  return os;
+}
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::set<int> const& s)                 // default for *any* set
+{
+  for(std::set<int>::const_iterator it=s.begin(); it!=s.end(); ++it)
+    os << " " << *it;
+  return os;
+}
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::set<double> const& s)                 // default for *any* set
+{
+  for(std::set<double>::const_iterator it=s.begin(); it!=s.end(); ++it)
     os << " " << *it;
   return os;
 }

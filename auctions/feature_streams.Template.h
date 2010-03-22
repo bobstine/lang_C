@@ -34,7 +34,8 @@ template<class Source>
 bool
 FiniteStream<Source>::empty() const
 {
-  // std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left.\n";
+  //  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left."
+  //	    << " top feature is " << mSource[mPosition]->name() <<  std::endl;
   return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
 }
 
@@ -53,6 +54,9 @@ template<class Source>
 bool
 FiniteStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
+
+  //  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left."
+  //	    << " top feature is " << mSource[mPosition]->name() <<  std::endl;
   return !(
 	   mSource[mPosition]->is_used_in_model() ||
 	   mSource[mPosition]->is_constant()

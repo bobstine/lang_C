@@ -45,12 +45,14 @@
 #include "range_stats.h"
 #include "operator_traits.h"
 #include "function_utils.h"
+// #include "iterators.h"      // for lag iterator
 
 #include "gsl_iterator.h"
 
 #include <gsl/gsl_vector.h>
 
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 
@@ -77,6 +79,9 @@ class Feature
 
   //  column feature
   Feature(Column const &c);
+
+  //  lag feature
+  Feature(Feature const& f, size_t lag, size_t blockSize=1);
   
   //  interaction feature
   Feature(Feature const& f1, Feature const& f2);
@@ -99,6 +104,10 @@ class Feature
   FeatureABC* operator->()                 const  { return mFP; }  
 };
 
+
+typedef  std::vector<Feature>                 FeatureVector;
+
+
 inline
 std::ostream&
 operator<< (std::ostream& os, Feature const& feature)
@@ -110,7 +119,7 @@ operator<< (std::ostream& os, Feature const& feature)
 
 inline
 std::ostream&
-operator<< (std::ostream& os, std::vector<Feature> const& featureVec)
+operator<< (std::ostream& os, FeatureVector const& featureVec)
 {
   int max (10);
   int n   (featureVec.size());
@@ -156,6 +165,41 @@ class ColumnFeature : public FeatureABC
   void        write_to(std::ostream& os) const;
 };
   
+
+
+////  Lag feature
+
+class LagFeature : public FeatureABC
+{
+ private:
+  Feature     mFeature;
+  int         mLag;
+  std::string mLagStr;
+  
+ public:
+ LagFeature(Feature f, size_t lag, size_t blockSize=1) : FeatureABC(f->size()), mFeature(f), mLag(lag*blockSize)
+    { std::ostringstream ss; ss << lag; mLagStr = ss.str(); }
+
+  std::string class_name()     const { return "LagFeature"; }
+  std::string name()           const { return "Lag(" + mFeature->name() + ",t-" + mLagStr +")"; }
+  std::string operator_name()  const { return "[-" + mLagStr + "]"; }
+  Arguments   arguments()      const { return mFeature->arguments(); }
+  
+  int         lag()            const { return mLag; }
+
+  Iterator    begin()          const { return make_anonymous_iterator(make_lag_iterator(mFeature->begin(),mLag)); }
+  Range       range()          const { Range r (mFeature->range()); return make_anonymous_range(make_lag_iterator(Ranges::begin(r),mLag),
+												make_lag_iterator(  Ranges::end(r),mLag)); }
+  bool        is_dummy()       const { return mFeature->is_dummy(); }
+  bool        is_constant()    const { return mFeature->is_constant(); }
+  double      average()        const { return mFeature->average(); }
+  double      center()         const { return mFeature->average(); }
+  double      scale()          const { return mFeature->scale(); }
+
+  void        write_to(std::ostream& os) const;
+};
+  
+
 
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 
@@ -300,6 +344,44 @@ class BinaryFeature : public FeatureABC
   double      scale()       const { return mOp(mFeature1->scale() ,mFeature2->scale()); }
 
   void        write_to (std::ostream& os) const;
+};
+
+
+////  Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    
+
+
+class FeatureSource
+{
+  typedef std::vector<std::string> StringVector;
+  typedef std::set<std::string>    StringSet;
+  
+  int                      mSkip;           // skip this count of leading cases when transfer to model
+  std::vector<std::string> mStreams;        // use vector to keep ordered
+  FeatureVector            mFeatures;
+  
+ public:
+
+ FeatureSource(std::vector<Column> const& cols, int skip)    : mSkip(skip) { initialize(cols); }
+
+
+  int             number_skipped_cases ()   const  { return mSkip; }
+  int             number_of_streams  ()     const  { return (int) mStreams.size();  }
+  std::string     stream_name(int i)        const  { return mStreams[i]; }
+  StringVector    stream_names()            const  { return mStreams; }
+  int             number_of_features ()     const  { return (int) mFeatures.size(); }
+  
+  
+  FeatureVector   features_with_attribute (std::string attr)                    const;
+  FeatureVector   features_with_attributes(StringSet const& attrs)              const;
+  FeatureVector   features_with_attribute (std::string attr, std::string value) const;
+  
+  
+  void print_summary (std::ostream& os)     const;
+  
+  
+ private:
+  void initialize (std::vector<Column> cols);
+
 };
 
 

@@ -105,7 +105,7 @@ template<class Source>
 class FiniteStream
 {
   std::string   mName;
-  Source const& mSource;
+  Source        mSource;
   int           mPosition;
   int           mCyclesLeft;
   
@@ -124,7 +124,7 @@ public:
   
 protected:
   bool  empty()                                                                                       const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)   const;
   void  increment_position();
 };
 
@@ -136,6 +136,44 @@ make_finite_stream (std::string const& name, Source const& s, int numberCycles)
   return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s, numberCycles));
 }
 
+
+
+//  LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream
+
+class LagStream
+{
+  const std::string  mName;
+  const Feature      mFeature;
+  const int          mMaxLag;
+  const int          mBlockSize;
+  int                mLag;
+  int                mCyclesLeft;
+  
+public:
+  
+  LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
+    :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
+  
+  std::string             name()         const ;
+  std::string             feature_name() const ;
+  std::vector<Feature>    pop();
+  void                    print_to(std::ostream& os)          const;
+  int                     number_remaining()                  const;
+  
+protected:
+  bool  empty()                                                                           const;
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
+  void  increment_position()  ;
+
+};
+
+
+inline
+RegulatedStream< LagStream >
+make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize,  int numberCycles)
+{
+  return RegulatedStream< LagStream >(LagStream(name, f, maxLag, blockSize, numberCycles));
+}
 
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
@@ -183,7 +221,7 @@ private:
   bool            mUseSquares;
   std::string     mName;
   std::string     mCurrentFeatureName;
-  Source const&   mSource;                     
+  Source          mSource;                     
   int             mPos1, mPos2;
   
 public:
@@ -266,7 +304,7 @@ class CrossProductStream
 {
   std::string     mName;
   std::string     mCurrentFeatureName;
-  Source1 const&  mFixedSource;          // fixed number of features
+  Source1         mFixedSource;          // fixed number of features
   Source2 const&  mDynSource;            // this one iterates most often (odometer style)
   int             mFixedPos, mDynPos;
   

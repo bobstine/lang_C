@@ -48,13 +48,15 @@ class Expert;
 class ExpertABC
 {
   friend class Expert;
-
-  typedef     std::vector<Feature>               FeatureVector;
-  typedef     std::map<std::string, std::string> Attributes;
+  
+  typedef     std::pair<std::string, FeatureABC::Iterator>   NamedIterator;
+  typedef     std::vector<NamedIterator>                     NamedIteratorVector;
+  typedef     std::map<std::string, std::string>             Attributes;
   
 protected:
   int         mRefCount;
   ExpertRole  mRole;
+  int         mSkip;
   double      mAlpha;
   double      mCurrentBid;
   bool        mLastBidAccepted;
@@ -64,15 +66,16 @@ public:
   virtual ~ExpertABC () { }
   
  ExpertABC()
-   : mRefCount(1), mRole(source), mAlpha(0),
+   : mRefCount(1), mRole(source), mSkip(0), mAlpha(0),
     mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
- ExpertABC(ExpertRole role, double alpha)
-   : mRefCount(1), mRole(role),  mAlpha(alpha),
+ ExpertABC(ExpertRole role, int skip, double alpha)
+   : mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha),
     mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
 
   int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
   ExpertRole             role()                             const { return mRole; }
+  int                    skip()                             const { return mSkip; }
   double                 alpha()                            const { return mAlpha; }
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
   bool                   finished(AuctionState const& state)      { if((mRole==parasite)||(mRole==calibrate)) return false;
@@ -88,6 +91,10 @@ public:
   virtual std::string    name()                           const = 0;
   virtual std::string    feature_name()                   const = 0;
   virtual FeatureVector  feature_vector()                       = 0;
+  
+  NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;
+
+  
   virtual void           bid_accepted()                       { mLastBidAccepted = true; }
   virtual void           bid_declined()                       { mLastBidAccepted = false; }
 
@@ -113,39 +120,21 @@ private:
 public:
   virtual ~StreamExpert () { };
   
-  StreamExpert (ExpertRole role, double alpha, Bidder b, Stream s)
-    : ExpertABC(role, alpha), mBidder(b), mStream(s) { }
+  StreamExpert (ExpertRole role, int skip, double alpha, Bidder b, Stream s)
+    : ExpertABC(role, skip, alpha), mBidder(b), mStream(s) { }
   
-  Bidder const&    bidder()       const { return mBidder; }
-  Stream const&    stream()       const { return mStream; }
-  std::string      name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
+  Bidder const&       bidder()       const { return mBidder; }
+  Stream const&       stream()       const { return mStream; }
+  std::string         name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
 
-  double           place_bid (AuctionState const& state);
-  std::string      feature_name()                const     { return mStream.feature_name(); }       
-  FeatureVector    feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
+  double              place_bid (AuctionState const& state);
+  std::string         feature_name()                const     { return mStream.feature_name(); }       
+  bool                has_feature(AuctionState const& state)  { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
 
-  bool             has_feature(AuctionState const& state) { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
+  FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
+
 };
 
-
-
-////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE 
-
-
-template<class Bidder, class Stream>
-double
-  StreamExpert<Bidder,Stream>::place_bid (AuctionState const& state)
-{
-  //  debugging::debug(0) << "XPRT: " << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
-  if ( (mAlpha>0.0) && (has_feature(state))  )
-  { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, state)); 
-    double m (max_bid()); 
-    mCurrentBid = (b<m) ? b:m;
-  }    
-  else
-    mCurrentBid = 0.0;
-  return mCurrentBid;
-}
 
 
 ////  Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    Envelope    
@@ -163,7 +152,7 @@ class Expert
   
   // stream expert
   template <class Bidder, class Stream>
-    Expert(ExpertRole role, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (role, alpha, b, s); }
+    Expert(ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (role, skip, alpha, b, s); }
 
   // copy
   Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  
@@ -194,5 +183,7 @@ operator<< (std::ostream& os, std::vector<Expert> const& experts)
     os << "      " << experts[i] << std::endl;
   return os;
 }
+
+#include "experts.Template.h"
 
 #endif

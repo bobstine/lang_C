@@ -175,6 +175,51 @@ public:
 };
 
 
+//  Lag     Lag     Lag     Lag     Lag     Lag     Lag     Lag     Lag     Lag     Lag     Lag     
+
+
+template<class Iter>
+class lag_iterator: public std::iterator<std::random_access_iterator_tag, typename std::iterator_traits<Iter>::value_type>
+{
+
+ private:
+  Iter        mIter;
+  int         mPosition;
+  const Iter  mBegin;
+  const int   mLag;
+  
+public:
+ lag_iterator(Iter const& it, int lag)
+   : mIter(it-lag), mPosition(-lag), mBegin(it), mLag(lag)          { }
+ lag_iterator(Iter const& it, int lag, int blockSize)
+   : mIter(it-lag*blockSize), mPosition(-lag*blockSize), mBegin(it), mLag(lag)          { }
+
+  lag_iterator& operator++()             { ++mPosition ;  ++mIter; return *this; }
+  lag_iterator& operator--()             { --mPosition ;  --mIter; return *this; }
+  lag_iterator& operator+=(int j)        { mPosition+=j; mIter+=j; return *this; }
+  lag_iterator& operator-=(int j)        { mPosition-=j; mIter-=j; return *this; }
+  
+  double operator*()            const    { if (mPosition<0) return *mBegin; else return *mIter; }
+
+  typename std::iterator_traits<Iter>::difference_type
+    operator-(lag_iterator const& it) const { return mIter - it.mIter; }
+  
+  bool operator==(lag_iterator const& it) const { return  mIter == it.mIter; }
+  bool operator!=(lag_iterator const& it) const { return  mIter != it.mIter; }
+
+  bool operator<(lag_iterator const& it) const { return mIter < it.mIter; }
+  bool operator>(lag_iterator const& it) const { return mIter > it.mIter; }
+};
+
+
+template<class Iter>
+lag_iterator<Iter>
+make_lag_iterator(Iter const& it, int maxLag, int blockSize=1)
+{
+  return lag_iterator<Iter>(it, maxLag, blockSize);
+}
+
+
 
 //  Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   
 

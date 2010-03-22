@@ -591,8 +591,78 @@ incorporated into the variables
  the current weights $W_0$.
 \end{description}
 
+\subsection{Reading and handling data}
 
-\bibliography{/Users/bob/work/references/stat}
-\bibliographystyle{/Users/bob/work/papers/bst/rss}
+ At the level of the auction, only numerical data is processed.  The auction
+ code does not handle missing data nor indicators.  Any indication of
+ missingness or role in the analysis must be handled prior to the auction, such
+ as by the {\tt csv\_parser} function that uses the boost regex functions.
+
+ Numerical data is read from a file aud converted into two vectors of {\tt
+ Column} objects.  The read step is done by the routine {\tt
+ insert\_columns\_from\_file} called from the main function that sets up the
+ auction.  A {\tt Column} is a wrapper (envelope) class for the column data
+ object that holds the actual data; this avoids the overhead of copying.  Column
+ objects are lightweight.  The {\tt ColumnData} object just reads numbers
+ (doubles, in particular), then computes summary characteristics (including the
+ number of unique values and means) from the input values in {\tt
+ init\_properties}.  It knows nothing about the interpretation of names or
+ properties.  As far as a {\tt Column} is concerned, names and descriptions are
+ simply strings.  (The only conversion that happens in columns is to fill spaces
+ in names with the underscore character, converting for example ``the var'' into
+ ``the\_var''.)
+
+ The auction code carefully examines the names of the leading input variables to
+ determine how to use the supplied cases.  Cases may be of three types:
+\begin{itemize}
+\item Missing cases.  These supply information about possible explanatory
+ variables, but the not the response.  These are not predicted and are only used
+ for information about features (such as lagged variable values).  These do not
+ appear in the saved data file produced at the end of an analysis and do not
+ appear in the data object ({\tt gsl\_data}) that supports the regression model.
+\item In-sample or estimation cases.  These are complete $(y_i,\xx_i)$ tuples
+ used to identify the model.
+\item Out-of-sample or validation cases. These are complete cases, but will not
+ be used in the fitting process.  They only appear for calculation of
+ predictions for validation purposes.
+\end{itemize}
+ The input command-line argument ``x'' denote the number of leading cases which
+ are formally missing the response.  These {\em must} be the leading cases in
+ the data file.  These cases are neither used in fitting nor validation; they
+ are simply there for building predictive features.  These rows are skipped over
+ when transferring the response ({\tt build\_model\_data}) and accepted features
+ into the auction.  (Each expert knows rows to skip in the model.)  If the
+ leading column is named ``[in/out][in]'', then the first data column is treated
+ as a boolean indicator of the in-sample and out-of-sample cases.  (For extra
+ cases, the values of any response column -- indicator and numerical value --
+ are ignored.)
+
+
+ The parsing of the names of variables and the descriptions (property lists)
+ happens when the columns are convered into features.  Features are initialized
+ from columns.  As with columns, a feature is a wrapper hiding the particular
+ type of variable.  {\tt ColumnFeatures} hold a column; other types, such as
+ unary features, hold a function that converts the values in a another feature.
+  The function {\tt add\_attributes\_from\_paired\_list}, for example, is called by
+ a column feature to convert the ``description string'' read by a column into
+ the paired property list used by a feature.  Columns, for example, might simply
+ use this string as purely documenation, as in free text.  Features, in
+ contrast, expect to find that this string has a paired list of terms.
+
+ Columns and Features live separately from the code that actually fits the
+ regression. The GSL routines, such as those in {\tt gsl\_regr}, work with a
+ distinct data object, essentially a plain old C array.  The reason for this
+ duplication is to allow outside routines, such as features, to have a mix of
+ validation and estimation data, whereas the data inside the regression model is
+ {\em only} that which is used for fitting the model.  Also, this separation
+ makes it easy to handle the use of split samples for validation. Code for {\tt
+ for} loops needs to be able to iterate over the elements of the data very
+ quickly, so we pack the estimation cases adjacent to each other by permuting
+ the input data.  The validation cases are sorted away from the estimation cases
+ in the GSL objects, whereas they might be mixed together in the features.
+
+
+ \bibliography{/Users/bob/work/references/stat}
+ \bibliographystyle{/Users/bob/work/papers/bst/rss}
 
 \end{document}

@@ -23,10 +23,19 @@ ExpertABC::role_string () const
 }
 
 
+std::vector< std::pair<std::string, FeatureABC::Iterator> >
+ExpertABC::convert_to_model_iterators(FeatureVector const& fv) const
+{ 
+  NamedIteratorVector result;
+  for(FeatureVector::const_iterator it=fv.begin(); it!=fv.end(); ++it)
+    result.push_back(std::make_pair((*it)->name(), (*it)->begin() + mSkip));
+  return result;
+}
+
 void
 ExpertABC::print_to(std::ostream& os) const
 {
-  os << "Expert[" << role_string() << "," << mRefCount <<"]: " << name() << " with alpha " << mAlpha; 
+  os << "Expert[" << role_string() << "," << mSkip <<"]: " << name() << " with alpha " << mAlpha; 
 }
 
 
