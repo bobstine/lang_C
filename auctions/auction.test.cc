@@ -239,10 +239,12 @@ main(int argc, char** argv)
 			       ));
   */
   // calibration expert
-  std::string signature("Y_hat_");
-  theAuction.add_expert(Expert(calibrate, 0, 100,        // no skipping, lots of alpha
-			       FitBidder(4, signature),  // delay between bursts
-			       make_fit_stream(theRegr, signature)));
+  if(splineDF > 0)
+  { std::string signature("Y_hat_");
+    theAuction.add_expert(Expert(calibrate, 0, 100,        // no skipping, lots of alpha
+				 FitBidder(4, signature),  // delay between bursts
+				 make_fit_stream(theRegr, signature)));
+  }
   
     
   /*

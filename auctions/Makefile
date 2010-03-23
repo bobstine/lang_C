@@ -60,6 +60,9 @@ credit_test: auction.test
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
+lag_test: auction.test
+	./auction.test -f data/lagtest.txt -o test/log/ -r 100 -a 0.5 -p 3 -b 5 -c 0 -x 50
+
 wiki_test: auction.test 
 	./auction.test -f ../wiki/wiki.sdata -o ../wiki/auction_output/ -r 1000 -a 1 -p 3 -c 0
 

@@ -55,7 +55,7 @@ private:
     }
     
   Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, int blockSize, std::ostream& logStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.25), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
       mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mLogStream(logStream) {  } 
   
