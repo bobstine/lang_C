@@ -45,6 +45,7 @@
     Interaction      interactions among features from a source of fixed size
     Feature-product  interactions between a feature and a fixed set (counts down, as vars in model)
     Cross-product    interactions between fixed set of features and a set of increasing size
+    Lag              lags of a given feature
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
 
@@ -154,11 +155,11 @@ public:
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
     :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  std::string             name()         const ;
-  std::string             feature_name() const ;
-  std::vector<Feature>    pop();
-  void                    print_to(std::ostream& os)          const;
-  int                     number_remaining()                  const;
+  std::string       name()         const ;
+  std::string       feature_name() const ;
+  FeatureVector     pop();
+  void              print_to(std::ostream& os)          const;
+  int               number_remaining()                  const;
   
 protected:
   bool  empty()                                                                           const;

@@ -631,11 +631,12 @@ incorporated into the variables
  the data file.  These cases are neither used in fitting nor validation; they
  are simply there for building predictive features.  These rows are skipped over
  when transferring the response ({\tt build\_model\_data}) and accepted features
- into the auction.  (Each expert knows rows to skip in the model.)  If the
- leading column is named ``[in/out][in]'', then the first data column is treated
- as a boolean indicator of the in-sample and out-of-sample cases.  (For extra
- cases, the values of any response column -- indicator and numerical value --
- are ignored.)
+ into the auction.  (Each expert knows rows to skip in the model. See the
+ function {\tt convert\_to\_model\_iterators} defined for the ExpertABC.)  If
+ the leading column is named ``[in/out][in]'', then the first data column is
+ treated as a boolean indicator of the in-sample and out-of-sample cases.  (For
+ extra cases, the values of any response column -- indicator and numerical value
+ -- are ignored.)
 
 
  The parsing of the names of variables and the descriptions (property lists)

@@ -446,8 +446,9 @@ build_model_data(std::vector<Column> const& y, int skip, std::ostream& os)
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        ((int)y[0]->size()-skip);
   
+  os << "Building model data with " << y[0]->size() << "-" << skip << "=" << nRows << " cases.  ";
   if (useSubset)  // leading column is indicator of which cases to use in fitting
-  { os << " Subset of cases defined by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
+  { os << "Validation cases identified by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
     return new gslData(y[1]->begin()+skip, y[0]->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
   else            // use all data for fitting

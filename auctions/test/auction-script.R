@@ -1,10 +1,6 @@
-#
-#   Script to direct auction
-#
-
 #####################################################################
 # 
-#  test time series experts, lags
+#  test lags
 # 
 #####################################################################
 
@@ -85,8 +81,13 @@ r <- lm(yy ~ xx1 + xx2 + prod + rightx ); summary(r)
 
 
 
+#####################################################################
+# 
+#  Write more extensive data table for auction to run
+# 
+#####################################################################
 
-setwd("/Users/bob/work/papers/credit-unemp/")
+setwd("/Users/bob/C/auctions/test/")
 
 source("auction.R")
 

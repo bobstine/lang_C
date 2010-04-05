@@ -3,7 +3,7 @@
  *  auctions
  *
  *  Created by Robert Stine on 1/18/08.
- *  Copyright 2008 __MyCompanyName__. All rights reserved.
+ *  Copyright 2008. All rights reserved.
  *
  */
 
