@@ -1,5 +1,7 @@
 Next... 
 
+	Verify the fit in R.
+
 	Build the spatial features.		
 
 	FeatureProductStream should only count down to the origin, starting
