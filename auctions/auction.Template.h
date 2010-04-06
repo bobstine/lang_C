@@ -70,7 +70,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
-    os << ", " << result.second << ", " << features[0]->name();
+    os << ", " << result.second << ", \"" << features[0]->name() << "\"";
   // report bid result
   double amount;
   bool accepted (result.second < afterTaxBid);
@@ -87,7 +87,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { amount = pay_winning_expert(expert, features);                          // installs experts as needed
     if (os)
     { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss 
-      os << "," << features[0]->name() << "," << amount << "," << rss.first << "," << rss.second;
+      os << ",\"" << features[0]->name() << "\"," << amount << "," << rss.first << "," << rss.second;
     }
   } else
   { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
@@ -153,7 +153,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   { double bid = (*it)->place_bid(state);               // pass information to experts
     if (os)
       if (iExpert < mNumInitialExperts)
-	if (bid > 0)	os << ", "    << (*it)->feature_name() << ", " << (*it)->alpha() << ", " << bid;
+	if (bid > 0)	os << ", \""    << (*it)->feature_name() << "\", " << (*it)->alpha() << ", " << bid;
 	else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;

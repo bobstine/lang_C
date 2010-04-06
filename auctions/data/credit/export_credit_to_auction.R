@@ -43,10 +43,10 @@ cat("Avoiding", length(avoid),"counties, leaving",n.counties,"counties.\n")  # 1
 #      Response is at time t, but all others are lagged 1 quarter.
 #-----------------------------------------------------------------------------------
 
-q.0      <- 2                   # skip 1 for all of those initial lagged variables
-quarters <- q.0:71
-dims     <- dim(County$REPB60M[eligible.counties,quarters])
-the.file <- "/Users/bob/C/auctions/data/credit/credit.txt"
+y.quarters <- 2:n.time        # skip first for all of those initial lagged variables
+x.quarters <- 1:(n.time-1)
+dims       <- dim(County$REPB60M[eligible.counties,y.quarters])
+the.file   <- "/Users/bob/C/auctions/data/credit/credit.txt"
 
 cat("n=",n <- dims[1]*dims[2],"\n")   # 210000
 
@@ -76,16 +76,17 @@ regr <- lm(y.0 ~ y.1 + y.2 + y.3 + y.4); summary(regr)
 #  check initial SS from C++ code after fill back initial values
 # ---------------------------------------------------------------
 
-y <- matrix(c(rep(0,(q0-1)*dims[1]), residuals(regr)), nrow=dims[1],ncol=dims[2])
+y <- matrix(c(rep(0,3*n.counties), residuals(regr)), nrow=dims[1],ncol=dims[2]) # only miss 3
 
 q.in <- 5:60;
-q.out<-61:67;
+q.out<-61:70;
 
  in.sample <- as.vector(y[, q.in ]); length ( in.sample)  # 168000
-out.sample <- as.vector(y[, q.out]); length (out.sample)  #  21000
+out.sample <- as.vector(y[, q.out]); length (out.sample)  #  30000
 
-sum(( in.sample - mean(in.sample))^2)  # 11.08426
-sum((out.sample - mean(in.sample))^2)  #  0.88463
+sum(( in.sample - mean(in.sample))^2)  # 11.13566
+sum((out.sample - mean(in.sample))^2)  #  1.12635
+
 
 
 # --------------------------------------------
@@ -96,7 +97,7 @@ sum((out.sample - mean(in.sample))^2)  #  0.88463
 write.county.var <- function(name,data,max.lag, attr.str="") {
 	cat("\n",name,sep="",                                           file=the.file, append=TRUE);
 	cat("\nstream main max_lag ",max.lag," ",attr.str,"\n",sep="",  file=the.file, append=TRUE);
-	cat(fill.missing.mat(data)[eligible.counties,quarters-1],       file=the.file, append=TRUE)
+	cat(fill.missing.mat(data)[eligible.counties,x.quarters],       file=the.file, append=TRUE)
 }
 
 # --- function writes matrix/vector variables
@@ -120,15 +121,28 @@ cat("\n[in/out][in]\nstream main\n", in.out, file=the.file, append=TRUE)
 write.var(y, "REPB60M resid")
 
 # 6  lags
-write.county.var("REPB60M",County$REPB60M     ,4,"interact_with_parent quarter interact_with_parent period")
 write.county.var(   "REAU",County$REAU        ,4,"interact_with_parent quarter interact_with_parent period")
 write.county.var(  "UNEMP",County$unemployment,4,"interact_with_parent quarter interact_with_parent period")
 write.county.var("POVERTY",County$poverty     ,4,"interact_with_parent quarter interact_with_parent period")
 write.county.var("INPB60M",County$INPB60M     ,4,"interact_with_parent quarter interact_with_parent period")
 write.county.var("MTPB60M",County$MTPB60M     ,4,"interact_with_parent quarter interact_with_parent period")
+write.county.var("REPB60M",County$REPB60M     ,4,"interact_with_parent quarter interact_with_parent period")
+# 6 spatial variables
+temp <- as.data.frame(lapply(County$REAU, spatial.variable))
+write.county.var(   "S_REAU",temp,2,"interact_with_parent quarter")
+temp <- as.data.frame(lapply(County$unemployment, spatial.variable))
+write.county.var(  "S_UNEMP",temp,2,"interact_with_parent quarter")
+temp <- as.data.frame(lapply(County$poverty, spatial.variable))
+write.county.var("S_Poverty",temp,2,"interact_with_parent quarter")
+temp <- as.data.frame(lapply(County$INPB60M, spatial.variable))
+write.county.var(   "S_INPB60M",temp,2,"interact_with_parent quarter")
+temp <- as.data.frame(lapply(County$MTPB60M, spatial.variable))
+write.county.var(   "S_MTPB60M",temp,2,"interact_with_parent quarter")
+temp <- as.data.frame(lapply(County$REPB60M, spatial.variable))
+write.county.var(   "S_REPB60M",temp,2,"interact_with_parent quarter")
 # 4 quarter indicators
 for(q in 1:4) {
-	x <- as.numeric(quarters%%4==q)
+	x <- as.numeric(y.quarters%%4==q)
 	cat("\nQuarter", q,"\nstream time parent quarter category ", q,"\n", sep="", file=the.file, append=TRUE)
 	tt <- matrix(x, nrow=dims[1],ncol=dims[2], byrow=TRUE)
 	cat(tt, file=the.file, append=TRUE)

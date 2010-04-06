@@ -1,20 +1,19 @@
 Next... 
 
-	Have no interactions among quarters, but do have interactions of the 
-	quarters with the other factors.
+	Build the spatial features.		
 
 	FeatureProductStream should only count down to the origin, starting
 	with the squared term and then terminate.  Like others, should not
-	square an indicator.
-
-	Add expert to build the 'spatial interaction' variables.
-
-	Get the dogleg time factor variables, linear spline variables.
+	square an indicator.  Think this is done.
 
 
 Need to 
 
      Deans requests
+
+        Track the "other" custom experts and show them in the csv summary.
+
+	Remove comma from names of variables to fix JMPs error.
 
 
      Memory leaks, exceptions
@@ -119,7 +118,8 @@ Need to
        Big ripple since use set here and there to collect features, so need
        operator==, <.
 
-     
+       Attributes are sets, lag experts in place.  Many more custom experts
+       created with added variables.  Have lag iterator/range.     
 
 ------------------------------------------------------------------------------
 12 Mar 10
