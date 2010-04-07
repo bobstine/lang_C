@@ -112,7 +112,12 @@ std::ostream&
 operator<< (std::ostream& os, std::set<std::string> const& s)                 // default for *any* set
 {
   for(std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
-    os << " " << *it;
+  {
+    if(it == s.begin())
+      os << *it;
+    else
+      os << " " << *it;
+  }
   return os;
 }
 

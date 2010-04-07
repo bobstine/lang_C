@@ -12,6 +12,17 @@
 #include <algorithm>   # find_if
 
 
+namespace{
+  std::string
+    remove_comma(std::string const& s)
+  {
+    std::string result = s;
+    for(std::string::iterator it=result.begin(); it!=result.end(); ++it)
+      if(*it == ',') *it='_';
+    return result;
+  }
+}
+
 template <class Model>
 void
 Auction<Model>::write_csv_header_to(std::ostream& os) const
@@ -70,7 +81,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
-    os << ", " << result.second << ", \"" << features[0]->name() << "\"";
+    os << ", " << result.second << ", \"" << remove_comma(features[0]->name()) << "\"";
   // report bid result
   double amount;
   bool accepted (result.second < afterTaxBid);
@@ -87,7 +98,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { amount = pay_winning_expert(expert, features);                          // installs experts as needed
     if (os)
     { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss 
-      os << ",\"" << features[0]->name() << "\"," << amount << "," << rss.first << "," << rss.second;
+      os << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
     }
   } else
   { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
@@ -153,7 +164,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   { double bid = (*it)->place_bid(state);               // pass information to experts
     if (os)
       if (iExpert < mNumInitialExperts)
-	if (bid > 0)	os << ", \""    << (*it)->feature_name() << "\", " << (*it)->alpha() << ", " << bid;
+	if (bid > 0)	os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid;
 	else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
     if (bid > highBid)
     { highBid = bid;
@@ -170,7 +181,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
     debug(3) << "AUCT: Priority bidder takes bid " << highBid << std::endl;
   }
   if(os)
-    os << "," << winningExpert->name() << "," << highBid;
+    os << "," << remove_comma(winningExpert->name()) << "," << highBid;
   winningExpert->bid_accepted();                     // inform experts whether win/lose auction
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != winningExpert) (*it)->bid_declined();

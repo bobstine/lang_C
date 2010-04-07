@@ -1,12 +1,14 @@
 Next... 
 
-	Verify the fit in R.
+	Lag iterator/neighborhood type.
 
-	Build the spatial features.		
+	More types of variables: differences, regional dummy vars, pop density
+
+	Spatial context variables: exp smooth of past, national/state vars
 
 	FeatureProductStream should only count down to the origin, starting
 	with the squared term and then terminate.  Like others, should not
-	square an indicator.  Think this is done.
+	square an indicator.  This is done?
 
 
 Need to 
@@ -14,8 +16,6 @@ Need to
      Deans requests
 
         Track the "other" custom experts and show them in the csv summary.
-
-	Remove comma from names of variables to fix JMPs error.
 
 
      Memory leaks, exceptions
@@ -110,6 +110,15 @@ Need to
 	return vector views of the "n" items in use for estimation rather than the 
 	"length" items held in both training and test data.
 
+
+
+------------------------------------------------------------------------------
+ 5 Apr 10
+
+       Verify that fit matches that from R.  Real pain due to lagging X's but
+       not the response.
+
+       Minor clean-ups, such as allowing interaction with several parents.
 
 
 ------------------------------------------------------------------------------

@@ -220,6 +220,46 @@ make_lag_iterator(Iter const& it, int maxLag, int blockSize=1)
 }
 
 
+//  Indexed     Indexed     Indexed     Indexed     Indexed     Indexed     Indexed     Indexed     Indexed     Indexed     
+
+template<class ValueIter, class IndexIter>    // value[index]
+class indexed_iterator: public std::iterator<std::random_access_iterator_tag, typename std::iterator_traits<ValueIter>::value_type>
+{
+
+ private:
+  const ValueIter  mBase;
+  IndexIter        mIndex;
+  
+public:
+ indexed_iterator(ValueIter const& base, IndexIter const& it)  : mBase(base),mIndex(it)          { }
+  
+  indexed_iterator& operator++()             {  ++mIndex; return *this; }
+  indexed_iterator& operator--()             {  --mIndex; return *this; }
+  indexed_iterator& operator+=(int j)        { mIndex+=j; return *this; }
+  indexed_iterator& operator-=(int j)        { mIndex-=j; return *this; }
+  
+  double operator*()            const    { return *(mBase+*mIndex); }
+  int    index()                const    { return *mIndex; }         // also here for type checking
+
+  typename std::iterator_traits<IndexIter>::difference_type
+    operator-(indexed_iterator const& it) const { return mIndex - it.mIndex; }
+  
+  bool operator==(indexed_iterator const& it) const { return  mIndex == it.mIndex && mBase == it.mBase; }
+  bool operator!=(indexed_iterator const& it) const { return  mIndex != it.mIndex || mBase != it.mBase; }
+
+  bool operator<(indexed_iterator const& it) const { return mIndex < it.mIndex; }
+  bool operator>(indexed_iterator const& it) const { return mIndex > it.mIndex; }
+};
+
+
+template<class ValueIter,class IndexIter>
+  indexed_iterator<ValueIter,IndexIter>
+  make_indexed_iterator(ValueIter const& base, IndexIter const& it)
+{
+  return indexed_iterator<ValueIter,IndexIter>(base, it);
+}
+
+
 
 //  Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   Constant   
 

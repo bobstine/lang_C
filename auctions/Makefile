@@ -55,7 +55,7 @@ crash_test: auction.test
 	./auction.test -f data/crash.dat -r 100 -c 5
 
 credit_test: auction.test
-	./auction.test -f data/credit/credit.txt -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 0 -x 12000
+	./auction.test -f data/credit/credit.txt -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0

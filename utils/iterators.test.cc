@@ -8,13 +8,43 @@
 
 int main()
 {
+  const int length(10);
+
   std::vector<double> test;
-  std::list<double> test2;
-  for(int i = 0 ; i<10; ++i)
+  std::list<double>   test2;
+  for(int i = 0 ; i<length; ++i)
   { test.push_back(2 * (i+1));
     test2.push_back(1 + 2*i);
   }
 
+
+  { // test of lag iterator
+    std::cout << "TEST: index iterator \n";
+    std::vector<int> index1;
+    std::vector<int> index2;
+    for(int i = 0 ; i<length; ++i)
+    { index1.push_back((i+5)%length);   // rotate
+      index2.push_back(0);        // start at 0
+    }
+    index2[length-2]=1;
+    index2[length-1]=1;
+    
+    indexed_iterator<std::vector<double>::const_iterator,std::vector<int>::const_iterator> b1(test.begin(),index1.begin());// note invariance
+    indexed_iterator<std::vector<double>::const_iterator,std::vector<int>::const_iterator> e1(test.begin(),index1.end());   
+    while (b1 != e1)
+    { std::cout << *b1 << " ";
+      ++b1;
+    }
+    std::cout << std::endl;
+    indexed_iterator<std::vector<double>::const_iterator,std::vector<int>::const_iterator> b2(test.begin(),index2.begin());
+    indexed_iterator<std::vector<double>::const_iterator,std::vector<int>::const_iterator> e2(test.begin(),index2.end());   
+    while (b2 != e2)
+    { std::cout << *b2 << " ";
+      ++b2;
+    }
+    std::cout << std::endl;
+  }
+    
   { // test of lag iterator
     std::cout << "TEST: lag iterator \n";
     lag_iterator<std::vector<double>::iterator> b(test.begin(), 2);
