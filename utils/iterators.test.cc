@@ -56,7 +56,7 @@ int main()
     std::cout << std::endl;
   }
   
-  { // test of the iterator over to containers
+  { // test of the iterator over two containers
     std::cout << "TEST: join iterator\n";
 
     typedef std::vector<double>::const_iterator Iterator;
