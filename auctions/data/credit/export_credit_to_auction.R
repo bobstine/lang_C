@@ -52,6 +52,27 @@ cat("n=",n <- dims[1]*dims[2],"\n")   # 213000
 
 
 # --------------------------------------------------------------------------------
+#  write national time series out in streaming format with headers into separate
+#  file that can be catenated onto the file produced by other commands.
+# --------------------------------------------------------------------------------
+
+national.file   <- "/Users/bob/C/auctions/data/credit/credit_nation.txt"
+
+# --- writes expanded national time series in streaming layout
+
+write.national.var <- function(name,max.lag=4, attr.str="", append=TRUE) {
+	x <- Nation[x.quarters,name]
+	cat(name,
+	    "\nstream nation max_lag ",max.lag," ",attr.str, sep="", file=national.file, append=append);
+	cat("\n", rep(x, rep(n.counties, length(x))), "\n",          file=national.file, append=append)
+}
+
+use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
+                            124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
+                             179:182,185:186,188:192,194:199)]
+write.national.var(use.cols[1])                             
+
+# --------------------------------------------------------------------------------
 #  remove lags of y so that response in auction is the residuals from lag regr
 # --------------------------------------------------------------------------------
 
