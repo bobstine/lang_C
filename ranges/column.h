@@ -132,6 +132,53 @@ operator<<(std::ostream& os, Column const& column)
 }
 
 
+// Read columns as a stream from a stream input object
+
+class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
+{
+  std::istream&    mStream;
+  std::string      mName;
+  int              mN;
+  int              mCount;
+  char             mCurrentName[maxColumnNameLength];
+  char             mCurrentDesc[maxColumnDescLength];
+  Column           mCurrentColumn;
+
+  
+ public:
+  ~ColumnStream() {  }
+  
+  ColumnStream (std::istream& is, std::string name)
+    :  mStream(is), mName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
+    { if(initialize()) read_next_column(); }
+  
+  Column            operator*()  const { return mCurrentColumn; }
+  FileColumnStream& operator++()        { ++mCount; read_next_column(); return *this; }
+
+  int               position()   const { return mCount; }
+  int               n()          const { return mN;     }
+  
+ private:
+  bool initialize();
+  bool read_next_column();
+};
+
+// Optionally use the first ny as y's (column at a time)
+// Return  number of observations and number of columns
+
+std::pair<int,int>
+  insert_columns_from_stream (std::istream& is,
+			      std::back_insert_iterator< std::vector<Column> > it);
+
+std::pair<int,int>
+  insert_columns_from_stream (std::istream& is, int ny,
+			      std::back_insert_iterator< std::vector<Column> > yIt,
+			      std::back_insert_iterator< std::vector<Column> > xIt);
+
+
+
+
+// This version makes columns from an input file using C io ratther than C++
 
 class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
@@ -163,22 +210,9 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   bool read_next_column_from_file();
 };
 
-// These two read columns from a file, optionally using the first ny as y's (column at a time)
-// They return the number of observations and number of columns (dim of usual data array)
-
-std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, 
-                          std::back_insert_iterator< std::vector<Column> > it);
-
-std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, int ny,
-                          std::back_insert_iterator< std::vector<Column> > yIt,
-                          std::back_insert_iterator< std::vector<Column> > xIt);
-
-// This version makes columns from an input stream (one row at a time)
 
 int
-insert_columns_from_stream (FILE *input, std::string const& nameFile, int nRows,
+insert_columns_from_file (FILE *input, std::string const& nameFile, int nRows,
                             std::back_insert_iterator< std::vector<Column> > it);
 
 #endif

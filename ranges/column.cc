@@ -62,7 +62,115 @@ ColumnData::init_properties ()
 
 
 
-////  file column stream  --  file column stream  --   file column stream  --   file column stream  --
+////    ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream    
+
+bool
+ColumnStream::initialize()
+{
+  mFile = fopen(mFileName.c_str(),"r");
+  if (mFile)
+  {
+    // Read count from first file line
+    mN = 0;
+    int count = fscanf (mFile, "%d", &mN);
+    if ( (count==1) && (mN > 0) )
+    { debugging::debug("CLMN",0) << "File " << mFileName << " opened; n = " << mN << std::endl;
+      return true;
+    }
+    else
+    { std::cerr << "CLMN: Read invalid n = " << mN << std::endl;
+      return false;
+    }
+  }
+  else
+  { std::cerr << "CLMN: Could not open file " << mFileName << std::endl;
+    return false;
+  }
+}
+
+
+
+namespace {
+  bool
+  read_name_and_desc_after_skip(char *s, int max, char *desc, int dMax, register FILE *iop)
+  {
+    register int c;
+    // skip to next line
+    while ((c = getc(iop)) != EOF)
+    {
+      if (c == '\n') break;
+    }
+    if (c == EOF) return false;
+    // read a string name, and position at start of next line (removes blanks)
+    register char *cs;
+    cs = s;
+    while (--max > 0 && (c = getc(iop)) != EOF)
+    {
+      if (c == ' ')         // put _ in place of blank
+	*cs++ = '_';
+      else if ((*cs++ = c) == '\n')
+	break;
+    }
+    --cs; *cs='\0';         // mark the end of the string
+    // read description line
+    while (--dMax > 0 && (c = getc(iop)) != EOF)
+    {
+      if ((*desc++ = c) == '\n')
+	break;
+    }
+    --desc; *desc = '\0';
+    return (cs != s);
+  }
+
+  bool
+  read_name(char *s, int max, register FILE *iop)
+  {
+    register int c;
+    register char *cs;
+    bool addedEOL (false);
+    cs = s;
+    while (--max > 0 && (c = getc(iop)) != EOF)
+    {
+      if (c == ' ')   // put _ in place of blank
+        *cs++ = '_';
+      else if ((*cs++ = c) == '\n')
+      { addedEOL = true;
+        break;
+      }
+    }
+    if (addedEOL)  // dump the end of line char
+    { --cs;
+      *cs='\0';
+    }
+    return (cs != s);
+  }
+};
+
+bool
+FileColumnStream::read_next_column_from_file()
+{
+  if (!mFile)
+  {
+    std::cerr << "CLMN: Error. File is not open for reading.\n";
+    return false;
+  }
+  else
+  { mCurrentName[0] = '\0';
+    if (read_name_and_desc_after_skip(mCurrentName, maxColumnNameLength,
+				      mCurrentDesc, maxColumnDescLength, mFile)) // don't gobble trailing /n; leave for next read
+    { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
+      return true;
+    }
+    else
+    { mCurrentColumn = Column();
+      return false;
+    }
+  }
+}
+
+
+
+////    FileColumnStream     FileColumnStream     FileColumnStream     FileColumnStream     FileColumnStream     FileColumnStream     
 
 bool
 FileColumnStream::open_file()

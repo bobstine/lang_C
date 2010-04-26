@@ -108,7 +108,7 @@ main(int argc, char** argv)
   
   // build vector of columns from file; set default parameter values
   double      totalAlphaToSpend    (0.1);
-  std::string columnFileName       ("/Users/bob/C/gsl_tools/data/bank_post45.dat");   
+  std::string columnFileName       ("/Users/bob/C/auctions/test/bank_post45.dat");   
   std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int         protection           (3);
   int         blockSize            (1);
@@ -165,18 +165,23 @@ main(int argc, char** argv)
      values). The space used by columns is allocated on reading in the function
      FileColumnStream.  Spaced is managed within each column.
   */
-  int numberYColumns (parse_column_format (columnFileName, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
+  std::ifstream input (dataFileName.c_str());
+  if (!input)
+  { debug("MAIN",1) << "Could not open data file " << dataFileName << "; terminating.\n";
+    return 0;
+  }
+  int numberYColumns (parse_column_format (input, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
-  insert_columns_from_file(columnFileName, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  debug("AUCT",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
+  insert_columns_from_file(input, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
+  debug("MAIN",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
 		      
   // initialize data object held in underlying model [y and optional selector]
   gslData *theData (build_model_data(yColumns, extraCases, debug("MAIN",1)));
   
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, extraCases);
-  featureSrc.print_summary(debug("AUCT",1));
+  featureSrc.print_summary(debug("MAIN",1));
     
   // --- build model and initialize auction with stream for log
 #ifdef LINEAR_MODEL
@@ -460,24 +465,17 @@ build_model_data(std::vector<Column> const& y, int skip, std::ostream& os)
 
 
 int
-parse_column_format(std::string const& dataFileName, std::ostream& os)
+parse_column_format(std::istream& is, std::ostream& os)
 {
-  std::ifstream input (dataFileName.c_str());
-  if (input)
-  { os << "Peeking at data file  " << dataFileName << " finds ";
-    int i,j;
-    std::string firstVarName;
-    input >> i >> j >> firstVarName;
-    os << "nrow=" << i << " ncol=" << j <<". Name of first variable is " << firstVarName << std::endl;
-    if (firstVarName == "[in/out][in]")
-      return 2;
-    else
-      return 1;
-  }
+  os << "Peeking at data file finds ";
+  int i,j;
+  std::string firstVarName;
+  input >> i >> j >> firstVarName;
+  os << "nrow=" << i << " ncol=" << j <<". Name of first variable is " << firstVarName << std::endl;
+  if (firstVarName == "[in/out][in]")
+    return 2;
   else
-  { std::cerr << "AUCT: *** Error ***  Could not open data file " << dataFileName << std::endl;
-    return 0;
-  }
+    return 1;
 }
 
 /*   No longer used...
