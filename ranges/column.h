@@ -7,6 +7,7 @@
  A Column puts a name on a numerical range and the various statistics of that range.
  Access to properties of the column come via operator->.
 
+ 27 Apr 10 ... Column streams to use an input stream rather than file.
  11 Nov 09 ... Add description field to allow attributes when reading stream format data.
  25 May 09 ... Better form of dynamic storage (see Coplein, p67-68)
  13 May 09 ... Dynamic column storage.
@@ -104,6 +105,19 @@ class Column
     mData->init_properties();
   }
 
+ Column(std::string name, std::string description, size_t n, std::istream& is) : mData( new ColumnData(n) )
+  { mData->mName = name;
+    mData->mDescription = description;
+    double *x (mData->mBegin);  
+    while(n--)
+    { is >> *x;
+      ++x;
+    }
+    std::string rest;
+    getline(is, rest);             // dump rest of data line
+    mData->init_properties();
+  }
+
   template <class Iter>
     Column(char const* name, char const* description, size_t n, Iter source) : mData( new ColumnData(n) )
   { mData->mName = name;
@@ -137,11 +151,11 @@ operator<<(std::ostream& os, Column const& column)
 class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
   std::istream&    mStream;
-  std::string      mName;
+  std::string      mStreamName;
   int              mN;
   int              mCount;
-  char             mCurrentName[maxColumnNameLength];
-  char             mCurrentDesc[maxColumnDescLength];
+  std::string      mCurrentName;
+  std::string      mCurrentDesc;
   Column           mCurrentColumn;
 
   
@@ -149,17 +163,17 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   ~ColumnStream() {  }
   
   ColumnStream (std::istream& is, std::string name)
-    :  mStream(is), mName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
-    { if(initialize()) read_next_column(); }
+    :  mStream(is), mStreamName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
+    { if (is) { initialize(); read_next_column(); } }
   
-  Column            operator*()  const { return mCurrentColumn; }
-  FileColumnStream& operator++()        { ++mCount; read_next_column(); return *this; }
+  Column        operator*()  const { return mCurrentColumn; }
+  ColumnStream& operator++()       { ++mCount; read_next_column(); return *this; }
 
-  int               position()   const { return mCount; }
-  int               n()          const { return mN;     }
+  int           position()   const { return mCount; }
+  int           n()          const { return mN;     }
   
  private:
-  bool initialize();
+  void initialize();
   bool read_next_column();
 };
 
@@ -199,7 +213,7 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
     { open_file(); read_next_column_from_file(); }
   
   Column            operator*()  const { return mCurrentColumn; }
-  FileColumnStream& operator++()        { ++mCount; read_next_column_from_file(); return *this; }
+  FileColumnStream& operator++()       { ++mCount; read_next_column_from_file(); return *this; }
 
   int               position()   const { return mCount; }
   int               n()          const { return mN;     }
@@ -211,8 +225,19 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 };
 
 
+
+std::pair<int,int>
+insert_columns_from_file (std::string const& fileName, 
+                          std::back_insert_iterator< std::vector<Column> > it);
+
+
+std::pair<int,int>
+insert_columns_from_file (std::string const& fileName, int ny,
+                          std::back_insert_iterator< std::vector<Column> > yIt,
+                          std::back_insert_iterator< std::vector<Column> > xIt);
+
 int
-insert_columns_from_file (FILE *input, std::string const& nameFile, int nRows,
-                            std::back_insert_iterator< std::vector<Column> > it);
+insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
+			  std::back_insert_iterator< std::vector<Column> > it);
 
 #endif

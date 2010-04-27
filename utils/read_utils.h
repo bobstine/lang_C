@@ -19,34 +19,40 @@
 //  trim strings
 
 
-inline std::string trim_right(const std::string &source , const std::string& t = " ")
+namespace read_utils
 {
-  std::string str = source;
-  return str.erase( str.find_last_not_of(t) + 1);
-}
+  inline std::string trim_right(const std::string &source , const std::string& t = " ")
+  {
+    std::string str = source;
+    return str.erase( str.find_last_not_of(t) + 1);
+  }
+  
+  inline std::string trim_left( const std::string& source, const std::string& t = " ")
+  {
+    std::string str = source;
+    return str.erase(0 , source.find_first_not_of(t) );
+  }
+  
+  inline std::string trim(const std::string& source, const std::string& t = " ")
+  {
+    std::string str = source;
+    if(!source.empty())
+      return trim_left( trim_right( str , t) , t );
+    else
+      return source;
+  }
 
-inline std::string trim_left( const std::string& source, const std::string& t = " ")
-{
-  std::string str = source;
-  return str.erase(0 , source.find_first_not_of(t) );
-}
-
-inline std::string trim(const std::string& source, const std::string& t = " ")
-{
-  std::string str = source;
-  if(!source.empty())
-    return trim_left( trim_right( str , t) , t );
-  else
-    return source;
-}
-
-
-
+  inline std::string fill_blanks(const std::string src, const char c='_')
+  {
+    std::string result = src;
+    for (std::string::iterator it=result.begin(); it != result.end(); ++it)
+      if (*it == ' ')
+	*it = c;
+    return result;
+  }
 
 // string stream io
 
-namespace read_utils
-{
   template <typename To, typename From>
     To
     lexical_cast(From x)
