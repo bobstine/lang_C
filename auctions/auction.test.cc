@@ -107,19 +107,28 @@ main(int argc, char** argv)
   typedef std::vector<Feature> FeatureVector;
   
   // build vector of columns from file; set default parameter values
-  double      totalAlphaToSpend    (0.1);
-  std::string columnFileName       ("/Users/bob/C/auctions/test/bank_post45.dat");   
-  std::string outputPath           ("/Users/bob/C/auctions/test/log/"); 
-  int         protection           (3);
-  int         blockSize            (1);
-  int         numberRounds         (200); 
-  int         splineDF             (0);
-  int         extraCases           (0);
+  double        totalAlphaToSpend    (0.1);
+  std::string   inputName            ("");                                  // empty implies cin
+  std::istream& inputStream;
+  std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
+  int           protection           (3);
+  int           blockSize            (1);
+  int           numberRounds         (200); 
+  int           splineDF             (0);
+  int           extraCases           (0);
   
   // parse arguments from command line  (pass in at main, open file for printing messages)
-  parse_arguments(argc,argv, columnFileName, outputPath, protection, blockSize,
+  parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
 		  splineDF, extraCases);
+
+  // --- Open files for data and log files ---
+  // input data file
+  std::ifstream inputFileStream(inputName);
+  if (inputName.empty())
+    inputStream = &std::cin;
+  else
+    inputStream = &inputFileStream;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -132,7 +141,7 @@ main(int argc, char** argv)
   
   // echo startup options to log file
   debug("AUCT",4) << "Version build 0.90 (27 May 2009)\n";
-  debug("AUCT",4) << "Arguments    --input-file=" << columnFileName << " --output-path=" << outputPath
+  debug("AUCT",4) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
 		  << std::endl;
@@ -165,15 +174,18 @@ main(int argc, char** argv)
      values). The space used by columns is allocated on reading in the function
      FileColumnStream.  Spaced is managed within each column.
   */
-  std::ifstream input (dataFileName.c_str());
-  if (!input)
-  { debug("MAIN",1) << "Could not open data file " << dataFileName << "; terminating.\n";
-    return 0;
-  }
-  int numberYColumns (parse_column_format (input, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
+
+  int numberYColumns (parse_column_format (inputStream, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
-  insert_columns_from_file(input, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
+
+  /*
+    RAS...
+    Need to have the columns 'segmented' in the function that parses the variables since it cannot
+    back up to read the names a second time.
+  */
+  
+  insert_columns_from_stream(inputStream, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
   debug("MAIN",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
 		      
   // initialize data object held in underlying model [y and optional selector]
@@ -340,7 +352,6 @@ main(int argc, char** argv)
 
 
 
-
 void
 parse_arguments(int argc, char** argv,
 		std::string& inputFile,
@@ -478,57 +489,3 @@ parse_column_format(std::istream& is, std::ostream& os)
     return 1;
 }
 
-/*   No longer used...
-std::pair< std::pair<int,double>, std::pair<int,double> >
-initialize_sums_of_squares( std::vector<Column> y)
-{
-  double inSS  (0.0);
-  double outSS (0.0);
-  int n0 (0), n1 (0);
-  if (y.size() == 2) // have validation test sample
-  { double avg0 (0.0), avg1 (0.0);
-    double *x = y[1]->begin();
-    double *b = y[0]->begin();
-    for(int i = 0; i<y[0]->size(); ++i)
-    { if (*b++)
-      {	avg1 += *x++;
-	++n1;
-      }
-      else
-      { avg0 += *x++;
-	++n0;
-      }
-    }
-    if ((0 == n0) || (0 == n1))
-    { std::cout << "ERROR: counts in in-sample/out-of-sample data are " << n0 << " " << n1 << std::endl;
-      return std::make_pair( std::make_pair(0,0), std::make_pair(0,0));
-    }
-    avg0 = avg0 / n0;
-    avg1 = avg1 / n1;
-    x = y[1]->begin();
-    b = y[0]->begin();
-    for (int i=0; i<y[0]->size(); ++i)
-    {
-      double dev;
-      if (*b++)
-      { dev = *x++ - avg1;
-	inSS += dev * dev;
-      }
-      else
-      { dev = *x++ - avg0;
-	outSS += dev*dev;
-      }
-    }
-  }
-  else
-  { double avg = y[0]->average();
-    double  *x = y[0]->begin();
-    for(int i = 0; i<y[0]->size(); ++i)
-    { double dev = *x++ - avg;
-      inSS += dev*dev;
-    }
-  }
-  return std::make_pair( std::make_pair(n1, inSS), std::make_pair(n0, outSS) );
-}
-  
-*/

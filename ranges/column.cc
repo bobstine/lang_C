@@ -110,23 +110,37 @@ insert_columns_from_stream (std::istream& is,
   return std::make_pair(n,k);
 }
 
-std::pair<int,int>
-insert_columns_from_stream (std::istream& is, int ny,
-			    std::back_insert_iterator< std::vector<Column> > yIt,
-			    std::back_insert_iterator< std::vector<Column> > xIt)
+void
+insert_columns_from_stream (std::istream& is, std::vector<NamedColumnInserter> inserters)
 {
   ColumnStream colStream(is, "column stream");
   int k (0);
   int n (colStream.n());
-  for (int i=0; i<ny; ++i)
-  { *yIt = *colStream;
-    ++yIt;
-    ++colStream;
+  while(true) 
+  { Column col = *colStream;
+    if(col->size() == 0) break;
+    std::string desc (col->description());
+    std::istringstream iss (desc);
+    std::string name;
+    iss >> std::ws >> name;            // flush white space, then get name
+    if ("columnVector" == name)
+    { std::string inserterName;
+      iss >> std::ws >> inserterName;
+      for(std::vector<NamedColumnInserter>::iterator it = inserters.begin(); it != inserters.end(); ++it)
+	if (it->first == inserterName)
+	{ *(it->second) = col;
+	  ++(it->second);
+	  break;
+	}
+    }
+    else
+      debug("CLMN",1) << "Cannot assign column without columnStream assignment.\n";
   }
-  for (Column col = *colStream; col->size()>0; ++k, ++xIt)
-  { *xIt = col;
+}
+
+    ++k;
+    *xIt++ = col;
     ++colStream;
-    col = *colStream;
   }
   debugging::debug("CLMN",1) << "Inserted "
 			     << ny << "y columns, followed by "

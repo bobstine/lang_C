@@ -131,7 +131,7 @@ class Column
   }
   
   Column& operator= (Column const& c);
-
+  
   ColumnData* operator->()                const { return mData; }
   
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
@@ -146,8 +146,9 @@ operator<<(std::ostream& os, Column const& column)
 }
 
 
-// Read columns as a stream from a stream input object
-
+// Read columns as a stream from a stream input object:
+//        First line of stream gives number of observations expected for each column.
+//        Then come triples of lines: name, description, data
 class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
   std::istream&    mStream;
@@ -165,6 +166,9 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   ColumnStream (std::istream& is, std::string name)
     :  mStream(is), mStreamName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
     { if (is) { initialize(); read_next_column(); } }
+
+  std::string   currentName()       const { return mCurrentName; }
+  std::string   currentDescription  const { return mCurrentDescription; }
   
   Column        operator*()  const { return mCurrentColumn; }
   ColumnStream& operator++()       { ++mCount; read_next_column(); return *this; }
@@ -177,17 +181,17 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   bool read_next_column();
 };
 
-// Optionally use the first ny as y's (column at a time)
-// Return  number of observations and number of columns
-
+// Return number of observations and number of columns
 std::pair<int,int>
   insert_columns_from_stream (std::istream& is,
 			      std::back_insert_iterator< std::vector<Column> > it);
 
-std::pair<int,int>
-  insert_columns_from_stream (std::istream& is, int ny,
-			      std::back_insert_iterator< std::vector<Column> > yIt,
-			      std::back_insert_iterator< std::vector<Column> > xIt);
+// Return collection of column vectors based on named variables
+// Names obtained from columnVector field as *first* pair of strings on description line
+typename std::pair<std::string, std::back_insert_iterator<std::vector<Column> > > NamedColumnInserter;
+
+void
+insert_columns_from_stream (std::istream& is, std::vector<NamedColumnInserter> inserters)
 
 
 
