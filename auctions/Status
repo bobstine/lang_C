@@ -113,6 +113,15 @@ Need to
 
 
 ------------------------------------------------------------------------------
+ 1 May 10
+
+        Convert input to use a "role" field in the description (second line)
+	of a variable to identify its role in the model, with the choices being
+	x, y, and context.  The in/out variable is a context variable.
+
+	Fix the input to verify that it reads enough characters.
+
+------------------------------------------------------------------------------
  5 Apr 10
 
        Verify that fit matches that from R.  Real pain due to lagging X's but

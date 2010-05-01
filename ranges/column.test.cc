@@ -75,18 +75,20 @@ main()
       std::vector<Column> columnVector;
       std::pair<int,int> dim;
       dim = insert_columns_from_stream(fileStream, std::back_inserter(columnVector));
-
       std::cout << "TEST: column vector has " << columnVector.size() << " columns.\n";
     }
 
     {
-      std::cout << "\n\nTEST: Read from file into a two column vectors.\n";
+      std::cout << "\n\nTEST: Read from file into labeled back-insert iterators.\n";
 
       std::ifstream fileStream("/Users/bob/C/ranges/column_test.dat");
-      std::vector<Column> xColumns, yColumns;
-      std::pair<int,int> dim;
-      dim = insert_columns_from_stream(fileStream, 2, std::back_inserter(yColumns), std::back_inserter(xColumns));
-      std::cout << "TEST: dim for x columns is " << dim << std::endl;
+      std::vector<Column> xColumns;
+      std::vector<Column> yColumns;
+      NamedColumnInsertMap insertMap;
+      insertMap.insert(std::make_pair("y", std::back_inserter(yColumns)));   // insert as pair since no default for back inserter
+      insertMap.insert(std::make_pair("x", std::back_inserter(xColumns)));
+      insert_columns_from_stream(fileStream, insertMap); 
+      std::cout << "TEST: read " << yColumns.size() << " y columns and read " << xColumns.size() << " x columns\n";
     }
 
     

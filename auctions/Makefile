@@ -35,8 +35,6 @@ level_4   = auction.o
 include ../rules_for_makefiles
 
 
-auction_test: model/costs
-
 logistic_test: auction.test
 	./auction.test -f test/logistic_test.dat -r 10 -c 0 -a 2
 
@@ -55,10 +53,8 @@ crash_test: auction.test
 	./auction.test -f data/crash.dat -r 100 -c 5
 
 credit_test: auction.test
-	mkfifo --mode=0666 /tmp/data-pipe
-	auction.test -f /tmp/data-pipe -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	cat data/credit.txt data/credit_nation.txt > /tmp/data-pipe
-
+#	./auction.test -f data/credit/credit_all.txt -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+	cat data/credit/credit.txt data/credit/credit_nation.txt | ./auction.test -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0

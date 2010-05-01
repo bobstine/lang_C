@@ -92,7 +92,7 @@ std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
 
 gslData*
-build_model_data(std::vector<Column> const& y, int skip, std::ostream& os);
+build_model_data(Column y, Column inOut, int skip, std::ostream& os);
 
 int
 parse_column_format(std::string const& dataFileName, std::ostream&);
@@ -109,7 +109,6 @@ main(int argc, char** argv)
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
-  std::istream& inputStream;
   std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int           protection           (3);
   int           blockSize            (1);
@@ -117,18 +116,11 @@ main(int argc, char** argv)
   int           splineDF             (0);
   int           extraCases           (0);
   
-  // parse arguments from command line  (pass in at main, open file for printing messages)
+
   parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
 		  splineDF, extraCases);
 
-  // --- Open files for data and log files ---
-  // input data file
-  std::ifstream inputFileStream(inputName);
-  if (inputName.empty())
-    inputStream = &std::cin;
-  else
-    inputStream = &inputFileStream;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -155,8 +147,7 @@ main(int argc, char** argv)
 		  << "             log  --> " << debugFileName  << std::endl
 #endif
 		  << "      model data  --> " << modelDataFileName << std::endl
-		  << "       model.txt  --> " << modelTextFileName << std::endl;
-  
+		  << "       model.txt  --> " << modelTextFileName << std::endl;  
   /* 
      Read columns from a file. The file is laid out with one column of values per row.
      Line 1: gives the number of cases
@@ -175,21 +166,33 @@ main(int argc, char** argv)
      FileColumnStream.  Spaced is managed within each column.
   */
 
-  int numberYColumns (parse_column_format (inputStream, debug("MAIN",0)));   // 1 no validation, 2 if there's an in/out indicator
-  std::vector<Column> yColumns;
-  std::vector<Column> xColumns;
-
-  /*
-    RAS...
-    Need to have the columns 'segmented' in the function that parses the variables since it cannot
-    back up to read the names a second time.
-  */
+  NamedColumnInsertMap insertMap;
+  std::vector<Column> yColumns;  insertMap.insert(std::make_pair("y",      std::back_inserter(yColumns)));
+  std::vector<Column> xColumns;  insertMap.insert(std::make_pair("x",      std::back_inserter(xColumns)));
+  std::vector<Column> cColumns;  insertMap.insert(std::make_pair("context",std::back_inserter(cColumns))); 
   
-  insert_columns_from_stream(inputStream, numberYColumns, back_inserter(yColumns), back_inserter(xColumns));
-  debug("MAIN",1) << "Data file " << columnFileName << " produced " << yColumns.size() << " Ys and "  << xColumns.size() << " Xs.\n";
+  if (inputName.empty())
+    insert_columns_from_stream(std::cin, insertMap);
+  else
+  { std::ifstream inputFileStream(inputName.c_str());
+    insert_columns_from_stream(inputFileStream, insertMap);
+  }
+
+  debug("MAIN",1) << "Input stream '" << inputName << "' produced " << yColumns.size() << " Ys, "
+		  << xColumns.size() << " Xs, and " << cColumns.size() << " context columns.\n";
+  if (yColumns.empty())
+  { debug("MAIN",0) << "ERROR:  Data do not include one with role y as response. Terminating.\n";
+    return 0;
+  }
 		      
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns, extraCases, debug("MAIN",1)));
+  Column inOut;
+  if (!cColumns.empty())
+  { if(cColumns[0]->name() == "[in/out][in]")
+      inOut = cColumns[0];
+    else debug("MAIN",0) << "Format error in data: first context column is not the in/out indicator; found '" << cColumns[0]->name() << " instead. Using all of data.\n";
+  }
+  gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",1)));
   
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, extraCases);
@@ -455,37 +458,22 @@ parse_arguments(int argc, char** argv,
 
 // reads in response, initialized data object
 gslData*
-build_model_data(std::vector<Column> const& y, int skip, std::ostream& os)
+build_model_data(Column y, Column inOut, int skip, std::ostream& os)
 {
-  int                       nyCols       (y.size());
-  bool                      useSubset    (nyCols == 2);
+  bool                      useSubset    (0 == inOut->size());
   constant_iterator<double> equalWeights (1.0);
-  int                       nRows        ((int)y[0]->size()-skip);
+  int                       nRows        ((int)y->size()-skip);
   
-  os << "Building model data with " << y[0]->size() << "-" << skip << "=" << nRows << " cases.  ";
-  if (useSubset)  // leading column is indicator of which cases to use in fitting
-  { os << "Validation cases identified by " << y[0] << ";\n      response variable is " << y[1] << std::endl;
-    return new gslData(y[1]->begin()+skip, y[0]->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
+  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y << std::endl;
+  if (useSubset)
+  { os << "Validation cases identified by " << inOut << ";\n      response variable is " << y << std::endl;
+    return new gslData(y->begin()+skip, inOut->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
-  else            // use all data for fitting
-  { constant_iterator<bool>   noSelection(true);
-    os << "Response variable is " << y[0] << std::endl;
-    return new gslData(y[0]->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
-  } 
-}
-
-
-int
-parse_column_format(std::istream& is, std::ostream& os)
-{
-  os << "Peeking at data file finds ";
-  int i,j;
-  std::string firstVarName;
-  input >> i >> j >> firstVarName;
-  os << "nrow=" << i << " ncol=" << j <<". Name of first variable is " << firstVarName << std::endl;
-  if (firstVarName == "[in/out][in]")
-    return 2;
   else
-    return 1;
+  { constant_iterator<bool>   noSelection(true);
+    return new gslData(y->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
+  } 
 }
+
+
 

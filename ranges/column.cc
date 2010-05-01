@@ -27,6 +27,21 @@ Column::operator= (Column const& c)
 }
 
 
+std::string
+Column::extract_role_from_string(std::string const& str) const
+{
+  std::istringstream iss(str);
+  std::string term ("");
+  iss >> std::ws >> term;
+  if("role" == term)
+  { iss >> std::ws >> term;
+    return term;
+  }
+  else
+    return "";
+}
+
+
 //  ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData    ColumnData
 
 void
@@ -74,16 +89,19 @@ ColumnStream::initialize()
   getline(mStream, line);
   std::istringstream ss(line);
   ss >> mN;
-  debugging::debug("CLMN",0) << "Stream " << mStreamName << " open; expecting n = " << mN << " cases per variable.\n";
+  debugging::debug("CLMN",0) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
 }
 
 bool
 ColumnStream::read_next_column()
 {
-  getline(mStream, mCurrentName);
-  mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));
+  mCurrentName = "";
+  if(!mStream.eof())
+  { getline(mStream, mCurrentName);
+    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));
+  }
   if (mCurrentName.empty())
-  { debugging::debug("CLMN",1) << "Stream " << mStreamName << " now empty.\n";
+  { debugging::debug("CLMN",1) << "Stream '" << mStreamName << "' now empty.\n";
     mCurrentColumn = Column();
     return false;
   }
@@ -111,7 +129,7 @@ insert_columns_from_stream (std::istream& is,
 }
 
 void
-insert_columns_from_stream (std::istream& is, std::vector<NamedColumnInserter> inserters)
+insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap)
 {
   ColumnStream colStream(is, "column stream");
   int k (0);
@@ -119,33 +137,24 @@ insert_columns_from_stream (std::istream& is, std::vector<NamedColumnInserter> i
   while(true) 
   { Column col = *colStream;
     if(col->size() == 0) break;
-    std::string desc (col->description());
-    std::istringstream iss (desc);
-    std::string name;
-    iss >> std::ws >> name;            // flush white space, then get name
-    if ("columnVector" == name)
-    { std::string inserterName;
-      iss >> std::ws >> inserterName;
-      for(std::vector<NamedColumnInserter>::iterator it = inserters.begin(); it != inserters.end(); ++it)
-	if (it->first == inserterName)
-	{ *(it->second) = col;
-	  ++(it->second);
-	  break;
-	}
+    debugging::debug("CLMN",4) << "Reading column " << col->name() << " with description " << col->description()
+			       << "  [0]=" << *(col->begin()) << "  [n]=" << *(col->end()-1) << std::endl;
+    ++colStream;
+    std::string role (col->role());
+    if (!role.empty())
+    { NamedColumnInsertMap::iterator it (insertMap.find(role));
+      if (it != insertMap.end()) // col has a role and its among those with inserters
+      { ++k;                     // cannot use [] since no default constructor for back inserter
+	*(it->second)=col;
+	++(it->second);
+      }
+      else
+	debugging::debug("CLMN",1) << "Inserter for column '" << col->name() << "' with role '" << role << "' not found; not inserted.\n";
     }
     else
-      debug("CLMN",1) << "Cannot assign column without columnStream assignment.\n";
+      debugging::debug("CLMN",1) << "Column '" << col->name() << "' lacks a role for the analysis; not inserted.\n";
   }
-}
-
-    ++k;
-    *xIt++ = col;
-    ++colStream;
-  }
-  debugging::debug("CLMN",1) << "Inserted "
-			     << ny << "y columns, followed by "
-			     << k << " x columns from column stream each of length " << n << std::endl;
-  return std::make_pair(n,k);
+  debugging::debug("CLMN",1) << "Inserted " << k << " columns, each of length " << n << std::endl;
 }
 
 

@@ -7,7 +7,7 @@
  A Column puts a name on a numerical range and the various statistics of that range.
  Access to properties of the column come via operator->.
 
- 27 Apr 10 ... Column streams to use an input stream rather than file.
+ 27 Apr 10 ... Column streams to use an input stream rather than file; columns have a 'role'
  11 Nov 09 ... Add description field to allow attributes when reading stream format data.
  25 May 09 ... Better form of dynamic storage (see Coplein, p67-68)
  13 May 09 ... Dynamic column storage.
@@ -19,12 +19,14 @@
 #include <utility>
 #include <iterator>
 #include <vector>
+#include <map>
 #include <assert.h>
 
 #include <iostream>
 
 #include "read_utils.h"
 #include "range.h"
+#include "debug.h"
 
 
 
@@ -36,6 +38,7 @@ class ColumnData
 
  private:
   std::string mName;
+  std::string mRole;              // such as y, x or context
   std::string mDescription;       // store whatever you want here
   int         mN;
   double      mAvg;
@@ -52,6 +55,7 @@ class ColumnData
 
  public:
   std::string     name()          const { return mName; }
+  std::string     role()          const { return mRole; }
   std::string     description()   const { return mDescription; }
   int             size()          const { return mN; }
   double          average()       const { return mAvg; }
@@ -85,7 +89,7 @@ const int maxColumnDescLength (1024);
 class Column
 {
  private:
-  ColumnData       *  mData;            // having pointer makes it possible to have const but change ref count
+  ColumnData       *  mData;            // pointer makes it possible to have const but change ref count
 
  public:
   ~Column() { if(--mData->mRefCount <= 0) delete mData; }
@@ -94,25 +98,32 @@ class Column
 
  Column(Column const& c)                      : mData(c.mData) { ++c.mData->mRefCount; }
 
- Column(char const* name, int n)              : mData( new ColumnData(n) ) { mData->mName = name; mData->mDescription = " ";}  // need to init properties
-  
+ Column(char const* name, int n)              : mData( new ColumnData(n) ) {
+    mData->mName = name;
+    mData->mRole="";
+    mData->mDescription=""; }
+
  Column(char const* name, char const* description, size_t n, FILE *fp) : mData( new ColumnData(n) )
   { mData->mName = name;
+    mData->mRole = extract_role_from_string(description);
     mData->mDescription = description;
-    double *x (mData->mBegin);   // std::cout << "COLM: filling pointer " << x << " in column " << mName << " from file.\n";
+    double *x (mData->mBegin);  
     while(n--)
       fscanf(fp, "%lf", x++);  
     mData->init_properties();
   }
 
  Column(std::string name, std::string description, size_t n, std::istream& is) : mData( new ColumnData(n) )
-  { mData->mName = name;
+  { size_t expect (n);
+    mData->mName = name;
+    mData->mRole = extract_role_from_string(description);
     mData->mDescription = description;
     double *x (mData->mBegin);  
-    while(n--)
-    { is >> *x;
+    while(n-- && is >> *x)
       ++x;
-    }
+    ++n;
+    if(n)
+      debugging::debug("CLMN",0) << "Error. Incomplete column read of column '" << name << "'. Expecting " << expect << " but read " << expect-n << std::endl;
     std::string rest;
     getline(is, rest);             // dump rest of data line
     mData->init_properties();
@@ -121,6 +132,7 @@ class Column
   template <class Iter>
     Column(char const* name, char const* description, size_t n, Iter source) : mData( new ColumnData(n) )
   { mData->mName = name;
+    mData->mRole = extract_role_from_string(description);
     mData->mDescription = description;
     double *x (mData->mBegin);  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
     while(n--)
@@ -135,6 +147,11 @@ class Column
   ColumnData* operator->()                const { return mData; }
   
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
+
+ private:
+
+  std::string  extract_role_from_string(std::string const& desc) const;
+  
 };
 
 inline
@@ -167,14 +184,14 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
     :  mStream(is), mStreamName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
     { if (is) { initialize(); read_next_column(); } }
 
-  std::string   currentName()       const { return mCurrentName; }
-  std::string   currentDescription  const { return mCurrentDescription; }
+  std::string   currentName()        const { return mCurrentName; }
+  std::string   currentDescription() const { return mCurrentDesc; }
   
-  Column        operator*()  const { return mCurrentColumn; }
-  ColumnStream& operator++()       { ++mCount; read_next_column(); return *this; }
+  Column        operator*()          const { return mCurrentColumn; }
+  ColumnStream& operator++()               { ++mCount; read_next_column(); return *this; }
 
-  int           position()   const { return mCount; }
-  int           n()          const { return mN;     }
+  int           position()           const { return mCount; }
+  int           n()                  const { return mN;     }
   
  private:
   void initialize();
@@ -188,10 +205,10 @@ std::pair<int,int>
 
 // Return collection of column vectors based on named variables
 // Names obtained from columnVector field as *first* pair of strings on description line
-typename std::pair<std::string, std::back_insert_iterator<std::vector<Column> > > NamedColumnInserter;
+typedef std::map<std::string, std::back_insert_iterator< std::vector<Column> > > NamedColumnInsertMap;
 
 void
-insert_columns_from_stream (std::istream& is, std::vector<NamedColumnInserter> inserters)
+insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap);
 
 
 
