@@ -188,9 +188,10 @@ main(int argc, char** argv)
   // initialize data object held in underlying model [y and optional selector]
   Column inOut;
   if (!cColumns.empty())
-  { if(cColumns[0]->name() == "[in/out][in]")
+  { if(cColumns[0]->name() == "[in/out][in]" || cColumns[0]->name() == "cv.indicator")
       inOut = cColumns[0];
-    else debug("MAIN",0) << "Format error in data: first context column is not the in/out indicator; found '" << cColumns[0]->name() << " instead. Using all of data.\n";
+    else debug("MAIN",0) << "Format error in data: first context column is not the in/out indicator; found '" << cColumns[0]->name()
+			 << " instead. Using all of data.\n";
   }
   gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",1)));
   

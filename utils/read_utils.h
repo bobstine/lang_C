@@ -14,10 +14,10 @@
 #include <iterator>
 #include <iostream>
 #include <cstdio>
+#include <sstream>
 
 
 //  trim strings
-
 
 namespace read_utils
 {

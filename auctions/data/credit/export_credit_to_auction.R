@@ -2,8 +2,7 @@
 ###  Experiment with predictions: how to predict
 ###
 
-"Build models within time blocks. Then use that model to fit a new type of block, 
-one for a different time period as needed when predicting."
+"Build data for use with the auction."
 
 #-----------------------------------------------------------------------
 #      Data and setup
@@ -41,46 +40,22 @@ cat("Avoiding", length(avoid),"counties, leaving",n.counties,"counties.\n")  # 1
 #-----------------------------------------------------------------------------------
 #      Output regression data for auction/C++
 #      Response is at time t, but all others are lagged 1 quarter.
+#		All data goes into the named directory: 
+#             add lines to index.sh and 
+#				build file with data under the [unique] name varname
 #-----------------------------------------------------------------------------------
 
-y.quarters <- 2:n.time        # skip first for all of those initial lagged variables
-x.quarters <- 1:(n.time-1)
-dims       <- dim(County$REPB60M[eligible.counties,])
-the.file   <- "/Users/bob/C/auctions/data/credit/credit.txt"
+y.quarters     <- 2:n.time        # skip first for all of those initial lagged variables
+x.quarters     <- 1:(n.time-1)
+dims           <- dim(County$REPB60M[eligible.counties,])
+the.directory  <- "/Users/bob/C/auctions/data/credit/auction.data/"
+the.manifest   <- "/Users/bob/C/auctions/data/credit/auction.data/index.sh"
 
 cat("n=",n <- dims[1]*dims[2],"\n")   # 213000
 
-
+                 
 # --------------------------------------------------------------------------------
-#  write national time series out in streaming format into separate
-#  file that can be concatenated onto the file produced by other commands.
-# --------------------------------------------------------------------------------
-
-national.file   <- "/Users/bob/C/auctions/data/credit/credit_nation.txt"
-
-# --- writes expanded national time series in streaming layout (one value for all counties)
-write.national.var <- function(name,max.lag=4, attr.str="", append=TRUE) {
-	x <- Nation[x.quarters,name]
-	cat(name,
-	    "\nstream nation max_lag ",max.lag," ",attr.str, sep="", file=national.file, append=append);
-	cat("\n", rep(x, rep(n.counties, length(x))), "\n",          file=national.file, append=TRUE)
-}
-
-# --- only write the variables that go back to 1992
-use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
-                            124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
-                             179:182,185:186,188:192,194:199)]
-cat("Writing",length(use.cols),"variables to national file.\n")
-write.national.var(use.cols[1], append=FALSE)                            
-write.national.var(use.cols[2])                             
-write.national.var(use.cols[4])                             
-write.national.var(use.cols[8])                             
-write.national.var(use.cols[16])                             
-write.national.var(use.cols[32])                             
-write.national.var(use.cols[64])                             
-
-# --------------------------------------------------------------------------------
-#  remove lags of y so that response in auction is the residuals from lag regr
+#  remove lags of y so that response variable in auction is the residual from lag regr
 # --------------------------------------------------------------------------------
 
 est.cols <- 5:71               # allow 4 lags
@@ -102,9 +77,9 @@ regr <- lm(y.0 ~ y.1 + y.2 + y.3 + y.4); summary(regr)
    Multiple R-squared: 0.7107,	Adjusted R-squared: 0.7107 
 
 
-# ---------------------------------------------------------------
-#  check initial SS from C++ code after fill back initial values
-# ---------------------------------------------------------------
+# -----------------------------------------------------------------------------------
+#  build the response, check initial SS from C++ code after fill initial values
+# -----------------------------------------------------------------------------------
 
 y <- matrix(c(rep(0,4*n.counties), residuals(regr)), nrow=dims[1],ncol=dims[2]) # fill in 4 lags
 
@@ -129,37 +104,51 @@ regr <- lm(y.test ~ r.test)          ; summary(regr)
 regr <- lm(y.test ~ r.test + r2.test); summary(regr)
 regr <- lm(y.test ~ r.test + r2.test + pov.test + mort.test); summary(regr)
 
+
+
 # --------------------------------------------
-#  write starts here
+#  write of county level data starts here
 # --------------------------------------------
 
 # --- function writes county variables, all lagged
 write.county.var <- function(name,data,max.lag, attr.str="") {
-	cat("\n",name,sep="",                                           file=the.file, append=TRUE);
-	cat("\nstream main max_lag ",max.lag," ",attr.str,"\n",sep="",  file=the.file, append=TRUE);
-	cat(fill.missing.mat(data)[eligible.counties,x.quarters],       file=the.file, append=TRUE)
+	name <- paste(name,".county",sep="")
+	# add 3 lines to the manifest file in the data directory
+	cat("echo ",name,"\n",
+	    "echo role x stream main max_lag ",max.lag," ",attr.str,"\n",
+	    "cat ", name, "\n",                                      
+	    sep="", file=the.manifest, append=TRUE);
+	# write the actual data
+	cat(fill.missing.mat(data)[eligible.counties,x.quarters], "\n", file=paste(the.directory,name,sep=""))
 }
 
 # --- function writes matrix/vector variables
-write.var <- function(data, quarters, attr.str) {
-	var.name <- as.character(sys.call())[2];
-	cat("\n",var.name,sep="",                                   file=the.file, append=TRUE);
-	cat("\n",attr.str,"\n",sep="",                              file=the.file, append=TRUE);
-	cat(as.vector(unlist(data[,quarters])),                     file=the.file, append=TRUE);
+write.var <- function(name, data, role="y", attr.str="") {
+	cat("echo ", name, "\n",
+	    "echo role ",role, " ", attr.str,"\n",
+	    "cat ", name, "\n",
+	    sep="", file=the.manifest, append=TRUE);    
+	cat(as.vector(data), "\n", file=paste(the.directory,name,sep=""))
 }
 
-# --- write the header line  (1 for [in/out], then 14 more plus the quarter indicators)
-cat(n.counties * length(y.quarters),1+1+6+6+4+11, file=the.file)
+
+
+# --- initilize the manifest file, removing one quarter for lags
+cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
+    file=the.manifest, append=FALSE)  
 
 # --- write the in/out selector; hold back q quarters
+cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
 in.out <- matrix(0,nrow=dims[1],ncol=dims[2]); in.out[,q.in-1]<-1;  # -1 since lagged
 sum(in.out)  # check number used in estimating
-cat("\n[in/out][in]\nstream main\n", in.out[,x.quarters], file=the.file, append=TRUE) 
+write.var("cv.indicator", role = "context", in.out[,x.quarters]) 
 
 # --- write the response  (71-1 x 3000 counties)
-write.var(y, y.quarters, "REPB60M resid")
+cat("# response variable\n",file=the.manifest, append=TRUE)
+write.var("REPB60M_residual", role="y", unlist(y[,y.quarters]))
 
 # 6 more variable, all lags
+cat("# county variables \n",file=the.manifest, append=TRUE)
 write.county.var(   "REAU",County$REAU        ,3,"interact_with_parent quarter interact_with_parent period")
 write.county.var(  "UNEMP",County$unemployment,3,"interact_with_parent quarter interact_with_parent period")
 write.county.var("POVERTY",County$poverty     ,3,"interact_with_parent quarter interact_with_parent period")
@@ -182,20 +171,64 @@ temp <- as.data.frame(lapply(County$REPB60M, spatial.variable))
 write.county.var(   "S_REPB60M",temp,2,"interact_with_parent quarter")
 
 # 4 quarter indicators
+cat("# time period indicators \n",file=the.manifest, append=TRUE)
 for(q in 1:4) {
-	x <- as.numeric(y.quarters%%4==q)
-	cat("\nQuarter", q,"\nstream time parent quarter category ", q,"\n", sep="", file=the.file, append=TRUE)
-	tt <- matrix(x, nrow=n.counties,ncol=length(y.quarters), byrow=TRUE)
-	cat(tt, file=the.file, append=TRUE)
+	name <- paste("Quarter",q,sep="")
+	x <- matrix(as.numeric(y.quarters%%4==q), nrow=n.counties,ncol=length(y.quarters), byrow=TRUE)
+	write.var(name,x,role="x",attr.str=paste("stream time parent quarter category", q)) 
 }
+
 # 11 quarter segments
 for (q in seq(10,60,5)) {
 	cat(q," ")
-	x <- as.numeric(y.quarters >= q) 
-	cat("\nPeriod", q,"\nstream time parent period category ", q,"\n", sep="", file=the.file, append=TRUE)
-	tt <- matrix(x, nrow=n.counties,ncol=length(y.quarters), byrow=TRUE)
-	cat(tt, file=the.file, append=TRUE)
+	name <- paste("Period",q,sep="")
+	x <- matrix(as.numeric(y.quarters >= q), nrow=n.counties,ncol=length(y.quarters), byrow=TRUE)
+	write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
 }
 
 cat("\n   ------- DONE writing ", the.file," -------\n")
+
+
+# --------------------------------------------------------------------------------
+#  write national time series out in streaming format into separate
+#  file that can be concatenated onto the file produced by other commands.
+#
+#       Should not need to repeat this!
+#
+# --------------------------------------------------------------------------------
+
+# --- writes expanded national time series in streaming layout (one value for all counties)
+#     Need to fix the data input iterators to handle this more cleanly so don't have to replicate here
+
+write.county.var <- function(name,data,max.lag, attr.str="") {
+	name <- paste(name,".county",sep="")
+	# add 3 lines to the manifest file in the data directory
+	cat("echo ",name,"\n",
+	    "echo role x stream main max_lag ",max.lag," ",attr.str,"\n",
+	    "cat ", name, "\n",                                      
+	    sep="", file=the.manifest, append=TRUE);
+	# write the actual data
+	cat(fill.missing.mat(data)[eligible.counties,x.quarters], "\n", file=paste(the.directory,name,sep=""))
+}
+
+write.national.var <- function(name,max.lag=4, attr.str="") {
+	x <- Nation[x.quarters,name]
+	name <- paste(name, ".nation", sep="")
+	cat("echo ",name,"\n",
+	    "echo role x stream nation max_lag ",max.lag," ",attr.str,"\n",
+	    "/Users/bob/C/auctions/expander -e 3000 ", name, "\n",          # external app does expansion                              
+	    sep="", file=the.manifest, append=TRUE);
+	cat(x, "\n",  file=paste(the.directory,name,sep=""))
+}
+
+# --- use only those variables that go back to the initial 1992 quarter
+use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
+                            124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
+                             179:182,185:186,188:192,194:199)]
+cat("Writing",length(use.cols),"variables to national file.\n")
+write.national.var(use.cols[1], append=FALSE)    # start new file here                        
+for (i in 2:length(use.cols)) {
+	if (i%%5 == 0) cat(i,"");
+	write.national.var(use.cols[i]);
+}
 

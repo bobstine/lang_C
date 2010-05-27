@@ -54,7 +54,7 @@ crash_test: auction.test
 
 credit_test: auction.test
 #	./auction.test -f data/credit/credit_all.txt -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	cat data/credit/credit.txt data/credit/credit_nation.txt | ./auction.test -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+	cat data/credit/county.txt data/credit/national.txt | ./auction.test -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
@@ -81,6 +81,12 @@ model/auction.model model/test.dat: auction.test.exec
 c45_parser:
 	-rm -f c45_parser
 	cp ../seq_regr/c45_syntax.test.exec c45_parser
+
+expander.o: expander.cc
+	$(GCC) $(CFLAGS) -c expander.cc -o $@
+
+expander: expander.o
+	$(GCC) $^ $(LDLIBS) -o  $@
 
 validate.o: validate_model.cc $(above_infinity)
 	$(GCC) $(CFLAGS) -c validate_model.cc -o $@
