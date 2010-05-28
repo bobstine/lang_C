@@ -112,6 +112,18 @@ Need to
 
 
 
+
+------------------------------------------------------------------------------
+28 May 10
+
+       Revise input data format to use a compressed TAR archive.  Would like to be
+       able to use fuse and avfs to mount the tar file as a directory, but that's
+       not in os-x yet.
+
+       Removed bug in handling of validation cases that somehow avoided doing the
+       cross-validation (in build_model_data).
+
+
 ------------------------------------------------------------------------------
  1 May 10
 

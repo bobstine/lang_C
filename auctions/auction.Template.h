@@ -51,8 +51,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   ++mRound;
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
   // reap empty experts
-  int emptyExperts (purge_empty_experts());
-  if (emptyExperts) debug("AUCT",2) << "Purged " << emptyExperts << " empty experts.\n";
+  purge_empty_experts();
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<Expert,double> winner (collect_bids(os));  
   Expert  expert = winner.first;
@@ -97,7 +96,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   if (accepted)
   { amount = pay_winning_expert(expert, features);                          // installs experts as needed
     if (os)
-    { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss 
+    { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
       os << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
     }
   } else
@@ -136,6 +135,8 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have and not p
       mExperts.erase(ee);
     } 
   }
+  if (numberPurged > 0)
+    debug("AUCT",2) << "Purged " << numberPurged << " empty experts.\n";
   return numberPurged;
 }   
       

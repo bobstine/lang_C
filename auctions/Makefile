@@ -52,9 +52,14 @@ baseball_test: auction.test data/baseball.dat
 crash_test: auction.test
 	./auction.test -f data/crash.dat -r 100 -c 5
 
+
+# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size
+short_credit_test: auction.test
+	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 20 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+
 credit_test: auction.test
-#	./auction.test -f data/credit/credit_all.txt -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	cat data/credit/county.txt data/credit/national.txt | ./auction.test -o data/credit/ -r 250 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0

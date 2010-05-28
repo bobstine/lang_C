@@ -97,6 +97,8 @@ build_model_data(Column y, Column inOut, int skip, std::ostream& os);
 int
 parse_column_format(std::string const& dataFileName, std::ostream&);
 
+Column
+identify_cv_indicator(std::vector<Column> const& columns, int extraCases);
 
 
 
@@ -178,21 +180,24 @@ main(int argc, char** argv)
     insert_columns_from_stream(inputFileStream, insertMap);
   }
 
-  debug("MAIN",1) << "Input stream '" << inputName << "' produced " << yColumns.size() << " Ys, "
-		  << xColumns.size() << " Xs, and " << cColumns.size() << " context columns.\n";
+  std::string message;
+  if (inputName.empty())
+    message = "Standard input cin";
+  else
+    message = "Input stream " + inputName;
+  debug("MAIN",1) << message << " produced "
+		  << yColumns.size() << " Ys, "
+		  << xColumns.size() << " Xs, and "
+		  << cColumns.size() << " context columns.\n";
   if (yColumns.empty())
-  { debug("MAIN",0) << "ERROR:  Data do not include one with role y as response. Terminating.\n";
-    return 0;
+  { debug("MAIN",0) << "ERROR:  Data do not include variable with role y to be the response. Terminating.\n";
+    return -1;
   }
-		      
+
+  // check the cross validation indicator
+  Column inOut = identify_cv_indicator(cColumns, extraCases); 
+
   // initialize data object held in underlying model [y and optional selector]
-  Column inOut;
-  if (!cColumns.empty())
-  { if(cColumns[0]->name() == "[in/out][in]" || cColumns[0]->name() == "cv.indicator")
-      inOut = cColumns[0];
-    else debug("MAIN",0) << "Format error in data: first context column is not the in/out indicator; found '" << cColumns[0]->name()
-			 << " instead. Using all of data.\n";
-  }
   gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",1)));
   
   // organize data into feature streams
@@ -457,24 +462,49 @@ parse_arguments(int argc, char** argv,
     }
 }
 
+
+Column
+identify_cv_indicator(std::vector<Column> const& columns, int extraCases)
+{
+  Column indicator;
+  if (columns.empty()                                // no context columns found, hence no need to look for cv indicator
+      ||                                             // or not a valid name
+      ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator")))   
+  { debug("MAIN",0) << "Data lack CV indicator; first context column is not the in/out indicator; found '" << columns[0]->name()
+		    << "' instead. Using all cases for estimation.\n";
+  }
+  else                       // check name of the first context column, verify its a dummy variable
+  { if (columns[0]->is_dummy())
+    { indicator = columns[0];
+      double sum (0.0);
+      for (double *b (indicator->begin() + extraCases); b != indicator->end() ; ++ b)
+	sum += *b;
+      debug("MAIN",0) << "CV indicator variable is " << indicator->name() << " with sum " << sum
+		      << " estimation cases after skipping " << extraCases << " leading cases.\n";
+    }
+    else
+      debug("MAIN",0) << "ERROR: Proposed indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
+  }
+  return indicator;
+}
+
+
 // reads in response, initialized data object
 gslData*
 build_model_data(Column y, Column inOut, int skip, std::ostream& os)
 {
-  bool                      useSubset    (0 == inOut->size());
+  bool                      useSubset    (0 != inOut->size());
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        ((int)y->size()-skip);
   
-  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y << std::endl;
+  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y;
   if (useSubset)
-  { os << "Validation cases identified by " << inOut << ";\n      response variable is " << y << std::endl;
+  { os << " and validation cases identified by " << inOut << std::endl;
     return new gslData(y->begin()+skip, inOut->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
   else
-  { constant_iterator<bool>   noSelection(true);
+  { os << " and no validation.\n";
+    constant_iterator<bool>   noSelection(true);
     return new gslData(y->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
-
-
-

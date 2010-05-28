@@ -445,7 +445,6 @@ gslRegression<Data,Engine>::sums_of_squares () const
 {
   gsl_vector const* y (mpData->y());
   gsl_vector const* f (mpData->Xb());
-  double rssOut (0.0);
   // test that matches built-in residual SS computed in QR
   /*  for(int i=0; i<mN; ++i)
       { diff = mYBar + gsl_vector_get(y,i)-gsl_vector_get(f,i);
@@ -453,6 +452,7 @@ gslRegression<Data,Engine>::sums_of_squares () const
       }
       debug(0) << "GSLR: Built in RSS=" << mRSS << " ; calculated RSS=" << rssIn << std::endl;
   */
+  double rssOut (0.0);
   for(int i=mN; i<len(); ++i)                                      // note that it starts at mN thru len (validation cases)
   { double diff = mYBar + gsl_vector_get(y,i)-gsl_vector_get(f,i); // add mean back to uncenter y
     rssOut += diff * diff;
