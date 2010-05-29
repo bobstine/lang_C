@@ -7,7 +7,6 @@
 
 \input{/Users/bob/work/papers/standard}
 
-\newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
 
 % --- Paragraph split
@@ -75,9 +74,9 @@
  proceed through them all at once.  Source experts are assigned $\alpha$-wealth
  at the time that the auction is initialized.
 
-\item[Parasitic experts] (or perhaps more politely called derived experts)
- construct features from those that have already made an appearance in the
- auction.  These might be, for instance, various spatial interactions of a
+\item[Parasitic or scavenger experts] (or perhaps more politely called derived
+ experts) construct features from those that have already made an appearance in
+ the auction.  These might be, for instance, various spatial interactions of a
  feature that was initially rejected from the auction previously.  Some versions
  of the auction have used parasites that form interactions among variables in
  the model; these are now handled elsewhere.  The idea is that parasites ought
@@ -141,6 +140,71 @@
  the pay-out $\omega$ made to an expert when a feature is accepted into the
  model.
 
+\clearpage
+\section{Steps in the Auction} % -------------------------------------------------------------
+
+ This section describes the generation of experts in the auction and their
+ initial funding. These all basically use the universal bidding rule based on a
+ Cauchy distribution, with the added ability to ``spend it all'' before running
+ out of features.
+
+ {\em Prior to the start of the auction}, the software creates an initial set of
+ experts.  These derive from the structure of the input explanatory variables
+ and chosen program options.  The first experts are the parasite/scavenger
+ experts:
+ \begin{description}
+  \item[Rejected feature interactions.] This expert interacts features that were
+ rejected from the auction with those from the any input stream.  (I'm not
+ really sure right now what this one does other than use rejected features.)
+  \item[Rejected feature polynomials.] This expert builds cubic polynomials in
+ rejected features to see if some simple nonlinearity might be present.
+ \end{description}
+ These receive no initial alpha-wealth.  They only get funded from taxes applied
+ to bids placed on variables considered for the auction.
+
+ The remainiong initial experts are ``source experts'' that recommend new
+ variables (basically, data read from an external file).  For each named input
+ stream (the default is named ``main'' and it does not use the context stream),
+ the auction adds two experts:
+ \begin{description}
+  \item[Linear feature.] Recommends the actual input feature, as is.  The expert
+ guarantees to make two passes over the list of variables in this stream before
+ it spends down all of its allocated alpha-wealth.
+  \item[Interactions.]  This expert recommends interactions among the variables
+ within the stream. 
+ \end{description}
+ These are funded by allocating the initial alpha-wealth of the auction, with
+ 52\% of the wealth given to a stream going to the linear, and 48\% going to the
+ interactions.  The difference makes sure we try linear terms before going after
+ interactions.  (The associated code is in the file {\tt auction.test.cc} where
+ a comment indicates {\tt Assembling experts}.)  In addition, the software will
+ add a calibration expert.  Also, the software can add principal components or
+ RKHS basis vectors.
+
+ {\em Dynamic experts join the auction as the modeling continues.}  The auction
+ adds additional experts ``on the fly'' when a variable gets added to the model.
+  If the added variable has the attribute {\tt interact\_with\_parent}, then the
+ auction gains an expert that will interact the newly added variable with any
+ variable from the named stream. (??? How does it use those that have already
+ been tried?)  If the added variable has the integer-valued attribute
+ ``max\_lag'', then an expert will offer up to this many lags of the added
+ variable.  Finally, every added variable gets an expert that interacts it with
+ every other variable already in the model.  Notice that this expert overlaps
+ with the source expert when the variables come from a common stream.  For
+ example, if $X_1$ and $X_2$ come from the stream {\tt main} and first $X_1$ and
+ then $X_2$ are added to the model. The source stream for {\tt main} will offer
+ the interaction of these, and the dynamic stream will also recommend their
+ interaction.  (That could be easily handled if the two experts bid for $X_1 *
+ X_2$ at the same time, but results in some wasted alpha if they win separate
+ bids.)
+
+ All of these dynmically-added experts are funded from a tax on the payout when
+ the variable is added.  (See the code for {\tt pay\_winning\_expert} called by
+ {\tt auction\_next\_feature} in the file {\tt auction.Template.h}.)  Many of
+ these experts bid only on a small list of features, meaning that they often run
+ out of features quickly.  They can pass over them more than once, but in the
+ current implementaition experts with no features to recommend (now or in the
+ future) get harvested.  Any remaining alpha is collected by the auction.
 
 
 \section{Tests in Least Squares} % -----------------------------------------------------------

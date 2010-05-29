@@ -222,7 +222,7 @@ main(int argc, char** argv)
   // parasitic experts
   theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
 			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Skipped-feature interactions",
+			       make_cross_product_stream("Skipped-feature interactions",   ///// RAS **** FIX THIS HERE **** to use any stream
 							 featureSrc.features_with_attribute("stream", "main"), theAuction.rejected_features())
 			       ));
   

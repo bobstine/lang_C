@@ -47,7 +47,7 @@ void
 insert_value(TimeSeriesMap &m, std::string region, int quarter, std::string value)
 {
   if (m.find(region) == m.end()) // insert empty vector
-  { // std::cout << "   initialize vector for state " << state << std::endl;
+  { 
     m[region] = std::vector<double>(number_of_quarters, missing_value);
   }
   m[region][quarter] = read_utils::lexical_cast<double>(value.c_str());

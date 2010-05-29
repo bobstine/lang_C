@@ -20,7 +20,7 @@ PROJECT_NAME = tools
 
 USES = ranges utils random
 
-EXTERNAL_USES = gsl
+# EXTERNAL_USES = gsl
 
 level_0 = dummy.o
 
@@ -40,7 +40,7 @@ trendata_build_county: trendata_build_county.o trendata.h
 
 trendata_build_state: trendata_build_state.o trendata.h
 	$(GCC) trendata_build_state.o $(LDLIBS) -o $@
-	cp -f $@ ~/data/TrenData/state/build_data
+#	run it directly from C directory rather than copy
 
 trendata_build_nation: trendata_build_nation.o trendata.h
 	$(GCC) trendata_build_nation.o $(LDLIBS) -o $@

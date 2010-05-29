@@ -41,20 +41,38 @@ main()
   const int    iState     (3);
   const int    iFIPS      (4);
 
-  std::string dataFileName("raw_data_1.csv");
+  const std::string path ("/Users/bob/data/TrenData/state/");
+  std::string dataFileName(path + "raw_data_1.csv");
   
-  std::set<std::string> variableNames;                         // build state tables for these variables
-  // key default rates
-  variableNames.insert("REPB60M");        // 60+ days past due, revolving
-  variableNames.insert("INPB60M");        // installment
-  variableNames.insert("MTPB60M");        // mortgage
-  // main summary variables
-  variableNames.insert("ATTDC");          // total debt per consumer
-  variableNames.insert("RENARB");         // revolving per borrower
-  variableNames.insert("REAU");           // utilization of revolving
-  variableNames.insert("MTDTD");          // mortgage as percentage of total debt
-  variableNames.insert("MTNAB");          // mortgages per borrower
+  // state level variables that go back to 1992 and match those used nationally
+  std::string nameString = std::string("ATABB ") +
+                 "ATACLB "  + "ATAU "    + "ATNB12 "  + "ATNC "    + "ATNNB12 " + "ATNNC "   +
+    "ATPB120M "+ "ATPB60M " + "ATPB90M " + "ATPNN "   + "ATTDB "   + "ATTDC "   + "ATABB "   +
+    "BCNARB "  + "BCPB120M "+ "BCPB60M " + "BCPBA "   + "BINAC "   + "BINAIB "  + "BIPB120M "+
+    "BIPB60M " + "BIPB90M " + "BRNAC "   + "BRNARB "  + "BRPB120M "+ "BRPB60M " + "BRPB90M " +
+    "BRPBA "   + "FINAC "   + "FINAIB "  + "FIPB120M "+ "FIPB60M " + "FIPB90M " + "FRNAC "   +
+    "FRNARB "  + "FRPB120M "+ "FRPB60M " + "FRPB90M " + "FRPBA "   + "INAB "    + "INDTD "   +
+    "INNAC "   + "INNAIB "  + "INNNC "   + "INNNIB "  + "INPB120M "+ "INPB60M " + "INPB90M " +
+    "INPBA "   + "INPN "    + "INPNI "   + "INTDB "   + "INTDC "   + "MTDTD "   + "MTNAB "   + 
+    "MTNAC "   + "MTPB120M "+ "MTPB60M " + "MTPB90M " + "MTPBA "   + "MTTDB "   + "REAB "    +
+    "REACLRB " + "REAU "    + "REDTD "   + "RENAC "   + "RENARB "  + "REPB60M " + "REPB120M "+
+    "REPB90M " + "REPBA "   + "RETDB "   + "RETDC "   + "RTAB "    + "RTAU "    + "RTDTD "   +
+    "RTNAC "   + "RTNARB "  + "RTPB120M "+ "RTPB60M " + "RTPB90M " + "RTPBA "   + "RTTDB "   +  "RTTDC";
 
+  // read into separate strings
+  std::set<std::string> variableNames;    // build state tables for these variables
+  std::istringstream iss (nameString);
+  while (iss)
+  { std::string name;
+    iss >> name;
+    name = read_utils::trim(name);
+    if (!name.empty())
+      variableNames.insert(name);
+  }
+  std::cout << "Preparing to build state data for the following variables...\n";
+  for (std::set<std::string>::const_iterator it = variableNames.begin(); it != variableNames.end(); ++it)
+    std::cout << *it << " ";
+  std::cout << std::endl;
   
   std::map<std::string, int> varValueCount;
   
@@ -107,7 +125,7 @@ main()
     std::cout << "        " << i->first << "  " << i->second << std::endl;
   // write separate table for each variable
   for(std::set<std::string>::const_iterator v = variableNames.begin(); v != variableNames.end(); ++v)
-  { std::string fileName = *v + ".state.td";
+  { std::string fileName = path + "data/" + *v + ".state.td";
     std::cout << "Preparing to write data to " << fileName << std::endl;
     // write data out, starting with quarter labels
     std::ofstream output (fileName.c_str());
