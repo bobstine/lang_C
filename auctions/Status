@@ -10,6 +10,9 @@ Next...
 	with the squared term and then terminate.  Like others, should not
 	square an indicator.  This is done?
 
+	Need to handle output when one of the known, fixed experts is purged.
+	Messes up the ordering the columns of the output file, as when experts
+	arrive that were now known at the start of the auction.
 
 Need to 
 

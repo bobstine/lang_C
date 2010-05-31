@@ -1,8 +1,6 @@
 ###
-###  Experiment with predictions: how to predict
+###  Write data in streaming format for auction
 ###
-
-"Build data for use with the auction."
 
 #-----------------------------------------------------------------------
 #      Data and setup
@@ -36,6 +34,10 @@ eligible.counties <- setdiff(1:length(County$name), avoid)
 n.counties <- length(eligible.counties)
 cat("Avoiding", length(avoid),"counties, leaving",n.counties,"counties.\n")  # 142, leave 3000
 
+replicates.per.state <- sapply(State$name, function(n) sum(County$state[eligible.counties]==n))
+
+sum(replicates.per.state) # 3000
+cat(replicates.per.state, file="/Users/bob/C/auctions/data/credit/state.replicates")
 
 #-----------------------------------------------------------------------------------
 #      Output regression data for auction/C++
@@ -200,23 +202,12 @@ cat("\n   ------- DONE writing ", the.file," -------\n")
 # --- writes expanded national time series in streaming layout (one value for all counties)
 #     Need to fix the data input iterators to handle this more cleanly so don't have to replicate here
 
-write.county.var <- function(name,data,max.lag, attr.str="") {
-	name <- paste(name,".county",sep="")
-	# add 3 lines to the manifest file in the data directory
-	cat("echo ",name,"\n",
-	    "echo role x stream main max_lag ",max.lag," ",attr.str,"\n",
-	    "cat ", name, "\n",                                      
-	    sep="", file=the.manifest, append=TRUE);
-	# write the actual data
-	cat(fill.missing.mat(data)[eligible.counties,x.quarters], "\n", file=paste(the.directory,name,sep=""))
-}
-
 write.national.var <- function(name,max.lag=4, attr.str="") {
 	x <- Nation[x.quarters,name]
 	name <- paste(name, ".nation", sep="")
 	cat("echo ",name,"\n",
 	    "echo role x stream nation max_lag ",max.lag," ",attr.str,"\n",
-	    "/Users/bob/C/auctions/expander -e 3000 ", name, "\n",          # external app does expansion                              
+	    "/Users/bob/C/auctions/expander -c 3000 < ", name, "\n",          # external app does expansion                              
 	    sep="", file=the.manifest, append=TRUE);
 	cat(x, "\n",  file=paste(the.directory,name,sep=""))
 }
@@ -231,4 +222,47 @@ for (i in 2:length(use.cols)) {
 	if (i%%5 == 0) cat(i,"");
 	write.national.var(use.cols[i]);
 }
+
+
+
+# --------------------------------------------------------------------------------
+#
+#  write state time series out in streaming format into separate
+#  file that can be concatenated onto the file produced by other commands.
+#                  Needs file state.replicates produced above for counts
+#                  of times to repeat each value.
+# --------------------------------------------------------------------------------
+
+# --- writes expanded national time series in streaming layout (one value for all counties)
+#     Need to fix the data input iterators to handle this more cleanly so don't have to replicate here
+
+write.state.var <- function(name, max.lag=4, attr.str="") {
+	data <- as.matrix(State[[name]])    # 51 x n.time currently
+	# pad name 
+	name <- paste(name,".state",sep="")
+	# add 3 lines to the manifest file in the data directory
+	path <- "/Users/bob/C/auctions/";
+	cat("echo ",name,"\n",
+	    "echo role x stream state max_lag ",max.lag," ",attr.str,"\n",
+	    path,"expander -f ",path,"data/credit/state.replicates < ", name,"\n",
+	    sep="", file=the.manifest, append=TRUE);
+	# write the actual data
+	cat(fill.missing.mat(data)[,x.quarters], "\n", file=paste(the.directory,name,sep=""))
+}
+
+
+# --- use only TrenData variables that go back to the initial 1992 quarter
+use.cols <- c("poverty","income","labor.force","unemployment")
+use.cols <- c(use.cols,
+              names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
+                             124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
+                             179:182,185:186,188:192,194:199)])
+
+cat("# State variables that will be expanded\n", file=the.manifest, append=TRUE)
+write.state.var(use.cols[1])    # start new file here                        
+for (i in 2:length(use.cols)) {
+	if (i%%5 == 0) cat(i,"");
+	write.state.var(use.cols[i]);
+}
+
 

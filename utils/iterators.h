@@ -108,26 +108,27 @@ template<typename Iter1, typename Iter2>
   
 //  Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   
 
-class cyclic_iterator: public std::iterator<std::forward_iterator_tag, double>
+template <class T>
+class cyclic_iterator: public std::iterator<std::forward_iterator_tag, T>
 {
-public:
-  cyclic_iterator(std::vector<double>::iterator begin,
-		  std::vector<double>::const_iterator end):
-    mBegin (begin),
-    mEnd (end),
-    mCurrent(begin)
-    {
-    }
+ public:
+  typedef typename std::vector<T>::const_iterator Iterator;
+
+  cyclic_iterator(Iterator begin,Iterator end): mBegin(begin), mEnd(end), mCurrent(begin) { }
   
-    cyclic_iterator& operator++();
-    double&          operator*()   const;
-  
-private:
-  std::vector<double>::iterator mBegin;
-  std::vector<double>::const_iterator mEnd;
-  std::vector<double>::iterator mCurrent;
+  cyclic_iterator& operator++();
+  T                operator*()   const;
+
+ private:
+  Iterator mBegin, mEnd, mCurrent;
 };
 
+template <class T>
+cyclic_iterator<T>
+make_cyclic_iterator(std::vector<T> const& v)
+{
+  return cyclic_iterator<T>(v.begin(), v.end());
+}
 
 // Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   Permutation   
 
@@ -275,8 +276,9 @@ public:
   : mValue(value)            { }
   
   constant_iterator<T>& operator++()        { return *this; }
-  T operator*()                      const  { return mValue; }
+  T operator*()                      const  { return mValue; }    // double& to allow an assigment
 };
 
+#include "iterators.Template.h"
 
 #endif

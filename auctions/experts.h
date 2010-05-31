@@ -1,3 +1,4 @@
+// -*- mode: c++; fill-column: 80; -*-
 /* 
  *  expert.h
  *  auctions
@@ -6,7 +7,7 @@
  *  Copyright 2008. All rights reserved.
  *
 
-Experts combine the features of a bidder with those of a stream.  The
+ Experts combine the features of a bidder with those of a stream.  The
 expert serves as a host class, enforcing certain procedural rules.
 It's up to the user to make sure that the bidder and stream are
 compatible.
@@ -56,7 +57,7 @@ class ExpertABC
 protected:
   int         mRefCount;
   ExpertRole  mRole;
-  int         mSkip;
+  int         mSkip;              // leading context data cases to skip past
   double      mAlpha;
   double      mCurrentBid;
   bool        mLastBidAccepted;
@@ -152,7 +153,8 @@ class Expert
   
   // stream expert
   template <class Bidder, class Stream>
-    Expert(ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)  { mpExpert = new StreamExpert<Bidder,Stream> (role, skip, alpha, b, s); }
+    Expert(ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)
+                                                      { mpExpert = new StreamExpert<Bidder,Stream> (role, skip, alpha, b, s); }
 
   // copy
   Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  

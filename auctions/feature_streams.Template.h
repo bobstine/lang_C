@@ -28,61 +28,6 @@ namespace {
 }
 
 
-/////////////////  Finite Streams
-
-template<class Source>
-bool
-FiniteStream<Source>::empty() const
-{
-  //  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left."
-  //	    << " top feature is " << mSource[mPosition]->name() <<  std::endl;
-  return ( (mPosition >= (int) mSource.size()) && (0 == mCyclesLeft) );
-}
-
-template<class Source>
-void
-FiniteStream<Source>::increment_position()
-{
-  ++mPosition;
-  if (mPosition >= (int) mSource.size() && mCyclesLeft>0)
-  { --mCyclesLeft;
-    mPosition = 0;
-  }
-}
-
-template<class Source>
-bool
-FiniteStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
-{
-
-  //  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left."
-  //	    << " top feature is " << mSource[mPosition]->name() <<  std::endl;
-  return !(
-	   mSource[mPosition]->is_used_in_model() ||
-	   mSource[mPosition]->is_constant()
-	   );
-}
-
-template<class Source>
-std::string
-FiniteStream<Source>::feature_name() const                            
-{
-  return mSource[mPosition]->name();
-}
-
-
-template<class Source>
-typename std::vector<Feature>
-FiniteStream<Source>::pop()                            
-{
-  std::vector<Feature> result;
-  result.push_back(mSource[mPosition]); 
-  increment_position();
-  return result;
-}
-
-
-
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
 template<class Model>

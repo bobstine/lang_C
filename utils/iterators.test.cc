@@ -8,7 +8,7 @@
 
 int main()
 {
-  const int length(10);
+  const int length(5);
 
   std::vector<double> test;
   std::list<double>   test2;
@@ -78,7 +78,8 @@ int main()
   // iterator has reached the "end".   Not very STL compliant.
 
   // Iterate through a vector by explict ++ operation
-  cyclic_iterator it  (test.begin(), test.end());
+  std::cout << "TEST: cyclic iterator, two passes\n";
+  cyclic_iterator<double> it  (test.begin(), test.end());
   for(int i = 0;i <10;++i)
   {
     std::cout << *it << " " ;
@@ -91,7 +92,7 @@ int main()
   testpair.push_back(1.0);
   testpair.push_back(1.0);
 
-  cyclic_iterator it2 (testpair.begin(), testpair.end());
+  cyclic_iterator<double> it2 (testpair.begin(), testpair.end());
 
   std::cout << "inner product is "
        << std::inner_product(test.begin(), test.end(), it2, 0.0)

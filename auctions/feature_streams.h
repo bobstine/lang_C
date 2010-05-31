@@ -1,4 +1,4 @@
-// -*- c++ -*-
+// -*- mode: c++; fill-column: 80; -*-
 #ifndef _FEATURE_STREAMS_H_
 #define _FEATURE_STREAMS_H_
 
@@ -10,33 +10,34 @@
  *  Copyright 2008. All rights reserved.
  *
  
- Feature streams implement an abstract protocol and deliver upon request another feature.
- The regulator template wrapper-class enforce the common protocol for checking whether the
- stream is (a) empty and (b) has a non-trivial feature (eg, one that is not a
- constant). Template objects in the feature stream object provide the data source that the
- stream uses to build the supplied features.  These might be a model, a list of variables,
- a file, and so forth.
+ Feature streams implement an abstract protocol and deliver upon request another
+ feature.  The regulator template wrapper-class enforce the common protocol for
+ checking whether the stream is (a) empty and (b) has a non-trivial feature (eg,
+ one that is not a constant). Template objects in the feature stream object
+ provide the data source that the stream uses to build the supplied features.
+ These might be a model, a list of variables, a file, and so forth.
 
  Feature streams (along with bidders) are held in experts that participate in the
  auction. The *only* calls that come down from the expert are calls to the method
  
         has_feature()
 
- This response is handled by the RegulatedStream that sits over the underlying stream.
- The bidder at higher level may ask for the number remaining (number_remaining).  If the
- stream has a feature, then a winning expert will call
+ This response is handled by the RegulatedStream that sits over the underlying
+ stream.  The bidder at higher level may ask for the number remaining
+ (number_remaining).  If the stream has a feature, then a winning expert will
+ call
  
         pop()
  
- which *must* return a feature vector (or else waste the bid).  Feature streams are a
- revised version of the old recommender classes. The pop() operator of the stream must
+ which *must* return a feature vector (or else waste the bid).  The pop()
+ operator must
         (a) pop off the top element from the stack
         (b) advance indices/whatever keeps track of the status of the stream
-
+ Feature streams are a revised version of the old recommender classes.
 	
- Streams should be *lightweight*.  They will be copied heavily in the
- auction.  Basically act as a stack/queue, a type of iterator really.
- The stream itself does *not* hold data.
+ Streams should be *lightweight*.  They will be copied heavily in the auction.
+ Basically act as a stack/queue, a type of iterator really.  The stream itself
+ does *not* hold data.
 
  Flavors
 
@@ -49,6 +50,9 @@
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
 
+
+  31 May 2010 ... Use mark rather than cycles to determine how many more features to get from finite stream.
+  
 */
 
 #include "features.h"
@@ -69,10 +73,10 @@
 //  Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream    Regulated Stream 
 
 /*
-  A regulated stream injects the method 'has_feature' into a stream object.  That stream
-  object must implement the three functions empty, current_feature_is_ok and
-  increment_position.  The stream will then have the chance to bid in the auction and
-  submit a feature to the model.
+  A regulated stream injects the method 'has_feature' into a stream object.
+  That stream object must implement the three functions empty,
+  current_feature_is_ok and increment_position.  The stream will then have the
+  chance to bid in the auction and submit a feature to the model.
 
   The regulated stream provides a 'consistent interface' for all streams without needing
   an abstract base class.  (Works since never have a collection of streams; streams are
@@ -102,39 +106,40 @@ public:
 
 //  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream
 
-template<class Source>
 class FiniteStream
 {
-  std::string   mName;
-  Source        mSource;
-  int           mPosition;
-  int           mCyclesLeft;
-  
+  std::string           mName;            // name of the stream
+  std::vector<Feature>  mFeatures;        // source of features
+  int                   mPosition;        // position in this collection
+  int                   mMarkedPosition;  // mark position; stops after crossing marked position
+  bool                  mIsEmpty;         // set when increment position
 public:
   
-  FiniteStream(std::string const& name, Source const& src, int cycles)
-    :  mName(name), mSource(src), mPosition(0), mCyclesLeft(cycles-1) {  }
+  FiniteStream(std::string const& name, std::vector<Feature> const& features)
+    :  mName(name), mFeatures(features), mPosition(0), mMarkedPosition(0), mIsEmpty(false) {  }
   
   std::string             name()         const { return mName; }
   std::string             feature_name() const;
   std::vector<Feature>    pop();
+
+  void                    mark_position();
+
+  int                     number_remaining()                  const;
   
   void                    print_to(std::ostream& os)          const;
-
-  int                     number_remaining()                  const { int m = mSource.size(); return m - mPosition + mCyclesLeft*m; }
   
 protected:
-  bool  empty()                                                                                       const;
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)   const;
+  bool  empty()                                                                          const;
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
   void  increment_position();
 };
 
 
-template <class Source>
-RegulatedStream< FiniteStream<Source> >
-make_finite_stream (std::string const& name, Source const& s, int numberCycles)
+inline
+RegulatedStream< FiniteStream >
+make_finite_stream (std::string const& name, std::vector<Feature> const& features)
 {
-  return RegulatedStream< FiniteStream<Source> >(FiniteStream<Source>(name, s, numberCycles));
+  return RegulatedStream< FiniteStream >(FiniteStream(name, features));
 }
 
 

@@ -347,7 +347,11 @@ class BinaryFeature : public FeatureABC
 };
 
 
-////  Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    
+//  Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source
+
+/*
+  Extracts features with chosen attributes out of a vector of features.
+*/
 
 
 class FeatureSource

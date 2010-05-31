@@ -215,10 +215,9 @@ main(int argc, char** argv)
 #endif
 
 
-  // build vector of experts that work directly from input variables
   debug("AUCT",0) << "Assembling experts"  << std::endl;
 
-  typedef  CrossProductStream< FeatureVector, FeatureVector > CPStream;
+  typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
   // parasitic experts
   theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
 			       UniversalBidder<CPStream>(),
@@ -238,7 +237,7 @@ main(int argc, char** argv)
       if(*it != "context")
 	++numberBiddingStreams;
     FiniteCauchyShare alphaShare (totalAlphaToSpend, numberBiddingStreams);   // spreads wealth among streams
-    typedef  FiniteStream      < FeatureVector > FStream;
+    typedef  FiniteStream                        FStream;
     typedef  InteractionStream < FeatureVector > IStream;
     for (int s=0; s < (int) streamNames.size(); ++s)
     { if (streamNames[s] != "context")
@@ -246,7 +245,7 @@ main(int argc, char** argv)
 	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.52,      // priority, alpha
 				     UniversalBoundedBidder<FStream>(), 
 				     make_finite_stream("Columns of " + streamNames[s],
-							featureSrc.features_with_attribute("stream", streamNames[s]), 2) // 2 cycles through these features
+							featureSrc.features_with_attribute("stream", streamNames[s])) // 2 cycles through these features
 				     ));
 	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				     UniversalBoundedBidder<IStream>(),
