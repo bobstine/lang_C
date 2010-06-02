@@ -76,9 +76,13 @@ template<class Model>
 std::string
 FitStream<Model>::feature_name () const
 {
-  std::ostringstream oss;
-  oss << mCount;
-  return mSignature + oss.str();
+  if (empty())
+    return std::string("");
+  else
+  { std::ostringstream oss;
+    oss << mCount;
+    return mSignature + oss.str();
+  }
 }
 
 
@@ -222,12 +226,45 @@ FeatureProductStream<Source>::pop()
 //  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream
 
 template<class Source1, class Source2>
-bool
-CrossProductStream<Source1, Source2>::empty() const
+  void
+  CrossProductStream<Source1, Source2>::print_to(std::ostream& os)
 {
-  return ((int)mFixedSource.size() <= mFixedPos) || (mDynSource.size() == 0);
+  os << "CPST: " << name() << ": " ;
+  if(empty())
+    os << " is empty.";
+  else
+    os << mSlowPos << " @ " << mPos[mSlowPos];
 }
 
+
+template<class Source1, class Source2>
+  void
+  CrossProductStream<Source1, Source2>::update_position_vector()              // update current sources
+{
+  while (mPos.size() < mSlowSource.size())
+    mPos.push_back(0);
+}
+
+
+template<class Source1, class Source2>
+int
+  CrossProductStream<Source1, Source2>::number_remaining()
+{
+  update_position_vector();
+  int num (0);
+  for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
+    num += mFastSource.size() - *it;
+  return num;
+}
+
+template<class Source1, class Source2>
+bool
+CrossProductStream<Source1, Source2>::empty()
+{
+  return number_remaining() == 0;
+}
+
+  
 template<class Source1, class Source2>
 void
 CrossProductStream<Source1, Source2>::build_current_feature_name()
@@ -235,7 +272,7 @@ CrossProductStream<Source1, Source2>::build_current_feature_name()
   if (empty())
     mCurrentFeatureName = "";
   else
-    mCurrentFeatureName = Feature(mFixedSource[mFixedPos], mDynSource[mDynPos])->name();
+    mCurrentFeatureName = Feature(mSlowSource[mSlowPos], mFastSource[mPos[mSlowPos]])->name();
 }
 
 
@@ -243,13 +280,13 @@ template<class Source1, class Source2>
 void
 CrossProductStream<Source1, Source2>::increment_position()
 {
-  if (mFixedPos < (int) mFixedSource.size()-1)   // move on fixed first since will cover this more completely
-    ++ mFixedPos;
-  else if (mDynPos < (int)(mDynSource.size()-1))
-    ++ mDynPos;
-  else
-  { mFixedPos = 0;  // start over
-    mDynPos = 0;
+  mSlowPos = 0;
+  update_position_vector();
+  for(std::vector<int>::const_iterator it=mPos.begin(); it!=mPos.end(); ++it)
+  { if (*it < (int) mFastSource.size())
+      break;
+    else
+      ++mSlowPos;
   }
   build_current_feature_name();
 }
@@ -260,7 +297,14 @@ template<class Source1, class Source2>
 bool
 CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-  if (mFixedSource[mFixedPos]->is_constant() || (mDynSource[mDynPos]->is_constant()) )
+  std::cout << "Number remaining = " << number_remaining() << "mPos vector is  ";
+  for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
+    std::cout << *it << "  ";
+  std::cout << std::endl;
+
+  if (mSlowPos >= (int) mSlowSource.size())   // happens when increment_position but none left
+    return false;
+  if (mSlowSource[mSlowPos]->is_constant() || (mFastSource[mPos[mSlowPos]]->is_constant()) )
     return false;
   if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
     build_current_feature_name();
@@ -274,12 +318,13 @@ template<class Source1, class Source2>
 typename std::vector<Feature>
 CrossProductStream<Source1, Source2>::pop()
 {
-  debugging::debug("CPST",0) << name() << " stream making cross-product of fixed["<< mFixedPos << "] x dyn[" << mDynPos << "].\n";
-  Feature  xf (mFixedSource[mFixedPos]);
-  Feature  xd (mDynSource[mDynPos]);
+  debugging::debug("CPST",0) << name() << " cross-product of slow["<< mSlowPos << "] x fast[" << mPos[mSlowPos] << "].\n";
+  Feature  xs (mSlowSource[mSlowPos]);
+  Feature  xf (mFastSource[mPos[mSlowPos]]);
+  ++mPos[mSlowPos];       // mark that we used this one
   increment_position();
   std::vector<Feature> result;
-  result.push_back(Feature(xf,xd));
+  result.push_back(Feature(xs,xf));
   return(result);
 }
 

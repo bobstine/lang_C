@@ -99,7 +99,7 @@ public:
       else
 	Stream::increment_position();
     }
-    debugging::debug("FTST",3) << "Regulated stream 'has_feature' returns false.\n";
+    debugging::debug("RGST",3) << "Regulated stream 'has_feature' returns false.\n";
     return false;
   }
 };
@@ -310,44 +310,56 @@ make_feature_product_stream (std::string name, Feature f, Source const& Src)
 
 
 
-//  CrossProductStream    CrossProductStream    CrossProductStream    CrossProductStream  
+//  CrossProductStream    CrossProductStream    CrossProductStream    CrossProductStream
+
+/*  Allows combination of two dynamically growing sources. You *must* guarantee
+    that the sources remain "alive" for the duration of the application.
+
+    Position vector {4,2,0} indicates that
+            var 0 of the slow source has been crossed with 0,1,2,3 of fast
+	    var 1                    has been crossed with 0,1     of fast
+	    var 2                    has not been crossed with any
+*/
+  
 
 template<class Source1, class Source2>
 class CrossProductStream 
 {
-  std::string     mName;
-  std::string     mCurrentFeatureName;
-  Source1         mFixedSource;          // fixed number of features
-  Source2 const&  mDynSource;            // this one iterates most often (odometer style)
-  int             mFixedPos, mDynPos;
+  std::string      mName;
+  std::string      mCurrentFeatureName;
+  Source1 const&   mSlowSource;            // grows slowly
+  Source2 const&   mFastSource;            // grows faster
+  int              mSlowPos;
+  std::vector<int> mPos;                  // one element for each member of the slow source
   
 public:
     
-  CrossProductStream(std::string name, Source1 const& fixedSrc, Source2 const& dynSrc)
-    : mName(name), mCurrentFeatureName(""), mFixedSource(fixedSrc), mDynSource(dynSrc), mFixedPos(0), mDynPos(0)  { build_current_feature_name(); }
+  CrossProductStream(std::string name, Source1 const& slowSrc, Source2 const& fastSrc)
+    : mName(name), mCurrentFeatureName(""), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
   
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();     
   void                    mark_position()                           { }
-  int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
-  void                    print_to(std::ostream& os)          const { os << "CPST: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
+  int                     number_remaining();
+  void                    print_to(std::ostream& os);                          // None are const since sources may have changed
   
-protected:
-  bool  empty()                             const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
+  // protected:
+  bool  empty();
+  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   void  increment_position();
 
 private:
+  void  update_position_vector();
   void  build_current_feature_name();
 };
 
 
 template <class Source1, class Source2>
 RegulatedStream< CrossProductStream<Source1, Source2> >
-make_cross_product_stream (std::string const& name, Source1 const& fixedSrc, Source2 const& dynSrc)
+make_cross_product_stream (std::string const& name, Source1 const& slowSrc, Source2 const& fastSrc)
 {
-  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, fixedSrc, dynSrc));
+  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, slowSrc, fastSrc));
 }
 
 
