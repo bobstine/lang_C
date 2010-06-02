@@ -32,7 +32,7 @@ namespace {
 
 template<class Model>
 bool
-FitStream<Model>::empty()
+FitStream<Model>::empty()  const
 {
   if (mLastQ == mModel.q())
     return true;
@@ -227,7 +227,7 @@ FeatureProductStream<Source>::pop()
 
 template<class Source1, class Source2>
   void
-  CrossProductStream<Source1, Source2>::print_to(std::ostream& os)
+  CrossProductStream<Source1, Source2>::print_to(std::ostream& os)  const
 {
   os << "CPST: " << name() << ": " ;
   if(empty())
@@ -239,7 +239,7 @@ template<class Source1, class Source2>
 
 template<class Source1, class Source2>
   void
-  CrossProductStream<Source1, Source2>::update_position_vector()              // update current sources
+  CrossProductStream<Source1, Source2>::update_position_vector()    const         // update mutable sources
 {
   while (mPos.size() < mSlowSource.size())
     mPos.push_back(0);
@@ -248,7 +248,7 @@ template<class Source1, class Source2>
 
 template<class Source1, class Source2>
 int
-  CrossProductStream<Source1, Source2>::number_remaining()
+  CrossProductStream<Source1, Source2>::number_remaining()          const
 {
   update_position_vector();
   int num (0);
@@ -259,7 +259,7 @@ int
 
 template<class Source1, class Source2>
 bool
-CrossProductStream<Source1, Source2>::empty()
+CrossProductStream<Source1, Source2>::empty()                       const
 {
   return number_remaining() == 0;
 }
@@ -267,7 +267,7 @@ CrossProductStream<Source1, Source2>::empty()
   
 template<class Source1, class Source2>
 void
-CrossProductStream<Source1, Source2>::build_current_feature_name()
+CrossProductStream<Source1, Source2>::build_current_feature_name() 
 {
   if (empty())
     mCurrentFeatureName = "";
@@ -318,7 +318,10 @@ template<class Source1, class Source2>
 typename std::vector<Feature>
 CrossProductStream<Source1, Source2>::pop()
 {
-  debugging::debug("CPST",0) << name() << " cross-product of slow["<< mSlowPos << "] x fast[" << mPos[mSlowPos] << "].\n";
+  debugging::debug("CPST",0) << name() << " slow[" << mSlowPos << "/" << mSlowSource.size()
+			     << "] x fast[" << mPos[mSlowPos] << "/" << mFastSource.size() << "].\n";
+  debugging::debug("CPST",0) << "First fast feature is " << mFastSource[0]->name() << std::endl;
+  debugging::debug("CPST",0) << "First slow feature is " << mSlowSource[0]->name() << std::endl;
   Feature  xs (mSlowSource[mSlowPos]);
   Feature  xf (mFastSource[mPos[mSlowPos]]);
   ++mPos[mSlowPos];       // mark that we used this one

@@ -191,7 +191,7 @@ template<class Model>
 class FitStream
 {
   int                    mCount;           // number of times popped a fitted value (used to name fit values)
-  int                    mLastQ;           // used to detect change in model size
+  mutable int            mLastQ;           // used to detect change in model size
   Model          const&  mModel;
   std::string            mSignature;       // prefix for variable names so that it can recognize them
   bool                   mIncreaseDegree;
@@ -204,12 +204,12 @@ public:
   std::string             name()                       const { return mModel.name(); }
   std::string             feature_name()               const; 
   std::vector<Feature>    pop();
-  void                    mark_position() {}
+  void                    mark_position()              const { }
 
   void                    print_to(std::ostream& os)   const { os << "FitStream popped " << mCount << " times."; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
-  bool  empty();
+  bool  empty()                                                                                const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
   void  increment_position()                                                                   const { };
 };
@@ -329,8 +329,8 @@ class CrossProductStream
   std::string      mCurrentFeatureName;
   Source1 const&   mSlowSource;            // grows slowly
   Source2 const&   mFastSource;            // grows faster
-  int              mSlowPos;
-  std::vector<int> mPos;                  // one element for each member of the slow source
+  mutable int              mSlowPos;
+  mutable std::vector<int> mPos;           // one element for each member of the slow source
   
 public:
     
@@ -341,17 +341,17 @@ public:
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();     
   void                    mark_position()                           { }
-  int                     number_remaining();
-  void                    print_to(std::ostream& os);                          // None are const since sources may have changed
+  int                     number_remaining()                  const ;
+  void                    print_to(std::ostream& os)          const ;           //   Note the mutable items since sources may change
   
   // protected:
-  bool  empty();
+  bool  empty() const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   void  increment_position();
 
 private:
-  void  update_position_vector();
-  void  build_current_feature_name();
+  void  update_position_vector()     const;
+  void  build_current_feature_name() ;
 };
 
 
