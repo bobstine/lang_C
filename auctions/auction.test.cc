@@ -214,21 +214,21 @@ main(int argc, char** argv)
   Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
 #endif
 
-
   debug("AUCT",0) << "Assembling experts"  << std::endl;
-
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
   // parasitic experts
-  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
-			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Skipped-feature interactions",   ///// RAS **** FIX THIS HERE **** to use any stream
-							 featureSrc.features_with_attribute("stream", "main"), theAuction.rejected_features())
-			       ));
   
   theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
+
+  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
+			       UniversalBidder<CPStream>(),
+			       make_cross_product_stream("Skipped-feature interactions",   ///// RAS **** FIX THIS HERE **** to use any stream
+							 featureSrc.features_with_attribute("stream", "main"), theAuction.rejected_features())
+			       ));
+
 
   // add a source column and interaction expert for each column stream *unless* its the context stream (used for neighbors)
   { std::vector<std::string> streamNames (featureSrc.stream_names());

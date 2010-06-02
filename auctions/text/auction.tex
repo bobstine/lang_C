@@ -65,14 +65,25 @@
 \begin{description}
 
 \item[Source experts] produce new features for consideration; in general, source
- experts build variables from the columns of an input data array.  The features
- from a source expert could be generated from an algorithm or some other
- mechanism, but not from the progress of the auction itself.  Each problem
- generally has several source experts (as identified by the 'stream' attribute
- in the data file).  Splitting the data into several sources allows the auction
- to discover collections of variables of more interest rather than having to
- proceed through them all at once.  Source experts are assigned $\alpha$-wealth
- at the time that the auction is initialized.
+ experts build variables from input data.  The features from a source expert
+ could be generated from an algorithm or some other mechanism, but not from the
+ progress of the auction itself.  Each problem generally has several source
+ experts (as identified by the 'stream' attribute in the data file).  Splitting
+ the data into several sources allows the auction to discover collections of
+ variables of more interest rather than having to proceed through them all at
+ once.  Source experts are assigned $\alpha$-wealth at the time that the auction
+ is initialized.  Source experts continue to offer features until either all of
+ the associated features are accepted into the model or every feature has been
+ tried since the last variable was added to the model.  Every unused feature is
+ tried at least once after the last added variable.  If on this last pass, every
+ variable is rejected, then the expert no longer offers other variables.
+
+ Our implementation also generates interactions {\em within}
+ the features of stream.  If $X_1$ and $X_2$ are from stream {\bf A} and $Z_1$
+ and $Z_2$ are from stream {\bf B}, then the corresponding source experts will
+ offer squares of the $X$s and $Z$s, $X_1*X_2$ and $Z_1*Z_2$, but not
+ cross-products such as $Z_1*X_2$.  (Those can be formed using the
+ 'interacts\_with' attribute of a feature, but is not routinely done.)
 
 \item[Parasitic or scavenger experts] (or perhaps more politely called derived
  experts) construct features from those that have already made an appearance in
@@ -153,11 +164,15 @@
  and chosen program options.  The first experts are the parasite/scavenger
  experts:
  \begin{description}
+  \item[Rejected feature polynomials.] This expert builds polynomials in
+ rejected features to see if some simple nonlinearity might be present.  If $X$
+ has been rejected, then the cubic version of this expert offers the bundle $X$,
+ $X^2$ and $X^3$ of three features to the auction.  (If the linear term $X$ is
+ in the current model, the expert offers only $X^2$ and $X^3$.)
   \item[Rejected feature interactions.] This expert interacts features that were
  rejected from the auction with those from the any input stream.  (I'm not
  really sure right now what this one does other than use rejected features.)
-  \item[Rejected feature polynomials.] This expert builds cubic polynomials in
- rejected features to see if some simple nonlinearity might be present.
+
  \end{description}
  These receive no initial alpha-wealth.  They only get funded from taxes applied
  to bids placed on variables considered for the auction.

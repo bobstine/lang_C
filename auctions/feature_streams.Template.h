@@ -291,15 +291,10 @@ template<class Source>
 std::string
 PolynomialStream<Source>::feature_name() const                            
 {
-  return mSource[mPos]->name();
-}
-
-
-template<class Source>
-void
-PolynomialStream<Source>::increment_position()
-{
-  ++mPos;
+  if (empty())
+    return std::string("");
+  else
+    return mSource[mPos]->name();
 }
 
 
@@ -309,8 +304,10 @@ PolynomialStream<Source>::pop()
 {
   Feature x  (mSource[mPos]);
   debugging::debug(0) << "PLYS: " << name() << " stream making polynomial subspace from feature " <<  x->name() << std::endl;
-  ++mPos; // do not revisit this one
+  increment_position();
   std::vector<Feature> result;
+  if (!x->is_used_in_model())    // include X if not in model
+    result.push_back(x);
   result.push_back(Feature(Function_Utils::Square(), x));
   if(mDegree>2) 
     result.push_back(Feature(Function_Utils::Cube(), x));

@@ -88,9 +88,10 @@ class BidHistory
 public:
     BidHistory ()    : mResults(), mBidsSinceLastSuccess(0), mNumSuccessfulBids(0) { }
   
-  std::vector<int> const&  results()                       const { return mResults; }
-  std::pair<int,int>       bid_results_summary()           const { int n (mResults.size()); return std::make_pair(mNumSuccessfulBids, n-mNumSuccessfulBids); }
-  int                      number_bids_since_last_sucess() const { return mBidsSinceLastSuccess; }
+  std::vector<int> const&  results()                        const { return mResults; }
+  std::pair<int,int>       bid_results_summary()            const { int n (mResults.size());
+                                                                    return std::make_pair(mNumSuccessfulBids, n-mNumSuccessfulBids); }
+  int                      number_bids_since_last_success() const { return mBidsSinceLastSuccess; }
 
   void                     append_bid_outcome (bool success);
 };
@@ -142,7 +143,7 @@ class FitBidder
   FitBidder (int delay, std::string signature)    : mDelayInterval(delay),mCountDown(delay),mSignature(signature) {}
 
   
-  std::string name() const { return "Fit bidder [" + mSignature + "]"; }
+  std::string name() const { return "Fit Bidder [" + mSignature + "]"; }
   
   template <class Stream>
     double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, BiddingHistory const& state)
@@ -180,7 +181,7 @@ class GeometricBidder
   GeometricBidder (double rate)
     : mRate(rate) {}
   
-  std::string name() const { return "Geometric bidder"; }
+  std::string name() const { return "Geo Bidder"; }
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
   {
@@ -204,12 +205,12 @@ class UniversalBidder
 public:
   UniversalBidder () {}    
   
-  std::string name() const { return "Universal bidder"; }
+  std::string name() const { return "Univ Bidder"; }
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
-      return alpha * universalPDF(history.number_bids_since_last_sucess());
+      return alpha * universalPDF(history.number_bids_since_last_success());
     else
       return 0.0;
   }
@@ -234,7 +235,7 @@ class UniversalBoundedBidder
 public:
   UniversalBoundedBidder () {}    
   
-  std::string name() const { return "Universal bounded bidder"; }
+  std::string name() const { return "Univ bd bidder"; }
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
@@ -243,7 +244,7 @@ public:
     if (n>0)
     { double fixedBid=1.0/(double)n;
       double bid = alpha * max( fixedBid,
-				universalPDF(history.number_bids_since_last_sucess())
+				universalPDF(history.number_bids_since_last_success())
 				);
       return (bid < maxbid) ? bid : maxbid;
     }

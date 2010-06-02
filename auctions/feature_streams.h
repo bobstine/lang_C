@@ -20,9 +20,9 @@
  Feature streams (along with bidders) are held in experts that participate in the
  auction. The *only* calls that come down from the expert are calls to the method
  
-        has_feature()
+        RegulatedStream<base>::has_feature()
 
- This response is handled by the RegulatedStream that sits over the underlying
+ This response is handled by the RegulatedStream that wraps the underlying
  stream.  The bidder at higher level may ask for the number remaining
  (number_remaining).  If the stream has a feature, then a winning expert will
  call
@@ -120,14 +120,14 @@ public:
   FiniteStream(std::string const& name, std::vector<Feature> const& features)
     :  mName(name), mFeatures(features), mPosition(0), mMarkedPosition(0), mIsEmpty(false) {  }
   
-  std::string             name()         const { return mName; }
-  std::string             feature_name() const;
+  std::string             name()                       const { return mName; }
+  std::string             feature_name()               const;
   std::vector<Feature>    pop();
 
   void                    mark_position();
-  int                     number_remaining()                  const;
+  int                     number_remaining()           const;
 
-  void                    print_to(std::ostream& os)          const;
+  void                    print_to(std::ostream& os)   const;
   
 protected:
   bool  empty()                                                                          const;
@@ -172,7 +172,7 @@ public:
 protected:
   bool  empty()                                                                           const;
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
-  void  increment_position()  ;
+  void  increment_position();
 
 };
 
@@ -255,7 +255,6 @@ protected:
   bool  current_feature_is_okay    (std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
   void  increment_position();
 private:
-  bool  has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   void  build_current_feature_name();
 };
 
@@ -338,8 +337,8 @@ protected:
   bool  empty()                             const;
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
   void  increment_position();
+
 private:
-  bool  has_feature(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
   void  build_current_feature_name();
 };
 
@@ -355,12 +354,9 @@ make_cross_product_stream (std::string const& name, Source1 const& fixedSrc, Sou
 
 //  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
 //
-//               This stream forms polynomials from column features 
-//               identified in a dynamically growing list. 
-//               Canonical example of a stream that builds several features
-//               from a subset of features in a different stream.
-//
-//               Beware... not yet regulated.
+//      This stream forms polynomials from features in a *dynamically growing* list. 
+//      Canonical example of a stream that builds polynomials from rejected model features.
+
 
 template<class Source>
 class PolynomialStream 
@@ -372,8 +368,7 @@ class PolynomialStream
   
 public:
     
-  PolynomialStream(std::string name, Source const& src, int degree)
-    : mName(name), mSource(src), mPos(0), mDegree(degree) { }
+  PolynomialStream(std::string name, Source const& src, int degree): mName(name), mSource(src), mPos(0), mDegree(degree) { }
   
   std::string           name()                       const { return mName; }
   std::string           feature_name()               const;
@@ -382,15 +377,12 @@ public:
 
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   
-  void                  print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
+  void                  print_to(std::ostream& os)   const { os << "PLST: " << name() << " stream @ " << mPos ; }
   
 protected:
   bool                  empty()                      const { return  (number_remaining() == 0); }
-  void                  increment_position();
+  void                  increment_position()               { ++mPos; }
   bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
-
-private:
-  bool has_feature(std::vector<Feature> const&, std::vector<Feature> const&);
 };
 
 
@@ -437,7 +429,7 @@ public:
   
   std::string             name()  const { return mName; }
   
-  std::string             feature_name()                   const;
+  std::string             feature_name()               const;
   std::vector<Feature>    pop()                              { mPopped=true; return mTransformation(mBundle); }
   void                    mark_position() {}
   
