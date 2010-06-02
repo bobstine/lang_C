@@ -71,7 +71,7 @@ private:
   int                    number_of_features_tried() const { return mModelFeatures.size() + mRejectedFeatures.size(); }
   FeatureVector const&   model_features()           const { return mModelFeatures; }
   FeatureVector const&   rejected_features()        const { return mRejectedFeatures; }
-  AuctionState           auction_state()            const { return AuctionState(mPayoffHistory, mModelFeatures, mRejectedFeatures); }
+  BiddingHistory         auction_history()          const { return BiddingHistory(mPayoffHistory, mModelFeatures, mRejectedFeatures); }
   Model const&           model()                    const { return mModel; }
 
   bool                   auction_next_feature (std::ostream&);          // write to output csv file if not null

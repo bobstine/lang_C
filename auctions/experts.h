@@ -79,23 +79,23 @@ public:
   int                    skip()                             const { return mSkip; }
   double                 alpha()                            const { return mAlpha; }
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
-  bool                   finished(AuctionState const& state)      { if((mRole==parasite)||(mRole==calibrate)) return false;
-                                                                    return ((mAlpha <= 0.0) || !has_feature(state));}
+  bool                   finished(BiddingHistory const& h)        { if(mRole!=custom) return false;
+                                                                    return ((mAlpha <= 0.0) || !has_feature(h));}
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   
-  virtual bool           has_feature(AuctionState const& state) = 0;
-  virtual double         place_bid (AuctionState const& state)  = 0; 
-  virtual std::string    name()                           const = 0;
-  virtual std::string    feature_name()                   const = 0;
-  virtual FeatureVector  feature_vector()                       = 0;
+  virtual bool           has_feature(BiddingHistory const& state) = 0;
+  virtual double         place_bid (BiddingHistory const& state)  = 0; 
+  virtual std::string    name()                             const = 0;
+  virtual std::string    feature_name()                     const = 0;
+  virtual FeatureVector  feature_vector()                         = 0;
   
   NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;
 
-  
+  virtual void           model_adds_current_variable()        { }
   virtual void           bid_accepted()                       { mLastBidAccepted = true; }
   virtual void           bid_declined()                       { mLastBidAccepted = false; }
 
@@ -128,12 +128,14 @@ public:
   Stream const&       stream()       const { return mStream; }
   std::string         name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
 
-  double              place_bid (AuctionState const& state);
-  std::string         feature_name()                const     { return mStream.feature_name(); }       
-  bool                has_feature(AuctionState const& state)  { return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
+  double              place_bid (BiddingHistory const& state);
+  void                model_adds_current_variable()           { mStream.mark_position(); }
 
+  std::string         feature_name()                const     { return mStream.feature_name(); }       
+  bool                has_feature(BiddingHistory const& state){ return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
   FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
+  virtual void        print_to(std::ostream& os) const;
 };
 
 

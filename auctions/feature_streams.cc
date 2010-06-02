@@ -44,9 +44,13 @@ FiniteStream::pop()
 
 
 void
-FiniteStream::mark_position()
+FiniteStream::mark_position()            // mark prior location
 {
-  mMarkedPosition = mPosition;
+  if (mPosition)
+    mMarkedPosition = mPosition - 1;
+  else
+    mMarkedPosition = mFeatures.size() - 1;
+  std::cout << "TESTING:  " << mName << " marking position " << mMarkedPosition << std::endl;
 }
 
 
@@ -62,7 +66,7 @@ void
 FiniteStream::increment_position()
 {
   ++mPosition;
-  if (mPosition > (int) mFeatures.size())    // treat as cyclic
+  if (mPosition >= (int) mFeatures.size())   // treat as cyclic
     mPosition = 0;
   mIsEmpty = (mPosition == mMarkedPosition); // empty if new position matches marked position
 }
@@ -71,12 +75,14 @@ FiniteStream::increment_position()
 bool
 FiniteStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
-  //  std::cout << "FINITE STREAM at " << mPosition << "(out of " << mSource.size() << ") with " << mCyclesLeft << " cycles left."
-  //	    << " top feature is " << mSource[mPosition]->name() <<  std::endl;
-  return !(
-	   mFeatures[mPosition]->is_used_in_model() ||
-	   mFeatures[mPosition]->is_constant()
-	   );
+  bool okay (!(mFeatures[mPosition]->is_used_in_model() || mFeatures[mPosition]->is_constant()));
+  std::cout << "FiniteStream " << mName << " at " << mPosition << " (out of " << mFeatures.size() 
+  	    << ").  Top feature " << mFeatures[mPosition]->name();
+  if (okay)
+    std::cout << " is okay\n";
+  else
+    std::cout << " is not okay.\n";
+  return okay;
 }
 
 
@@ -85,6 +91,14 @@ FiniteStream::feature_name() const
 {
   return mFeatures[mPosition]->name();
 }
+
+
+void
+FiniteStream::print_to(std::ostream& os)          const
+{
+  os << "FiniteStream " << mName << " at position " << mPosition << " with mark at " << mMarkedPosition;
+}
+
 
 
 //  LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams  

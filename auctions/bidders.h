@@ -39,22 +39,22 @@
 
 
 
-//   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState   AuctionState
+//   BiddingHistory   BiddingHistory   BiddingHistory   BiddingHistory   BiddingHistory   BiddingHistory   BiddingHistory
 //
 //   This is the information available about the current state of the auction that bidders
 //   can use in forming their bids.
 //
 
-class AuctionState
+class BiddingHistory
 {
   std::vector<double>  const& mPayoffHistory;
   std::vector<Feature> const& mAcceptedFeatures;
   std::vector<Feature> const& mRejectedFeatures;
 
  public:
-  AuctionState (std::vector<double>  const& payoffs,
-		std::vector<Feature> const& accepted,
-		std::vector<Feature> const& rejected)
+  BiddingHistory (std::vector<double>  const& payoffs,
+		  std::vector<Feature> const& accepted,
+		  std::vector<Feature> const& rejected)
     : mPayoffHistory(payoffs), mAcceptedFeatures(accepted), mRejectedFeatures(rejected) { }
   
   std::vector<double>  const&  payoff_history()    const { return mPayoffHistory; }
@@ -67,7 +67,7 @@ class AuctionState
 
 inline
 std::ostream&
-operator<< (std::ostream& os, AuctionState const& state)
+operator<< (std::ostream& os, BiddingHistory const& state)
 {
   state.print_to(os);
   return os;
@@ -106,7 +106,7 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, AuctionState const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
   {
     const double maxbid = 0.25;
     int n (stream.number_remaining());
@@ -145,7 +145,7 @@ class FitBidder
   std::string name() const { return "Fit bidder [" + mSignature + "]"; }
   
   template <class Stream>
-    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, AuctionState const& state)
+    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, BiddingHistory const& state)
   {
     debugging::debug("BIDR",1) << "Fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
     std::vector<double> payoffs (state.payoff_history());
@@ -182,7 +182,7 @@ class GeometricBidder
   
   std::string name() const { return "Geometric bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, AuctionState const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * mRate; 
@@ -206,7 +206,7 @@ public:
   
   std::string name() const { return "Universal bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, AuctionState const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * universalPDF(history.number_bids_since_last_sucess());
@@ -236,7 +236,7 @@ public:
   
   std::string name() const { return "Universal bounded bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, AuctionState const&) const
+  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     const double maxbid = 0.25;
     int n (stream.number_remaining());

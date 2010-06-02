@@ -59,6 +59,7 @@
 
 // polynomial
 #include "function_utils.h"
+#include "debug.h"
 
 // principal components
 #include "gsl_eigen.h"
@@ -98,6 +99,7 @@ public:
       else
 	Stream::increment_position();
     }
+    debugging::debug("FTST",3) << "Regulated stream 'has_feature' returns false.\n";
     return false;
   }
 };
@@ -123,9 +125,8 @@ public:
   std::vector<Feature>    pop();
 
   void                    mark_position();
-
   int                     number_remaining()                  const;
-  
+
   void                    print_to(std::ostream& os)          const;
   
 protected:
@@ -160,12 +161,14 @@ public:
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
     :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  std::string       name()         const ;
-  std::string       feature_name() const ;
+  std::string       name()                             const ;
+  std::string       feature_name()                     const ;
   FeatureVector     pop();
-  void              print_to(std::ostream& os)          const;
-  int               number_remaining()                  const;
+  int               number_remaining()                 const ;
+  void              mark_position()                    const   {}
   
+  void              print_to(std::ostream& os)         const;
+
 protected:
   bool  empty()                                                                           const;
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
@@ -198,10 +201,13 @@ public:
   
   FitStream(Model const& model, std::string s)    :  mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit() {  }
   
-  std::string             name()           const { return mModel.name(); }
-  std::string             feature_name()   const; 
+  std::string             name()                       const { return mModel.name(); }
+  std::string             feature_name()               const; 
   std::vector<Feature>    pop();
+  void                    mark_position() {}
 
+  void                    print_to(std::ostream& os)   const { os << "FitStream popped " << mCount << " times."; }
+  
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty();
   bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
@@ -239,9 +245,10 @@ public:
   
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();                      
+  void                    mark_position() {}
   
   int                     number_remaining()                  const;
-  void                    print_to(std::ostream& os)          const { os << " " << mPos1 << " x " << mPos2 << " "; }
+  void                    print_to(std::ostream& os)          const { os << mName << " @ " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
   bool  empty ()                            const;
@@ -282,6 +289,7 @@ public:
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();
+  void                    mark_position()                           { }
   int                     number_remaining()                  const { return mPos+1; }
   void                    print_to(std::ostream& os)          const { os << "FPST: " << name() << " @ " << mPos << " "; }
   
@@ -322,9 +330,9 @@ public:
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
   std::vector<Feature>    pop();     
-  
+  void                    mark_position()                           { }
   int                     number_remaining()                  const { return (mFixedSource.size()-mFixedPos)*(mDynSource.size()); }
-  void                    print_to(std::ostream& os)          const { os << "SCPS: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
+  void                    print_to(std::ostream& os)          const { os << "CPST: " << name() << " @ " << mFixedPos << " x " << mDynPos << " "; }
   
 protected:
   bool  empty()                             const;
@@ -367,32 +375,31 @@ public:
   PolynomialStream(std::string name, Source const& src, int degree)
     : mName(name), mSource(src), mPos(0), mDegree(degree) { }
   
-  std::string name()      const { return mName; }
-  std::string             feature_name() const;
-  std::vector<Feature>    pop();
-  
-  bool has_feature(std::vector<Feature> const&, std::vector<Feature> const&);  
+  std::string           name()                       const { return mName; }
+  std::string           feature_name()               const;
+  std::vector<Feature>  pop();
+  void                  mark_position()                    { }
 
-  int                     number_remaining()           const { return (mSource.size()-mPos); }
-  void                    print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
+  int                   number_remaining()           const { return (mSource.size()-mPos); }
   
+  void                  print_to(std::ostream& os)   const { os << "PLYS: " << name() << " stream @ " << mPos ; }
+  
+protected:
+  bool                  empty()                      const { return  (number_remaining() == 0); }
+  void                  increment_position();
+  bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
+
 private:
-  void increment_position();
-  bool feature_meets_conditions(Feature const& feature) const;
-
-
+  bool has_feature(std::vector<Feature> const&, std::vector<Feature> const&);
 };
 
 
 template <class Source>
-inline
-PolynomialStream<Source>
+RegulatedStream< PolynomialStream<Source> >
 make_polynomial_stream (std::string const& name, Source const& src, int degree = 3)
 {
-  return PolynomialStream<Source>(name, src, degree);
+  return RegulatedStream< PolynomialStream<Source> >(PolynomialStream<Source>(name, src, degree));
 }
-
-
 
 
 //  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream
@@ -430,12 +437,16 @@ public:
   
   std::string             name()  const { return mName; }
   
-  bool                    has_feature(std::vector<Feature> const& , std::vector<Feature> const& );
   std::string             feature_name()                   const;
   std::vector<Feature>    pop()                              { mPopped=true; return mTransformation(mBundle); }
+  void                    mark_position() {}
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
   void                    print_to(std::ostream& os)   const { os << "BDLS: " << name() << " stream @ " << mPos ; }
+
+private:
+    bool                  has_feature(std::vector<Feature> const& , std::vector<Feature> const& );
+
 };
 
 template <class Source, class Pred, class Trans>

@@ -93,8 +93,10 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
     else      
       mRejectedFeatures.push_back(features[j]);
   }
-  if (accepted)
-  { amount = pay_winning_expert(expert, features);                          // installs experts as needed
+  if (accepted)                                                             // inform all experts that variable was added
+  { for(std::vector<Expert>::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
+      (*it)->model_adds_current_variable();
+    amount = pay_winning_expert(expert, features);                          // installs experts as needed
     if (os)
     { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
       os << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
@@ -110,22 +112,22 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
 namespace {
   class Empty {
   private:
-    AuctionState mState;
+    BiddingHistory mHistory;
   public:
-    Empty(AuctionState const& s) : mState(s) { }
-    bool operator()(Expert & e) { return e->finished(mState); }
+    Empty(BiddingHistory const& h) : mHistory(h) { }
+    bool operator()(Expert & e) { return e->finished(mHistory); }
   };
 }
 
 
 template<class ModelClass>
 int
-Auction<ModelClass>::purge_empty_experts()  // purges if does not have and not parasite
+Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom
 {
   int numberPurged (0);
-  Empty pred(auction_state());
+  Empty pred(auction_history());
   while (true)
-  { ExpertVector::iterator ee (std::find_if(mExperts.begin(), mExperts.end(), pred ));
+  { ExpertVector::iterator ee (std::find_if(mExperts.begin(), mExperts.end(), pred));
     if(ee == mExperts.end())
       break;
     else
@@ -135,8 +137,6 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have and not p
       mExperts.erase(ee);
     } 
   }
-  if (numberPurged > 0)
-    debug("AUCT",2) << "Purged " << numberPurged << " empty experts.\n";
   return numberPurged;
 }   
       
@@ -157,12 +157,12 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
        << ", " << model_goodness_of_fit()
        << ", " << total_expert_alpha();
   }
-  Expert       winningExpert,    priorityExpert;
-  double       highBid (-7.7),   priorityBid (0.0);
-  AuctionState state (auction_state());
+  Expert         winningExpert,    priorityExpert;
+  double         highBid (-7.7),   priorityBid (0.0);
+  BiddingHistory history  (auction_history());
   int iExpert (0);
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
-  { double bid = (*it)->place_bid(state);               // pass information to experts
+  { double bid = (*it)->place_bid(history);               // pass information to experts
     if (os)
       if (iExpert < mNumInitialExperts)
 	if (bid > 0)	os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid;

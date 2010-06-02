@@ -10,7 +10,7 @@
 
 
 void
-AuctionState::print_to (std::ostream & os) const
+BiddingHistory::print_to (std::ostream & os) const
 {
     os << "Auction State:  \n"
        << "    payoffs [" << mPayoffHistory.size()    << "] : ";

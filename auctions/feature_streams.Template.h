@@ -285,22 +285,7 @@ CrossProductStream<Source1, Source2>::pop()
 
 
 
-///  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   
-
-
-template<class Source>
-bool 
-PolynomialStream<Source>::has_feature(std::vector<Feature> const&, std::vector<Feature> const&)
-{ 
-  int remaining (number_remaining());
-  if (0 == remaining)
-    return false;
-  if (feature_meets_conditions(mSource[mPos]))
-    return true;
-  else if (remaining>1)
-    increment_position();
-  return (feature_meets_conditions(mSource[mPos])); }
-
+///  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
 
 template<class Source>
 std::string
@@ -309,15 +294,12 @@ PolynomialStream<Source>::feature_name() const
   return mSource[mPos]->name();
 }
 
+
 template<class Source>
 void
 PolynomialStream<Source>::increment_position()
 {
-  int k (mSource.size());
-  if (mPos < k-1) ++mPos;
-  while ( (! feature_meets_conditions(mSource[mPos]))
-          && (mPos<k-1) )
-    ++mPos;
+  ++mPos;
 }
 
 
@@ -337,12 +319,13 @@ PolynomialStream<Source>::pop()
   return result;
 }
 
+
 template<class Source>
-bool 
-PolynomialStream<Source>::feature_meets_conditions(Feature const& feature) const
+bool
+PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 { 
-  // dont need this anymore???  ColumnFeature const* cp (dynamic_cast<ColumnFeature const*>(feature));
-  return ( (!feature->is_dummy()) && (!feature->is_constant()) );
+  Feature  feature (mSource[mPos]);
+  return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
 
 
