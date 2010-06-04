@@ -44,10 +44,10 @@ class gslPrincipalComponents: public std::unary_function<gsl_matrix const*, std:
 {
   int         mNumComponents;
   bool        mStandardize;
+  int         mSkip;            // skip this number of leading context rows
   
 public:
-  gslPrincipalComponents (int k, bool standardize) : mNumComponents(k), mStandardize(standardize) {}
-  gslPrincipalComponents (gslPrincipalComponents const& pc) : mNumComponents(pc.mNumComponents), mStandardize(pc.mStandardize) { }
+  gslPrincipalComponents (int k, bool standardize, int skip) : mNumComponents(k), mStandardize(standardize), mSkip(skip) {}
   
   int number_of_components() const { return mNumComponents; }
    

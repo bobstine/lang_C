@@ -412,7 +412,7 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 //               in a source, in this case into a subset of eigenvectors.
 //
 //               The stream waits until it obtains a bundle that satisfies the input
-//               predicate of the indicated size, the applies a transformation.
+//               predicate of the indicated size, then applies a transformation.
 //               These classes should act like these:
 //                    std::unary_function<std::vector<Feature>,std::vector<Feature>> Transformation;
 //                    std::unary_function<FeatureABC const*, bool>                         Predicate;
@@ -429,7 +429,7 @@ private:
   int                      mPos; 
   int                      mBundleSize;
   std::vector<Feature>     mBundle;
-  Pred                     mPredicate;       // hold as object, not as reference
+  Pred                     mPredicate;       // is the current feature okay for use (hold this as object, not reference)
   Trans                    mTransformation;
   bool                     mPopped;          // set true when popped to avoid stack copy
   
@@ -439,29 +439,26 @@ public:
     : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mBundle(), 
       mPredicate(pred), mTransformation(trans), mPopped(false) { }
   
-  std::string             name()  const { return mName; }
-  
+  std::string             name()                       const { return mName; }
   std::string             feature_name()               const;
   std::vector<Feature>    pop()                              { mPopped=true; return mTransformation(mBundle); }
   void                    mark_position() {}
   
   int                     number_remaining()           const { return (mSource.size()-mPos); }
-  void                    print_to(std::ostream& os)   const { os << "BDLS: " << name() << " stream @ " << mPos ; }
+  void                    print_to(std::ostream& os)   const { os << "BDST: " << name() << " stream @ " << mPos ; }
 
-private:
-    bool                  has_feature(std::vector<Feature> const& , std::vector<Feature> const& );
-
+protected:
+  bool                  empty()                        const;
+  void                  increment_position()                 { ++mPos; }
+  bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
 };
 
 template <class Source, class Pred, class Trans>
-  inline 
   BundleStream<Source,Pred,Trans>
   make_bundle_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
 {
   return BundleStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans);
 }
-
-
 
 
 class FeatureAcceptancePredicate : public std::unary_function<Feature const&,bool>
@@ -474,8 +471,7 @@ public:
 
 //  SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis
 
-// This class is a wrapper that converts features into the gsl items and back for doing
-// principal components and RKHS.
+// This class is a wrapper that converts features basis using principal components, RKHS, svd.
 
 
 template<class Method>
@@ -484,7 +480,6 @@ class SubspaceBasis: public std::unary_function<std::vector<Feature> const&, std
   Method mMethod;
 public:
   SubspaceBasis (Method m)                : mMethod(m)          { }
-  SubspaceBasis (SubspaceBasis const& pc) : mMethod(pc.mMethod) { }
                                                                                     
   std::vector<Feature> operator()(std::vector<Feature> const& fv) const;
 };

@@ -1,6 +1,5 @@
 /*
  *  gsl_eigen.cc
- *  seq_regr
  *
  *  Created by Robert Stine on 1/28/08.
  *  Copyright 2008. All rights reserved.

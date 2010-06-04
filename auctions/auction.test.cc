@@ -256,13 +256,6 @@ main(int argc, char** argv)
     }
   }
 
-  
-  /*  old version: one expert for all interactions; new code adds when variable is added (see auction.Template.h
-    theAuction.add_expert(Expert(source, 0,
-			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Used-feature interactions", featureVectorMap["main"], theAuction.accepted_features())
-			       ));
-  */
   // calibration expert
   if(splineDF > 0)
   { std::string signature("Y_hat_");
@@ -272,23 +265,23 @@ main(int argc, char** argv)
   }
   
     
-  /*
-    Principle component type features
-    theAuction.add_expert(make_expert(alphaShare, 
-    UniversalBidder(),
-    make_subspace_stream("Principal components", 
-    theAuction.skipped_features(), 
-    20,                                    // bundle size
-    gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
-    )));
-    theAuction.add_expert(make_expert(alphaShare, 
-    UniversalBidder(),
-    make_subspace_stream("RKHS components", 
-    theAuction.skipped_features(), 
-    20,                                    // bundle size
-    gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
-    )));                                   // WARNING: cannot return more than 25 x's in subspace
-  */
+
+  //    Principle component type features
+  theAuction.add_expert(make_expert(alphaShare, 
+				    UniversalBidder(),
+				    make_subspace_stream("Principal components", 
+							 theAuction.skipped_features(), 
+							 20,                                    // bundle size
+							 gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
+							 )));
+  theAuction.add_expert(make_expert(alphaShare, 
+				    UniversalBidder(),
+				    make_subspace_stream("RKHS components", 
+							 theAuction.skipped_features(), 
+							 20,                                    // bundle size
+							 gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
+							 )));                                   // WARNING: cannot return more than 25 x's in subspace
+
   
 
   // set up file for writing state of auction

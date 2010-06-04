@@ -374,25 +374,43 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
 }
 
 
-///  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   
-
+///  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream
 
 template<class Source, class Pred, class Trans>
-bool
-BundleStream<Source, Pred, Trans>::has_feature(std::vector<Feature> const&, std::vector<Feature> const&)
+  bool
+  BundleStream<Source, Pred, Trans>::empty()   const
 {
   if (mPopped)
   { mPopped = false;
     mBundle.clear();
   }
-  // add as much to the bundle as possible from the current source
+  return number_remaining()+mBundle.size() <  mBundleSize; // niether current nor enough to make bundle
+}
+
+
+template<class Source, class Pred, class Trans>
+  bool
+  BundleStream<Source, Pred, Trans>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
+{
+  return mBundle.size() >= mBundleSize;
+}
+  
+
+template<class Source, class Pred, class Trans>
+  void
+  BundleStream<Source, Pred, Trans>::increment_position()
+{
   while (((int)mBundle.size()<mBundleSize) && (mPos<(int)mSource.size()) && mPredicate(mSource[mPos]))
   { mBundle.push_back(mSource[mPos]);
     ++mPos;
   }
   return ((int)mBundle.size() == mBundleSize);
 }
- 
+
+
+
+
+
 template <class Method>
 std::vector<Feature> 
 SubspaceBasis<Method>::operator()(std::vector<Feature> const& fv) const
