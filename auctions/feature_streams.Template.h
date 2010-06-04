@@ -374,42 +374,36 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
 }
 
 
-///  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream
+///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     
 
 template<class Source, class Pred, class Trans>
   bool
-  BundleStream<Source, Pred, Trans>::empty()   const
+  SubspaceStream<Source, Pred, Trans>::empty()   const
 {
-  if (mPopped)
-  { mPopped = false;
-    mBundle.clear();
-  }
-  return number_remaining()+mBundle.size() <  mBundleSize; // niether current nor enough to make bundle
+  return number_remaining()+(int)mBundle.size() <  mBundleSize; // niether current nor enough to make bundle
 }
 
 
 template<class Source, class Pred, class Trans>
   bool
-  BundleStream<Source, Pred, Trans>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
+  SubspaceStream<Source, Pred, Trans>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 {
-  return mBundle.size() >= mBundleSize;
+  return (int)mBundle.size() >= mBundleSize;
 }
   
 
 template<class Source, class Pred, class Trans>
   void
-  BundleStream<Source, Pred, Trans>::increment_position()
+  SubspaceStream<Source, Pred, Trans>::increment_position()
 {
   while (((int)mBundle.size()<mBundleSize) && (mPos<(int)mSource.size()) && mPredicate(mSource[mPos]))
   { mBundle.push_back(mSource[mPos]);
     ++mPos;
   }
-  return ((int)mBundle.size() == mBundleSize);
 }
 
 
-
-
+/*
 
 template <class Method>
 std::vector<Feature> 
@@ -423,15 +417,14 @@ SubspaceBasis<Method>::operator()(std::vector<Feature> const& fv) const
     std::cout << "SUBB: Leading eigenvalues are " << &gsl_vector_const_subvector(basis.first,0,numPC).vector << std::endl;
   else
     std::cout << "SUBB: *** Error ***    Subspace eigenvector decomposition returns no basis element.\n";
+  // convert the resulting vector of gsl vectors into features
+  std::vector<Feature> result;
+  for (int j=0; j<numPC; ++j)
+    result.push_back(new gslVectorFeature("Basis", basis.second[j]));
   // free space allocated by conversion
   gsl_vector_free(basis.first);
   gsl_matrix_free(mat);
-  // convert the resulting vector of gsl vectors into features
-  std::vector<Feature> result;
-  /* gsl_features did not respect memory... need to replace this with column features
-     for (int j=0; j<numPC; ++j)
-    result.push_back(new gslVectorFeature("Basis", basis.second[j]));
-  */
   return result;
 }
 
+*/

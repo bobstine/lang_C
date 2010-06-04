@@ -134,7 +134,7 @@ class Column
   { mData->mName = name;
     mData->mRole = extract_role_from_string(description);
     mData->mDescription = description;
-    double *x (mData->mBegin);  // std::cout << "COLM: filling pointer " << x << " in column " << mName << " via iterator.\n";
+    double *x (mData->mBegin);
     while(n--)
     { *x = *source;
       ++x; ++source;

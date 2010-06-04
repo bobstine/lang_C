@@ -406,20 +406,18 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 }
 
 
-//  BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream   BundleStream
+//  Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    
 //
-//               This stream transforms a "bundle" of features identified 
-//               in a source, in this case into a subset of eigenvectors.
-//
-//               The stream waits until it obtains a bundle that satisfies the input
-//               predicate of the indicated size, then applies a transformation.
+//        This stream transforms a "bundle" of features identified into some form or reduced
+//        subspace, such as PC, SVD, or RKHS. The stream accumulates a bundle of features of
+//        the indicated size that satisfies the input predicate, then applies a transformation.
 //               These classes should act like these:
-//                    std::unary_function<std::vector<Feature>,std::vector<Feature>> Transformation;
-//                    std::unary_function<FeatureABC const*, bool>                         Predicate;
+//                    std::unary_function<std::vector<Feature>,std::vector<Feature>> Transformation, as given by adapter functions
+//                    std::unary_function<Feature const&, bool>                      Predicate;
 
 
 template<class Source, class Pred, class Trans>
-class BundleStream 
+class SubspaceStream 
 {
 public:
   
@@ -431,33 +429,33 @@ private:
   std::vector<Feature>     mBundle;
   Pred                     mPredicate;       // is the current feature okay for use (hold this as object, not reference)
   Trans                    mTransformation;
-  bool                     mPopped;          // set true when popped to avoid stack copy
   
 public:
     
-  BundleStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
+  SubspaceStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
     : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mBundle(), 
-      mPredicate(pred), mTransformation(trans), mPopped(false) { }
+      mPredicate(pred), mTransformation(trans) { }
   
-  std::string             name()                       const { return mName; }
-  std::string             feature_name()               const;
-  std::vector<Feature>    pop()                              { mPopped=true; return mTransformation(mBundle); }
-  void                    mark_position() {}
+  std::string           name()                       const { return mName; }
+  std::string           feature_name()               const { return "basis"; }
+  std::vector<Feature>  pop()                              { std::vector<Feature> result (mTransformation(mBundle)); mBundle.clear(); return result; }
+  void                  mark_position() {}
   
-  int                     number_remaining()           const { return (mSource.size()-mPos); }
-  void                    print_to(std::ostream& os)   const { os << "BDST: " << name() << " stream @ " << mPos ; }
+  int                   number_remaining()           const { return (mSource.size()-mPos); }
+  void                  print_to(std::ostream& os)   const { os << "BDST: " << name() << " stream @ " << mPos ; }
 
 protected:
-  bool                  empty()                        const;
-  void                  increment_position()                 { ++mPos; }
+  bool                  empty()                      const;
+  void                  increment_position();
   bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
 };
 
+
 template <class Source, class Pred, class Trans>
-  BundleStream<Source,Pred,Trans>
-  make_bundle_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
+RegulatedStream< SubspaceStream<Source,Pred,Trans> >
+make_subspace_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
 {
-  return BundleStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans);
+  return RegulatedStream< SubspaceStream<Source,Pred,Trans> >(SubspaceStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans));
 }
 
 
@@ -466,34 +464,6 @@ class FeatureAcceptancePredicate : public std::unary_function<Feature const&,boo
 public:
   bool operator()(Feature const& f) const;
 };
-
-
-
-//  SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis   SubspaceBasis
-
-// This class is a wrapper that converts features basis using principal components, RKHS, svd.
-
-
-template<class Method>
-class SubspaceBasis: public std::unary_function<std::vector<Feature> const&, std::vector<Feature> >
-{
-  Method mMethod;
-public:
-  SubspaceBasis (Method m)                : mMethod(m)          { }
-                                                                                    
-  std::vector<Feature> operator()(std::vector<Feature> const& fv) const;
-};
-
-
-template <class Source, class Method>
-BundleStream<Source,FeatureAcceptancePredicate,SubspaceBasis<Method> >
-make_subspace_stream(std::string name, Source const& src, int bundleSize, Method method)
-{
-  return make_bundle_stream(name, src, bundleSize, 
-                            FeatureAcceptancePredicate(), 
-                            SubspaceBasis<Method>(method));
-}
-
 
 
 

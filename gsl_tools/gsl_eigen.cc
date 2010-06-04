@@ -35,8 +35,8 @@ gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix
   gsl_eigen_symmv_free(scratch);
 }
   
-gsl_vector*
-gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD)
+void
+gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD, gsl_matrix *pc)
 { 
   assert (pMeans->size == data->size2);
   
@@ -44,14 +44,13 @@ gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_m
   const int   p           (data->size2);
   const bool  standardize (pSD->size > 0);
   gsl_vector* coef        (&gsl_matrix_const_column(eVecs,col).vector);
-  gsl_vector* pc          (gsl_vector_alloc(n));
   if (standardize)
   { 
     for (int i = 0; i<n; ++i)
     { double pci (0.0);
       for (int j=0; j<p; ++j)
         pci += gsl_vector_get(coef,j)*(gsl_matrix_get(data,i,j)-gsl_vector_get(pMeans, j))/gsl_vector_get(pSD,j);
-      gsl_vector_set(pc,i,pci);
+      gsl_matrix_set(pc,i,col, pci);
     }
   }
   else 
@@ -60,7 +59,7 @@ gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_m
     { double pci (0.0);
       for (int j=0; j<p; ++j)
         pci += gsl_vector_get(coef,j)*(gsl_matrix_get(data,i,j)-gsl_vector_get(pMeans, j));
-      gsl_vector_set(pc,i,pci);
+      gsl_matrix_set(pc,i,col,pci);
     }
   }
   return pc;
@@ -84,13 +83,15 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   gsl_matrix *eVecs (gsl_matrix_alloc(nCols,nCols));
   gsl_eigen::principal_components(covMat, eVals, eVecs);
   // build the principal components
-  std::vector<gsl_vector*> pc;
-  double evalBound (1.0);
-  if (mNumComponents>0) evalBound = gsl_vector_get(eVals,mNumComponents);
-  for (int j=0; gsl_vector_get(eVals,j)>evalBound; ++j)
-    pc.push_back(gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD));
+  if (mNumComponents==0)
+    while (gsl_vector_get(eVals,mNumComponents) > 1.0)
+      ++mNumComponents;
+  gsl_matrix *pc (gsl_matrix_alloc(data->size1,mNumComponents));
+  for(int j=0; j<mNumComponents; ++j)
+    gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD));
   // free space
   gsl_matrix_free(eVecs);
+  gsl_vector_free(eVals);
   gsl_vector_free(pSD);
   gsl_vector_free(pMean);
   gsl_matrix_free(covMat);

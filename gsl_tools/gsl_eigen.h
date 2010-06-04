@@ -35,23 +35,22 @@ namespace gsl_eigen
   void 
     principal_components (gsl_matrix* data, gsl_vector* eVals, gsl_matrix* eVecs);
   
-  gsl_vector*                // assumes standardized if pSD is not nil
-    construct_principal_component (gsl_matrix const* data, int j, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD);
+  void                // assumes standardized if pSD is not nil; puts into matrix pc
+    construct_principal_component (gsl_matrix const* data, int j, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD, gsl_matrix *pc);
 }
 
 
-class gslPrincipalComponents: public std::unary_function<gsl_matrix const*, std::pair<gsl_vector*, std::vector<gsl_vector*> > >
+class gslPrincipalComponents: public std::unary_function<gsl_matrix const*, gsl_matrix *>
 {
   int         mNumComponents;
   bool        mStandardize;
-  int         mSkip;            // skip this number of leading context rows
   
 public:
-  gslPrincipalComponents (int k, bool standardize, int skip) : mNumComponents(k), mStandardize(standardize), mSkip(skip) {}
+  gslPrincipalComponents (int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
   
   int number_of_components() const { return mNumComponents; }
    
-  result_type operator()(gsl_matrix const* data) const;   //  < evals, evectors >
+  result_type operator()(gsl_matrix const* data) const;   //  < evectors >
 };
 
 

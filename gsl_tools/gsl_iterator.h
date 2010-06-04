@@ -1,5 +1,3 @@
-// $Id: gsl_iterator.h,v 1.6 2008/01/30 22:39:27 bob Exp $-*- c++ -*-
-
 #ifndef _GSL_ITERATOR_H_
 #define _GSL_ITERATOR_H_
 

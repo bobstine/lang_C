@@ -215,15 +215,15 @@ main(int argc, char** argv)
 #endif
 
   debug("AUCT",0) << "Assembling experts"  << std::endl;
+  int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
   // parasitic experts
-  
-  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
+  theAuction.add_expert(Expert(parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
 
-  theAuction.add_expert(Expert(parasite, featureSrc.number_skipped_cases(), 0,
+  theAuction.add_expert(Expert(parasite, nContextCases, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Skipped-feature interactions",
 							 theAuction.model_features(), theAuction.rejected_features())
@@ -242,12 +242,12 @@ main(int argc, char** argv)
     for (int s=0; s < (int) streamNames.size(); ++s)
     { if (streamNames[s] != "context")
       { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
-	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.52,      // priority, alpha
+	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
 				     UniversalBoundedBidder<FStream>(), 
 				     make_finite_stream("Columns of " + streamNames[s],
 							featureSrc.features_with_attribute("stream", streamNames[s])) // 2 cycles through these features
 				     ));
-	theAuction.add_expert(Expert(source, featureSrc.number_skipped_cases(), alphaShare(s) * 0.48,     // slightly less to avoid tie 
+	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				     UniversalBoundedBidder<IStream>(),
 				     make_interaction_stream("Column interactions of " + streamNames[s],
 							     featureSrc.features_with_attribute("stream",streamNames[s]), false)  // skip squared terms
@@ -267,22 +267,26 @@ main(int argc, char** argv)
     
 
   //    Principle component type features
-  theAuction.add_expert(make_expert(alphaShare, 
-				    UniversalBidder(),
-				    make_subspace_stream("Principal components", 
-							 theAuction.skipped_features(), 
-							 20,                                    // bundle size
-							 gslPrincipalComponents(0, true)        // num components (0 means use rule), standardize
-							 )));
-  theAuction.add_expert(make_expert(alphaShare, 
-				    UniversalBidder(),
-				    make_subspace_stream("RKHS components", 
-							 theAuction.skipped_features(), 
-							 20,                                    // bundle size
-							 gslRKHS<RadialKernel>(5, true)         // num components (0 means use rule), standardize
-							 )));                                   // WARNING: cannot return more than 25 x's in subspace
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,           // okay, a bit kludgy for alpha share... RAS???  control streams via external file
+			       UniversalBidder<SS_PC>(),
+			       make_subspace_stream("Principal components", 
+						    theAuction.rejected_features(),
+						    20,                                                                      // bundle size
+						    FeatureAcceptancePredicate(), 
+						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0, true),0)   // PC components (0 means use rule), standardize
+						    )));
+  /*
+  theAuction.add_expert(Expert(source, nContextCases, alphaShare(2),
+			       UniversalBoundedBidder<SubspaceStream>(),
+			       make_subspace_stream("RKHS components", 
+						    theAuction.rejected_features(), 
+						    20,                                                                    // bundle size
+						    FeatureAcceptancePredicate,
+						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(5, true))    // num components (0 means use rule), standardize
+						    )));                                   // WARNING: cannot return more than 25 x's in subspace
 
-  
+  */
 
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
