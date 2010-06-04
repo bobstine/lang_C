@@ -169,9 +169,8 @@
  has been rejected, then the cubic version of this expert offers the bundle $X$,
  $X^2$ and $X^3$ of three features to the auction.  (If the linear term $X$ is
  in the current model, the expert offers only $X^2$ and $X^3$.)
-  \item[Rejected feature interactions.] This expert interacts features that were
- rejected from the auction with those from the any input stream.  (I'm not
- really sure right now what this one does other than use rejected features.)
+  \item[Accepted/Rejected feature interactions.] This expert interacts features
+ that were rejected by the auction with those that were accepted.
 
  \end{description}
  These receive no initial alpha-wealth.  They only get funded from taxes applied
