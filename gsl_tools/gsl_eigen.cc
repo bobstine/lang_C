@@ -74,7 +74,6 @@ gslPrincipalComponents::result_type
 gslPrincipalComponents::operator()(gsl_matrix const* data)   const 
 {
   int nCols (data->size2);
-  std::cout << "TEMP: nCols = " << nCols << " with mStandardize = " << mStandardize << std::endl;
   gsl_matrix* covMat (gsl_matrix_alloc(nCols,nCols));
   gsl_vector* pMean  (gsl_vector_alloc(nCols));
   gsl_vector* pSD    (gsl_vector_alloc(mStandardize ? nCols:0));

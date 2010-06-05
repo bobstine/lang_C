@@ -10,6 +10,7 @@
 
 // for copy
 #include <algorithm>
+#include <sstream>
 
 #include "gsl_iterator.h"
 
@@ -35,7 +36,9 @@ Convert::gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows)
 
   int nRows ((int)mat->size1 + addContextRows);
   for (int j=0; j<(int)mat->size2; ++j)
-  { Column col("gsl", nRows);
+  { std::ostringstream name;
+    name << "GSL[" << j << "]";
+    Column col(name.str().c_str(), nRows);
     double *boundary (col->begin()+addContextRows);
     std::fill(col->begin(), boundary , 0.0);                          // fill context rows with 0
     double *data (boundary);
@@ -74,7 +77,9 @@ Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, int addContextRo
 
   int nRows (mat.rows() + addContextRows);
   for (int j=0; j<mat.cols(); ++j)
-  { Column col("eigen", nRows); 
+  { std::ostringstream name;
+    name << "Eigen[" << j << "]";
+    Column col(name.str().c_str(), nRows);
     double *boundary (col->begin()+addContextRows);
     std::fill(col->begin(), boundary, 0.0);
     double *data (boundary);

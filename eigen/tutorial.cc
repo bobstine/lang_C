@@ -31,6 +31,22 @@ int main(int argc, char *argv[])
     // generates compile error
     // std::cout << " not conformable " <<     mat * mat << std::endl;
 
+    // try centering and scaling the matrix
+    Eigen::VectorXf mean (mat.colwise().sum());
+    mean = mean / mat.rows();
+    for (int j=0; j<mat.cols(); ++j)
+      mat.col(j) = mat.col(j).cwise() - mean(j);
+    std::cout << "Matrix after centering \n" << mat << std::endl;
+    Eigen::VectorXf ss (mat.colwise().squaredNorm());
+    ss = ss / (mat.rows() - 1);
+    for (int j=0; j<mat.cols(); ++j)
+    { double sd (sqrt(ss(j)));
+      mat.col(j) = mat.col(j) / sd;
+    }
+    std::cout << "Matrix after scaling \n" << mat << std::endl;
+    std::cout << "Sqrt(SS) -- not div by n -- of first column is " << mat.col(0).norm() << std::endl;
+    
+    // SVD operations
     Eigen::SVD<Eigen::MatrixXf> svd(mat);
     Eigen::MatrixXf u (svd.matrixU());
     Eigen::MatrixXf v (svd.matrixV());

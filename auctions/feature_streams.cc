@@ -76,12 +76,14 @@ bool
 FiniteStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
   bool okay (!(mFeatures[mPosition]->is_used_in_model() || mFeatures[mPosition]->is_constant()));
+  /*
   std::cout << "FiniteStream " << mName << " at " << mPosition << " (out of " << mFeatures.size() 
   	    << ").  Top feature " << mFeatures[mPosition]->name();
   if (okay)
     std::cout << " is okay\n";
   else
     std::cout << " is not okay.\n";
+  */
   return okay;
 }
 
