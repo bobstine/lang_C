@@ -245,12 +245,14 @@ main(int argc, char** argv)
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
 				     UniversalBoundedBidder<FStream>(), 
 				     make_finite_stream("Columns of " + streamNames[s],
-							featureSrc.features_with_attribute("stream", streamNames[s])) // 2 cycles through these features
+							featureSrc.features_with_attribute("stream",
+											   streamNames[s])) // 2 cycles through these features
 				     ));
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				     UniversalBoundedBidder<IStream>(),
 				     make_interaction_stream("Column interactions of " + streamNames[s],
-							     featureSrc.features_with_attribute("stream",streamNames[s]), false)  // skip squared terms
+							     featureSrc.features_with_attribute("stream",streamNames[s]),
+							     false)                  // skip squared terms
 				     ));
       }
     }
@@ -268,13 +270,14 @@ main(int argc, char** argv)
 
   //    Principle component type features
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,           // okay, a bit kludgy for alpha share... RAS???  control streams via external file
+  
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,           // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
 			       make_subspace_stream("Principal components", 
 						    theAuction.rejected_features(),
-						    20,                                                                      // bundle size
-						    FeatureAcceptancePredicate(), 
-						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0, true),0)   // PC components (0 means use rule), standardize
+						    20,                             // bundle size
+						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true)    ,0)  
 						    )));
   /*
   theAuction.add_expert(Expert(source, nContextCases, alphaShare(2),

@@ -297,7 +297,6 @@ template<class Source1, class Source2>
 bool
 CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-  std::cout << "Number remaining = " << number_remaining() << "mPos vector is  ";
   for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
     std::cout << *it << "  ";
   std::cout << std::endl;
@@ -374,23 +373,17 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
 }
 
 
-///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     
+///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream
 
 template<class Source, class Pred, class Trans>
-  bool
-  SubspaceStream<Source, Pred, Trans>::empty()   const
+  std::vector<Feature>
+  SubspaceStream<Source, Pred, Trans>::pop()
 {
-  return number_remaining()+(int)mBundle.size() <  mBundleSize; // niether current nor enough to make bundle
+  assert (mBundle.size() > 0);
+  std::vector<Feature> result (mTransformation(mBundle));
+  mBundle.clear();
+  return result;
 }
-
-
-template<class Source, class Pred, class Trans>
-  bool
-  SubspaceStream<Source, Pred, Trans>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
-{
-  return (int)mBundle.size() >= mBundleSize;
-}
-  
 
 template<class Source, class Pred, class Trans>
   void

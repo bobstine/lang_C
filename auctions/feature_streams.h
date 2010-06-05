@@ -91,7 +91,7 @@ class RegulatedStream: public Stream
 public:
   RegulatedStream(Stream const& s): Stream(s) {}
   
-  bool has_feature (std::vector<Feature> const& used, std::vector<Feature> const& skipped)
+  bool has_feature (FeatureVector const& used, FeatureVector const& skipped)
   {
     while(!Stream::empty())                               // empty signals to leave stream alone
     { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
@@ -111,18 +111,18 @@ public:
 class FiniteStream
 {
   std::string           mName;            // name of the stream
-  std::vector<Feature>  mFeatures;        // source of features
+  FeatureVector  mFeatures;        // source of features
   int                   mPosition;        // position in this collection
   int                   mMarkedPosition;  // mark position; stops after crossing marked position
   bool                  mIsEmpty;         // set when increment position
 public:
   
-  FiniteStream(std::string const& name, std::vector<Feature> const& features)
+  FiniteStream(std::string const& name, FeatureVector const& features)
     :  mName(name), mFeatures(features), mPosition(0), mMarkedPosition(0), mIsEmpty(false) {  }
   
   std::string             name()                       const { return mName; }
   std::string             feature_name()               const;
-  std::vector<Feature>    pop();
+  FeatureVector           pop();
 
   void                    mark_position();
   int                     number_remaining()           const;
@@ -138,7 +138,7 @@ protected:
 
 inline
 RegulatedStream< FiniteStream >
-make_finite_stream (std::string const& name, std::vector<Feature> const& features)
+make_finite_stream (std::string const& name, FeatureVector const& features)
 {
   return RegulatedStream< FiniteStream >(FiniteStream(name, features));
 }
@@ -203,14 +203,14 @@ public:
   
   std::string             name()                       const { return mModel.name(); }
   std::string             feature_name()               const; 
-  std::vector<Feature>    pop();
+  FeatureVector           pop();
   void                    mark_position()              const { }
 
   void                    print_to(std::ostream& os)   const { os << "FitStream popped " << mCount << " times."; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty()                                                                                const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&);
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const&);
   void  increment_position()                                                                   const { };
 };
 
@@ -244,7 +244,7 @@ public:
   std::string             name()                              const { return mName; }
   
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  std::vector<Feature>    pop();                      
+  FeatureVector           pop();                      
   void                    mark_position() {}
   
   int                     number_remaining()                  const;
@@ -252,7 +252,7 @@ public:
    
 protected:
   bool  empty ()                            const;
-  bool  current_feature_is_okay    (std::vector<Feature> const& used, std::vector<Feature> const& skipped)   const;
+  bool  current_feature_is_okay    (FeatureVector const& used, FeatureVector const& skipped)   const;
   void  increment_position();
 private:
   void  build_current_feature_name();
@@ -287,14 +287,14 @@ public:
   
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  std::vector<Feature>    pop();
+  FeatureVector           pop();
   void                    mark_position()                           { }
   int                     number_remaining()                  const { return mPos+1; }
   void                    print_to(std::ostream& os)          const { os << "FPST: " << name() << " @ " << mPos << " "; }
   
 protected:
   bool  empty()  const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);  
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);  
   void  increment_position();
 private:
   void  build_current_feature_name();
@@ -330,7 +330,7 @@ class CrossProductStream
   Source1 const&   mSlowSource;            // grows slowly
   Source2 const&   mFastSource;            // grows faster
   mutable int              mSlowPos;
-  mutable std::vector<int> mPos;           // one element for each member of the slow source
+  mutable std::vector<int> mPos;           // one indexing element for each feature in the slow source
   
 public:
     
@@ -339,14 +339,14 @@ public:
   
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { return mCurrentFeatureName; }
-  std::vector<Feature>    pop();     
+  FeatureVector           pop();     
   void                    mark_position()                           { }
   int                     number_remaining()                  const ;
   void                    print_to(std::ostream& os)          const ;           //   Note the mutable items since sources may change
   
   // protected:
   bool  empty() const;
-  bool  current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const& skipped);
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);
   void  increment_position();
 
 private:
@@ -384,7 +384,7 @@ public:
   
   std::string           name()                       const { return mName; }
   std::string           feature_name()               const;
-  std::vector<Feature>  pop();
+  FeatureVector         pop();
   void                  mark_position()                    { }
 
   int                   number_remaining()           const { return (mSource.size()-mPos); }
@@ -394,7 +394,7 @@ public:
 protected:
   bool                  empty()                      const { return  (number_remaining() == 0); }
   void                  increment_position()               { ++mPos; }
-  bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
+  bool                  current_feature_is_okay(FeatureVector const&, FeatureVector const&);
 };
 
 
@@ -422,13 +422,13 @@ class SubspaceStream
 public:
   
 private:
-  std::string              mName;
-  Source const&            mSource;  
-  int                      mPos; 
-  int                      mBundleSize;
-  std::vector<Feature>     mBundle;
-  Pred                     mPredicate;       // is the current feature okay for use (hold this as object, not reference)
-  Trans                    mTransformation;
+  std::string         mName;
+  Source const&       mSource;  
+  int                 mPos; 
+  int                 mBundleSize;
+  FeatureVector       mBundle;
+  Pred                mPredicate;       // is the current feature okay for use (hold this as object, not reference)
+  Trans               mTransformation;
   
 public:
     
@@ -438,16 +438,19 @@ public:
   
   std::string           name()                       const { return mName; }
   std::string           feature_name()               const { return "basis"; }
-  std::vector<Feature>  pop()                              { std::vector<Feature> result (mTransformation(mBundle)); mBundle.clear(); return result; }
+  FeatureVector         pop();
   void                  mark_position() {}
   
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   void                  print_to(std::ostream& os)   const { os << "BDST: " << name() << " stream @ " << mPos ; }
 
 protected:
-  bool                  empty()                      const;
+  bool                  empty()                      const { return ((number_remaining()+(int)mBundle.size())<mBundleSize);} //too few to fill
+
+  bool                  current_feature_is_okay (FeatureVector const&, FeatureVector const&)
+                                                     const { return ((int)mBundle.size() >= mBundleSize);  }
   void                  increment_position();
-  bool                  current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&);
+
 };
 
 
@@ -458,6 +461,9 @@ make_subspace_stream (std::string const& name, Source const& src, int bundleSize
   return RegulatedStream< SubspaceStream<Source,Pred,Trans> >(SubspaceStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans));
 }
 
+
+
+//  Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate
 
 class FeatureAcceptancePredicate : public std::unary_function<Feature const&,bool>
 {

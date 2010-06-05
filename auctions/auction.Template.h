@@ -50,7 +50,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   }
   ++mRound;
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
-  // reap empty experts
+  // reap empty custom experts
   purge_empty_experts();
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<Expert,double> winner (collect_bids(os));  
@@ -125,7 +125,7 @@ int
 Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom
 {
   int numberPurged (0);
-  Empty pred(auction_history());
+  Empty pred(auction_history());            // Empty defined above
   while (true)
   { ExpertVector::iterator ee (std::find_if(mExperts.begin(), mExperts.end(), pred));
     if(ee == mExperts.end())
@@ -162,7 +162,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   BiddingHistory history  (auction_history());
   int iExpert (0);
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
-  { double bid = (*it)->place_bid(history);               // pass information to experts
+  { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
     if (os)
       if (iExpert < mNumInitialExperts)
 	if (bid > 0)	os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid;

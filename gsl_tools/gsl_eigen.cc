@@ -13,6 +13,9 @@
 
 #include <vector>
 #include <string>
+
+#include <iostream>
+
 // sqrt, exp
 #include <math.h>
 #include <assert.h>
@@ -31,10 +34,11 @@ gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix
   gsl_eigen_symmv(gram, eVals, eVecs, scratch);
   gsl_eigen_symmv_sort(eVals, eVecs, GSL_EIGEN_SORT_VAL_DESC); 
   std::cout << "GSLE: Leading eigenvalues are ";
-  gsl_vector_print_head (std::cout, eVals, 4);
+  gsl_vector_print_head (std::cout, eVals, 10);
   gsl_eigen_symmv_free(scratch);
 }
-  
+
+
 void
 gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD, gsl_matrix *pc)
 { 
@@ -62,11 +66,7 @@ gsl_eigen::construct_principal_component (gsl_matrix const* data, int col, gsl_m
       gsl_matrix_set(pc,i,col,pci);
     }
   }
-  return pc;
 }
- 
-
-
 
 
 
@@ -74,6 +74,7 @@ gslPrincipalComponents::result_type
 gslPrincipalComponents::operator()(gsl_matrix const* data)   const 
 {
   int nCols (data->size2);
+  std::cout << "TEMP: nCols = " << nCols << " with mStandardize = " << mStandardize << std::endl;
   gsl_matrix* covMat (gsl_matrix_alloc(nCols,nCols));
   gsl_vector* pMean  (gsl_vector_alloc(nCols));
   gsl_vector* pSD    (gsl_vector_alloc(mStandardize ? nCols:0));
@@ -83,19 +84,20 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   gsl_matrix *eVecs (gsl_matrix_alloc(nCols,nCols));
   gsl_eigen::principal_components(covMat, eVals, eVecs);
   // build the principal components
-  if (mNumComponents==0)
-    while (gsl_vector_get(eVals,mNumComponents) > 1.0)
-      ++mNumComponents;
-  gsl_matrix *pc (gsl_matrix_alloc(data->size1,mNumComponents));
-  for(int j=0; j<mNumComponents; ++j)
-    gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD));
+  int nPC (mNumComponents);
+  if (nPC==0)
+    while (gsl_vector_get(eVals,nPC) > 1.0)
+      ++nPC;
+  gsl_matrix *pc (gsl_matrix_alloc(data->size1,nPC));
+  for(int j=0; j<nPC; ++j)
+    gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD, pc);
   // free space
   gsl_matrix_free(eVecs);
   gsl_vector_free(eVals);
   gsl_vector_free(pSD);
   gsl_vector_free(pMean);
   gsl_matrix_free(covMat);
-  return std::make_pair(eVals,pc);                // somebody else needs to free these items
+  return pc;                     // somebody else needs to free this
 }
 
 /* GSL documentation for these functions

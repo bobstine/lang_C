@@ -1,6 +1,7 @@
-/* $Id: gsl_eigen.h,v 1.12 2008/02/22 19:39:47 bob Exp $
+#ifndef _GSL_EIGEN_H_
+#define _GSL_EIGEN_H_
+/* 
  *  gsl_eigen.h
- *  seq_regr
  *
  *  Created by Robert Stine on 1/28/08.
  *  Copyright 2008. All rights reserved.
@@ -18,8 +19,6 @@
            operator() returns evalues, selected number of principal components
  
  */
-#ifndef _GSL_EIGEN_H_
-#define _GSL_EIGEN_H_
 
 #include <gsl/gsl_matrix.h>
 

@@ -87,7 +87,6 @@ public:
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   
-  virtual bool           has_feature(BiddingHistory const& state) = 0;
   virtual double         place_bid (BiddingHistory const& state)  = 0; 
   virtual std::string    name()                             const = 0;
   virtual std::string    feature_name()                     const = 0;
@@ -95,15 +94,17 @@ public:
   
   NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;
 
-  virtual void           model_adds_current_variable()        { }
-  virtual void           bid_accepted()                       { mLastBidAccepted = true; }
-  virtual void           bid_declined()                       { mLastBidAccepted = false; }
+  virtual void           model_adds_current_variable()            { }
+  virtual void           bid_accepted()                           { mLastBidAccepted = true; }
+  virtual void           bid_declined()                           { mLastBidAccepted = false; }
 
   virtual void           print_to(std::ostream& os) const;
 
  protected:
-  double                 max_bid      ()     const { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
- private:
+  double                 max_bid      ()     const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
+  virtual bool           has_feature(BiddingHistory const& state) = 0;
+
+private:
   std::string            role_string() const;
 };
 
@@ -132,10 +133,13 @@ public:
   void                model_adds_current_variable()           { mStream.mark_position(); }
 
   std::string         feature_name()                const     { return mStream.feature_name(); }       
-  bool                has_feature(BiddingHistory const& state){ return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
   FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
   virtual void        print_to(std::ostream& os) const;
+
+protected:
+  bool                has_feature(BiddingHistory const& state){ return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
+
 };
 
 

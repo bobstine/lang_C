@@ -59,17 +59,16 @@ main()
   gslPrincipalComponents pc(0,true);
   
   // apply to data matrix
-  std::pair<gsl_vector*, std::vector<gsl_vector*> > decomp ( pc(data) );
-  int nPC ((int)decomp.second.size());
+  gsl_matrix * decomp ( pc(data) );
+  int nPC (decomp->size2);
   std::cout << "TEST: Found " << nPC << " eigenvectors which are \n";
   for (int j=0; j<nPC; ++j)
-    std::cout << decomp.second[j] << std::endl;
-  std::cout << "TEST: Eigenvalues are " << decomp.first << std::endl;
+    std::cout << &gsl_matrix_const_column(decomp,j).vector << std::endl;
 
   // compare SD of resulting pc's to eigenvalues
   std::cout << "TEST: Squared SDs of the output prin comps are: ";
   for (int j=0; j<nPC; ++j)
-  { double sd = gsl_vector_standard_deviation(decomp.second[j]);
+  { double sd = gsl_vector_standard_deviation(&gsl_matrix_const_column(decomp,j).vector);
     std::cout << sd*sd << ", ";
   }
   std::cout << std::endl;
@@ -90,6 +89,7 @@ main()
     output << std::endl;
   }
   
+
   const int  numComponents (2);
   const bool standardize (true);
   
@@ -98,7 +98,7 @@ main()
     gsl_vector_set(sd,j, gsl_vector_standard_deviation(&gsl_matrix_column(data,j).vector));
   gslRKHS<WeightedRadialKernel> rkhs (numComponents, standardize, WeightedRadialKernel(sd));
   std::pair<gsl_vector*, std::vector<gsl_vector*> > basis ( rkhs(data) );
- 
+  
   std::cout << "TEST: Eigenvalues are " << basis.first << std::endl;
   nPC = (int)basis.second.size();
   std::cout << "TEST: Found " << nPC << " eigenvectors; PCs are \n";
