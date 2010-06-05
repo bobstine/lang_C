@@ -29,13 +29,13 @@
 namespace gsl_eigen 
 {
   void
-  standardize_matrix_columns (gsl_matrix *data);
+    standardize_matrix_columns (gsl_matrix *data);
   
   void 
     principal_components (gsl_matrix* data, gsl_vector* eVals, gsl_matrix* eVecs);
   
   void                // assumes standardized if pSD is not nil; puts into matrix pc
-    construct_principal_component (gsl_matrix const* data, int j, gsl_matrix const* eVecs, gsl_vector const* pMeans, gsl_vector const* pSD, gsl_matrix *pc);
+    construct_principal_component (gsl_matrix const* data,int j,gsl_matrix const*eVecs, gsl_vector const*pMeans, gsl_vector const*pSD, gsl_matrix *pc);
 }
 
 
@@ -70,7 +70,6 @@ class WeightedRadialKernel
   gsl_vector const* mWts;
 public:
   WeightedRadialKernel (gsl_vector const* wts) : mWts(wts) { };
-  WeightedRadialKernel (WeightedRadialKernel const& k) : mWts(k.mWts) { };
   
   std::string const& name() const { return classname; }
   
@@ -97,7 +96,7 @@ public:
 
 
 template<class Kernel>
-class gslRKHS: public std::unary_function<gsl_matrix const*, std::pair<gsl_vector*, std::vector<gsl_vector*> > >
+class gslRKHS: public std::unary_function<gsl_matrix const*, gsl_matrix* >
 {
   int    const  mNumComponents;
   bool   const  mStandardize;
@@ -106,7 +105,6 @@ public:
     ~gslRKHS() {  }
   
   gslRKHS (int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
-  gslRKHS (gslRKHS const& rkhs) : mNumComponents(rkhs.mNumComponents), mStandardize(rkhs.mStandardize) { }
   
   int number_of_components() const { return mNumComponents; }
   

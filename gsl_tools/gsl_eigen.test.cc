@@ -53,7 +53,8 @@ main()
       gsl_matrix_set(data,i,j,uniform_rand());
   
   // write to file so can check output results
-  gsl_matrix_write_to_file ("/Users/bob/Desktop/pc.dat", data);  
+  char filename[] = "/Users/bob/Desktop/pc.dat";
+  gsl_matrix_write_to_file (filename, data);  
 
   // create a principal component operator, standardizing
   gslPrincipalComponents pc(0,true);
@@ -96,14 +97,12 @@ main()
   gsl_vector *sd (gsl_vector_alloc(k));
   for (int j=0; j<k; ++j)
     gsl_vector_set(sd,j, gsl_vector_standard_deviation(&gsl_matrix_column(data,j).vector));
-  gslRKHS<WeightedRadialKernel> rkhs (numComponents, standardize, WeightedRadialKernel(sd));
-  std::pair<gsl_vector*, std::vector<gsl_vector*> > basis ( rkhs(data) );
+  gslRKHS<RadialKernel> rkhs (numComponents, standardize);
+  gsl_matrix * basis ( rkhs(data) );
   
-  std::cout << "TEST: Eigenvalues are " << basis.first << std::endl;
-  nPC = (int)basis.second.size();
-  std::cout << "TEST: Found " << nPC << " eigenvectors; PCs are \n";
-  for (int j=0; j<nPC; ++j)
-    std::cout << basis.second[j] << std::endl;
+  std::cout << "TEST: Found " << basis->size2 << " eigenvectors; PCs are \n";
+  for (int j=0; j<(int)basis->size2; ++j)
+    std::cout << &(gsl_matrix_const_column(basis,j).vector) << std::endl;
   
   return 0;
 }
