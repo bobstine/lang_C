@@ -297,10 +297,6 @@ template<class Source1, class Source2>
 bool
 CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-  for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
-    std::cout << *it << "  ";
-  std::cout << std::endl;
-
   if (mSlowPos >= (int) mSlowSource.size())   // happens when increment_position but none left
     return false;
   if (mSlowSource[mSlowPos]->is_constant() || (mFastSource[mPos[mSlowPos]]->is_constant()) )

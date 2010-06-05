@@ -56,7 +56,7 @@ class GSL_adapter
   FeatureVector operator()(FeatureVector const& fv)
     {
       gsl_matrix *in  = Convert::features_into_gsl_matrix(fv, mContextRows);
-      std::cout << "ADPT: Converting (", fv[0].size()," ",fv.size()," ) into (" << in->size1 << ",", in->size2, ") for GSL.\n";
+      //      std::cout << "ADPT: Converting (" << fv[0]->size() << "," << fv.size() << ") into (" << in->size1 << "," << in->size2 << ") for GSL.\n";
       gsl_matrix *out = mOp(in);
       FeatureVector result (Convert::gsl_matrix_into_features(out, mContextRows));
       gsl_matrix_free(in);

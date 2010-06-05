@@ -11,8 +11,6 @@
 // for copy
 #include <algorithm>
 
-#include <iostream>
-
 #include "gsl_iterator.h"
 
 //   GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL
@@ -37,10 +35,11 @@ Convert::gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows)
 
   int nRows ((int)mat->size1 + addContextRows);
   for (int j=0; j<(int)mat->size2; ++j)
-  { Column col("gsl", nRows); 
-    double *data (col->begin() + addContextRows);
-    std::fill(col->begin(), col->end(), 0.0);                          // fill context rows with 0
-    for(int i=addContextRows; i<(int)col->size(); ++i)
+  { Column col("gsl", nRows);
+    double *boundary (col->begin()+addContextRows);
+    std::fill(col->begin(), boundary , 0.0);                          // fill context rows with 0
+    double *data (boundary);
+    for(int i=0; i<(int)mat->size1; ++i)
       *data++ = gsl_matrix_get(mat,i,j);
     result.push_back(Feature(col));
   }
@@ -76,9 +75,10 @@ Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, int addContextRo
   int nRows (mat.rows() + addContextRows);
   for (int j=0; j<mat.cols(); ++j)
   { Column col("eigen", nRows); 
-    double *data (col->begin() + addContextRows);
-    std::fill(col->begin(), col->end(), 0.0);                          // fill context rows with 0
-    for(int i=addContextRows; i<mat.rows(); ++i)
+    double *boundary (col->begin()+addContextRows);
+    std::fill(col->begin(), boundary, 0.0);
+    double *data (boundary);
+    for(int i=0; i<mat.rows(); ++i)
       *data++ = mat(i,j);
     result.push_back(Feature(col));
   }

@@ -270,26 +270,24 @@ main(int argc, char** argv)
 
   //    Principle component type features
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
-  
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,           // kludge alpha share... RAS??? control streams via external file
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
 			       make_subspace_stream("Principal components", 
 						    theAuction.rejected_features(),
-						    20,                             // bundle size
+						    20,                            // bundle size
 						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
-						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true)    ,0)  
+						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
 						    )));
-  /*
-  theAuction.add_expert(Expert(source, nContextCases, alphaShare(2),
-			       UniversalBoundedBidder<SubspaceStream>(),
+
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS components", 
 						    theAuction.rejected_features(), 
-						    20,                                                                    // bundle size
-						    FeatureAcceptancePredicate,
-						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(5, true))    // num components (0 means use rule), standardize
+						    20,                            // bundle size
+						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
+						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(3, true),0)    
 						    )));                                   // WARNING: cannot return more than 25 x's in subspace
-
-  */
 
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
