@@ -25,6 +25,7 @@
 #include <utility>
 #include <functional>
 #include <vector>
+#include <string>
 
 namespace gsl_eigen 
 {

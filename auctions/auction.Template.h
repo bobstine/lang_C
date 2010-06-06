@@ -9,8 +9,7 @@
 // #include <functional>  mem_fun
 
 #include <set>
-#include <algorithm>   # find_if
-
+#include <algorithm>
 
 namespace{
   std::string
@@ -165,8 +164,11 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
     if (os)
       if (iExpert < mNumInitialExperts)
-	if (bid > 0)	os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid;
-	else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
+      {	if (bid > 0)
+	  os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
+	else
+	  os << ",  , "                                  << (*it)->alpha() << ", " << bid;
+      }
     if (bid > highBid)
     { highBid = bid;
       winningExpert = *it;

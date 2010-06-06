@@ -1,5 +1,3 @@
-//  $Id: column.cc,v 1.16 2008/01/22 21:15:07 bob Exp $
-
 #include "column.h"
 #include "debug.h"
 
@@ -8,6 +6,7 @@
 #include <set>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -74,7 +73,7 @@ ColumnData::init_properties ()
     ++x;
   }
   mAvg /= mN;
-  mNumUnique = uniq.size();
+  mNumUnique = (int) uniq.size();
 }
 
 
@@ -204,14 +203,14 @@ namespace {
     {
       if (c == ' ')         // put _ in place of blank
 	*cs++ = '_';
-      else if ((*cs++ = c) == '\n')
+      else if ((*cs++ = (char) c) == '\n')
 	break;
     }
     --cs; *cs='\0';         // mark the end of the string
     // read description line
     while (--dMax > 0 && (c = getc(iop)) != EOF)
     {
-      if ((*desc++ = c) == '\n')
+      if ((*desc++ = (char) c) == '\n')
 	break;
     }
     --desc; *desc = '\0';
@@ -229,7 +228,7 @@ namespace {
     {
       if (c == ' ')   // put _ in place of blank
         *cs++ = '_';
-      else if ((*cs++ = c) == '\n')
+      else if ((*cs++ = (char) c) == '\n')
       { addedEOL = true;
         break;
       }
@@ -328,6 +327,6 @@ insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
       *it = col;
     }
   }
-  return names.size();
+  return (int) names.size();
 }
 

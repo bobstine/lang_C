@@ -6,7 +6,7 @@
 #include <Eigen/SVD>
 
 
-int main(int, char *)
+int main(int, char **)
 {
   std::cout.precision(2);
 

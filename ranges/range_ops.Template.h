@@ -267,7 +267,7 @@ namespace {
     void
     operator() (std::ostream& os, Ranges::range<Iter> const& r) const
     {
-      int n (end(r)-begin(r));
+      int n ((int)(end(r)-begin(r)));
       if (n > numToShow)
 	{
 	  int j = numToShow;

@@ -49,7 +49,7 @@ class ColumnData
  private:
   ~ColumnData()                     { delete[] mBegin; }
 
- ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = n; assert(mBegin != NULL); }
+ ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = (int)n; assert(mBegin != NULL); }
 
  public:
   std::string     name()          const { return mName; }

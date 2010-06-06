@@ -171,8 +171,8 @@ range_stats::fill_cross_product_vector (R1 const& y, double yBar,         //  it
   AvgRange avgRange (Ranges::make_range(xBar));
   typename range_traits<AvgRange>::const_iterator avgIter (begin(avgRange));
 
-  int k (end(mat)-begin(mat));
-  int n (Ranges::end(y)-Ranges::begin(y));
+  int k ((int) (end(mat)-begin(mat)));
+  int n ((int) (Ranges::end(y)-Ranges::begin(y)));
   for (int i=0; i < k; ++i)
   { 
     *cp = cross_product(yRange, yBar, Ranges::make_range(*matColIter), *avgIter, n);

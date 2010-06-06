@@ -1,5 +1,3 @@
-//  $Id: column.test.cc,v 1.11 2007/12/16 17:59:27 bob Exp $
-
 #include "column.h"
 #include "print_utils.h"
 #include "debug.h"
