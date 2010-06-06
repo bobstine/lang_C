@@ -104,7 +104,15 @@ main()
 	--dup;
 	std::cout << j << " " << *dup << std::endl;
       }
-    copy(begin(m),end(m),std::ostream_iterator<double>(std::cout," "));
+
+    //////////////////////////////////////////
+    //  ????   No END   ?????
+    //////////////////////////////////////////
+    
+    //////////////////////////////////////////
+    //    copy(begin(m),end(m),std::ostream_iterator<double>(std::cout," "));
+    //////////////////////////////////////////
+
 
     std::cout << "\n\n";
     std::cout << "Trying out advance_to_next_non_zero() function." << std::endl;

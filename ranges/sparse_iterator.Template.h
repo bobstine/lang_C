@@ -46,6 +46,7 @@
 template <class Key, class X>  // Key should probably be removed as a parameter and int hard wired in
 class const_sparse_iterator: public std::iterator<sparse_iterator_tag, X>
 {
+ public:
   typedef std::vector<std::pair<Key, X> > map_type;
   typedef typename map_type::const_iterator const_iterator;
   class advance_to_next_non_zero
