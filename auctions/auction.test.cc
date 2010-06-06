@@ -41,10 +41,10 @@
 #include "debug.h"
 #include "read_utils.h"
 
-// from gsl_tools
-#include "gsl_model.h"
 
+#include "gsl_model.h"
 #include "smoothing_spline.h"
+#include "eigen_svd.h"
 
 #include <iostream>
 #include <fstream>
@@ -279,8 +279,18 @@ main(int argc, char** argv)
 						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
 						    )));
 
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<eigenSVD> > SS_SVD;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
+			       UniversalBidder<SS_SVD>(),
+			       make_subspace_stream("SVD basis", 
+						    theAuction.rejected_features(),
+						    64,                            // bundle size
+						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    Eigen_adapter<eigenSVD>(eigenSVD(0, true), nContextCases)
+						    )));
+  /*
+    typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
+    theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS components", 
 						    theAuction.rejected_features(), 
@@ -288,7 +298,8 @@ main(int argc, char** argv)
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
 						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(3, true),0)    
 						    )));                                   // WARNING: cannot return more than 25 x's in subspace
-
+  */
+  
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
   std::ofstream progressStream (progressCSVFileName.c_str());

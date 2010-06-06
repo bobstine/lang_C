@@ -1,4 +1,4 @@
-#include "svd.h"
+#include "eigen_svd.h"
 
 #include <iostream>
 
@@ -57,7 +57,7 @@ eigenSVD::operator()(Eigen::MatrixXd const& data) const
   int k (mNumComponents);
   if (0 == k)
   { k = 1;
-    while (k < s.size() && s(k) > 1.0/sqrt(3.0) ++k;     // account for uniform variance
+    while ((k < s.size()) && (s(k) > 1.0/sqrt(3.0))) ++k;     // account for uniform variance
   }
   return u.block(0,0,u.rows(),k);
 }
