@@ -14,19 +14,19 @@ int main()
 	    << *iz.begin() << std::endl << std::endl;
   
   { // traits from container
-    range_traits< std::vector<double> >::range          r (make_range(iz));
+    range_traits< std::vector<double> >::range          r (Ranges::make_range(iz));
     range_traits< std::vector<double> >::const_iterator j (begin(r));
     std::cout << "Beginning of range r: " << *j << std::endl;
   }
   
   { // traits from range itself
-    range_traits< range<std::vector<double>::const_iterator> >::range          r (make_range(iz));
-    range_traits< range<std::vector<double>::const_iterator> >::const_iterator j (begin(r));
+    range_traits< Ranges::range<std::vector<double>::const_iterator> >::range          r (Ranges::make_range(iz));
+    range_traits< Ranges::range<std::vector<double>::const_iterator> >::const_iterator j (begin(r));
     std::cout << "Beginning of range r: " << *j << std::endl;
   }
 
   {  // assignable
-    range_traits< std::vector<double>* >::range          r (make_range(&iz));
+    range_traits< std::vector<double>* >::range          r (Ranges::make_range(&iz));
     range_traits< std::vector<double>* >::iterator       j = begin(r);
     std::cout << "Beginning of range r: " << *j << std::endl;
   }
