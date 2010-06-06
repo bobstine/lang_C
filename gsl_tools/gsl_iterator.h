@@ -131,18 +131,18 @@ end(gsl_vector const* pV)
 }
 
 inline
-range<gsl_vector_iterator>
+Ranges::range<gsl_vector_iterator>
 make_range(gsl_vector *pV)
 {
-  return range<gsl_vector_iterator>(begin(pV), end(pV));
+  return Ranges::range<gsl_vector_iterator>(begin(pV), end(pV));
 }
 
 
 inline
-range<gsl_vector_const_iterator>
+Ranges::range<gsl_vector_const_iterator>
 make_range(gsl_vector const *pV)
 {
-  return range<gsl_vector_const_iterator>(begin(pV), end(pV));
+  return Ranges::range<gsl_vector_const_iterator>(begin(pV), end(pV));
 }
 
 
