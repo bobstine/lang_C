@@ -21,21 +21,21 @@ class anonymous_iterator_envelope;
 
 template <class Iter>
 inline
-range<anonymous_iterator_envelope<typename std::iterator_traits<Iter>::iterator_category,
+Ranges::range<anonymous_iterator_envelope<typename std::iterator_traits<Iter>::iterator_category,
 				  typename std::iterator_traits<Iter>::value_type> >
 make_anonymous_range (const Iter& b, const Iter& e)
 {
-  return make_range(make_anonymous_iterator(b),make_anonymous_iterator(e));
+  return Ranges::make_range(make_anonymous_iterator(b),make_anonymous_iterator(e));
 }
 
 
 template <class Range>
 inline
-range<anonymous_iterator_envelope<typename range_traits<Range>::iterator_category,
-				  typename range_traits<Range>::value_type> >
-make_anonymous_range (const Range& r)
+Ranges::range<anonymous_iterator_envelope<typename range_traits<Range>::iterator_category,
+  typename range_traits<Range>::value_type> >
+  make_anonymous_range (const Range& r)
 {
-  return make_range(make_anonymous_iterator(begin(r)),make_anonymous_iterator(end(r)));
+  return Ranges::make_range(make_anonymous_iterator(begin(r)),make_anonymous_iterator(end(r)));
 }
 
 
