@@ -24,26 +24,26 @@
 namespace range_stats
 {
   //  R = range or container     I = iterator
-  template <class I>            double        average                 (range<I> range, double divisor);
-  template <class I, class Iw>  double        weighted_average        (range<I> r, double divisor, range<Iw> wts);
+  template <class I>            double        average                 (Ranges::range<I> range, double divisor);
+  template <class I, class Iw>  double        weighted_average        (Ranges::range<I> r, double divisor, Ranges::range<Iw> wts);
 
-  template <class I>            double        sum_of_squares          (range<I> range);
-  template <class I>            double        sum_of_squares          (range<I> range, double center);
-  template <class I, class Iw>  double        weighted_sum_of_squares (range<I> r, range<Iw> wts);
-  template <class I, class Iw>  double        weighted_sum_of_squares (range<I> r, double center, range<Iw> wts);
+  template <class I>            double        sum_of_squares          (Ranges::range<I> range);
+  template <class I>            double        sum_of_squares          (Ranges::range<I> range, double center);
+  template <class I, class Iw>  double        weighted_sum_of_squares (Ranges::range<I> r, Ranges::range<Iw> wts);
+  template <class I, class Iw>  double        weighted_sum_of_squares (Ranges::range<I> r, double center, Ranges::range<Iw> wts);
   
-  template <class I>            double        variance                (range<I> range, double yBar, double df);
-  template <class I>            double        standard_deviation      (range<I> range, double yBar, double df);
+  template <class I>            double        variance                (Ranges::range<I> range, double yBar, double df);
+  template <class I>            double        standard_deviation      (Ranges::range<I> range, double yBar, double df);
   
-  template <class I, class Iw>  double        weighted_variance       (range<I> r, double yBar, double df, range<Iw>wts);
-  template <class I, class Iw>  double        weighted_standard_deviation (range<I> r, double yBar, double df, range<Iw> wts);
+  template <class I, class Iw>  double        weighted_variance       (Ranges::range<I> r, double yBar, double df, Ranges::range<Iw>wts);
+  template <class I, class Iw>  double        weighted_standard_deviation (Ranges::range<I> r, double yBar, double df, Ranges::range<Iw> wts);
   
-  template <class I1, class I2> double        covariance              (range<I1> y, double yBar, range<I2> x, double xBar, double df);
-  template <class I1, class I2> double        covariance              (range<I1> y, range<I2> x, double df);
-  template <class I1, class I2, class Iw>  double weighted_covariance (range<I1> y, double yBar, range<I2> x, double xBar, double df, range<Iw> wts);
-  template <class I1, class I2, class Iw>  double weighted_covariance (range<I1> y, range<I2> x, double df, range<Iw> wts);
+  template <class I1, class I2> double        covariance              (Ranges::range<I1> y, double yBar, Ranges::range<I2> x, double xBar, double df);
+  template <class I1, class I2> double        covariance              (Ranges::range<I1> y, Ranges::range<I2> x, double df);
+  template <class I1, class I2, class Iw>  double weighted_covariance (Ranges::range<I1> y, double yBar, Ranges::range<I2> x, double xBar, double df, Ranges::range<Iw> wts);
+  template <class I1, class I2, class Iw>  double weighted_covariance (Ranges::range<I1> y, Ranges::range<I2> x, double df, Ranges::range<Iw> wts);
   
-  template <class I1, class I2> double        cross_product           (range<I1> y, double yBar, range<I2> x, double xBar, double n);
+  template <class I1, class I2> double        cross_product           (Ranges::range<I1> y, double yBar, Ranges::range<I2> x, double xBar, double n);
   
   template <class R1, class R2, class R3, class I> void
   fill_cross_product_vector (R1 const& y, double yBar, R2 const& x, R3 const& xBar, I cp);

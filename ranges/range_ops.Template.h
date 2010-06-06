@@ -203,7 +203,7 @@ range_ops::transform (Range1 const& x, Range2 const& y, Iter iter,  BinaryOp f)
 template <class Iter>
 inline
 typename std::iterator_traits<Iter>::value_type
-accumulate ( const range<Iter>& r, typename std::iterator_traits<Iter>::value_type init)
+accumulate (const Ranges::range<Iter>& r, typename std::iterator_traits<Iter>::value_type init)
 {
   return range_ops::accumulate(r, init);
 }
@@ -224,7 +224,7 @@ namespace {
     typedef typename std::iterator_traits<Iter>::value_type local_type;
   public:
     void
-    operator()(std::ostream& os, range<Iter> const& r) const
+    operator()(std::ostream& os, Ranges::range<Iter> const& r) const
     {
       int count (numToShow);
       Iter it (begin(r));
@@ -245,7 +245,7 @@ namespace {
     typedef typename std::iterator_traits<Iter>::value_type local_type;
   public:
     void
-    operator()(std::ostream& os, range<Iter> const& r) const
+    operator()(std::ostream& os, Ranges::range<Iter> const& r) const
     {
       int count (numToShow);
       Iter it (begin(r));
@@ -265,7 +265,7 @@ namespace {
     typedef typename std::iterator_traits<Iter>::value_type local_type;
   public:
     void
-    operator() (std::ostream& os, range<Iter> const& r) const
+    operator() (std::ostream& os, Ranges::range<Iter> const& r) const
     {
       int n (end(r)-begin(r));
       if (n > numToShow)
@@ -279,7 +279,7 @@ namespace {
 	  os << "... " << n-numToShow+1 << " more" ;
 	}
       else
-	std::copy( begin(r), end(r),  std::ostream_iterator<local_type>(os, " "));
+	std::copy(begin(r), end(r),  std::ostream_iterator<local_type>(os, " "));
     }
   };
 
@@ -287,7 +287,7 @@ namespace {
   
 template <class Iter>
 inline std::ostream&
-operator<<(std::ostream& os, range<Iter> const& r)
+operator<<(std::ostream& os, Ranges::range<Iter> const& r)
 {
   RangePrinter<Iter, typename std::iterator_traits<Iter>::iterator_category>()(os,r);
   return os;
