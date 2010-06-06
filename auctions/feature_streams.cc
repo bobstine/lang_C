@@ -20,6 +20,8 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
   return !(f->is_constant() || f->is_dummy() || (f->name() == "Basis"));
 }
 
+
+
 //  Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream
 
 int
@@ -46,6 +48,7 @@ FiniteStream::pop()
 void
 FiniteStream::mark_position()            // mark prior location
 {
+  mIsEmpty = false;
   if (mPosition)
     mMarkedPosition = mPosition - 1;
   else

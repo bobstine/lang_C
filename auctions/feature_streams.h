@@ -110,11 +110,11 @@ public:
 
 class FiniteStream
 {
-  std::string           mName;            // name of the stream
-  FeatureVector  mFeatures;        // source of features
-  int                   mPosition;        // position in this collection
-  int                   mMarkedPosition;  // mark position; stops after crossing marked position
-  bool                  mIsEmpty;         // set when increment position
+  std::string       mName;            // name of the stream
+  FeatureVector     mFeatures;        // source of features
+  int               mPosition;        // position in this collection
+  int               mMarkedPosition;  // mark position; stops after crossing marked position
+  bool              mIsEmpty;         // set when increment position
 public:
   
   FiniteStream(std::string const& name, FeatureVector const& features)

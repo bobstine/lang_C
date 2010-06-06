@@ -167,7 +167,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
       {	if (bid > 0)
 	  os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
 	else
-	  os << ",  , "                                  << (*it)->alpha() << ", " << bid;
+	  os << ",  , "                                                    << (*it)->alpha() << ", " << bid;
       }
     if (bid > highBid)
     { highBid = bid;
