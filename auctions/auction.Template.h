@@ -75,7 +75,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features);
   }
-  // build variables for testing
+  // build variables for testing, conversion adjusts for context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)

@@ -196,17 +196,21 @@ class FitStream
   std::string            mSignature;       // prefix for variable names so that it can recognize them
   bool                   mIncreaseDegree;
   Column                 mFit;             // holds fit values from model
+  int                    mSkip;            // context rows to pad when returning fit
 
 public:
   
-  FitStream(Model const& model, std::string s)    :  mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit() {  }
+  FitStream(Model const& model, std::string s, int skip)
+    :
+    mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
   std::string             name()                       const { return mModel.name(); }
   std::string             feature_name()               const; 
   FeatureVector           pop();
   void                    mark_position()              const { }
 
-  void                    print_to(std::ostream& os)   const { os << "FitStream popped " << mCount << " times."; }
+  void                    print_to(std::ostream& os)   const { os << "FitStream" << name()
+								  << "(pop=" << mCount << ",skip=" << mSkip << ")"; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty()                                                                                const;
@@ -217,9 +221,9 @@ protected:                                 // expert calls these methods followi
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m, std::string signature)
+make_fit_stream (Model const& m, std::string signature, int skip)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature,skip));
 }
 
 

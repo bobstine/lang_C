@@ -57,15 +57,17 @@ std::vector<Feature>
 FitStream<Model>::pop()
 {
   std::vector<int> powers;
-  if (!mIncreaseDegree)                                              // first attempt to calibrate
+  if (!mIncreaseDegree)                                                  // first attempt to calibrate
   { ++mCount;
-    mFit = Column(feature_name().c_str(), mModel.fit_length());      // grab current fit
-    mModel.fill_with_fit(mFit->begin());
+    mFit = Column(feature_name().c_str(), mSkip + mModel.fit_length());  // grab current fit
+    double *b (mFit->begin());
+    for(int i=0; i<mSkip; ++i)      *b++ = 0;
+    mModel.fill_with_fit(mFit->begin() + mSkip);
     mFit->update();
     powers.push_back(2);
-    powers.push_back(3);                                             // square and cubic for first attempt
+    powers.push_back(3);                                                 // square and cubic for first attempt
   }                                                        
-  else                                                               // use higher powers to improve
+  else                                                                   // use higher powers to improve
   { powers.push_back(4);
     powers.push_back(5);
   }

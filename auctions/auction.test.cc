@@ -258,17 +258,17 @@ main(int argc, char** argv)
     }
   }
 
-  // calibration expert
+  //  Calibration expert
   if(splineDF > 0)
   { std::string signature("Y_hat_");
-    theAuction.add_expert(Expert(calibrate, 0, 100,        // no skipping, lots of alpha
-				 FitBidder(4, signature),  // delay between bursts
-				 make_fit_stream(theRegr, signature)));
+    theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
+				 FitBidder(4, signature),                           // delay between bursts
+				 make_fit_stream(theRegr, signature, nContextCases)));
   }
   
     
 
-  //    Principle component type features
+  //   Principle component type features
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
