@@ -67,7 +67,8 @@
 
 // operator
 #include <functional>
-
+// for finite streams
+#include <deque>     
 #include <iostream>
 #include <sstream>
 
@@ -110,15 +111,16 @@ public:
 
 class FiniteStream
 {
-  std::string       mName;            // name of the stream
-  FeatureVector     mFeatures;        // source of features
-  int               mPosition;        // position in this collection
-  int               mMarkedPosition;  // mark position; stops after crossing marked position
-  bool              mIsEmpty;         // set when increment position
+  typedef std::pair<bool, Feature>  PairType;
+  typedef std::deque<PairType>      QueueType;
+
+  std::string mName;            // name of the stream
+  QueueType   mFeatures;        // (tried since last accepted, feature)
+
 public:
   
   FiniteStream(std::string const& name, FeatureVector const& features)
-    :  mName(name), mFeatures(features), mPosition(0), mMarkedPosition(0), mIsEmpty(false) {  }
+    :  mName(name) { insert_features(features);  }
   
   std::string             name()                       const { return mName; }
   std::string             feature_name()               const;
@@ -128,8 +130,11 @@ public:
   int                     number_remaining()           const;
 
   void                    print_to(std::ostream& os)   const;
+  void                    print_features_to (std::ostream& os) const;
   
 protected:
+  void  insert_features (FeatureVector const& features);
+  
   bool  empty()                                                                          const;
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
   void  increment_position();

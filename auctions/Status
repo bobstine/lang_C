@@ -1,10 +1,6 @@
 Next... 
 
-	Fix that damn expert that wont quit, even though its offered enough.
-
-	Get calibration back in place.
-
-	Sandwich for a block of variables.
+	Segmented time model requires block of variable and constant shift.
 
 
 	Lag iterator/neighborhood type.

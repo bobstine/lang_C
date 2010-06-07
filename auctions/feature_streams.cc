@@ -24,84 +24,90 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
 
 //  Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream
 
+/*
+  These are assumed to own the given feature vector, and so are
+  free to wipe out variables once that they have been used in the
+  auction.
+*/
+
+void
+FiniteStream::insert_features(FeatureVector const& f)
+{
+  for(FeatureVector::const_iterator it=f.begin(); it != f.end(); ++it)
+    if (! (*it)->is_constant() )
+      mFeatures.push_back( std::make_pair(false,*it) );
+}
+
+
 int
 FiniteStream::number_remaining() const
 {
-  int diff (mMarkedPosition - mPosition);
-  if (diff > 0)
-    return diff;
-  else
-    return mFeatures.size() + diff;  // handles 0, returning size if at current position
+  return mFeatures.size();
 }
 
 
 std::vector<Feature>
 FiniteStream::pop()                            
 {
-  std::vector<Feature> result;
-  result.push_back(mFeatures[mPosition]); 
+  FeatureVector result;
+  result.push_back(mFeatures.front().second); 
   increment_position();
   return result;
 }
 
-
 void
-FiniteStream::mark_position()            // mark prior location
+FiniteStream::mark_position()
 {
-  mIsEmpty = false;
-  if (mPosition)
-    mMarkedPosition = mPosition - 1;
-  else
-    mMarkedPosition = mFeatures.size() - 1;
-  std::cout << "TESTING:  " << mName << " marking position " << mMarkedPosition << std::endl;
+  for(QueueType::iterator it=mFeatures.begin(); it != mFeatures.end(); ++it)
+    it->first = false;            // all get an untried stamp
 }
-
-
 
 bool
 FiniteStream::empty()  const
 {
-  return mIsEmpty;
+  return ( (mFeatures.size()==0) || mFeatures.front().first );
 }
 
 
 void
 FiniteStream::increment_position()
 {
-  ++mPosition;
-  if (mPosition >= (int) mFeatures.size())   // treat as cyclic
-    mPosition = 0;
-  mIsEmpty = (mPosition == mMarkedPosition); // empty if new position matches marked position
+  Feature f (mFeatures.front().second);
+  mFeatures.pop_front();
+  if (f->is_used_in_model())      // dump f from queue
+    return;
+  else                            // return with boolean indicator to show tried since last added
+    mFeatures.push_back(std::make_pair(true,f));   
 }
 
 
 bool
 FiniteStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
-  bool okay (!(mFeatures[mPosition]->is_used_in_model() || mFeatures[mPosition]->is_constant()));
-  /*
-  std::cout << "FiniteStream " << mName << " at " << mPosition << " (out of " << mFeatures.size() 
-  	    << ").  Top feature " << mFeatures[mPosition]->name();
-  if (okay)
-    std::cout << " is okay\n";
-  else
-    std::cout << " is not okay.\n";
-  */
-  return okay;
+  return !mFeatures.front().second->is_used_in_model();
 }
 
 
 std::string
 FiniteStream::feature_name() const                            
 {
-  return mFeatures[mPosition]->name();
+  return mFeatures.front().second->name();
 }
 
 
 void
 FiniteStream::print_to(std::ostream& os)          const
 {
-  os << "FiniteStream " << mName << " at position " << mPosition << " with mark at " << mMarkedPosition;
+  os << "FiniteStream " << mName << " @ " << mFeatures.front().second->name() << " with queue size " << mFeatures.size() << " ";
+}
+
+void
+FiniteStream::print_features_to (std::ostream& os) const
+{
+  print_to(os);
+  os << std::endl;
+  for(QueueType::const_iterator it=mFeatures.begin(); it != mFeatures.end(); ++it)
+    os << "     " << it->first << "  " << it->second << std::endl;
 }
 
 

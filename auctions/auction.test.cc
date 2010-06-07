@@ -244,13 +244,13 @@ main(int argc, char** argv)
       { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
 				     UniversalBidder<FStream>(), 
-				     make_finite_stream("Columns of " + streamNames[s],
+				     make_finite_stream(streamNames[s],
 							featureSrc.features_with_attribute("stream",
 											   streamNames[s])) // 2 cycles through these features
 				     ));
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				     UniversalBoundedBidder<IStream>(),
-				     make_interaction_stream("Column interactions of " + streamNames[s],
+				     make_interaction_stream("Interact " + streamNames[s],
 							     featureSrc.features_with_attribute("stream",streamNames[s]),
 							     false)                   // skip squared terms
 				     ));
