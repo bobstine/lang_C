@@ -192,7 +192,7 @@ class SmoothingSpline
     }
   
   template <class Iter>
-    void compute_spline_at_x (int n, range<Iter> input, double *s, int order = 0) const
+    void compute_spline_at_x (int n, Ranges::range<Iter> input, double *s, int order = 0) const
     {
       double *xPtr = new double[n];
       if (xPtr)
@@ -233,7 +233,7 @@ class SmoothingSpline
     }
 
   template<class Iter>
-    void map_to_0_1 (range<Iter> x, double *mapped) const
+    void map_to_0_1 (Ranges::range<Iter> x, double *mapped) const
     {
       int    hiCount (0);
       int    loCount (0);

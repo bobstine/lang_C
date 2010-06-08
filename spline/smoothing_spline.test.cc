@@ -84,7 +84,7 @@ main()
   const int npred (7);
   double xx[npred] = {-1.1, 0.0, 1.0, 2.0, 5.0, 10.5, 200.0};
   double sp[npred] ;
-  ss.compute_spline_at_x (npred, make_range(xx, xx+npred), sp, 0);
+  ss.compute_spline_at_x (npred, Ranges::make_range(xx, xx+npred), sp, 0);
   for (int i=0; i<npred; ++i)
     std::cout << i << " input " << xx[i] << "-->  smth " << sp[i]
 	      << "   =   " << ssOp(xx[i])

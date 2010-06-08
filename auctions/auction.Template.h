@@ -9,8 +9,7 @@
 // #include <functional>  mem_fun
 
 #include <set>
-#include <algorithm>   # find_if
-
+#include <algorithm>
 
 namespace{
   std::string
@@ -76,7 +75,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features);
   }
-  // build variables for testing
+  // build variables for testing, conversion adjusts for context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
@@ -165,8 +164,11 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
     if (os)
       if (iExpert < mNumInitialExperts)
-	if (bid > 0)	os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid;
-	else       	os << ",  , "                                  << (*it)->alpha() << ", " << bid;
+      {	if (bid > 0)
+	  os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
+	else
+	  os << ",  , "                                                    << (*it)->alpha() << ", " << bid;
+      }
     if (bid > highBid)
     { highBid = bid;
       winningExpert = *it;

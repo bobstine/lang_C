@@ -23,7 +23,7 @@ ExpertABC::role_string () const
 }
 
 
-std::vector< std::pair<std::string, FeatureABC::Iterator> >
+std::vector< std::pair<std::string, FeatureABC::Iterator> >             // vector of (name, begin) pairs
 ExpertABC::convert_to_model_iterators(FeatureVector const& fv) const
 { 
   NamedIteratorVector result;

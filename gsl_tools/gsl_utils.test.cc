@@ -36,7 +36,7 @@ class Wrapper
 public:
   Wrapper(gsl_vector const* v) : mv(v) { }
   
-  range<gsl_vector_const_iterator> range() const { return make_range(mv); }
+  Ranges::range<gsl_vector_const_iterator> range() const { return make_range(mv); }
 };
 
 time_t global_start_time = time(0);
@@ -56,8 +56,8 @@ range_ddot (double const* x, double const* y, int n)
   return range_ops::accumulate(
                                make_binary_range(
                                                  std::multiplies<double>(),
-                                                 make_range(x,x+n), 
-                                                 make_range(y,y+n)
+                                                 Ranges::make_range(x,x+n), 
+                                                 Ranges::make_range(y,y+n)
                                                  ),
                                0.0);
 }

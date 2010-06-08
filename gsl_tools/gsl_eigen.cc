@@ -85,7 +85,7 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   // build the principal components
   int nPC (mNumComponents);
   if (nPC==0)
-    while (gsl_vector_get(eVals,nPC) > 1.0)
+    while (nPC < (int)eVals->size && gsl_vector_get(eVals,nPC) > 1.0)
       ++nPC;
   gsl_matrix *pc (gsl_matrix_alloc(data->size1,nPC));
   for(int j=0; j<nPC; ++j)

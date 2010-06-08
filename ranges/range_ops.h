@@ -50,7 +50,7 @@ namespace range_ops
   template <class R1, class R2, class I, class BinaryOp>     void                  transform (R1 const& x, R2 const& y, I iter,  BinaryOp f);
 }
 
-template <class Iter>                                       std::ostream&          operator<<(std::ostream& os, const range<Iter>& r);
+template <class Iter>                                       std::ostream&          operator<<(std::ostream& os, const Ranges::range<Iter>& r);
 
 
 // Also defined (but with long return types, so they are left off):

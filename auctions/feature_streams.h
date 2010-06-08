@@ -67,7 +67,8 @@
 
 // operator
 #include <functional>
-
+// for finite streams
+#include <deque>     
 #include <iostream>
 #include <sstream>
 
@@ -110,15 +111,16 @@ public:
 
 class FiniteStream
 {
-  std::string           mName;            // name of the stream
-  FeatureVector  mFeatures;        // source of features
-  int                   mPosition;        // position in this collection
-  int                   mMarkedPosition;  // mark position; stops after crossing marked position
-  bool                  mIsEmpty;         // set when increment position
+  typedef std::pair<bool, Feature>  PairType;
+  typedef std::deque<PairType>      QueueType;
+
+  std::string mName;            // name of the stream
+  QueueType   mFeatures;        // (tried since last accepted, feature)
+
 public:
   
   FiniteStream(std::string const& name, FeatureVector const& features)
-    :  mName(name), mFeatures(features), mPosition(0), mMarkedPosition(0), mIsEmpty(false) {  }
+    :  mName(name) { insert_features(features);  }
   
   std::string             name()                       const { return mName; }
   std::string             feature_name()               const;
@@ -128,8 +130,11 @@ public:
   int                     number_remaining()           const;
 
   void                    print_to(std::ostream& os)   const;
+  void                    print_features_to (std::ostream& os) const;
   
 protected:
+  void  insert_features (FeatureVector const& features);
+  
   bool  empty()                                                                          const;
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
   void  increment_position();
@@ -196,17 +201,21 @@ class FitStream
   std::string            mSignature;       // prefix for variable names so that it can recognize them
   bool                   mIncreaseDegree;
   Column                 mFit;             // holds fit values from model
+  int                    mSkip;            // context rows to pad when returning fit
 
 public:
   
-  FitStream(Model const& model, std::string s)    :  mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit() {  }
+  FitStream(Model const& model, std::string s, int skip)
+    :
+    mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
   std::string             name()                       const { return mModel.name(); }
   std::string             feature_name()               const; 
   FeatureVector           pop();
   void                    mark_position()              const { }
 
-  void                    print_to(std::ostream& os)   const { os << "FitStream popped " << mCount << " times."; }
+  void                    print_to(std::ostream& os)   const { os << "FitStream" << name()
+								  << "(pop=" << mCount << ",skip=" << mSkip << ")"; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty()                                                                                const;
@@ -217,9 +226,9 @@ protected:                                 // expert calls these methods followi
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m, std::string signature)
+make_fit_stream (Model const& m, std::string signature, int skip)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature,skip));
 }
 
 

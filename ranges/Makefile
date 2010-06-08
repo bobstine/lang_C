@@ -1,5 +1,3 @@
-# $Id: Makefile,v 1.42 2004/10/15 18:30:06 foster Exp $
-
 include ../c_flags
 
 ###########################################################################
@@ -38,7 +36,6 @@ level_7   =
 
 default: range_traits.test
 
-
 all:  sparse_iterator.test     range.test   column.test    range_traits.test function_iterators.test  range_ops.test  range_stats.test
 
 pair: pair-test.o
@@ -57,5 +54,4 @@ speed.test.exec: speed.test.o
 ###########################################################################
 
 include ../rules_for_makefiles
-
 

@@ -13,7 +13,7 @@
   {
   public:
     typedef typename Container::const_iterator const_iterator;
-    typedef          range<const_iterator>              range;
+    typedef          Ranges::range<const_iterator>              range;
   };
   
   
@@ -23,7 +23,7 @@
   public:  
     typedef typename Container::const_iterator const_iterator;
     typedef typename Container::iterator       iterator;
-    typedef range<iterator>                    range;
+    typedef Ranges::range<iterator>                    range;
   };
   
   
@@ -33,16 +33,16 @@
   {
   public:
     typedef Iter                  const_iterator; 
-    typedef range<const_iterator> range;
+    typedef Ranges::range<const_iterator> range;
   };
   
   
   template <class Iter>
-    class range_traits<range< Iter > > : public std::iterator_traits<Iter>
+  class range_traits<Ranges::range< Iter > > : public std::iterator_traits<Iter>
   {
   public:
     typedef Iter                  const_iterator;
-    typedef range<const_iterator> range;
+    typedef Ranges::range<const_iterator> range;
   };
 
 

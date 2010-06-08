@@ -54,9 +54,9 @@ int main()
   std::cout << *c << std::endl;
 
   // explicitly make anonymous range from the vector of doubles
-  range<  AnonIter > aRange (make_anonymous_range(iz));
+  Ranges::range<  AnonIter > aRange (make_anonymous_range(iz));
   std::cout << "TEST: A range is " << aRange << std::endl;
-  std::cout << "TEST: Range begins at " << *begin(aRange) << std::endl;
+  std::cout << "TEST: Range begins at " << *Ranges::begin(aRange) << std::endl;
   std::cout << "TEST: Print something function returns " ; print_something(begin(aRange)); std::cout << std::endl;
   std::cout << "TEST: Sum of this of anonymous range is " << range_ops::accumulate(aRange,0.0) << std::endl;
   std::cout << "TEST: Shifted is " << make_unary_range(Shifter(3.0),make_anonymous_range(iz.begin(),iz.end())) << std::endl;

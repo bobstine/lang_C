@@ -516,7 +516,7 @@ public:
 };
 
 inline
-range<  anonymous_iterator_envelope<std::random_access_iterator_tag,double>  >
+Ranges::range<  anonymous_iterator_envelope<std::random_access_iterator_tag,double>  >
 make_anonymous_range ()
 {
   std::vector<double> x (0);

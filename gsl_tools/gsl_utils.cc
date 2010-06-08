@@ -97,7 +97,7 @@ gsl_matrix_sample_rows(gsl_matrix *dest, gsl_matrix const* src)
 double
 gsl_vector_mean (gsl_vector const* v)
 {
-  return range_stats::average(make_range(begin(v), end(v)), v->size);
+  return range_stats::average(Ranges::make_range(begin(v), end(v)), v->size);
 }
 
 
@@ -111,7 +111,7 @@ gsl_vector_center_vector (gsl_vector * v)
 double
 gsl_vector_standard_deviation (gsl_vector const* v, double mean)
 {
-  return range_stats::standard_deviation(make_range(begin(v), end(v)), mean, v->size-1);
+  return range_stats::standard_deviation(Ranges::make_range(begin(v), end(v)), mean, v->size-1);
 }
 
 

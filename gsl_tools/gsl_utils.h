@@ -39,7 +39,7 @@ std::pair<int,int>
 gsl_matrix_fill_from_ranges (Collection c, gsl_matrix *matrix)
 {
   int j = 0;  
-  for(typename Collection::const_iterator it = begin(c); it != end(c); ++it)
+  for(typename Collection::const_iterator it = Ranges::begin(c); it != Ranges::end(c); ++it)
   { // item in collection must possess range method
     if ((int)matrix->size2 == j) return std::pair<int,int>(0,j); 
     range_ops::copy(it->range(), GSL::begin(&gsl_matrix_column(matrix,j).vector));

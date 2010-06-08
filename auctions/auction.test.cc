@@ -41,10 +41,10 @@
 #include "debug.h"
 #include "read_utils.h"
 
-// from gsl_tools
-#include "gsl_model.h"
 
+#include "gsl_model.h"
 #include "smoothing_spline.h"
+#include "eigen_svd.h"
 
 #include <iostream>
 #include <fstream>
@@ -243,32 +243,32 @@ main(int argc, char** argv)
     { if (streamNames[s] != "context")
       { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
-				     UniversalBoundedBidder<FStream>(), 
-				     make_finite_stream("Columns of " + streamNames[s],
+				     UniversalBidder<FStream>(), 
+				     make_finite_stream(streamNames[s],
 							featureSrc.features_with_attribute("stream",
 											   streamNames[s])) // 2 cycles through these features
 				     ));
 	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				     UniversalBoundedBidder<IStream>(),
-				     make_interaction_stream("Column interactions of " + streamNames[s],
+				     make_interaction_stream("Interact " + streamNames[s],
 							     featureSrc.features_with_attribute("stream",streamNames[s]),
-							     false)                  // skip squared terms
+							     false)                   // skip squared terms
 				     ));
       }
     }
   }
 
-  // calibration expert
+  //  Calibration expert
   if(splineDF > 0)
   { std::string signature("Y_hat_");
-    theAuction.add_expert(Expert(calibrate, 0, 100,        // no skipping, lots of alpha
-				 FitBidder(4, signature),  // delay between bursts
-				 make_fit_stream(theRegr, signature)));
+    theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
+				 FitBidder(4, signature),                           // delay between bursts
+				 make_fit_stream(theRegr, signature, nContextCases)));
   }
   
     
 
-  //    Principle component type features
+  //   Principle component type features
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
@@ -279,8 +279,18 @@ main(int argc, char** argv)
 						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
 						    )));
 
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<eigenSVD> > SS_SVD;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
+			       UniversalBidder<SS_SVD>(),
+			       make_subspace_stream("SVD basis", 
+						    theAuction.rejected_features(),
+						    64,                            // bundle size
+						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    Eigen_adapter<eigenSVD>(eigenSVD(0, true), nContextCases)
+						    )));
+  /*
+    typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
+    theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS components", 
 						    theAuction.rejected_features(), 
@@ -288,7 +298,8 @@ main(int argc, char** argv)
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
 						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(3, true),0)    
 						    )));                                   // WARNING: cannot return more than 25 x's in subspace
-
+  */
+  
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
   std::ofstream progressStream (progressCSVFileName.c_str());

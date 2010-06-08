@@ -1,5 +1,3 @@
-// $Id: column.h,v 1.19 2008/02/15 21:50:23 bob Exp $
-
 #ifndef _COLUMN_H_
 #define _COLUMN_H_
 
@@ -51,7 +49,7 @@ class ColumnData
  private:
   ~ColumnData()                     { delete[] mBegin; }
 
- ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = n; assert(mBegin != NULL); }
+ ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = (int)n; assert(mBegin != NULL); }
 
  public:
   std::string     name()          const { return mName; }
@@ -66,8 +64,8 @@ class ColumnData
   double          element(int i)  const { return *(mBegin+i); }
   double*         begin()         const { return mBegin; }
   double*         end()           const { return mEnd; }
-  range<double*>  writable_range()const { return make_range(mBegin, mEnd); }
-  range<double const*> range()    const { return make_range(mBegin, mEnd); }
+  Ranges::range<double*>  writable_range()const { return Ranges::make_range(mBegin, mEnd); }
+  Ranges::range<double const*> range()    const { return Ranges::make_range(mBegin, mEnd); }
   
   bool            is_constant()   const { return mNumUnique == 1; }
   bool            is_dummy()      const { return ((mNumUnique == 2) && (mMin == 0) && (mMax == 1)); }

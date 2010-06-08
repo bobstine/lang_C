@@ -24,6 +24,45 @@ main()
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   
 
+  // test Finite streams
+  {
+    FeatureVector features;
+    
+    std::cout << "\n\nTEST: adding features\n";
+    features.push_back(Feature(columns[0]));  
+    features.push_back(Feature(columns[1]));  
+    features.push_back(Feature(columns[2]));  
+
+    typedef RegulatedStream< FiniteStream > FS;
+    FS fs (make_finite_stream("Fin St", features));
+
+    std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
+
+    std::vector<Feature> fv (fs.pop());
+    std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
+
+    std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
+    fs.mark_position();
+    fs.print_features_to(std::cout); std::cout << std::endl;
+    
+    int more (11);
+    while(fs.has_feature(features,features) && more--)
+    { std::vector<Feature> fv (fs.pop());
+      std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
+      fs.print_features_to(std::cout); std::cout << std::endl;
+    }
+
+    fv[0]->set_model_results(true, 0.001);  // used in model, p-value
+    fs.mark_position();
+    while(fs.has_feature(features,features) && more--)
+    { std::vector<Feature> fv (fs.pop());
+      std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
+      fs.print_features_to(std::cout); std::cout << std::endl;
+    }
+
+    fs.print_features_to(std::cout); std::cout << std::endl;
+
+  }
   // test dynamic cross-product stream
   typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
   std::vector<Feature> featuresSlow, featuresFast;

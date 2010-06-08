@@ -160,7 +160,7 @@ template<class T>
 inline std::ostream&
 operator<<(std::ostream& ostrm, const std::vector<T>& vec)
 {
-  int n (vec.size());
+  int n ((int) vec.size());
   if (n == 0)
     ostrm << " [empty] " << std::endl;
   else

@@ -149,7 +149,7 @@ void
 SmoothingSpline::complete_initialization ()
 {
   setup_unique_values();
-  map_to_0_1(make_range(mUniqueX, mUniqueX+mNUnique), mMappedX);
+  map_to_0_1(Ranges::make_range(mUniqueX, mUniqueX+mNUnique), mMappedX);
   find_knots();
   std::cerr << "SMSP: Initialization in progress; finding " << mNCoef << " coefs.\n";
   compute_smooth(mDF);
@@ -274,9 +274,9 @@ SmoothingSpline::setup_unique_values()
   std::set<double>::const_iterator it (uniq.begin());
   for (int i=0; it != uniq.end(); ++it, ++i)
   { double x = *it;
-    mUniqueW[i] = range_ops::accumulate(make_range(wMap[x]),0.0);
+    mUniqueW[i] = range_ops::accumulate(Ranges::make_range(wMap[x]),0.0);
     mUniqueX[i] = x;
-    mUniqueY[i] = range_ops::inner_product(make_range(yMap[x]),make_range(wMap[x]),0.0) / mUniqueW[i];
+    mUniqueY[i] = range_ops::inner_product(Ranges::make_range(yMap[x]),Ranges::make_range(wMap[x]),0.0) / mUniqueW[i];
   }
   mNUnique = uniq.size();
   mMinX = mUniqueX[0];

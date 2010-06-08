@@ -92,7 +92,7 @@ public:
   virtual std::string    feature_name()                     const = 0;
   virtual FeatureVector  feature_vector()                         = 0;
   
-  NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;
+  NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;    // convert to vector of (name, begin) pairs
 
   virtual void           model_adds_current_variable()            { }
   virtual void           bid_accepted()                           { mLastBidAccepted = true; }

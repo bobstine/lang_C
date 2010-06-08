@@ -1,5 +1,3 @@
-// $Id: range.h,v 1.55 2008/02/06 02:11:35 bob Exp $ -*- c++ -*-
-
 /*
   Ranges support the protocol (policy) of begin and end returning a
   pair of iterators. These then allow for lazy function evaluation and
@@ -182,6 +180,6 @@ end(range<Iter> r)
 
 } // namespace ranges
 
-using namespace Ranges;
+// using namespace Ranges;
 
 #endif

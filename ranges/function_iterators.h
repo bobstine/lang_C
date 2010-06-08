@@ -95,12 +95,12 @@ make_unary_iterator (F f, Iter iter)
 }
 
 template <class F, class Range>
-inline
-range<unary_iterator<F, typename range_traits<Range>::const_iterator, typename range_traits<Range>::iterator_category> >
+  inline
+  Ranges::range<unary_iterator<F, typename range_traits<Range>::const_iterator, typename range_traits<Range>::iterator_category> >
 make_unary_range (F f, Range r)
 {
-  return make_range(make_unary_iterator(f, begin(r)),
-		    make_unary_iterator(f, end(r))    );
+  return Ranges::make_range(make_unary_iterator(f, begin(r)),
+			    make_unary_iterator(f, end(r))    );
 };
 
 
@@ -114,19 +114,19 @@ class binary_iterator;
 
 template <class F, class Iter1, class Iter2>
 inline
-binary_iterator<F,Iter1,Iter2>
-make_binary_iterator (F f, Iter1 i1, Iter2 i2)
+  binary_iterator<F,Iter1,Iter2>
+  make_binary_iterator (F f, Iter1 i1, Iter2 i2)
 {
   return binary_iterator<F, Iter1, Iter2>(f, i1, i2);
 };
 
 template <typename F, class Iter1, class Iter2>
-inline
-range<binary_iterator<F, Iter1, Iter2> >
-make_binary_range (F f, range<Iter1> r1, range<Iter2> r2)
+  inline
+  Ranges::range<binary_iterator<F, Iter1, Iter2> >
+  make_binary_range (F f, Ranges::range<Iter1> r1, Ranges::range<Iter2> r2)
 {
-  return make_range(make_binary_iterator(f, begin(r1), begin(r2)),
-		    make_binary_iterator(f, end  (r1), end  (r2)) );
+  return Ranges::make_range(make_binary_iterator(f, begin(r1), begin(r2)),
+			    make_binary_iterator(f, end  (r1), end  (r2)) );
 };
 
 
@@ -144,9 +144,9 @@ make_function_iterator (X item, Iter iter)
 }
 
 template <typename X, class Range>
-inline
-range<function_iterator<X, typename range_traits<Range>::const_iterator > >
-make_function_range (X item, Range r)
+  inline
+  Ranges::range<function_iterator<X, typename range_traits<Range>::const_iterator > >
+  make_function_range (X item, Range r)
 {
   return make_range(make_function_iterator(item, begin(r)),
 		    make_function_iterator(item, end(r))   );

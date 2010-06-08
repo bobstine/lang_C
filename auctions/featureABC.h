@@ -37,7 +37,7 @@ class FeatureABC
   
  public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double> Iterator;
-  typedef range< Iterator >                                                   Range;
+  typedef Ranges::range< Iterator >                                           Range;
   typedef std::map<std::string, int>                                          Arguments;   // map sorts names, second is power
   typedef std::map<std::string, std::set<std::string> >                       Attributes;  // allow multiple occurances of the attr 
   typedef std::map<std::string, std::set<std::string> >::const_iterator       AttrIter;

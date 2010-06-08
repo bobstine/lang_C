@@ -54,7 +54,7 @@ protected:
 
 public:
   typedef          unary_iterator<F, const_base_iterator, base_category> const_iterator;
-  typedef          range<const_iterator> range;
+  typedef          Ranges::range<const_iterator> range;
 };
 
 
@@ -97,7 +97,7 @@ private:
 
 public:
   typedef          binary_iterator<F, base_iterator1, base_iterator2> const_iterator;
-  typedef          range<const_iterator> range;
+  typedef          Ranges::range<const_iterator> range;
 };
 
 
@@ -117,7 +117,7 @@ private:
 
 public:
   typedef function_iterator<argument_type,const_base_iterator> const_iterator;
-  typedef          range<const_iterator> range;
+  typedef          Ranges::range<const_iterator> range;
 };
 
 
