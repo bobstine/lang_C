@@ -5,6 +5,6 @@ COMPILER = gcc
 # LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)    # mac
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
 CFLAGS = -g -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0
-GCC = g++-4.2 $(INCLUDES) $(LDFLAGS) 
-CC  = g++-4.2 $(INCLUDES) $(LDFLAGS)
+GCC = g++ $(INCLUDES) $(LDFLAGS) 
+CC  = g++ $(INCLUDES) $(LDFLAGS)
 
