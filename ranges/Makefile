@@ -36,6 +36,9 @@ level_5   = vectorize.o  matrix.o
 level_6	  = apl.o
 level_7   = 
 
+default: range_traits.test
+
+
 all:  sparse_iterator.test     range.test   column.test    range_traits.test function_iterators.test  range_ops.test  range_stats.test
 
 pair: pair-test.o

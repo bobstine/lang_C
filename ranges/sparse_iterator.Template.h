@@ -46,9 +46,10 @@
 template <class Key, class X>  // Key should probably be removed as a parameter and int hard wired in
 class const_sparse_iterator: public std::iterator<sparse_iterator_tag, X>
 {
+ public:
   typedef std::vector<std::pair<Key, X> > map_type;
   typedef typename map_type::const_iterator const_iterator;
-  class advance_to_next_non_zero
+    class advance_to_next_non_zero
   {
   public:
     advance_to_next_non_zero(const const_sparse_iterator<Key,X>&)
@@ -60,6 +61,8 @@ class const_sparse_iterator: public std::iterator<sparse_iterator_tag, X>
     }
   };
   
+ private:
+
   const map_type& m_map;
   const_iterator m_base_iter;     // iterator into underlying data map
   Key            m_offset;        // remaining until next non-zero ??? should be key difference ???
