@@ -40,7 +40,7 @@ eigenSVD::operator()(Eigen::MatrixXd const& data) const
   int m (floor(sqrt(data.cols())));
   m = (m > mNumComponents) ? m : mNumComponents;  
   m = (m > 5) ? m : 5;
-  std::cout << "TESTING: Given " << mNumComponents << " requested, returning " << m << std::endl;
+  // std::cout << "TESTING: Given " << mNumComponents << " requested, returning " << m << std::endl;
   Eigen::MatrixXd linComb;
   if (mStandardize)
   { Eigen::MatrixXd sData (standardize(data));
@@ -52,7 +52,7 @@ eigenSVD::operator()(Eigen::MatrixXd const& data) const
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
-  std::cout << "ESVD : Singular values are {" << s.transpose() << "}\n";
+  std::cout << "ESVD : All singular values are {" << s.transpose() << "}\n";
   // return those with sing value > 0 (at least 1) or desired number
   int k (mNumComponents);
   if (0 == k)

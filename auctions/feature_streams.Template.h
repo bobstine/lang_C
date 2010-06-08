@@ -387,8 +387,9 @@ template<class Source, class Pred, class Trans>
   void
   SubspaceStream<Source, Pred, Trans>::increment_position()
 {
-  while (((int)mBundle.size()<mBundleSize) && (mPos<(int)mSource.size()) && mPredicate(mSource[mPos]))
-  { mBundle.push_back(mSource[mPos]);
+  while (((int)mBundle.size()<mBundleSize) && (mPos<(int)mSource.size()))
+  { if(mPredicate(mSource[mPos]))
+      mBundle.push_back(mSource[mPos]);
     ++mPos;
   }
 }

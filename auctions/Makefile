@@ -62,8 +62,20 @@ credit_test: auction.test
 	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 
 
+
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
+
+jason_dat: ../boost/csv_parser data/jason_97.csv
+	rm -rf data/jason.tar; mkdir data/jason.tar
+	../boost/csv_parser -f data/jason_97.csv -d data/jason.tar
+	cd data/jason.tar; chmod +x index.sh; ./index.sh > jason.dat
+
+jason_test: auction.test data/jason.tar/index.sh
+	 ./auction.test -f data/jason.tar/jason.dat -o data/jason.tar/ -r 100 -a 2 -p 3 -c 5
+
+
+
 
 lag_test: auction.test
 	./auction.test -f data/lagtest.txt -o test/log/ -r 100 -a 0.5 -p 3 -b 5 -c 0 -x 50

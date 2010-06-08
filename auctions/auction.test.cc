@@ -475,13 +475,16 @@ Column
 identify_cv_indicator(std::vector<Column> const& columns, int extraCases)
 {
   Column indicator;
-  if (columns.empty()                                // no context columns found, hence no need to look for cv indicator
-      ||                                             // or not a valid name
-      ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator")))   
-  { debug("MAIN",0) << "Data lack CV indicator; first context column is not the in/out indicator; found '" << columns[0]->name()
-		    << "' instead. Using all cases for estimation.\n";
+  if (columns.empty())
+  { debug("MAIN",0) << "Data lack CV indicator.\n";
+    return indicator;
   }
-  else                       // check name of the first context column, verify its a dummy variable
+  if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator"))
+  { debug("MAIN",0) << "First context column is not in/out indicator; found '" << columns[0]->name()
+		    << "' instead. Using all cases for estimation.\n";
+    return indicator;
+  }
+  // check name of the first context column, verify its a dummy variable
   { if (columns[0]->is_dummy())
     { indicator = columns[0];
       double sum (0.0);

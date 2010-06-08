@@ -1,8 +1,8 @@
-xx/yy=zz{stream=test;xp=3;priority=3},var,var,var,"string with an embedded \"",spaced name,vvvv,var,asddkj{precidence=3},nomizz{c=3}
-1,a,"string","string with an embedded \"", 12345 ,spaced name,0.12345e4, 2  ,noSpace,
-2,a,     one,                         two, three ,four       ,  five      ,666,"seven-seven",eight
+zz{stream=test;xp=3;priority=3},var,var,var,string,spaced name,vvvv,var,asddkj{precidence=3},nomizz{c=3}
+1,a,"string",eee, 12345 ,spaced name,0.12345e4, 2  ,noSpace,
+2,a,     one,                         two, three ,four       ,  five      ,666,4y,eight
 3,b,     123,                       a b c, w3e443,  w34,    XXX,6,7,8
-4,b,  1.111 ,                      "2. a", three , 4444, five, 666, 7.7777 ,  888
+4,b,  1.111 ,                      a, three , 4444, five, 666, 7.7777 ,  888
 5,b,1, 2.2 ,3.2 , 4.4   ,55   , 6.6,  72, 88
 6,b,1,2.2,3.2,4.4,55,6.6e6,72,88
 7,c,1, 2,3,4,5, 6   , ,8

@@ -27,6 +27,8 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 #
 #####################
 
+USES = utils
+
 # Use this for boost files that need compilation
 
 EXTERNAL_USES = boost_regex-gcc-1_38
@@ -59,7 +61,7 @@ regex: regex.o
 	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
 
 
-csv_parser_demo: csv_parser_demo
+csv_parser_demo: csv_parser_demo 
 	$(GCC) $< $(LDLIBS) -o $@
 	./csv_parser_demo
 
@@ -67,8 +69,9 @@ csv_parser_demo: csv_parser_demo
 csv_parser: csv_parser.o
 	$(GCC) $< $(LDLIBS) -o $@
 
+
 test_parser: csv_parser csv_test_data.txt
-	./csv_parser -f csv_test_data.txt -s strm
+	rm tar.out/*; ./csv_parser -f csv_test_data.txt -d tar.out
 
 
 test_parser_data: csv_parser.o test-data.csv

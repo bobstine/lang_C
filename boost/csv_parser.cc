@@ -3,8 +3,8 @@
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
 
    EXECUTE:  csv_parser < input.csv > output.data
-             csv_parser -f input.csv -o output-file-name
-             csv_parser -s stream < input.csv > output_stream.data
+             csv_parser -f input.csv -o output-file-name     # writes into one file
+	     cvs_parser -f input.csv -d output-directory     # tar style into one directory
 
    The first version uses standard io.  The second uses a supplied file name.
    The last allows the user to supply a stream name.  All variables will be
@@ -122,6 +122,8 @@
 
 */
 
+#include "read_utils.h"
+
 #include <cassert>
 
 #include <string>
@@ -166,6 +168,7 @@ typedef std::vector< StringVector> StringDataMatrix;
 std::string
 fill_blanks(std::string str)
 {
+  str = read_utils::trim(str);
   for(std::string::iterator it=str.begin(); it!=str.end(); ++it)
     if(*it == ' ' || *it == '"')
       *it = '_';
@@ -334,52 +337,70 @@ parse_double (std::string str)
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+typedef std::pair<std::string, std::string> StringPair;
+
+StringPair
+get_prefixes(std::string tarPath)
+{
+  if(tarPath.size() > 0)
+    return make_pair("echo ", "cat ");
+  else
+    return make_pair("", "");
+}
+
+
 /*
   These functions write the output data in streaming style, with
        - name of the variable on current line
        - data for the variable as a following line (which can be long)
 */
 
-
 void
-write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
-		      int column, std::ostream& output)
+write_missing_data (StringDataMatrix const& data, int column, std::ostream& output)
 {
-  // write name with missing appended as leading line plus as an attribute
-  std::string name (varName + "[missing]");
-  output << name << endl << "name " << fill_blanks(name) << " ";
-  // write attributes
-  output << "parent " << varName << " category missing ";
-  if (!attributes.empty())
-    std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
-  output << endl;
-  // write data
-  int nObs (data.size());
-  for(int i=0; i<nObs; ++i) {
-    if (data[i][column].size()==0)     output << "1 ";
+  for(int i=0; i<(int)data.size(); ++i)
+  { if (data[i][column].size()==0)     output << "1 ";
     else                               output << "0 ";
   }
   output << endl;
 }  
+  
+void
+write_missing_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+		      int column, std::ostream& output, std::string tarPath)
+{
+  StringPair prefixes (get_prefixes(tarPath));
+  // write name with missing appended as leading line plus as an attribute
+  std::string name (fill_blanks(varName + "_missing"));
+  output << prefixes.first << fill_blanks(name) << endl;
+  // write attributes
+  output << prefixes.first << "role x parent " << fill_blanks(varName) << " category missing ";
+  std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
+  output << endl;
+  // write data
+  if (tarPath.size() == 0)
+    write_missing_data(data, column, output);
+  else
+  { output << prefixes.second << name << std::endl;
+    std::ofstream dataStream ((tarPath+name).c_str());
+    write_missing_data(data, column, dataStream);
+  }
+}  
+
 
 void
-write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
-			  int column, int numberMissing, std::ostream& output)
+write_numerical_data (StringDataMatrix const& data, int column, int numberMissing, std::ostream& output)
 {
-  // start by writing the undecorated name to output on top line and as attribute
-  output << varName << endl << "name " << fill_blanks(varName) << " ";
-  // write rest of attributes
-  if (!attributes.empty())
-    std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
-  output << endl;
-  // now write the observed data, with any missing value inserted
   int nObs (data.size());
   if (0 == numberMissing)                                // write directly to output
     for(int i=0; i<nObs; ++i)
       output << data[i][column] << " ";
   else {                                                 // insert mean value in missing locations
     double sum (0.0);
-    std::vector< int  > missingPos;
+    std::vector<int> missingPos;
     for(int i=0; i<nObs; ++i)
     { if (data[i][column].size() > 0)                    // row i is not missing, so include in the sum
 	sum += parse_double(data[i][column]);
@@ -389,8 +410,8 @@ write_numerical_column  (std::string const& varName, StringVector const& attribu
     assert((numberMissing == (int)missingPos.size()));   // verify number missing found here match those found during scanning
     missingPos.push_back(nObs);                          // sentinel at the end
     double mean (sum/(nObs-numberMissing));
-    for(int i=0, j=0; i<nObs; ++i) {
-      if(missingPos[j]>i)
+    for(int i=0, j=0; i<nObs; ++i)
+    { if(missingPos[j]>i)
 	output << data[i][column] << " ";
       else
       {	output << mean << " ";
@@ -399,6 +420,28 @@ write_numerical_column  (std::string const& varName, StringVector const& attribu
     }
   }
   output << endl;
+}
+
+void
+write_numerical_column  (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
+			 int column, int numberMissing, std::ostream& output, std::string tarPath)
+{
+  StringPair prefixes (get_prefixes(tarPath));
+  // start by writing the undecorated name to output on top line and as attribute
+  std::string name (fill_blanks(varName));
+  output << prefixes.first << name << endl;
+  // write rest of attributes
+  output << prefixes.first << "role x ";
+  std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
+  output << endl;
+  // now write the observed data, with any missing value inserted
+  if (tarPath.size() == 0)
+    write_numerical_data(data, column, numberMissing, output);
+  else
+  { output << prefixes.second << name << std::endl;
+    std::ofstream file ((tarPath+name).c_str());
+    write_numerical_data(data, column, numberMissing, file);
+  }
 }
 
 
@@ -429,10 +472,21 @@ data_has_selection_indicator(StringDataMatrix const& data)
   
 
 
+
+void
+write_categorical_data (StringDataMatrix const& data, int column, std::string label, std::ostream& output)
+{
+  for (unsigned int i=0; i<data.size(); ++i)
+    if (data[i][column] == label)   output << "1 ";
+    else                            output << "0 ";
+  output << endl;
+}  
+
 void
 write_categorical_column (std::string const& varName, StringVector const& attributes, StringDataMatrix const& data,
-			  int column, bool dropLastLabel, std::ostream& output)
+			  int column, bool dropLastLabel, std::ostream& output, std::string tarPath)
 {
+  StringPair prefixes = get_prefixes(tarPath);
   // find the collection of unique values
   int nObs (data.size());
   std::set< std::string > uniqueValues;
@@ -445,18 +499,21 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
   if (dropLastLabel) --last;
   // write data for each label
   for (std::set<std::string>::const_iterator it = uniqueValues.begin(); it != last; ++it)
-  { std::string name (varName + "[" + *it + "]");
+  { std::string name (fill_blanks(varName + "[" + *it + "]"));
     // write name, then as attribute
-    output << name << endl << "name " << fill_blanks(name) << " ";
+    output << prefixes.first << name << endl;
     // write attributes for each indicator
-    output << "parent " << varName << " category " << *it << " ";
-    if (!attributes.empty())
-      std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
+    output << prefixes.first << "role x parent " << fill_blanks(varName) << " category " << fill_blanks(*it) << " ";
+    std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
     output << endl;
-    for (int i=0; i<nObs; ++i)
-      if (data[i][column] == *it)   output << "1 ";
-      else                          output << "0 ";
-  output << endl;
+    // data
+    if (tarPath.size()==0)
+      write_categorical_data(data, column, *it, output);
+    else
+    { output << prefixes.second << name << std::endl;
+      std::ofstream dataStream ((tarPath+name).c_str());
+      write_categorical_data(data, column, *it, dataStream);
+    }
   }
 }
 
@@ -506,31 +563,36 @@ void
 write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMap& attributes, StringDataMatrix const& data,
 			   bool hasSelector,
 			   std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount,
-			   std::ostream& output)
-// writes columns in streaming fashion
+			   std::ostream& output, std::string tarPath)
 {
+  // prefixes distinguish tar data
+  StringPair prefixes = get_prefixes(tarPath);
+  // write leading header with number of obs, number of cols
+  if (tarPath.size()>0)    output << "#!/bin/sh\n";
+  output << prefixes.first << data.size() <<  endl;
+
   int nVars (varNames.size());
   int nObs  (data.size());
   StringVector noAttr (0);
 
   int column = 0;
   if (hasSelector)
-  { write_categorical_column("[in/out]", noAttr, data, column, true, output);  // true = drop last label
+  { write_categorical_column("[in/out]", noAttr, data, column, true, output, tarPath);  // true = drop last label
     ++column;
   }
   for (; column<nVars; ++column)
   {  
     if((varNumericCount[column]+varMissingCount[column])==nObs) // numerical column with possible missing
     { 
-      write_numerical_column (varNames[column], attributes[column], data, column, varMissingCount[column], output);
+      write_numerical_column (varNames[column], attributes[column], data, column, varMissingCount[column], output, tarPath);
     }
     else
     {
-      write_categorical_column (varNames[column], attributes[column], data, column, false, output); // false = use all labels
+      write_categorical_column (varNames[column], attributes[column], data, column, false, output, tarPath); // false = use all labels
     }
     if (varMissingCount[column] > 0)
     {
-      write_missing_column (varNames[column], attributes[column], data, column, output);
+      write_missing_column (varNames[column], attributes[column], data, column, output, tarPath);
     }
   }
 }
@@ -538,18 +600,15 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
 
 // return number of obs, number of vars written
 std::pair<int, int>
-csv_parser(std::istream& input, std::ostream& output, std::string streamName)
+csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
 {
   // read from input into this string
   std::string inputLine;
-  
   // parse names of variables from first input line
   StringVector  inputColumnNames;
   AttributeMap  inputAttributes;
-  
   if (getline(input, inputLine))
-  {
-    if (parse_variable_names(inputLine.c_str(),
+  { if (parse_variable_names(inputLine.c_str(),
 			     StringCatcher( &inputColumnNames ),
 			     MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
@@ -572,22 +631,17 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
   { std::cerr << "Parser: ERROR. Unable to read first line from input stream.\n " << endl;
     return std::make_pair(0,0);
   }
-
   // check for duplicated variable names
   check_for_duplicate_names (&inputColumnNames);
-
   // insert default stream name if attribute not found
-  for(unsigned int j=0; j<inputColumnNames.size(); ++j)
-    inputAttributes[j] = set_default_stream_name (streamName, inputAttributes[j]);
-  
+  //  for(unsigned int j=0; j<inputColumnNames.size(); ++j)
+  //     inputAttributes[j] = set_default_stream_name ("main", inputAttributes[j]);
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
   int nVars (inputColumnNames.size());
   std::vector< int > numeric (nVars);
   std::vector< int > missing (nVars);
-  
   // iterate through remaining lines of data in order to build the matrix of strings
   StringDataMatrix dataMatrix;
-
   int lineNumber (0);
   while (getline(input, inputLine))
   { ++lineNumber;
@@ -613,7 +667,6 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
     else std::cerr << "Parser: Error parsing data in line " << lineNumber
 		   << ". Failed to parse input CSV data.\n\t" << inputLine << endl;
   }
-  
   std::clog << "Parser:  nObs = " << dataMatrix.size() << " with nVars = " << nVars << endl;
   std::clog << "Parser: #Numeric   : " ;
   for (int i = 0; i<nVars; ++i)
@@ -625,12 +678,10 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
 
   bool hasSelector = data_has_selection_indicator(dataMatrix);
   int nToWrite = number_output_columns(dataMatrix, hasSelector, missing, numeric);
-  std::clog << "Parser: Writing " << nToWrite << " column streams to output file.\n";
+  std::clog << "Parser: Writing " << nToWrite << " columns to output.\n";
   
-  // write leading header with number of obs, number of cols
-  output << dataMatrix.size() << " " << nToWrite << endl;
   // write data
-  write_numerical_data_file (inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output);
+  write_numerical_data_file (inputColumnNames, inputAttributes, dataMatrix, hasSelector, missing, numeric, output, tarPath);
   
   return std::make_pair(dataMatrix.size(), nVars);
 }
@@ -639,7 +690,7 @@ csv_parser(std::istream& input, std::ostream& output, std::string streamName)
 
 
 void
-parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile, std::string& streamName);
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputName, bool &useTar);
 
 
 int
@@ -648,43 +699,55 @@ main (int argc, char** argv)
   //  set default parameter values
   std::string inputFileName     ("");
   std::string outputFileName    ("");
-  std::string streamName        ("main");
+  bool        useTar            (false);
 
   // parse arguments from command line
-  parse_arguments(argc, argv, inputFileName, outputFileName, streamName);
-  std::clog << "CSVP: Arguments    --input-file=" << inputFileName
-	    << " --output-file=" << outputFileName
-	    << " --stream=" << streamName 
-	    << std::endl;
+  parse_arguments(argc, argv, inputFileName, outputFileName, useTar);
+  std::clog << "CSVP: Arguments    --input-file=" << inputFileName;
+  if (useTar)
+    std::clog << " --directory=" << outputFileName << std::endl;
+  else
+    std::clog << " --output-file=" << outputFileName << std::endl;
 
-  // 4 call variations
-  if (inputFileName.size() == 0)
-  { if (outputFileName.size() == 0)
-      csv_parser(std::cin, std::cout, streamName);    // A
-    else
-    { std::ofstream output (outputFileName.c_str());
-      if (!output)
-      { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
-	return 1;
-      }
-      csv_parser(std::cin, output, streamName);       // B
+  // input/output variations
+  std::ifstream input (inputFileName.c_str());
+  if (!input && inputFileName.size() > 0)
+  { std::cerr << "CSVP: Error. Cannot open input file " << inputFileName << std::endl;
+    return 2;
+  }
+  if (useTar)
+  { std::string outputPath (outputFileName);
+    if (outputPath[outputPath.size()-1] != '/')      // make sure ends in /
+      outputPath = outputPath + "/";
+    std::string   indexFileName (outputPath+"index.sh");
+    std::ofstream indexStream   (indexFileName.c_str());
+    if (!indexStream)
+    { std::clog << "Cannot open output directory; terminating.\n";
+      return 1;
     }
+    if (input)
+      csv_parser(input, indexStream, outputPath);    // presense of last string indicates tar format
+    else
+      csv_parser(std::cin, indexStream, outputPath);
   }
   else
-  { std::ifstream input (inputFileName.c_str());
-    if (!input)
-    { std::cerr << "CSVP: Error. Cannot open input file " << inputFileName << std::endl;
-      return 2;
-    }
+  {
     if (outputFileName.size() == 0)
-      csv_parser(input, std::cout, streamName);       // C
+    { if (input)
+	csv_parser(input, std::cout);
+      else
+	csv_parser(std::cin, std::cout);
+    }
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      csv_parser(input, output, streamName);          // D
+      if (input)
+	csv_parser(input, output);
+      else
+	csv_parser(std::cin, output);
     }
   }
   return 0;
@@ -693,7 +756,7 @@ main (int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputFile, std::string& stream)
+parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outputName, bool &useTar)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -702,11 +765,11 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
       static struct option long_options[] = {
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-file",       1, 0, 'o'},  // has arg,
-	  {"stream",            1, 0, 's'},  // has arg,
+	  {"directory",         1, 0, 'd'},  // has arg,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:o:s:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:o:d:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -720,14 +783,16 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
 	    }
 	  case 'o' :  
 	    {
+	      useTar = false;
 	      std::string name(optarg);
-	      outputFile = optarg;
+	      outputName = optarg;
 	      break;
 	    }
-	  case 's' :  
+	  case 'd' :  
 	    {
+	      useTar = true;
 	      std::string name(optarg);
-	      stream = optarg;
+	      outputName = optarg;
 	      break;
 	    }
 	  case 'h' :
@@ -737,8 +802,8 @@ parse_arguments(int argc, char** argv, std::string& inputFile, std::string& outp
 	      std::cout << "      -ifoo" << std::endl << std::endl;
 	      std::cout << "      --output-file=out      output file" << std::endl;
 	      std::cout << "      -oout" << std::endl << std::endl;
-	      std::cout << "      --stream=name          stream name" << std::endl;
-	      std::cout << "      -sname" << std::endl << std::endl;
+	      std::cout << "      --directory=name       directory name" << std::endl;
+	      std::cout << "      -dname" << std::endl << std::endl;
 	      std::cout << "      --help      generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);
