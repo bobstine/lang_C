@@ -1,4 +1,4 @@
-#  $Id: Makefile,v 3.0 2004/11/19 18:58:35 foster Exp $ 
+#
 #
 #  $Source: /cvs/bob/c-all/Makefile,v $ 
 # 
