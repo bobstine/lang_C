@@ -14,7 +14,11 @@ clean:
 	-rm -f */*.exec */*.OK */test */*.results
 	-rm -f */*.Errors */*.Errors_all */*.No_errors
 
-libs: 
+
+c_flags: 
+	cp c_flags.sample c_flags
+
+libs: c_flags
 	-$(MAKE) -sC utils         lib
 	-$(MAKE) -sC random        lib
 	-$(MAKE) -sC ranges        lib
@@ -22,7 +26,7 @@ libs:
 	-$(MAKE) -sC gsl_tools     lib
 #	-$(MAKE) -sC auctions      lib
 
-details: 
+details: c_flags
 	-$(MAKE) -C utils         lib
 	-$(MAKE) -C random        lib
 	-$(MAKE) -C ranges        lib

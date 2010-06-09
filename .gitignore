@@ -9,3 +9,4 @@ sandbox
 xcodebuild
 a.out
 .#*
+c_flags
