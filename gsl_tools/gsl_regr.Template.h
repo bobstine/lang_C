@@ -377,21 +377,22 @@ int
 gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns)
 {
   // copy new portions of X into QR
-  const int newQ (firstColumn + numberColumns);
   gsl_matrix_const_view vX    (gsl_matrix_const_submatrix(mpData->x(),  0,firstColumn, mN,numberColumns));
-  gsl_matrix_view       vQR   (gsl_matrix_submatrix      (mQR, 0,firstColumn, mN,numberColumns));
+  gsl_matrix_view       vQR   (gsl_matrix_submatrix      (mQR,          0,firstColumn, mN,numberColumns));
   mEngine.insert_analysis_matrix (&vQR.matrix, &vX.matrix);  // dest <- src, with weighting as needed
   // update QR for the new columns
   int status (0);
+  const int newQ (firstColumn + numberColumns);
   vQR = gsl_matrix_submatrix (mQR, 0,0, mN, newQ);
   gsl_vector_view  vTau  (gsl_vector_subvector(mTau, 0, newQ));
-  if (0 == firstColumn) {
-    debug("GSLR",0) << "Refactoring matrix of " << mQ << " columns.\n";
+  if (0 == firstColumn)
+  { debug("GSLR",0) << "Refactoring matrix of " << mQ << " columns.\n";
     gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     status = gsl_linalg_QR_decomp(&vQR.matrix, &vTau.vector); 
-    gsl_set_error_handler(builtIn);  }
-  else {
-    status = gsl_linalg_partial_QR_decomp (&vQR.matrix, &vTau.vector, firstColumn);  }
+    gsl_set_error_handler(builtIn);
+  }
+  else 
+    status = gsl_linalg_partial_QR_decomp (&vQR.matrix, &vTau.vector, firstColumn);
   /*
    { // debugging code to see the full QR decomposition
      gsl_matrix *q (gsl_matrix_alloc(n,n));
@@ -486,20 +487,18 @@ gslRegression<Data,Engine>::update_XtXinv ()
 {
   if (mXtXinvIsCurrent) { return 0;  }
   int status (0);
-  gsl_matrix_const_view vQR      (gsl_matrix_const_submatrix(mQR, 0,0, mQ,mQ));
+  gsl_matrix  const* R    (&gsl_matrix_const_submatrix(mQR, 0,0, mQ,mQ).matrix);
   // first find the inverse of R
-  gsl_matrix            *temp    (gsl_matrix_alloc(mQ,mQ));
+  gsl_matrix       * Rinv (gsl_matrix_alloc(mQ,mQ));
   for (int j=0; j<mQ; ++j)
-  { gsl_vector_view  vRj (gsl_matrix_row (temp, j));
-    gsl_vector       *Rj (&vRj.vector);
-    gsl_vector_set_basis (Rj,j);
-    status += gsl_linalg_QR_Rsvx   (&vQR.matrix, Rj);
+  { gsl_vector *RIj (&gsl_matrix_row(Rinv, j).vector);
+    gsl_vector_set_basis (RIj,j);
+    status += gsl_linalg_QR_Rsvx (R, RIj);
   }
   // square it  
-  gsl_matrix_view   vXtXinv  (gsl_matrix_submatrix(mXtXinv, 0,0, mQ,mQ));
-  gsl_matrix        *xtxinv  (&vXtXinv.matrix);
-  status += gsl_blas_dsyrk(CblasLower, CblasTrans, 1.0, temp, 0.0, xtxinv); 
-  gsl_matrix_free(temp);
+  gsl_matrix *   XtXinv  (&gsl_matrix_submatrix(mXtXinv, 0,0, mQ,mQ).matrix);
+  status += gsl_blas_dsyrk(CblasLower, CblasTrans, 1.0, Rinv, 0.0, XtXinv); 
+  gsl_matrix_free(Rinv);
   if(0==status) mXtXinvIsCurrent = true;
   return status;
 }

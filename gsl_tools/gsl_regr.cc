@@ -38,8 +38,8 @@ gsl_linalg_partial_QR_decomp (gsl_matrix * A, gsl_vector * tau, size_t start)
     /* Convert the new columns into form */
     for (i = start; i < min_size(M, N); i++)
     {
-      /* Compute the Householder transformation to reduce the j-th
-      column of the matrix to a multiple of the j-th unit vector */
+      /* Compute the Householder transformation to reduce the i-th
+      column of the matrix to a multiple of the i-th unit vector */
       gsl_vector_view c_full (gsl_matrix_column (A, i));
       gsl_vector_view c      (gsl_vector_subvector (&(c_full.vector), i, M-i));
       double tau_i = gsl_linalg_householder_transform (&(c.vector));
@@ -51,7 +51,7 @@ gsl_linalg_partial_QR_decomp (gsl_matrix * A, gsl_vector * tau, size_t start)
       }
     }
     return GSL_SUCCESS;
-  }    
+  }
 }
 
 
