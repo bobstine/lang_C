@@ -102,18 +102,24 @@ private:
 };
 
 
-    
+//  gslRegression     gslRegression     gslRegression     gslRegression     gslRegression     gslRegression
+
+// Note that data (mQR, mZ) within the regression are padded by "an identity" of size mMaxQ
+// to facilitate calculating shrinkage factors.  These pseudo cases come before the real data;
+// the validation cases (if any) come after those used for estimation.
+
+
 template <class Data, class Engine>
 class gslRegression
 {    
 protected:
-  Engine        mEngine;                  // Model speclializes certain matrix arithmetic on n dim vectors, goodness of fit   
+  Engine        mEngine;                  // Model specializes certain matrix arithmetic on n dim vectors, goodness of fit   
   Data   *const mpData;                   // See interface of gslData for example of necessary policy
   const int     mProtection;
   const int     mBlockSize;               // Blocking that allows for dependence within blocks
   
-  int           mN, mQ, mMaxQ, mDimZ;     
-  double        mTSS, mRSS;
+  int           mN, mQ, mMaxQ, mDimZ;     // mN remains length of observed data, not including pseudo obs
+  double        mTSS, mRSS, mWhiteF;      // last white F stat
   gsl_vector   *mBeta;                    // logistic fit modifies beta, so this is only protected
   double        mYBar;
   gsl_vector   *mXBar;
@@ -121,6 +127,7 @@ protected:
   gsl_matrix   *mZResids;                 // residuals after sweeping X from z vector
   gsl_matrix   *mZZ;        
   bool          mZIsSingular;             // set when evaluate a predictor
+  gsl_vector   *mShrinkage;
   
 private:
   gsl_matrix *mQR;                        // current QR factorization, centered and weighted as needed
@@ -155,6 +162,7 @@ public:
         double        yBar() const { return mYBar; }
   const double*       xBar() const { return gsl_vector_ptr(mXBar,0); }
   const double*       beta() const { return gsl_vector_ptr(mBeta,0); }   // no intercept
+  const double*  shrinkage() const { return gsl_vector_ptr(mShrinkage,0); }
         double   intercept() const;
   
   std::pair<double,double> sums_of_squares () const;                     // in-sample, out-of-sample
@@ -174,13 +182,13 @@ public:
   typedef typename std::pair<double,double> TestResult;                                             // test stat, p-value
   
   TestResult  f_test()           const     { double dss (change_in_rss()); return Stat_Utils::f_test(dss, mDimZ, mRSS-dss, df_residual()-mDimZ); }
-  TestResult  white_f_test()               { return Stat_Utils::f_test(white_f_stat(), mDimZ, df_residual()-mDimZ); }
+  TestResult  white_f_test()               { mWhiteF = white_f_stat();     return Stat_Utils::f_test(mWhiteF, mDimZ, df_residual()-mDimZ); }
   
   TestResult  Bennett_evaluation ()         { return Bennett_evaluation(0.0,1.0); }  // binomial y=0 or y=1
   TestResult  Bennett_evaluation (double m, double M);                               // response must be of form m <= y <= M       
   TestResult  Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M); // num is dot of z'(y-mu)
   
-  int add_current_predictors ();                                                    // return size of expanded model
+  int add_current_predictors ();                                                     // return size of expanded model; puts in shrinkage
   
   //  save and restore state
   gslRegressionState state()                                const { return gslRegressionState(mQ, mYBar, mXBar, mBeta, mRSS, mpData); }
@@ -208,6 +216,7 @@ private:   // ------------------------------------------------------------------
   double change_in_rss ()   const; 
   double white_f_stat  ();
 
+  void prepare_shrinkage(int begin, int end);
   int  qr_decomposition ();
   int  qr_decomposition (int first, int size);
 

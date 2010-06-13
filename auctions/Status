@@ -1,6 +1,9 @@
 Next... 
 
+	Lock in initial variables so that these appear in the "used" queue.
+
 	Segmented time model requires block of variable and constant shift.
+
 
 
 	Lag iterator/neighborhood type.

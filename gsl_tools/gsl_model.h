@@ -1,5 +1,4 @@
 //  -*- c++ -*-
-//  $Id: gsl_model.h,v 1.15 2008/01/22 21:15:07 bob Exp $
 #ifndef _GSL_MODEL_H_
 #define _GSL_MODEL_H_
 
@@ -31,16 +30,15 @@ public:
   
   LinearModel (gslData *data, int protection, int blockSize=1)
     : gslRegression<Data,Engine>(data, protection, blockSize) { }
-
   
-  inline std::string  name() const { return "Linear Model";}
-  inline Data        *data() const { return GSLR::mpData; }
-  inline int    protection() const { return GSLR::mProtection; }
-  inline int   residual_df() const { return GSLR::df_residual(); }
-  inline int        n()      const { return GSLR::mN; }
-  inline int        q()      const { return GSLR::mQ; }
-  inline double    s2()      const { return GSLR::mRSS/residual_df(); }  
-  inline double   gof()      const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
+  std::string  name() const { return "Linear Model";}
+  Data        *data() const { return GSLR::mpData; }
+  int    protection() const { return GSLR::mProtection; }
+  int   residual_df() const { return GSLR::df_residual(); }
+  int        n()      const { return GSLR::mN; }
+  int        q()      const { return GSLR::mQ; }
+  double    s2()      const { return GSLR::mRSS/residual_df(); }  
+  double   gof()      const { return 1.0 - GSLR::mRSS/GSLR::mTSS; }  // R2 for linear
   
   template <class Iter>       TestResult add_predictor_if_useful (std::string const& name, Iter it, double pToEnter);
   template <class Collection> TestResult add_predictors_if_useful (Collection c, double pToEnter);

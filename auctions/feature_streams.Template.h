@@ -53,13 +53,12 @@ FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std:
 }
       
 template<class Model>
-std::vector<Feature>
-FitStream<Model>::pop()
+std::vector<Feature>FitStream<Model>::pop()
 {
   std::vector<int> powers;
   if (!mIncreaseDegree)                                                  // first attempt to calibrate
   { ++mCount;
-    mFit = Column(feature_name().c_str(), mSkip + mModel.fit_length());  // grab current fit
+    mFit = Column(feature_name().c_str(), mSkip + mModel.fit_length());                    // grab current fit
     double *b (mFit->begin());
     for(int i=0; i<mSkip; ++i)      *b++ = 0;
     mModel.fill_with_fit(mFit->begin() + mSkip);
@@ -78,13 +77,9 @@ template<class Model>
 std::string
 FitStream<Model>::feature_name () const
 {
-  if (empty())
-    return std::string("");
-  else
-  { std::ostringstream oss;
-    oss << mCount;
-    return mSignature + oss.str();
-  }
+  std::ostringstream oss;
+  oss << mCount;
+  return mSignature + oss.str();
 }
 
 

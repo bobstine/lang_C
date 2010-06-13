@@ -1,5 +1,3 @@
-// $Id: gsl_regr.cc,v 1.39 2007/12/16 17:59:27 bob Exp $
-
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_matrix.h>

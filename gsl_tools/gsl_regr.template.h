@@ -64,17 +64,17 @@ gslRegression<Data,Engine>::prepare_predictors(C predictor_collection)
 { 
   mDimZ = predictor_collection.size();
   for (int j=0; j<mDimZ; ++j)
-  { // save centered new predictors into X without increasing mQ in case need later
+  { // save centered new predictors into X without increasing mQ
     int qj = mQ + j;                                               // offset from current model predictors
-    gsl_vector_view vXj (gsl_matrix_column(mpData->live_x(),qj));
+    gsl_vector *Xj(& (gsl_matrix_column(mpData->live_x(),qj)).vector);
     // reads est and validation cases from iterator into data object
     mpData->set_name_of_predictor(predictor_collection[j].first, qj);
-    mpData->permuted_copy_from_iterator(predictor_collection[j].second, &vXj.vector);
+    mpData->permuted_copy_from_iterator(predictor_collection[j].second, Xj);
     // centers *all* mLen cases using mean from first n
-    gsl_vector_set(mXBar,qj, center_data_vector( &vXj.vector ));
+    gsl_vector_set(mXBar,qj, center_data_vector(Xj));
     // move n rows into Z where data gets weighted as needed
     gsl_vector_view       vZj  (gsl_matrix_column(mZ,j));
-    gsl_vector_const_view vXjn (gsl_vector_const_subvector(&vXj.vector,0,mN));
+    gsl_vector_const_view vXjn (gsl_vector_const_subvector(Xj,0,mN));
     gsl_vector_memcpy (&vZj.vector, &vXjn.vector);
   }
   // update statistics for Z matrix 
@@ -355,6 +355,7 @@ gslRegression<Data,Engine>::add_current_predictors ()
   else  // NOTE: most recent predictors are in mDimZ past column mQ in mX
   { debug("GSLR",1) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
     int status (0);
+    prepare_shrinkage(mQ, mQ+mDimZ);
     status = qr_decomposition();   // increments mQ += mDimZ if successful
     status += update_XtXinv();
     if (status)
@@ -366,8 +367,20 @@ gslRegression<Data,Engine>::add_current_predictors ()
 }
 
 template <class Data, class Engine>
-int
-gslRegression<Data,Engine>::qr_decomposition ()
+  void
+  gslRegression<Data,Engine>::prepare_shrinkage (int begin, int end)
+{
+  double value (20.);  // mWhiteF
+
+  for (int i=begin; i<end; ++i)
+    gsl_vector_set(mShrinkage,i,value);
+}
+
+
+
+template <class Data, class Engine>
+  int
+  gslRegression<Data,Engine>::qr_decomposition ()
 {
   return qr_decomposition(mQ, mDimZ);
 }
@@ -377,22 +390,22 @@ int
 gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns)
 {
   // copy new portions of X into QR
-  gsl_matrix_const_view vX    (gsl_matrix_const_submatrix(mpData->x(),  0,firstColumn, mN,numberColumns));
-  gsl_matrix_view       vQR   (gsl_matrix_submatrix      (mQR,          0,firstColumn, mN,numberColumns));
-  mEngine.insert_analysis_matrix (&vQR.matrix, &vX.matrix);  // dest <- src, with weighting as needed
+  gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,firstColumn, mN,numberColumns)).matrix);
+  gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,firstColumn, mN,numberColumns)).matrix);
+  mEngine.insert_analysis_matrix (QR, X);  // dest <- src, with weighting as needed
   // update QR for the new columns
   int status (0);
   const int newQ (firstColumn + numberColumns);
-  vQR = gsl_matrix_submatrix (mQR, 0,0, mN, newQ);
+  QR = &gsl_matrix_submatrix(mQR, 0,0, mN, newQ).matrix;
   gsl_vector_view  vTau  (gsl_vector_subvector(mTau, 0, newQ));
   if (0 == firstColumn)
   { debug("GSLR",0) << "Refactoring matrix of " << mQ << " columns.\n";
     gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
-    status = gsl_linalg_QR_decomp(&vQR.matrix, &vTau.vector); 
+    status = gsl_linalg_QR_decomp(QR, &vTau.vector); 
     gsl_set_error_handler(builtIn);
   }
   else 
-    status = gsl_linalg_partial_QR_decomp (&vQR.matrix, &vTau.vector, firstColumn);
+    status = gsl_linalg_partial_QR_decomp (QR, &vTau.vector, firstColumn);
   /*
    { // debugging code to see the full QR decomposition
      gsl_matrix *q (gsl_matrix_alloc(n,n));
@@ -409,16 +422,14 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   if (status)
     debug("GSLR",2) << "Warning. Status of QR decomp is " << status << std::endl;
   else
-    mQ = newQ;
-  // store beta and residuals
-  gsl_vector_const_view vY    (gsl_vector_const_subvector(mpData->y(),0,mN));
+    mQ = newQ;                                                                         // reset Q to have new variables
+  gsl_vector_const_view vY    (gsl_vector_const_subvector(mpData->y(),0,mN));          // store beta and residuals
   gsl_vector_view       vBeta (gsl_vector_subvector(mBeta,0,mQ));
   gsl_vector_view       vRes  (gsl_vector_subvector(mpData->live_e(),0,mN));
   { gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     gsl_vector  *y  (gsl_vector_alloc(mN));
-    mEngine.prepare_vector_for_analysis (y, &vY.vector);
-    // resulting residuals are weighted by W^.5 if WLS engine
-    status = gsl_linalg_QR_lssolve (&vQR.matrix, &vTau.vector, y, &vBeta.vector, &vRes.vector);
+    mEngine.prepare_vector_for_analysis (y, &vY.vector);                               // resulting resids weighted by W^.5 if WLS
+    status = gsl_linalg_QR_lssolve (QR, &vTau.vector, y, &vBeta.vector, &vRes.vector);
     gsl_vector_free(y);
     gsl_set_error_handler(builtIn);
   }
@@ -699,11 +710,13 @@ gslRegression<Data,Engine>::allocate_memory()
   mC       = gsl_vector_alloc(mMaxQ);
   mXBar    = gsl_vector_alloc(mMaxQ);
   mTau     = gsl_vector_alloc(mMaxQ);
+  mShrinkage=gsl_vector_alloc(mMaxQ);
   mXtXinv  = gsl_matrix_alloc(mMaxQ,mMaxQ);
-  mQR      = gsl_matrix_alloc(mN, mMaxQ);
-  mZBar    = gsl_vector_alloc(gslRegression_Max_P);
+  mQR      = gsl_matrix_alloc(mN, mMaxQ);            // padded with identity for shrinkage
   mZ       = gsl_matrix_alloc(mN, gslRegression_Max_P);
   mZResids = gsl_matrix_alloc(mN, gslRegression_Max_P);
+  mZBar    = gsl_vector_alloc(gslRegression_Max_P);
+
   // covar terms
   mZE      = gsl_vector_alloc(gslRegression_Max_P);
   mZZ      = gsl_matrix_alloc(gslRegression_Max_P, gslRegression_Max_P);
@@ -720,6 +733,7 @@ gslRegression<Data,Engine>::~gslRegression()
   if (mC)       gsl_vector_free(mC);
   if (mXBar)    gsl_vector_free(mXBar);
   if (mTau)     gsl_vector_free(mTau);
+  if(mShrinkage)gsl_vector_free(mShrinkage);
   if (mXtXinv)  gsl_matrix_free(mXtXinv);
   if (mQR)      gsl_matrix_free(mQR);
   if (mZBar)    gsl_vector_free(mZBar);
