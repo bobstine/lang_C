@@ -118,17 +118,21 @@ gslRegression<Data,Engine>::sweep_x_from_z_into_zres()
   { // regress each Z on X, leaving coefs in gamma; row j holds coefs of z_j on X
     // Z is centered as is X, so no intercept in gamma = z'x (x'x)i
     gsl_matrix      *   g   (&gsl_matrix_submatrix (mGammaZ, 0,0, mDimZ, mQ).matrix); 
-    gsl_matrix const*  qr   (&gsl_matrix_const_submatrix(mQR, 0,0, mN, mQ).matrix);
     gsl_vector const* tau   (&gsl_vector_const_subvector(mTau, 0, mQ).vector);
-    gsl_vector      *  Zj   (gsl_vector_alloc(mN)); 
+    gsl_matrix const*  qr   (&gsl_matrix_const_submatrix(mQR, 0,0, mN+mQ, mQ).matrix); // pad for shrinkage
+    gsl_vector      *  Zj   (gsl_vector_alloc(mN+mQ));                                 //
+    gsl_vector      *  e    (gsl_vector_alloc(mN+mQ));                                 //
     for(int j = 0; j<mDimZ; ++j)
-    { gsl_vector_const_view vZj  (gsl_matrix_const_column (z,j));
-      gsl_vector_view       vZRj (gsl_matrix_column (zres, j));
+    { gsl_vector_view       vZRj (gsl_matrix_column (zres, j));
       gsl_vector_view       vGj  (gsl_matrix_row (g,j));
-      mEngine.prepare_vector_for_analysis(Zj, &vZj.vector);
-      gsl_linalg_QR_lssolve (qr, tau, Zj, &vGj.vector, &vZRj.vector);
+      // not impl shrinkage  mEngine.prepare_vector_for_analysis(Zj, &vZj.vector);
+      gsl_vector_memcpy  (&gsl_vector_subvector(Zj, 0,mN).vector, &gsl_matrix_const_column(z,j).vector);
+      gsl_vector_set_all (&gsl_vector_subvector(Zj,mN,mQ).vector, gsl_vector_get(mZBar,j));
+      gsl_linalg_QR_lssolve (qr, tau, Zj, &vGj.vector, e);
+      gsl_vector_memcpy  (&gsl_matrix_column(zres,j).vector, &gsl_vector_subvector(e,0,mN).vector);
     }
     gsl_vector_free(Zj);
+    gsl_vector_free(e);
     /*
     { //  check zres properties: <z,1> = 0   <z,x> = 0    (weighted dot norm)
       double dp (0);
@@ -355,8 +359,8 @@ gslRegression<Data,Engine>::add_current_predictors ()
   else  // NOTE: most recent predictors are in mDimZ past column mQ in mX
   { debug("GSLR",1) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
     int status (0);
-    prepare_shrinkage(mQ, mQ+mDimZ);
-    status = qr_decomposition();   // increments mQ += mDimZ if successful
+    prepare_shrinkage();
+    status = qr_decomposition(mQ, mDimZ);   // increments mQ += mDimZ if successful
     status += update_XtXinv();
     if (status)
     { debug("GSLR",3) << " *** Error ***    Cannot invert X'X.\n"; 
@@ -368,27 +372,49 @@ gslRegression<Data,Engine>::add_current_predictors ()
 
 template <class Data, class Engine>
   void
-  gslRegression<Data,Engine>::prepare_shrinkage (int begin, int end)
+  gslRegression<Data,Engine>::prepare_shrinkage ()
 {
-  double value (20.);  // mWhiteF
-
-  for (int i=begin; i<end; ++i)
-    gsl_vector_set(mShrinkage,i,value);
+  double lambda (0.0);
+  gsl_matrix   const  *X (&(gsl_matrix_const_submatrix(mpData->x(),0,0, mN,mQ+mDimZ)).matrix);
+  for (int j = mQ; j < mQ + mDimZ; ++j)
+  { gsl_vector const* xj (&gsl_matrix_const_column(X,j).vector);
+    double ssx (0.0);
+    gsl_blas_ddot (xj,xj, &ssx);
+    lambda = sqrt(ssx/mWhiteF);
+    debug("GSLR",2) << " Column " << j << " [sandwich F=" << mWhiteF << ", ssx=" << ssx
+		    << "] --> shrinkage diagonal lambda=" << lambda << std::endl;
+    gsl_vector_set(mShrinkage,j,lambda);
+  }
 }
 
-
-
-template <class Data, class Engine>
-  int
-  gslRegression<Data,Engine>::qr_decomposition ()
-{
-  return qr_decomposition(mQ, mDimZ);
-}
 
 template <class Data, class Engine>
 int
 gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns)
 {
+  const int newQ (mQ + mDimZ);
+  assert((firstColumn + numberColumns) == newQ);
+  // overwrite QR with the data including
+  gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,0, mN,newQ)).matrix);
+  gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,0, mN,newQ)).matrix);
+  mEngine.insert_analysis_matrix (QR, X);  // dest <- src
+  // insert shinkage terms on diagonal after zero out; ??? not right if collinear
+  gsl_matrix_set_zero(&(gsl_matrix_submatrix(mQR, mN,0,    newQ,newQ)).matrix);
+  QR   =              &(gsl_matrix_submatrix(mQR,  0,0, mN+newQ,newQ)).matrix;
+  for(int j=0; j<newQ; ++j)
+    gsl_matrix_set(QR,mN+j,j, gsl_vector_get(mShrinkage,j));
+  // factor matrix
+  int status (0);
+  gsl_vector *tau  (&gsl_vector_subvector(mTau, 0, newQ).vector);
+  debug("GSLR",0) << "Refactoring matrix of " << newQ << " columns with shrinkage inserted.\n";
+  { gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
+    status = gsl_linalg_QR_decomp(QR, tau); 
+    gsl_set_error_handler(builtIn);
+  }
+  if (status)   debug("GSLR",0) << "Warning. Status of QR decomp is " << status << std::endl;
+  else          mQ = newQ;                                                          // reset Q to have new variables
+  /*
+    This block of code controlled building QR when no shrinkage
   // copy new portions of X into QR
   gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,firstColumn, mN,numberColumns)).matrix);
   gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,firstColumn, mN,numberColumns)).matrix);
@@ -406,8 +432,9 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   }
   else 
     status = gsl_linalg_partial_QR_decomp (QR, &vTau.vector, firstColumn);
+  */
   /*
-   { // debugging code to see the full QR decomposition
+   { // debugging code that prints full QR decomposition
      gsl_matrix *q (gsl_matrix_alloc(n,n));
      gsl_matrix *r (gsl_matrix_alloc(n,newQ));
      gsl_linalg_QR_unpack (&vQR.matrix, &vTau.vector, q, r);
@@ -419,30 +446,33 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
      gsl_matrix_free(r);
    }
   */
-  if (status)
-    debug("GSLR",2) << "Warning. Status of QR decomp is " << status << std::endl;
-  else
-    mQ = newQ;                                                                         // reset Q to have new variables
-  gsl_vector_const_view vY    (gsl_vector_const_subvector(mpData->y(),0,mN));          // store beta and residuals
-  gsl_vector_view       vBeta (gsl_vector_subvector(mBeta,0,mQ));
-  gsl_vector_view       vRes  (gsl_vector_subvector(mpData->live_e(),0,mN));
-  { gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
-    gsl_vector  *y  (gsl_vector_alloc(mN));
-    mEngine.prepare_vector_for_analysis (y, &vY.vector);                               // resulting resids weighted by W^.5 if WLS
-    status = gsl_linalg_QR_lssolve (QR, &vTau.vector, y, &vBeta.vector, &vRes.vector);
-    gsl_vector_free(y);
+  gsl_vector const* Y   (&gsl_vector_const_subvector(mpData->y(),0,mN).vector);          // store beta and residuals
+  gsl_vector    *beta   (&gsl_vector_subvector(mBeta,0,mQ).vector);
+  gsl_vector     *res   (&gsl_vector_subvector(mpData->live_e(),0,mN).vector);
+  { gsl_vector  *e (gsl_vector_alloc(mN+mQ));
+    gsl_vector  *y (gsl_vector_alloc(mN+mQ));                                           // longer vectors for shrinkage
+    gsl_vector_memcpy  (&gsl_vector_subvector(y,  0, mN).vector, Y);
+    gsl_vector_set_all (&gsl_vector_subvector(y, mN, newQ).vector, mYBar);
+    // not imp shrinkage
+    // mEngine.prepare_vector_for_analysis (y, &vY.vector);                               // resulting resids weighted by W^.5 if WLS
+    gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
+    status = gsl_linalg_QR_lssolve (QR, tau, y, beta, e);
     gsl_set_error_handler(builtIn);
+    gsl_vector_memcpy(res, &gsl_vector_subvector(e,0,mN).vector);
+    gsl_vector_free(y);
+    gsl_vector_free(e);
   }
   if (status)
     debug("GSLR",2) << "Warning. Status of QR lssolve is " << status << std::endl;
   else
-  { gsl_blas_ddot(&vRes.vector, &vRes.vector, &mRSS);
+  { gsl_blas_ddot(res, res, &mRSS);
     compute_fitted_values(len());
   }
   mXtXinvIsCurrent = false;
   return status;
 }
 
+      
 template <class Data, class Engine>
 template <class Iter>
 void
@@ -614,6 +644,7 @@ gslRegression<Data,Engine>::print_header_to (std::ostream &os) const
   for (int j=0; j<mQ; ++j)
     os << std::setw(10) << gsl_vector_get(mBeta,j) << " ";
   os << std::endl;
+  os << "     Shrinkage terms: " << &gsl_vector_const_subvector(mShrinkage,0,mQ).vector << std::endl;
 }
 
 template <class Data, class Engine>
@@ -712,7 +743,7 @@ gslRegression<Data,Engine>::allocate_memory()
   mTau     = gsl_vector_alloc(mMaxQ);
   mShrinkage=gsl_vector_alloc(mMaxQ);
   mXtXinv  = gsl_matrix_alloc(mMaxQ,mMaxQ);
-  mQR      = gsl_matrix_alloc(mN, mMaxQ);            // padded with identity for shrinkage
+  mQR      = gsl_matrix_alloc(mN + mMaxQ, mMaxQ);         // padded with identity for shrinkage
   mZ       = gsl_matrix_alloc(mN, gslRegression_Max_P);
   mZResids = gsl_matrix_alloc(mN, gslRegression_Max_P);
   mZBar    = gsl_vector_alloc(gslRegression_Max_P);

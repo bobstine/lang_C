@@ -1,0 +1,1122 @@
+-*- mode: compilation; default-directory: "~/C/auctions/" -*-
+Compilation started at Sun Jun 13 16:51:12
+
+make -k short_credit_test
+set -e; g++ -I. -I /usr/local/include   -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils -L../gsl_tools -L../eigen -L../spline -L../ranges -L../random -L../utils  -g -Wall -USINGLE -W -Woverloaded-virtual  -fmessage-length=0 -MM  auction.test.cc   \
+        | sed 's/\(auction.test\)\.o[ :]*/\1.o auction.test.dd : /g' > auction.test.dd; [ -s auction.test.dd ] || rm -f auction.test.dd
+set -e; g++ -I. -I /usr/local/include   -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils -L../gsl_tools -L../eigen -L../spline -L../ranges -L../random -L../utils  -g -Wall -USINGLE -W -Woverloaded-virtual  -fmessage-length=0 -MM  auction.cc   \
+        | sed 's/\(auction\)\.o[ :]*/\1.o auction.dd : /g' > auction.dd; [ -s auction.dd ] || rm -f auction.dd
+g++ -I. -I /usr/local/include   -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils -L../gsl_tools -L../eigen -L../spline -L../ranges -L../random -L../utils  -g -Wall -USINGLE -W -Woverloaded-virtual  -fmessage-length=0 -c auction.test.cc -o auction.test.o 
+g++ -I. -I /usr/local/include   -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils -L../gsl_tools -L../eigen -L../spline -L../ranges -L../random -L../utils  -g -Wall -USINGLE -W -Woverloaded-virtual  -fmessage-length=0 -c auction.cc -o auction.o 
+Includes are: -I. -I /usr/local/include -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils
+Load libs are: -lgsl_tools -leigen -lspline -lranges -lrandom -lutils -lgsl -lgslcblas -lm
+Making executable test program. auction.test
+g++ -I. -I /usr/local/include   -I../gsl_tools -I../eigen -I../spline -I../ranges -I../random -I../utils -L../gsl_tools -L../eigen -L../spline -L../ranges -L../random -L../utils  auction.test.o auction.o featureABC.o bidders.o features.o adapter.o feature_streams.o experts.o -lgsl_tools -leigen -lspline -lranges -lrandom -lutils -lgsl -lgslcblas -lm  -o  auction.test
+./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 5 -x 9000
+AUCT4:	Version build 0.90 (27 May 2009)
+AUCT4:	Arguments    --input-name=data/credit/auction.data/short.dat --output-path=data/credit/ --protect=3 --blocksize=3000 --rounds=100 --alpha=0.5 --calibrator-df=5 --extra-cases=9000
+AUCT3:	Output going to these files:
+      model data  --> data/credit/model_data.csv
+       model.txt  --> data/credit/model.txt
+CLMN0:	ColumnStream 'column stream' open; expecting n = 210000 cases per variable.
+CLMN4:	Reading column cv.indicator with description role context  [0]=0  [n]=0
+CLMN4:	Reading column REPB60M_residual with description role y  [0]=0  [n]=-0.00228076
+CLMN4:	Reading column REAU.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=0.3278  [n]=0.229
+CLMN4:	Reading column UNEMP.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=0.0609795  [n]=0.0354815
+CLMN4:	Reading column POVERTY.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=15.2928  [n]=9.62513
+CLMN4:	Reading column INPB60M.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=0.048  [n]=0
+CLMN4:	Reading column MTPB60M.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=0.0086  [n]=0.042
+CLMN4:	Reading column REPB60M.county with description role x stream main max_lag 3 interact_with_parent quarter interact_with_parent period  [0]=0.0256  [n]=0.0184
+CLMN4:	Reading column S_REAU.county with description role x stream main max_lag 2 interact_with_parent quarter  [0]=0.33744  [n]=0.242086
+CLMN4:	Reading column S_UNEMP.county with description role x stream main max_lag 2 interact_with_parent quarter  [0]=0.0925046  [n]=0.0306118
+CLMN1:	Stream 'column stream' now empty.
+CLMN1:	Inserted 10 columns, each of length 210000
+MAIN1:	Input stream data/credit/auction.data/short.dat produced 1 Ys, 8 Xs, and 1 context columns.
+MAIN0:	CV indicator variable is cv.indicator with sum 168000 estimation cases after skipping 9000 leading cases.
+MAIN1:	Building model data with 210000-9000=201000 cases; response is Column REPB60M_residual  [role y;  200097/210000, -0.376233<-2.04833e-12<0.960236]     {0, 0, 0, ... -0.00228076}  and validation cases identified by Column cv.indicator  [role context;  2/210000, 0<0.8<1]     {0, 0, 0, ... 0} 
+GSLD0:	Allocating 201000 rows and 255 columns.
+MAIN1:	FeatureSource (skip=9000) has 8 features in 1 streams as follows.
+      main -- 8
+GSLR0:	Initializing gsl regression object with n=168000  max q =255
+GSLR0:	Allocating memory with n = 168000, max q = 255
+GSLR0:	AUCT0:	Assembling experts
+AUCT2:	Allocating alpha $0.5 to the source experts for stream main
+AUCT2:	Beginning auction round #1
+AUCT4:	Distributing bid tax $0.00453752 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0907504(net 0.0862129)  on one feature: REAU.county
+LINM3:	Predictor passes initial evaluation; p-value 2.02798e-87 <  2*0.0862129
+LINM3:	Predictor passes White test (block=3000); p-value 0.0286481 < 0.0862129
+GSLR1:	Adding 1 predictors (model has 0 predictors)... 
+GSLR2:	 Column 0 [sandwich F=4.78872, ssx=392.122] --> shrinkage diagonal lambda=9.04901
+GSLR0:	Refactoring matrix of 1 columns with shrinkage inserted.
+AUCT0:	Test results are  <4.78872,0.0286481>
++F+   REAU.county [interact_with_parent (period quarter)]  [max_lag (3)]  [role (x)]  [stream (main)]  (tried; used; p-value 0.0286481).  Values 0.3278 0.3206 0.3465 0.3047 0.344 0.3467 ... 209994 more
+AUCT4:	0 features derived from interact_with attribute for parent period.
+AUCT4:	0 features derived from interact_with attribute for parent quarter.
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    9 bidders with total alpha 100.721
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.00226876 -- PLST: Skipped-feature polynomial stream @ 0
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.00226876 -- CPST: Skipped-feature interactions:  is empty.
+      Expert[source,9000]: Univ Bidder/main with alpha 0.29 -- FiniteStream main @ UNEMP.county with queue size 8 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.24 -- Interact main @ 0 x 0 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 100 -- FitStreamLinear Model(pop=0,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.0833333 -- BDST: Principal components stream @ 0
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:REAU.county x Source with alpha 0.01 -- FPST: model feature interact:REAU.county x Source @ 0 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 11.0591 R2 = 0.00226614
+             Model has 1 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00147591 
+                                       REAU.county        0.00672553   0.000373         18 0         
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #2
+BIDR1:	Fit bidder with countdown 4/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_1], cube[Y_hat_1], 
+LINM3:	Predictor passes initial evaluation; p-value 1.0504e-16 <  2*0.025
+AUCT0:	Test results are  <2.28154,0.10213>
+AUCT2:	Beginning auction round #3
+AUCT4:	Distributing bid tax $0.00506108 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.101222(net 0.0961606)  on one feature: UNEMP.county
+LINM3:	Predictor passes initial evaluation; p-value 7.09756e-15 <  2*0.0961606
+AUCT0:	Test results are  <1.76985,0.183403>
+AUCT2:	Beginning auction round #4
+AUCT4:	Distributing bid tax $0.00418848 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.0837696(net 0.0795812)  on one feature: REAU.county^2 
+LINM3:	Predictor passes initial evaluation; p-value 1.02528e-06 <  2*0.0795812
+AUCT0:	Test results are  <0.595823,0.440177>
+AUCT2:	Beginning auction round #5
+AUCT4:	Distributing bid tax $0.00309561 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0619123(net 0.0588167)  on one feature: POVERTY.county
+LINM3:	Predictor passes initial evaluation; p-value 8.19192e-249 <  2*0.0588167
+LINM3:	Predictor passes White test (block=3000); p-value 2.71033e-06 < 0.0588167
+GSLR1:	Adding 1 predictors (model has 1 predictors)... 
+GSLR2:	 Column 1 [sandwich F=22.0129, ssx=6.50477e+06] --> shrinkage diagonal lambda=543.597
+GSLR0:	Refactoring matrix of 2 columns with shrinkage inserted.
+AUCT0:	Test results are  <22.0129,2.71033e-06>
++F+   POVERTY.county [interact_with_parent (period quarter)]  [max_lag (3)]  [role (x)]  [stream (main)]  (tried; used; p-value 2.71033e-06).  Values 15.2928 13.6581 24.9853 20.1163 15.081 32.8689 ... 209994 more
+AUCT4:	0 features derived from interact_with attribute for parent period.
+AUCT4:	0 features derived from interact_with attribute for parent quarter.
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    11 bidders with total alpha 100.554
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.00844135 -- PLST: Skipped-feature polynomial stream @ 0
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.00844135 -- CPST: Skipped-feature interactions: 0 @ 0
+      Expert[source,9000]: Univ Bidder/main with alpha 0.207379 -- FiniteStream main @ INPB60M.county with queue size 8 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.148571 -- Interact main @ 0 x 1 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.9744 -- FitStreamLinear Model(pop=1,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.0833333 -- BDST: Principal components stream @ 0
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:REAU.county x Source with alpha 0.01 -- FPST: model feature interact:REAU.county x Source @ 0 
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:POVERTY.county x Source with alpha 0.01 -- FPST: model feature interact:POVERTY.county x Source @ 1 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.9848 R2 = 0.00897637
+             Model has 2 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00232631 
+                                       REAU.county        0.00387607   0.000381       10.2          0
+                                    POVERTY.county       0.000106653   3.18e-06       33.5          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #6
+BIDR1:	Fit bidder with countdown 3/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_2], cube[Y_hat_2], 
+LINM3:	Predictor passes initial evaluation; p-value 3.38111e-14 <  2*0.025
+AUCT0:	Test results are  <3.64618,0.0260926>
+AUCT2:	Beginning auction round #7
+AUCT4:	Distributing bid tax $0.00361917 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0723835(net 0.0687643)  on one feature: INPB60M.county
+LINM3:	Predictor passes initial evaluation; p-value 6.28822e-09 <  2*0.0687643
+AUCT0:	Test results are  <0.231657,0.630298>
+AUCT2:	Beginning auction round #8
+AUCT4:	Distributing bid tax $0.00259287 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.0518574(net 0.0492645)  on one feature: REAU.county*UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 2.05925e-24 <  2*0.0492645
+AUCT0:	Test results are  <3.00433,0.0830442>
+AUCT2:	Beginning auction round #9
+AUCT4:	Distributing bid tax $0.00225736 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0451473(net 0.0428899)  on one feature: MTPB60M.county
+LINM3:	Predictor passes initial evaluation; p-value 9.90015e-102 <  2*0.0428899
+LINM3:	Predictor passes White test (block=3000); p-value 0.0171537 < 0.0428899
+GSLR1:	Adding 1 predictors (model has 2 predictors)... 
+GSLR2:	 Column 2 [sandwich F=5.68069, ssx=43.254] --> shrinkage diagonal lambda=2.75939
+GSLR0:	Refactoring matrix of 3 columns with shrinkage inserted.
+AUCT0:	Test results are  <5.68069,0.0171537>
++F+   MTPB60M.county [interact_with_parent (period quarter)]  [max_lag (3)]  [role (x)]  [stream (main)]  (tried; used; p-value 0.0171537).  Values 0.0086 0.0117 0.005 0.027 0.0187 0.0455 ... 209994 more
+AUCT4:	0 features derived from interact_with attribute for parent period.
+AUCT4:	0 features derived from interact_with attribute for parent quarter.
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    13 bidders with total alpha 100.454
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0126761 -- PLST: Skipped-feature polynomial stream @ 0
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0126761 -- CPST: Skipped-feature interactions: 0 @ 0
+      Expert[source,9000]: Univ Bidder/main with alpha 0.159347 -- FiniteStream main @ REPB60M.county with queue size 8 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.0938778 -- Interact main @ 1 x 2 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.9487 -- FitStreamLinear Model(pop=2,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.0833333 -- BDST: Principal components stream @ 0
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:REAU.county x Source with alpha 0.01 -- FPST: model feature interact:REAU.county x Source @ 0 
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:POVERTY.county x Source with alpha 0.01 -- FPST: model feature interact:POVERTY.county x Source @ 1 
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:MTPB60M.county x Source with alpha 0.01 -- FPST: model feature interact:MTPB60M.county x Source @ 2 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.9557 R2 = 0.011595
+             Model has 3 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00215896 
+                                       REAU.county         0.0037727   0.000381       9.91          0
+                                    POVERTY.county       0.000120894   3.26e-06       37.1          0
+                                    MTPB60M.county        -0.0224427    0.00116      -19.3          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #10
+BIDR1:	Fit bidder with countdown 2/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_3], cube[Y_hat_3], 
+LINM3:	Predictor passes initial evaluation; p-value 3.41707e-12 <  2*0.025
+AUCT0:	Test results are  <2.38362,0.0922197>
+AUCT2:	Beginning auction round #11
+AUCT4:	Distributing bid tax $0.00278092 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0556185(net 0.0528376)  on one feature: REPB60M.county
+LINM3:	Predictor passes initial evaluation; p-value 4.12399e-131 <  2*0.0528376
+AUCT0:	Test results are  <1.77718,0.182497>
+AUCT2:	Beginning auction round #12
+AUCT4:	Distributing bid tax $0.0017531 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0350621(net 0.033309)  on one feature: S_REAU.county
+LINM3:	Predictor passes initial evaluation; p-value 0.000660926 <  2*0.033309
+AUCT0:	Test results are  <0.226858,0.633864>
+AUCT2:	Beginning auction round #13
+AUCT4:	Distributing bid tax $0.000819178 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.0163836(net 0.0155644)  on one feature: POVERTY.county*UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 4.35372e-07 <  2*0.0155644
+AUCT0:	Test results are  <1.19861,0.2736>
+AUCT2:	Beginning auction round #14
+AUCT4:	Distributing bid tax $0.000559483 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0111897(net 0.0106302)  on one feature: S_UNEMP.county
+LINM3:	Predictor passes initial evaluation; p-value 2.70953e-61 <  2*0.0106302
+AUCT0:	Test results are  <3.84189,0.0499887>
+AUCT2:	Beginning auction round #15
+AUCT4:	Distributing bid tax $0.00049505 among 2 parasites.
+FPST0:	model feature interact:REAU.county x Source stream making product of REAU.county x Source[0] (REAU.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:REAU.county x Source bid $0.00990099(net 0.00940594)  on one feature: REAU.county^2 
+LINM3:	Predictor passes initial evaluation; p-value 1.17977e-07 <  2*0.00940594
+AUCT0:	Test results are  <0.72552,0.39434>
+AUCT2:	Beginning auction round #16
+AUCT0:	Recovering alpha 0 from Univ bd bidder/model feature interact:REAU.county x Source boosts total to 0.
+AUCT4:	Distributing bid tax $0.000283428 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00566855(net 0.00538513)  on one feature: POVERTY.county*REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 4.41941e-08 <  2*0.00538513
+AUCT0:	Test results are  <0.608599,0.435317>
+AUCT2:	Beginning auction round #17
+AUCT4:	Distributing bid tax $0.00027961 among 2 parasites.
+AUCT0:	PLYS: Skipped-feature polynomial stream making polynomial subspace from feature square[Y_hat_1]
+AUCT0:	Winning expert Univ Bidder/Skipped-feature polynomial bid $0.00559219(net 0.00531258)  on 3 features: square[Y_hat_1], square[square[Y_hat_1]], cube[square[Y_hat_1]], 
+GSLR2:	 *** Warning ***  Detected singularity when evaluating predictor.
+AUCT0:	Test results are  <0,1.1>
+AUCT2:	Beginning auction round #18
+AUCT4:	Distributing bid tax $0.00028205 among 2 parasites.
+CPST0:	Skipped-feature interactions slow[0/3] x fast[0/19].
+CPST0:	First fast feature is square[Y_hat_1]
+CPST0:	First slow feature is REAU.county
+AUCT0:	Winning expert Univ Bidder/Skipped-feature interactions bid $0.00564099(net 0.00535894)  on one feature: REAU.county*Y_hat_1^2 
+LINM3:	Predictor passes initial evaluation; p-value 1.25834e-09 <  2*0.00535894
+AUCT0:	Test results are  <3.36921,0.0664272>
+AUCT2:	Beginning auction round #19
+AUCT4:	Distributing bid tax $0.000279631 among 2 parasites.
+AUCT0:	PLYS: Skipped-feature polynomial stream making polynomial subspace from feature cube[Y_hat_1]
+AUCT0:	Winning expert Univ Bidder/Skipped-feature polynomial bid $0.00559262(net 0.00531299)  on 3 features: cube[Y_hat_1], square[cube[Y_hat_1]], cube[cube[Y_hat_1]], 
+GSLR2:	 *** Warning ***  Detected singularity when evaluating predictor.
+AUCT0:	Test results are  <0,1.1>
+AUCT2:	Beginning auction round #20
+AUCT4:	Distributing bid tax $0.00145433 among 2 parasites.
+GSLE: Leading eigenvalues are 6.7932, 4.90682, 2.15484, 1.46591, 1.31178, 0.984087, 0.782226, 0.408574, 0.364224, 0.246754
+AUCT0:	Winning expert Univ Bidder/Principal components bid $0.0290867(net 0.0276323)  on 5 features: GSL[0], GSL[1], GSL[2], GSL[3], GSL[4], 
+LINM3:	Predictor passes initial evaluation; p-value 2.48576e-84 <  2*0.0276323
+LINM3:	Predictor passes White test (block=3000); p-value 0.00878558 < 0.0276323
+GSLR1:	Adding 5 predictors (model has 3 predictors)... 
+GSLR2:	 Column 3 [sandwich F=3.07998, ssx=1.2592e+06] --> shrinkage diagonal lambda=639.402
+GSLR2:	 Column 4 [sandwich F=3.07998, ssx=943687] --> shrinkage diagonal lambda=553.528
+GSLR2:	 Column 5 [sandwich F=3.07998, ssx=375932] --> shrinkage diagonal lambda=349.366
+GSLR2:	 Column 6 [sandwich F=3.07998, ssx=264177] --> shrinkage diagonal lambda=292.869
+GSLR2:	 Column 7 [sandwich F=3.07998, ssx=242723] --> shrinkage diagonal lambda=280.725
+GSLR0:	Refactoring matrix of 8 columns with shrinkage inserted.
+AUCT0:	Test results are  <3.07998,0.00878558>
++F+   GSL[0] (tried; used; p-value 0.00878558).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[1] (tried; used; p-value 0.00878558).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[2] (tried; used; p-value 0.00878558).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[3] (tried; used; p-value 0.00878558).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[4] (tried; used; p-value 0.00878558).  Values 0 0 0 0 0 0 ... 209994 more
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    17 bidders with total alpha 100.342
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0166102 -- PLST: Skipped-feature polynomial stream @ 2
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0114965 -- CPST: Skipped-feature interactions: 0 @ 1
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0528005 -- FiniteStream main @ UNEMP.county with queue size 7 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.0715204 -- Interact main @ 2 x 3 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.9231 -- FitStreamLinear Model(pop=3,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.113333 -- BDST: Principal components stream @ 20
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:POVERTY.county x Source with alpha 0.01 -- FPST: model feature interact:POVERTY.county x Source @ 1 
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:MTPB60M.county x Source with alpha 0.01 -- FPST: model feature interact:MTPB60M.county x Source @ 2 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 7 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.9402 R2 = 0.0129962
+             Model has 8 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00251472 
+                                       REAU.county        0.00422994   0.000572       7.39          0
+                                    POVERTY.county       0.000135345   4.46e-06       30.4          0
+                                    MTPB60M.county         -0.019937    0.00119      -16.8          0
+                                            GSL[0]      -4.49359e-05   9.21e-06      -4.87   1.07e-06
+                                            GSL[1]      -5.10854e-06   8.26e-06      -0.61      0.536
+                                            GSL[2]       3.23435e-05   1.49e-05       2.17     0.0295
+                                            GSL[3]      -0.000134352   1.48e-05      -9.09          0
+                                            GSL[4]       0.000107565    1.5e-05       7.19          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #21
+BIDR1:	Fit bidder with countdown 1/4
+BIDR3:	AUCT: Priority bidder takes bid 0.25
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.25(net 0.25)  on 2 features: square[Y_hat_4], cube[Y_hat_4], 
+LINM3:	Predictor passes initial evaluation; p-value 1.07238e-25 <  2*0.25
+LINM3:	Predictor passes White test (block=3000); p-value 0.198333 < 0.25
+GSLR1:	Adding 2 predictors (model has 8 predictors)... 
+GSLR2:	 Column 8 [sandwich F=1.61782, ssx=2.88281e-06] --> shrinkage diagonal lambda=0.00133488
+GSLR2:	 Column 9 [sandwich F=1.61782, ssx=3.19469e-09] --> shrinkage diagonal lambda=4.44374e-05
+GSLR0:	Refactoring matrix of 10 columns with shrinkage inserted.
+AUCT0:	Test results are  <1.61782,0.198333>
++F+   square[Y_hat_4] (tried; used; p-value 0.198333).  Values 3.09494e-08 3.09494e-08 3.09494e-08 3.09494e-08 3.09494e-08 3.09494e-08 ... 209994 more
++F+   cube[Y_hat_4] (tried; used; p-value 0.198333).  Values -5.44475e-12 -5.44475e-12 -5.44475e-12 -5.44475e-12 -5.44475e-12 -5.44475e-12 ... 209994 more
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    17 bidders with total alpha 100.372
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0166102 -- PLST: Skipped-feature polynomial stream @ 2
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0114965 -- CPST: Skipped-feature interactions: 0 @ 1
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0528005 -- FiniteStream main @ UNEMP.county with queue size 7 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.0715204 -- Interact main @ 2 x 3 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.9531 -- FitStreamLinear Model(pop=4,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.113333 -- BDST: Principal components stream @ 20
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:POVERTY.county x Source with alpha 0.01 -- FPST: model feature interact:POVERTY.county x Source @ 1 
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.01 -- Lag feature stream Lag stream at position 0 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:MTPB60M.county x Source with alpha 0.01 -- FPST: model feature interact:MTPB60M.county x Source @ 2 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 7 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.9365 R2 = 0.01333
+             Model has 10 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00242423 
+                                       REAU.county        0.00384519   0.000576       6.67          0
+                                    POVERTY.county       0.000134872   4.46e-06       30.2          0
+                                    MTPB60M.county        -0.0198377    0.00119      -16.7          0
+                                            GSL[0]      -5.67304e-05   9.48e-06      -5.98          0
+                                            GSL[1]       1.88241e-05   9.37e-06          2     0.0446
+                                            GSL[2]       8.26787e-06   1.56e-05       0.52      0.597
+                                            GSL[3]      -0.000155062   1.55e-05        -10          0
+                                            GSL[4]       0.000114619   1.51e-05        7.6          0
+                                   square[Y_hat_4]           15.9738       4.94       3.23    0.00123
+                                     cube[Y_hat_4]          -464.923        150       -3.1    0.00191
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #22
+BIDR1:	Fit bidder with countdown 4/4
+BIDR3:	AUCT: Priority bidder takes bid 0.25
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.25(net 0.25)  on 2 features: fourth[Y_hat_4], fifth[Y_hat_4], 
+LINM3:	Predictor passes initial evaluation; p-value 6.53957e-11 <  2*0.25
+AUCT0:	Test results are  <1.20846,0.298659>
+AUCT2:	Beginning auction round #23
+AUCT4:	Distributing bid tax $0.00025 among 2 parasites.
+FPST0:	model feature interact:POVERTY.county x Source stream making product of POVERTY.county x Source[1] (POVERTY.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:POVERTY.county x Source bid $0.005(net 0.00475)  on one feature: POVERTY.county^2 
+LINM3:	Predictor passes initial evaluation; p-value 0.00495704 <  2*0.00475
+AUCT0:	Test results are  <0.82805,0.362838>
+AUCT2:	Beginning auction round #24
+AUCT4:	Distributing bid tax $0.000247512 among 2 parasites.
+FPST0:	model feature interact:POVERTY.county x Source stream making product of POVERTY.county x Source[0] (REAU.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:POVERTY.county x Source bid $0.00495025(net 0.00470274)  on one feature: POVERTY.county*REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 1.2361e-10 <  2*0.00470274
+AUCT0:	Test results are  <1.01905,0.312746>
+AUCT2:	Beginning auction round #25
+AUCT0:	Recovering alpha 8.67362e-19 from Univ bd bidder/model feature interact:POVERTY.county x Source boosts total to 8.67362e-19.
+AUCT4:	Distributing bid tax $0.000204978 among 2 parasites.
+CPST0:	Skipped-feature interactions slow[0/10] x fast[1/27].
+CPST0:	First fast feature is square[Y_hat_1]
+CPST0:	First slow feature is REAU.county
+AUCT0:	Winning expert Univ Bidder/Skipped-feature interactions bid $0.00409955(net 0.00389457)  on one feature: REAU.county*Y_hat_1^3 
+LINM3:	Predictor passes initial evaluation; p-value 0.00292734 <  2*0.00389457
+AUCT0:	Test results are  <0.895356,0.344031>
+AUCT2:	Beginning auction round #26
+AUCT4:	Distributing bid tax $0.000193795 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.0038759(net 0.00368211)  on one feature: UNEMP.county
+LINM3:	Predictor passes initial evaluation; p-value 5.7599e-13 <  2*0.00368211
+AUCT0:	Test results are  <2.31427,0.128194>
+AUCT2:	Beginning auction round #27
+AUCT4:	Distributing bid tax $0.00017452 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.0034904(net 0.00331588)  on one feature: Lag(REAU.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 1.93374e-91 <  2*0.00331588
+AUCT0:	Test results are  <3.45115,0.0632096>
+AUCT2:	Beginning auction round #28
+AUCT4:	Distributing bid tax $0.00017452 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.0034904(net 0.00331588)  on one feature: Lag(POVERTY.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 1.45449e-12 <  2*0.00331588
+AUCT0:	Test results are  <0.644481,0.422094>
+AUCT2:	Beginning auction round #29
+AUCT4:	Distributing bid tax $0.00017452 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.0034904(net 0.00331588)  on one feature: Lag(MTPB60M.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 9.22329e-17 <  2*0.00331588
+AUCT0:	Test results are  <2.0474,0.152468>
+AUCT2:	Beginning auction round #30
+AUCT4:	Distributing bid tax $0.00017452 among 2 parasites.
+FPST0:	model feature interact:MTPB60M.county x Source stream making product of MTPB60M.county x Source[2] (MTPB60M.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:MTPB60M.county x Source bid $0.0034904(net 0.00331588)  on one feature: MTPB60M.county^2 
+AUCT0:	Test results are  <0.18342,0.668451>
+AUCT2:	Beginning auction round #31
+AUCT4:	Distributing bid tax $0.000162434 among 2 parasites.
+FPST0:	model feature interact:MTPB60M.county x Source stream making product of MTPB60M.county x Source[1] (POVERTY.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:MTPB60M.county x Source bid $0.00324869(net 0.00308625)  on one feature: MTPB60M.county*POVERTY.county 
+AUCT0:	Test results are  <2.06967,0.150256>
+AUCT2:	Beginning auction round #32
+AUCT4:	Distributing bid tax $0.000161382 among 2 parasites.
+FPST0:	model feature interact:MTPB60M.county x Source stream making product of MTPB60M.county x Source[0] (REAU.county).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:MTPB60M.county x Source bid $0.00322765(net 0.00306626)  on one feature: MTPB60M.county*REAU.county 
+AUCT0:	Test results are  <1.20851,0.271628>
+AUCT2:	Beginning auction round #33
+AUCT0:	Recovering alpha 0 from Univ bd bidder/model feature interact:MTPB60M.county x Source boosts total to 8.67362e-19.
+AUCT4:	Distributing bid tax $0.000156022 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00312044(net 0.00296442)  on one feature: INPB60M.county*POVERTY.county 
+LINM3:	Predictor passes initial evaluation; p-value 9.68975e-21 <  2*0.00296442
+AUCT0:	Test results are  <1.51395,0.218539>
+AUCT2:	Beginning auction round #34
+AUCT4:	Distributing bid tax $0.00015399 among 2 parasites.
+AUCT0:	PLYS: Skipped-feature polynomial stream making polynomial subspace from feature UNEMP.county
+AUCT0:	Winning expert Univ Bidder/Skipped-feature polynomial bid $0.00307981(net 0.00292582)  on 3 features: UNEMP.county, square[UNEMP.county], cube[UNEMP.county], 
+LINM3:	Predictor passes initial evaluation; p-value 2.73327e-16 <  2*0.00292582
+AUCT0:	Test results are  <0.836,0.473849>
+AUCT2:	Beginning auction round #35
+AUCT4:	Distributing bid tax $0.000126649 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00253297(net 0.00240632)  on one feature: INPB60M.county*UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 2.20742e-06 <  2*0.00240632
+AUCT0:	Test results are  <0.407351,0.523318>
+AUCT2:	Beginning auction round #36
+AUCT4:	Distributing bid tax $0.000126636 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00253272(net 0.00240609)  on one feature: INPB60M.county*REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 2.17173e-56 <  2*0.00240609
+AUCT0:	Test results are  <3.31355,0.0687127>
+AUCT2:	Beginning auction round #37
+AUCT4:	Distributing bid tax $0.00197789 among 2 parasites.
+GSLE: Leading eigenvalues are 6.72553, 5.64404, 2.50594, 1.56894, 1.00243, 0.784293, 0.590131, 0.375848, 0.329565, 0.283169
+AUCT0:	Winning expert Univ Bidder/Principal components bid $0.0395579(net 0.03758)  on 5 features: GSL[0], GSL[1], GSL[2], GSL[3], GSL[4], 
+LINM3:	Predictor passes initial evaluation; p-value 1.21775e-115 <  2*0.03758
+LINM3:	Predictor passes White test (block=3000); p-value 0.00782071 < 0.03758
+GSLR1:	Adding 5 predictors (model has 10 predictors)... 
+GSLR2:	 Column 10 [sandwich F=3.13605, ssx=1.18233e+06] --> shrinkage diagonal lambda=614.013
+GSLR2:	 Column 11 [sandwich F=3.13605, ssx=1.13321e+06] --> shrinkage diagonal lambda=601.123
+GSLR2:	 Column 12 [sandwich F=3.13605, ssx=410450] --> shrinkage diagonal lambda=361.775
+GSLR2:	 Column 13 [sandwich F=3.13605, ssx=262510] --> shrinkage diagonal lambda=289.322
+GSLR2:	 Column 14 [sandwich F=3.13605, ssx=172489] --> shrinkage diagonal lambda=234.525
+GSLR0:	Refactoring matrix of 15 columns with shrinkage inserted.
+AUCT0:	Test results are  <3.13605,0.00782071>
++F+   GSL[0] (tried; used; p-value 0.00782071).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[1] (tried; used; p-value 0.00782071).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[2] (tried; used; p-value 0.00782071).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[3] (tried; used; p-value 0.00782071).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[4] (tried; used; p-value 0.00782071).  Values 0 0 0 0 0 0 ... 209994 more
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    20 bidders with total alpha 100.043
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0157506 -- PLST: Skipped-feature polynomial stream @ 3
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.00960972 -- CPST: Skipped-feature interactions: 0 @ 2
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0489095 -- FiniteStream main @ INPB60M.county with queue size 6 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.0633117 -- Interact main @ 3 x 4 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.6197 -- FitStreamLinear Model(pop=4,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.143333 -- BDST: Principal components stream @ 40
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 14 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.918 R2 = 0.0150001
+             Model has 15 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept         -0.001449 
+                                       REAU.county       0.000820923   0.000624       1.31      0.188
+                                    POVERTY.county       0.000111652   5.83e-06       19.2          0
+                                    MTPB60M.county        -0.0132667    0.00173      -7.68          0
+                                            GSL[0]      -6.13618e-05   1.02e-05      -6.02          0
+                                            GSL[1]       3.30836e-05   1.06e-05       3.13    0.00174
+                                            GSL[2]       5.98546e-05   1.63e-05       3.66   0.000244
+                                            GSL[3]      -7.83611e-05   1.81e-05      -4.33   1.46e-05
+                                            GSL[4]       0.000123606   1.66e-05       7.42          0
+                                   square[Y_hat_4]           12.1777       5.15       2.36     0.0181
+                                     cube[Y_hat_4]          -381.458        160      -2.39     0.0168
+                                            GSL[0]       2.65838e-05   1.14e-05       2.33     0.0195
+                                            GSL[1]       -1.4145e-05   1.09e-05      -1.29      0.194
+                                            GSL[2]       4.32367e-05   1.57e-05       2.74    0.00605
+                                            GSL[3]       0.000179371   1.97e-05       9.08          0
+                                            GSL[4]       0.000291728   2.37e-05       12.3          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #38
+BIDR1:	Fit bidder with countdown 4/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_5], cube[Y_hat_5], 
+LINM3:	Predictor passes initial evaluation; p-value 6.22255e-17 <  2*0.025
+AUCT0:	Test results are  <2.41596,0.089285>
+AUCT2:	Beginning auction round #39
+AUCT4:	Distributing bid tax $0.000131899 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00263799(net 0.00250609)  on one feature: INPB60M.county*MTPB60M.county 
+LINM3:	Predictor passes initial evaluation; p-value 8.98894e-13 <  2*0.00250609
+AUCT0:	Test results are  <1.53467,0.215415>
+AUCT2:	Beginning auction round #40
+AUCT0:	FETR: Found feature MTPB60M.county*POVERTY.county  in feature vector skipped features
+AUCT4:	Distributing bid tax $0.000137879 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00275758(net 0.0026197)  on one feature: MTPB60M.county*UNEMP.county 
+AUCT0:	Test results are  <0.975819,0.323235>
+AUCT2:	Beginning auction round #41
+AUCT0:	FETR: Found feature MTPB60M.county*REAU.county  in feature vector skipped features
+AUCT4:	Distributing bid tax $0.000152372 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00304745(net 0.00289508)  on one feature: MTPB60M.county*REPB60M.county 
+LINM3:	Predictor passes initial evaluation; p-value 2.0783e-65 <  2*0.00289508
+AUCT0:	Test results are  <6.33591,0.0118326>
+AUCT2:	Beginning auction round #42
+AUCT4:	Distributing bid tax $0.000152347 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00304693(net 0.00289458)  on one feature: INPB60M.county*REPB60M.county 
+AUCT0:	Test results are  <0.829518,0.362413>
+AUCT2:	Beginning auction round #43
+AUCT4:	Distributing bid tax $0.000152319 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00304638(net 0.00289406)  on one feature: POVERTY.county*REPB60M.county 
+LINM3:	Predictor passes initial evaluation; p-value 7.21989e-176 <  2*0.00289406
+AUCT0:	Test results are  <2.7418,0.0977563>
+AUCT2:	Beginning auction round #44
+AUCT4:	Distributing bid tax $0.00015229 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.0030458(net 0.00289351)  on one feature: REPB60M.county*UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 9.356e-84 <  2*0.00289351
+AUCT0:	Test results are  <2.99731,0.0834049>
+AUCT2:	Beginning auction round #45
+AUCT4:	Distributing bid tax $0.000152259 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00304518(net 0.00289292)  on one feature: REAU.county*REPB60M.county 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.00289292
+AUCT0:	Test results are  <1.83184,0.175912>
+AUCT2:	Beginning auction round #46
+AUCT4:	Distributing bid tax $0.000163935 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327871(net 0.00311477)  on one feature: REPB60M.county*S_REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 7.52249e-119 <  2*0.00311477
+AUCT0:	Test results are  <2.51336,0.112887>
+AUCT2:	Beginning auction round #47
+AUCT4:	Distributing bid tax $0.000163891 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327781(net 0.00311392)  on one feature: MTPB60M.county*S_REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 7.22986e-07 <  2*0.00311392
+AUCT0:	Test results are  <0.815494,0.366502>
+AUCT2:	Beginning auction round #48
+AUCT4:	Distributing bid tax $0.000163842 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327683(net 0.00311299)  on one feature: INPB60M.county*S_REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 3.98201e-77 <  2*0.00311299
+AUCT0:	Test results are  <5.44849,0.0195864>
+AUCT2:	Beginning auction round #49
+AUCT4:	Distributing bid tax $0.000163788 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327575(net 0.00311197)  on one feature: POVERTY.county*S_REAU.county 
+LINM3:	Predictor passes initial evaluation; p-value 1.4977e-11 <  2*0.00311197
+AUCT0:	Test results are  <0.778267,0.377673>
+AUCT2:	Beginning auction round #50
+AUCT4:	Distributing bid tax $0.000163728 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327456(net 0.00311083)  on one feature: S_REAU.county*UNEMP.county 
+AUCT0:	Test results are  <2.10992,0.146349>
+AUCT2:	Beginning auction round #51
+AUCT4:	Distributing bid tax $0.000163661 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00327321(net 0.00310955)  on one feature: REAU.county*S_REAU.county 
+AUCT0:	Test results are  <0.529902,0.466649>
+AUCT2:	Beginning auction round #52
+AUCT4:	Distributing bid tax $0.000190848 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00381696(net 0.00362611)  on one feature: S_REAU.county*S_UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 3.33021e-33 <  2*0.00362611
+AUCT0:	Test results are  <4.5737,0.0324678>
+AUCT2:	Beginning auction round #53
+AUCT4:	Distributing bid tax $0.000190702 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00381403(net 0.00362333)  on one feature: REPB60M.county*S_UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 3.34873e-147 <  2*0.00362333
+AUCT0:	Test results are  <5.70534,0.0169145>
+AUCT2:	Beginning auction round #54
+AUCT4:	Distributing bid tax $0.000190519 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00381038(net 0.00361986)  on one feature: MTPB60M.county*S_UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 8.35877e-09 <  2*0.00361986
+AUCT0:	Test results are  <1.59201,0.20704>
+AUCT2:	Beginning auction round #55
+AUCT4:	Distributing bid tax $0.000190276 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00380552(net 0.00361525)  on one feature: INPB60M.county*S_UNEMP.county 
+AUCT0:	Test results are  <4.21461,0.0400788>
+AUCT2:	Beginning auction round #56
+AUCT4:	Distributing bid tax $0.000189913 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00379825(net 0.00360834)  on one feature: POVERTY.county*S_UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 7.90148e-17 <  2*0.00360834
+AUCT0:	Test results are  <3.80741,0.051028>
+AUCT2:	Beginning auction round #57
+AUCT4:	Distributing bid tax $0.00250145 among 2 parasites.
+GSLE: Leading eigenvalues are 9.8363, 3.14721, 1.87658, 1.31728, 1.13242, 0.834966, 0.570259, 0.361945, 0.317401, 0.163361
+AUCT0:	Winning expert Univ Bidder/Principal components bid $0.0500291(net 0.0475276)  on 5 features: GSL[0], GSL[1], GSL[2], GSL[3], GSL[4], 
+LINM3:	Predictor passes initial evaluation; p-value 1.90718e-223 <  2*0.0475276
+LINM3:	Predictor passes White test (block=3000); p-value 0.00467855 < 0.0475276
+GSLR1:	Adding 5 predictors (model has 15 predictors)... 
+GSLR2:	 Column 15 [sandwich F=3.38165, ssx=1.75477e+06] --> shrinkage diagonal lambda=720.355
+GSLR2:	 Column 16 [sandwich F=3.38165, ssx=496802] --> shrinkage diagonal lambda=383.29
+GSLR2:	 Column 17 [sandwich F=3.38165, ssx=335508] --> shrinkage diagonal lambda=314.983
+GSLR2:	 Column 18 [sandwich F=3.38165, ssx=243422] --> shrinkage diagonal lambda=268.297
+GSLR2:	 Column 19 [sandwich F=3.38165, ssx=208939] --> shrinkage diagonal lambda=248.568
+GSLR0:	Refactoring matrix of 20 columns with shrinkage inserted.
+AUCT0:	Test results are  <3.38165,0.00467855>
++F+   GSL[0] (tried; used; p-value 0.00467855).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[1] (tried; used; p-value 0.00467855).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[2] (tried; used; p-value 0.00467855).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[3] (tried; used; p-value 0.00467855).  Values 0 0 0 0 0 0 ... 209994 more
++F+   GSL[4] (tried; used; p-value 0.00467855).  Values 0 0 0 0 0 0 ... 209994 more
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    25 bidders with total alpha 100.014
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0184845 -- PLST: Skipped-feature polynomial stream @ 3
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0123437 -- CPST: Skipped-feature interactions: 0 @ 2
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0489095 -- FiniteStream main @ INPB60M.county with queue size 6 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 0.00378377 -- Interact main @ 1 x 7 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.5941 -- FitStreamLinear Model(pop=5,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.173333 -- BDST: Principal components stream @ 60
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.0833333 -- BDST: SVD basis stream @ 0
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 19 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.8693 R2 = 0.0193949
+             Model has 20 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00185449 
+                                       REAU.county       0.000689963   0.000637       1.08      0.279
+                                    POVERTY.county       0.000138567   6.07e-06       22.8          0
+                                    MTPB60M.county       -0.00978347    0.00199      -4.91    9.1e-07
+                                            GSL[0]      -3.95805e-05   1.06e-05      -3.74   0.000181
+                                            GSL[1]       4.70447e-05   1.08e-05       4.34   1.37e-05
+                                            GSL[2]       9.57732e-05   1.79e-05       5.36          0
+                                            GSL[3]       -0.00012562   1.92e-05      -6.55          0
+                                            GSL[4]       4.72818e-05   2.18e-05       2.17     0.0298
+                                   square[Y_hat_4]           13.2784       5.24       2.53     0.0113
+                                     cube[Y_hat_4]          -409.412        160      -2.56     0.0104
+                                            GSL[0]       2.25412e-05   1.17e-05       1.93     0.0532
+                                            GSL[1]      -1.63761e-05   1.09e-05       -1.5      0.133
+                                            GSL[2]       5.17795e-05   1.64e-05       3.15    0.00162
+                                            GSL[3]       0.000103937   2.07e-05       5.03   4.87e-07
+                                            GSL[4]       0.000353841   2.42e-05       14.6          0
+                                            GSL[0]      -8.34945e-05   9.07e-06       -9.2          0
+                                            GSL[1]       2.49907e-05   1.61e-05       1.54      0.121
+                                            GSL[2]       7.69395e-06   1.86e-05       0.41       0.68
+                                            GSL[3]      -6.72111e-05   1.99e-05      -3.36   0.000753
+                                            GSL[4]       0.000335109   1.63e-05       20.5          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #58
+BIDR1:	Fit bidder with countdown 3/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_6], cube[Y_hat_6], 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.025
+AUCT0:	Test results are  <1.28524,0.276586>
+AUCT2:	Beginning auction round #59
+AUCT4:	Distributing bid tax $0.000188475 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Interact main bid $0.00376951(net 0.00358103)  on one feature: S_UNEMP.county*UNEMP.county 
+LINM3:	Predictor passes initial evaluation; p-value 1.3941e-15 <  2*0.00358103
+AUCT0:	Test results are  <3.29133,0.0696485>
+AUCT2:	Beginning auction round #60
+AUCT4:	Distributing bid tax $0.000113392 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00226784(net 0.00215445)  on one feature: Lag(REAU.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 4.90261e-147 <  2*0.00215445
+AUCT0:	Test results are  <5.15396,0.0231947>
+AUCT2:	Beginning auction round #61
+AUCT4:	Distributing bid tax $0.00145433 among 2 parasites.
+ESVD : All singular values are {14.12 5.351e-13 1.044e-15 8.374e-16 5.366e-16 5.016e-16 4.278e-16 3.711e-16}
+AUCT0:	Winning expert Univ Bidder/SVD basis bid $0.0290867(net 0.0276323)  on one feature: Eigen[0]
+LINM3:	Predictor passes initial evaluation; p-value 5.08538e-24 <  2*0.0276323
+LINM3:	Predictor passes White test (block=3000); p-value 0.010182 < 0.0276323
+GSLR1:	Adding 1 predictors (model has 20 predictors)... 
+GSLR2:	 Column 20 [sandwich F=6.60293, ssx=0.932479] --> shrinkage diagonal lambda=0.375795
+GSLR0:	Refactoring matrix of 21 columns with shrinkage inserted.
+AUCT0:	Test results are  <6.60293,0.010182>
++F+   Eigen[0] (tried; used; p-value 0.010182).  Values 0 0 0 0 0 0 ... 209994 more
+AUCT3:	 @@@ Auction adds predictor @@@
+AUCT3:	
+     Auction    26 bidders with total alpha 100.034
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0193626 -- PLST: Skipped-feature polynomial stream @ 3
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0132218 -- CPST: Skipped-feature interactions: 0 @ 2
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0489095 -- FiniteStream main @ INPB60M.county with queue size 6 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 4.33681e-19 -- Interact main @ 0 x 7 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.5685 -- FitStreamLinear Model(pop=6,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.173333 -- BDST: Principal components stream @ 60
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.113333 -- BDST: SVD basis stream @ 64
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00422437 -- Lag feature stream Lag stream at position 2 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00649737 -- Lag feature stream Lag stream at position 1 with 1 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 7 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 14 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.004 -- FPST: model feature interact:GSL[0] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.004 -- FPST: model feature interact:GSL[1] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.004 -- FPST: model feature interact:GSL[2] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.004 -- FPST: model feature interact:GSL[3] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.004 -- FPST: model feature interact:GSL[4] x Source @ 19 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:Eigen[0] x Source with alpha 0.02 -- FPST: model feature interact:Eigen[0] x Source @ 20 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.8642 R2 = 0.0198534
+             Model has 21 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00187126 
+                                       REAU.county       0.000708837   0.000637       1.11      0.266
+                                    POVERTY.county       0.000139297   6.07e-06       22.9          0
+                                    MTPB60M.county       -0.00958226    0.00199       -4.8   1.51e-06
+                                            GSL[0]      -1.08544e-05   1.11e-05      -0.97       0.33
+                                            GSL[1]      -2.49738e-06   1.24e-05       -0.2       0.84
+                                            GSL[2]       0.000102183   1.79e-05       5.71          0
+                                            GSL[3]      -0.000152214   1.94e-05      -7.82          0
+                                            GSL[4]       7.15827e-05    2.2e-05       3.25    0.00112
+                                   square[Y_hat_4]           12.0412       5.25       2.29     0.0217
+                                     cube[Y_hat_4]          -365.187        160      -2.28     0.0224
+                                            GSL[0]       2.57662e-05   1.17e-05        2.2     0.0272
+                                            GSL[1]      -2.40941e-05   1.09e-05       -2.2     0.0275
+                                            GSL[2]       5.44542e-05   1.64e-05       3.31   0.000918
+                                            GSL[3]       9.91711e-05   2.07e-05       4.79   1.59e-06
+                                            GSL[4]       0.000351457   2.42e-05       14.6          0
+                                            GSL[0]      -8.02658e-05   9.08e-06      -8.84          0
+                                            GSL[1]        2.3871e-05   1.61e-05       1.47      0.139
+                                            GSL[2]       1.47036e-05   1.86e-05       0.78       0.43
+                                            GSL[3]      -7.18624e-05   1.99e-05       -3.6   0.000316
+                                            GSL[4]       0.000335866   1.63e-05       20.6          0
+                                          Eigen[0]        -0.0946306     0.0116      -8.14          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+AUCT2:	Beginning auction round #62
+BIDR1:	Fit bidder with countdown 2/4
+BIDR3:	AUCT: Priority bidder takes bid 0.025
+AUCT0:	Winning expert Fit Bidder [Y_hat_]/Linear Model bid $0.025(net 0.025)  on 2 features: square[Y_hat_7], cube[Y_hat_7], 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.025
+AUCT0:	Test results are  <1.5258,0.21745>
+AUCT2:	Beginning auction round #63
+AUCT4:	Distributing bid tax $0.00034904 among 2 parasites.
+FPST0:	model feature interact:Eigen[0] x Source stream making product of Eigen[0] x Source[20] (Eigen[0]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:Eigen[0] x Source bid $0.0069808(net 0.00663176)  on one feature: Eigen[0]^2 
+LINM3:	Predictor passes initial evaluation; p-value 0.000576005 <  2*0.00663176
+AUCT0:	Test results are  <1.67607,0.195449>
+AUCT2:	Beginning auction round #64
+AUCT4:	Distributing bid tax $0.000226355 among 2 parasites.
+FPST0:	model feature interact:Eigen[0] x Source stream making product of Eigen[0] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:Eigen[0] x Source bid $0.00452709(net 0.00430074)  on one feature: Eigen[0]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.00430074
+AUCT0:	Test results are  <1.09934,0.294412>
+AUCT2:	Beginning auction round #65
+AUCT4:	Distributing bid tax $0.000117884 among 2 parasites.
+CPST0:	Skipped-feature interactions slow[0/21] x fast[2/69].
+CPST0:	First fast feature is square[Y_hat_1]
+CPST0:	First slow feature is REAU.county
+AUCT0:	Winning expert Univ Bidder/Skipped-feature interactions bid $0.00235767(net 0.00223979)  on one feature: REAU.county*UNEMP.county 
+AUCT0:	Test results are  <7.20855,0.00725643>
+AUCT2:	Beginning auction round #66
+AUCT4:	Distributing bid tax $0.000113392 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00226784(net 0.00215445)  on one feature: Lag(POVERTY.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 1.84084e-35 <  2*0.00215445
+AUCT0:	Test results are  <1.54495,0.213885>
+AUCT2:	Beginning auction round #67
+AUCT4:	Distributing bid tax $0.000113392 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00226784(net 0.00215445)  on one feature: Lag(MTPB60M.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 2.67853e-10 <  2*0.00215445
+AUCT0:	Test results are  <1.45423,0.227852>
+AUCT2:	Beginning auction round #68
+AUCT4:	Distributing bid tax $0.000106696 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.00213392(net 0.00202723)  on one feature: INPB60M.county
+AUCT0:	Test results are  <3.52332,0.0605127>
+AUCT2:	Beginning auction round #69
+AUCT4:	Distributing bid tax $7.34943e-05 among 2 parasites.
+FPST0:	model feature interact:Eigen[0] x Source stream making product of Eigen[0] x Source[18] (GSL[3]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:Eigen[0] x Source bid $0.00146989(net 0.00139639)  on one feature: Eigen[0]*GSL[3] 
+AUCT0:	Test results are  <6.58053,0.0103109>
+AUCT2:	Beginning auction round #70
+AUCT4:	Distributing bid tax $7.30864e-05 among 2 parasites.
+AUCT0:	PLYS: Skipped-feature polynomial stream making polynomial subspace from feature REAU.county^2 
+AUCT0:	Winning expert Univ Bidder/Skipped-feature polynomial bid $0.00146173(net 0.00138864)  on 3 features: REAU.county^2 , square[REAU.county^2 ], cube[REAU.county^2 ], 
+LINM3:	Predictor passes initial evaluation; p-value 9.77303e-16 <  2*0.00138864
+AUCT0:	Test results are  <1.12835,0.335982>
+AUCT2:	Beginning auction round #71
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[0] x Source stream making product of GSL[0] x Source[7] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[0] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[0]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 1.43313e-24 <  2*0.00132635
+AUCT0:	Test results are  <0.729191,0.393147>
+AUCT2:	Beginning auction round #72
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[1] x Source stream making product of GSL[1] x Source[7] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[1] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[1]*GSL[4] 
+AUCT0:	Test results are  <6.52755,0.0106225>
+AUCT2:	Beginning auction round #73
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[2] x Source stream making product of GSL[2] x Source[7] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[2] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[2]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 0.000124523 <  2*0.00132635
+AUCT0:	Test results are  <1.40337,0.236162>
+AUCT2:	Beginning auction round #74
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[3] x Source stream making product of GSL[3] x Source[7] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[3] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[3]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 1.16063e-31 <  2*0.00132635
+AUCT0:	Test results are  <0.861254,0.353389>
+AUCT2:	Beginning auction round #75
+AUCT4:	Distributing bid tax $0.00302501 among 2 parasites.
+GSLE: Leading eigenvalues are 7.346, 4.076, 3.457, 1.624, 1.075, 0.7618, 0.5722, 0.4073, 0.3187, 0.1489
+AUCT0:	Winning expert Univ Bidder/Principal components bid $0.0605003(net 0.0574753)  on 5 features: GSL[0], GSL[1], GSL[2], GSL[3], GSL[4], 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.0574753
+AUCT0:	Test results are  <1.20852,0.302103>
+AUCT2:	Beginning auction round #76
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[4] x Source stream making product of GSL[4] x Source[7] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[4] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[4]^2 
+LINM3:	Predictor passes initial evaluation; p-value 1.75955e-117 <  2*0.00132635
+AUCT0:	Test results are  <1.15464,0.282581>
+AUCT2:	Beginning auction round #77
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[0] x Source stream making product of GSL[0] x Source[14] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[0] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[0]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 2.37159e-05 <  2*0.00132635
+AUCT0:	Test results are  <2.06868,0.150354>
+AUCT2:	Beginning auction round #78
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[1] x Source stream making product of GSL[1] x Source[14] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[1] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[1]*GSL[4] 
+AUCT0:	Test results are  <2.76136,0.0965679>
+AUCT2:	Beginning auction round #79
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[2] x Source stream making product of GSL[2] x Source[14] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[2] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[2]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 1.58037e-13 <  2*0.00132635
+AUCT0:	Test results are  <2.81309,0.0934999>
+AUCT2:	Beginning auction round #80
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[3] x Source stream making product of GSL[3] x Source[14] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[3] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[3]*GSL[4] 
+AUCT0:	Test results are  <5.07649,0.0242537>
+AUCT2:	Beginning auction round #81
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[4] x Source stream making product of GSL[4] x Source[14] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[4] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[4]^2 
+LINM3:	Predictor passes initial evaluation; p-value 5.54932e-09 <  2*0.00132635
+AUCT0:	Test results are  <3.54827,0.0596092>
+AUCT2:	Beginning auction round #82
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[0] x Source stream making product of GSL[0] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[0] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[0]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 4.33153e-261 <  2*0.00132635
+AUCT0:	Test results are  <0.888189,0.34597>
+AUCT2:	Beginning auction round #83
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[1] x Source stream making product of GSL[1] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[1] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[1]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 2.48134e-318 <  2*0.00132635
+AUCT0:	Test results are  <1.05676,0.303957>
+AUCT2:	Beginning auction round #84
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[2] x Source stream making product of GSL[2] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[2] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[2]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 4.8862e-229 <  2*0.00132635
+AUCT0:	Test results are  <0.942771,0.331568>
+AUCT2:	Beginning auction round #85
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[3] x Source stream making product of GSL[3] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[3] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[3]*GSL[4] 
+LINM3:	Predictor passes initial evaluation; p-value 2.71329e-16 <  2*0.00132635
+AUCT0:	Test results are  <0.561984,0.453463>
+AUCT2:	Beginning auction round #86
+AUCT4:	Distributing bid tax $6.9808e-05 among 2 parasites.
+FPST0:	model feature interact:GSL[4] x Source stream making product of GSL[4] x Source[19] (GSL[4]).
+AUCT0:	Winning expert Univ bd bidder/model feature interact:GSL[4] x Source bid $0.00139616(net 0.00132635)  on one feature: GSL[4]^2 
+LINM3:	Predictor passes initial evaluation; p-value 3.52468e-276 <  2*0.00132635
+AUCT0:	Test results are  <1.04034,0.307743>
+AUCT2:	Beginning auction round #87
+AUCT4:	Distributing bid tax $5.78511e-05 among 2 parasites.
+AUCT0:	Winning expert Univ Bidder/main bid $0.00115702(net 0.00109917)  on one feature: REPB60M.county
+LINM3:	Predictor passes initial evaluation; p-value 2.98057e-28 <  2*0.00109917
+AUCT0:	Test results are  <0.743565,0.388523>
+AUCT2:	Beginning auction round #88
+AUCT4:	Distributing bid tax $5.28047e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105609(net 0.00100329)  on one feature: Lag(REAU.county,t-3)
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.00100329
+AUCT0:	Test results are  <8.62158,0.00332249>
+AUCT2:	Beginning auction round #89
+AUCT4:	Distributing bid tax $5.28047e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105609(net 0.00100329)  on one feature: Lag(POVERTY.county,t-3)
+LINM3:	Predictor passes initial evaluation; p-value 5.1319e-62 <  2*0.00100329
+AUCT0:	Test results are  <2.34345,0.125813>
+AUCT2:	Beginning auction round #90
+AUCT4:	Distributing bid tax $5.28047e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105609(net 0.00100329)  on one feature: Lag(MTPB60M.county,t-3)
+LINM3:	Predictor passes initial evaluation; p-value 7.99676e-07 <  2*0.00100329
+AUCT0:	Test results are  <0.862069,0.353162>
+AUCT2:	Beginning auction round #91
+AUCT4:	Distributing bid tax $0.00190117 among 2 parasites.
+GSLE: Leading eigenvalues are 4.636, 4.016, 2.487, 2.139, 1.698, 1.151, 0.9625, 0.745, 0.5616, 0.4637
+AUCT0:	Winning expert Univ Bidder/Principal components bid $0.0380234(net 0.0361222)  on 6 features: GSL[0], GSL[1], GSL[2], GSL[3], GSL[4], GSL[5], 
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.0361222
+AUCT0:	Test results are  <2.0138,0.0601538>
+AUCT2:	Beginning auction round #92
+AUCT4:	Distributing bid tax $5.33666e-05 among 2 parasites.
+CPST0:	Skipped-feature interactions slow[0/21] x fast[3/107].
+CPST0:	First fast feature is square[Y_hat_1]
+CPST0:	First slow feature is REAU.county
+AUCT0:	Winning expert Univ Bidder/Skipped-feature interactions bid $0.00106733(net 0.00101396)  on one feature: REAU.county^3 
+LINM3:	Predictor passes initial evaluation; p-value 2.01749e-07 <  2*0.00101396
+AUCT0:	Test results are  <1.31748,0.251046>
+AUCT2:	Beginning auction round #93
+AUCT4:	Distributing bid tax $5.27861e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105572(net 0.00100294)  on one feature: Lag(REAU.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 8.23163e-22 <  2*0.00100294
+AUCT0:	Test results are  <0.930649,0.334696>
+AUCT2:	Beginning auction round #94
+AUCT4:	Distributing bid tax $5.27861e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105572(net 0.00100294)  on one feature: Lag(POVERTY.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 4.11995e-21 <  2*0.00100294
+AUCT0:	Test results are  <1.24674,0.264177>
+AUCT2:	Beginning auction round #95
+AUCT4:	Distributing bid tax $5.27861e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105572(net 0.00100294)  on one feature: Lag(MTPB60M.county,t-1)
+LINM3:	Predictor passes initial evaluation; p-value 4.99392e-08 <  2*0.00100294
+AUCT0:	Test results are  <1.07908,0.298904>
+AUCT2:	Beginning auction round #96
+AUCT4:	Distributing bid tax $5.27582e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105516(net 0.00100241)  on one feature: Lag(REAU.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 3.42935e-138 <  2*0.00100241
+AUCT0:	Test results are  <4.88203,0.0271391>
+AUCT2:	Beginning auction round #97
+AUCT4:	Distributing bid tax $5.27582e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105516(net 0.00100241)  on one feature: Lag(POVERTY.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 1.84084e-35 <  2*0.00100241
+AUCT0:	Test results are  <1.54495,0.213885>
+AUCT2:	Beginning auction round #98
+AUCT4:	Distributing bid tax $5.27582e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105516(net 0.00100241)  on one feature: Lag(MTPB60M.county,t-2)
+LINM3:	Predictor passes initial evaluation; p-value 2.67853e-10 <  2*0.00100241
+AUCT0:	Test results are  <1.45423,0.227852>
+AUCT2:	Beginning auction round #99
+AUCT4:	Distributing bid tax $5.2647e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105294(net 0.00100029)  on one feature: Lag(REAU.county,t-3)
+LINM3:	Predictor passes initial evaluation; p-value 0 <  2*0.00100029
+AUCT0:	Test results are  <8.62158,0.00332249>
+AUCT2:	Beginning auction round #100
+AUCT0:	Recovering alpha 0 from Univ bd bidder/Lag stream boosts total to 8.67362e-19.
+AUCT4:	Distributing bid tax $5.2647e-05 among 2 parasites.
+AUCT0:	Winning expert Univ bd bidder/Lag stream bid $0.00105294(net 0.00100029)  on one feature: Lag(POVERTY.county,t-3)
+LINM3:	Predictor passes initial evaluation; p-value 5.1319e-62 <  2*0.00100029
+AUCT0:	Test results are  <2.34345,0.125813>
+AUCT4:	
+      -------  Auction ends after 100/100 rounds.   ------ 
+
+
+     Auction    25 bidders with total alpha 99.8537
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature polynomial with alpha 0.0218179 -- PLST: Skipped-feature polynomial stream @ 4
+      Expert[parasite,9000]: Univ Bidder/Skipped-feature interactions with alpha 0.0137092 -- CPST: Skipped-feature interactions: 0 @ 4
+      Expert[source,9000]: Univ Bidder/main with alpha 0.0456127 -- FiniteStream main @ S_REAU.county with queue size 5 
+      Expert[source,9000]: Univ bd bidder/Interact main with alpha 4.33681e-19 -- Interact main @ 0 x 7 
+      Expert[calibrate,9000]: Fit Bidder [Y_hat_]/Linear Model with alpha 99.5428 -- FitStreamLinear Model(pop=7,skip=9000)
+      Expert[source,9000]: Univ Bidder/Principal components with alpha 0.0694107 -- BDST: Principal components stream @ 100
+      Expert[source,9000]: Univ Bidder/SVD basis with alpha 0.113333 -- BDST: SVD basis stream @ 64
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0 -- Lag feature stream Lag stream at position 3 with 0 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/Lag stream with alpha 0.00105405 -- Lag feature stream Lag stream at position 2 with 0 cycles left.
+
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[0] x Source @ 6 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[1] x Source @ 6 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[2] x Source @ 6 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[3] x Source @ 6 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[4] x Source @ 6 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[0] x Source @ 13 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[1] x Source @ 13 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[2] x Source @ 13 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[3] x Source @ 13 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[4] x Source @ 13 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[0] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[0] x Source @ 18 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[1] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[1] x Source @ 18 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[2] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[2] x Source @ 18 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[3] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[3] x Source @ 18 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:GSL[4] x Source with alpha 0.00260189 -- FPST: model feature interact:GSL[4] x Source @ 18 
+      Expert[custom,9000]: Univ bd bidder/model feature interact:Eigen[0] x Source with alpha 0.00695039 -- FPST: model feature interact:Eigen[0] x Source @ 17 
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Model: (n=168000)     SS 11.0843 --> 10.8642 R2 = 0.0198534
+             Model has 21 explanatory variables.
+
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                         Intercept       -0.00187126 
+                                       REAU.county       0.000708837   0.000637       1.11      0.266
+                                    POVERTY.county       0.000139297   6.07e-06       22.9          0
+                                    MTPB60M.county       -0.00958226    0.00199       -4.8   1.51e-06
+                                            GSL[0]      -1.08544e-05   1.11e-05      -0.97       0.33
+                                            GSL[1]      -2.49738e-06   1.24e-05       -0.2       0.84
+                                            GSL[2]       0.000102183   1.79e-05       5.71          0
+                                            GSL[3]      -0.000152214   1.94e-05      -7.82          0
+                                            GSL[4]       7.15827e-05    2.2e-05       3.25    0.00112
+                                   square[Y_hat_4]           12.0412       5.25       2.29     0.0217
+                                     cube[Y_hat_4]          -365.187        160      -2.28     0.0224
+                                            GSL[0]       2.57662e-05   1.17e-05        2.2     0.0272
+                                            GSL[1]      -2.40941e-05   1.09e-05       -2.2     0.0275
+                                            GSL[2]       5.44542e-05   1.64e-05       3.31   0.000918
+                                            GSL[3]       9.91711e-05   2.07e-05       4.79   1.59e-06
+                                            GSL[4]       0.000351457   2.42e-05       14.6          0
+                                            GSL[0]      -8.02658e-05   9.08e-06      -8.84          0
+                                            GSL[1]        2.3871e-05   1.61e-05       1.47      0.139
+                                            GSL[2]       1.47036e-05   1.86e-05       0.78       0.43
+                                            GSL[3]      -7.18624e-05   1.99e-05       -3.6   0.000316
+                                            GSL[4]       0.000335866   1.63e-05       20.6          0
+                                          Eigen[0]        -0.0946306     0.0116      -8.14          0
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+AUCT2:	Writing model to file data/credit/model.txt
+AUCT2:	Writing model data to file data/credit/model_data.csv
+GSLR: Writing 201000 rows to output with 21 columns of X.
+AUCT0:	Auction is completed; disposing GSL data objects.
+GSLD0:	Freeing memory.
+GSLD0:	Freeing memory completed.
+GSLD0:	Exiting; final clean-up done by ~ functions.
+AUCT0:	Deleting auction. 
+GSLR: Freeing gslRegression with n = 168000, q = 21, maxQ = 255
+
+Compilation finished at Sun Jun 13 16:52:45

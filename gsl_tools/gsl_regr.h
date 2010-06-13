@@ -216,8 +216,7 @@ private:   // ------------------------------------------------------------------
   double change_in_rss ()   const; 
   double white_f_stat  ();
 
-  void prepare_shrinkage(int begin, int end);
-  int  qr_decomposition ();
+  void prepare_shrinkage();
   int  qr_decomposition (int first, int size);
 
 protected:
