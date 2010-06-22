@@ -4,7 +4,8 @@ COMPILER = gcc
 # LIBTOOL_CMD = ar -rc $@ $(above_infinity)                 # linux
 # LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)    # mac
 LIBTOOL_CMD = libtool  -static -o $@ $(above_infinity)
-CFLAGS = -g -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0
+# excess-precision is to keep fp speed, avoiding c99 compliance
+CFLAGS = -g -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0 -fexcess-precision=fast
 GCC = g++ $(INCLUDES) $(LDFLAGS) 
 CC  = g++ $(INCLUDES) $(LDFLAGS)
 

@@ -24,6 +24,7 @@ libs: c_flags
 	-$(MAKE) -sC ranges        lib
 	-$(MAKE) -sC spline        lib
 	-$(MAKE) -sC gsl_tools     lib
+	-$(MAKE) -sC eigen         lib
 #	-$(MAKE) -sC auctions      lib
 
 details: c_flags

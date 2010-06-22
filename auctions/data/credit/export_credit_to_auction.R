@@ -188,7 +188,7 @@ for (q in seq(10,60,5)) {
 	write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
 }
 
-cat("\n   ------- DONE writing ", the.file," -------\n")
+cat("\n   ------- DONE writing  -------\n")
 
 
 # --------------------------------------------------------------------------------
@@ -229,8 +229,8 @@ for (i in 2:length(use.cols)) {
 #
 #  write state time series out in streaming format into separate
 #  file that can be concatenated onto the file produced by other commands.
-#                  Needs file state.replicates produced above for counts
-#                  of times to repeat each value.
+#                  *** Needs file state.replicates produced above for counts
+#                      of times to repeat each value.
 # --------------------------------------------------------------------------------
 
 # --- writes expanded national time series in streaming layout (one value for all counties)

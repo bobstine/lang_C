@@ -1,5 +1,3 @@
-# $Id: Makefile,v 1.24 2008/01/04 14:32:29 bob Exp $
-
 include ../c_flags
 
 ###########################################################################
@@ -19,7 +17,7 @@ PROJECT_NAME = utils
 # use this version (or higher optimization) to hide more debugging
 # OPT = -O2 -DNDEBUG
 
-OPT = -O2
+OPT = -O2 -DNDEBUG
 
 # USES = 
 

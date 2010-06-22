@@ -1,6 +1,3 @@
-
-# $Id: Makefile,v 1.24 2008/01/04 14:32:29 bob Exp $
-
 include ../c_flags
 
 ###########################################################################
@@ -16,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-# OPT = -O2 -DNDEBUG
+OPT = -O2 -DNDEBUG
 
 USES = ranges utils random
 
@@ -40,7 +37,7 @@ trendata_build_county: trendata_build_county.o trendata.h
 
 trendata_build_state: trendata_build_state.o trendata.h
 	$(GCC) trendata_build_state.o $(LDLIBS) -o $@
-#	run it directly from C directory rather than copy
+#	run it directly from C/tools directory rather than copy
 
 trendata_build_nation: trendata_build_nation.o trendata.h
 	$(GCC) trendata_build_nation.o $(LDLIBS) -o $@
