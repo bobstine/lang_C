@@ -11,7 +11,9 @@ include ../c_flags
 
 PROJECT_NAME = ranges
 
-OPT      =  -O4 -DNDEBUG -Wconversion
+#OPT      =  -O4 -DNDEBUG -Wconversion
+
+OPT = -std=c++0x
 
 USES = utils random
 
@@ -40,6 +42,9 @@ all:  sparse_iterator.test     range.test   column.test    range_traits.test fun
 
 pair: pair-test.o
 	$(CC) pair-test.o $(LDLIBS) -o $@
+
+lambda: lambda.o
+	$(CC) lambda.o $(LDLIBS) -o $@
 
 iterators.test.exec: iterators.test.o
 	$(CC) iterators.test.o $(above_1) $(LDLIBS) -o $@
