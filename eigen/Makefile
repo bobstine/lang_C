@@ -9,10 +9,10 @@ include ../c_flags
 PROJECT_NAME = eigen
 
 # slow and careful
-OPT = -O0 
+# OPT = -O0 
 # fast and who gives a damn about errors?
-# OPT = -O2 -DNDEBUG
 
+OPT = -O2 -DNDEBUG
 
 USES = random utils
 
@@ -38,7 +38,7 @@ include ../rules_for_makefiles
 
 
 rand_projection.o: rand_projection.cc 
-	$(GCC) $(CFLAGS) -c $^ -o $@
+	$(GCC) $(CFLAGS) -std=c++0x -c $^ -o $@
 
 rand_projection: rand_projection.o eigen_svd.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
