@@ -1,4 +1,4 @@
-// $Id: random.test.cc,v 1.10 2007/11/16 03:48:07 bob Exp $
+//
 
 #include "random.h"
 #include "print_utils.h"

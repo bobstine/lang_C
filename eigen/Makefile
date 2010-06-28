@@ -14,7 +14,7 @@ OPT = -O0
 # OPT = -O2 -DNDEBUG
 
 
-USES = 
+USES = random utils
 
 EXTERNAL_USES = 
 
@@ -37,3 +37,8 @@ level_0   = eigen_svd.o
 include ../rules_for_makefiles
 
 
+rand_projection.o: rand_projection.cc 
+	$(GCC) $(CFLAGS) -c $^ -o $@
+
+rand_projection: rand_projection.o eigen_svd.o
+	$(GCC) $^ $(LDLIBS)  -o  $@

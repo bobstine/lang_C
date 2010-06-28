@@ -1,4 +1,4 @@
-/* $Id: functor.h,v 1.1.1.1 2002/12/10 11:48:13 bob Exp $
+/*
    
   These adaptors let you call a member function as though its an operator.
 
