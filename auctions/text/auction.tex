@@ -144,6 +144,14 @@
  As in JMP, square brackets in the name of a variable identify an indicator for
  a category. 
 
+ As a last step, it will be convenient to later stream the data into the auction
+ by cat'ing a compressed version of the data.  To build this file, make the
+ shell script executable ({\tt chmod +x index.sh}) and then run the script with
+ output to a file, {\tt .\/index.sh > data}).  Then compress the data using gzip
+ into {\tt data.gz}.  When the auction is run below, simply cat the compressed
+ data via stdin to the auction.  Several examples in the makefile in auctions
+ illustrate how this works.
+
 
 \subsection{Data processing within the Auction} 
  

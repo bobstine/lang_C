@@ -373,6 +373,10 @@ template<class Source, class Pred, class Trans>
   SubspaceStream<Source, Pred, Trans>::pop()
 {
   assert (mBundle.size() > 0);
+  debugging::debug("SUBS",2) << "Popping bundle with " << mBundle.size() << " elements. \n";
+  //  show names
+  //  for (FeatureVector::const_iterator it = mBundle.begin(); it != mBundle.end(); ++it)   std::cout << (*it)->name() << " ";
+  //  std::cout << std::endl;
   std::vector<Feature> result (mTransformation(mBundle));
   mBundle.clear();
   return result;

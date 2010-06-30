@@ -7,6 +7,10 @@
  */
 
 #include "gsl_eigen.h"
+#include "debug.h"
+
+
+#include <gsl/gsl_math.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_eigen.h>
@@ -15,14 +19,15 @@
 #include <string>
 
 #include <iostream>
-
-// sqrt, exp
 #include <math.h>
 #include <assert.h>
 
-// debug
-// #include <iostream>
-// #include "gsl_utils.h"
+
+unsigned int
+max(unsigned int x, unsigned int y) { return (x>y)? x : y; }
+
+unsigned int
+min(unsigned int x, unsigned int y) { return (x<y)? x : y; }
 
 void
 gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix* eVecs)
@@ -30,11 +35,12 @@ gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix
   const unsigned int nRows (gram->size1);
   assert (nRows == gram->size2);
   assert (nRows == eVals->size);
+  debugging::debug("GSLE",2) << "Gram matrix is " << gram->size1 << "x" << gram->size2 << std::endl;
   gsl_eigen_symmv_workspace *scratch (gsl_eigen_symmv_alloc(nRows));
   gsl_eigen_symmv(gram, eVals, eVecs, scratch);
   gsl_eigen_symmv_sort(eVals, eVecs, GSL_EIGEN_SORT_VAL_DESC); 
-  std::cout << "GSLE: Leading eigenvalues are ";
-  gsl_vector_print_head (std::cout, eVals, 10);
+  debugging::debug("GSLE",2) << "Leading eigenvalues are ";
+  gsl_vector_print_head (debugging::debug("GSLE",2), eVals, min(10, eVals->size));
   gsl_eigen_symmv_free(scratch);
 }
 
@@ -82,21 +88,36 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   gsl_vector *eVals (gsl_vector_alloc(nCols));
   gsl_matrix *eVecs (gsl_matrix_alloc(nCols,nCols));
   gsl_eigen::principal_components(covMat, eVals, eVecs);
-  // build the principal components
+  // build the principal components; mNum 0 means to choose
   int nPC (mNumComponents);
   if (nPC==0)
-    while (nPC < (int)eVals->size && gsl_vector_get(eVals,nPC) > 1.0)
-      ++nPC;
-  gsl_matrix *pc (gsl_matrix_alloc(data->size1,nPC));
-  for(int j=0; j<nPC; ++j)
-    gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD, pc);
+  { double ei  (gsl_vector_get(eVals,0));
+    double ei1 (gsl_vector_get(eVals,1));                                // assume at least two
+    while (nPC < (int)eVals->size-1 && !gsl_isnan(ei) && (ei > 1.0)) // && ((ei > 1.25*ei1)))  // at least 25% more than next
+    { ++nPC;
+      ei = ei1;
+      ei1 = gsl_vector_get(eVals,nPC+1);
+    }
+  }
+  gsl_matrix *pc (0);
+  if (0 == nPC)
+  { debugging::debug("GSLE", 0) << " *** Error ***  Found no principal components; returns a one-column array of zero.\n";
+    pc = gsl_matrix_alloc(data->size1,1);
+    for (int i=0; i<(int)data->size1; ++i)
+      gsl_matrix_set(pc,i,0,  0.0);
+  }
+  else
+  { pc = gsl_matrix_alloc(data->size1,nPC);
+    for(int j=0; j<nPC; ++j)
+      gsl_eigen::construct_principal_component (data, j, eVecs, pMean, pSD, pc);
+  }
   // free space
   gsl_matrix_free(eVecs);
   gsl_vector_free(eVals);
   gsl_vector_free(pSD);
   gsl_vector_free(pMean);
   gsl_matrix_free(covMat);
-  return pc;                     // somebody else needs to free this
+  return pc;                     // somebody else needs to free this  ??? (done in adapter if anyone)
 }
 
 /* GSL documentation for these functions

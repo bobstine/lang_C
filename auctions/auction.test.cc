@@ -27,7 +27,7 @@
 */
 
 #include "auction.h"
- 
+  
 // from ranges
 #include "range.h"
 #include "range_ops.h"
@@ -272,10 +272,10 @@ main(int argc, char** argv)
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
-			       make_subspace_stream("Principal components", 
+			       make_subspace_stream("PCA(res)", 
 						    theAuction.rejected_features(),
-						    20,                            // bundle size
-						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    20,                            // bundle size  
+						    FeatureAcceptancePredicate(),  //                    0=use rule, true=standardize
 						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
 						    )));
 

@@ -451,7 +451,7 @@ public:
   void                  mark_position() {}
   
   int                   number_remaining()           const { return (mSource.size()-mPos); }
-  void                  print_to(std::ostream& os)   const { os << "BDST: " << name() << " stream @ " << mPos ; }
+  void                  print_to(std::ostream& os)   const { os << "SUBS: " << name() << " stream @ " << mPos ; }
 
 protected:
   bool                  empty()                      const { return ((number_remaining()+(int)mBundle.size())<mBundleSize);} //too few to fill

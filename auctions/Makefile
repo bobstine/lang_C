@@ -71,6 +71,9 @@ credit_test: auction.test
 	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 
 
+anes_run: auction.test
+#	gunzip -c data/anes/anes2008_data/data.gz |  ./auction.test -o data/anes/ -r 1000 -a 0.25 -p 3 -c 0
+	./auction.test -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.25 -p 3 -c 0
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0

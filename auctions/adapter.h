@@ -26,7 +26,7 @@ namespace Convert
     features_into_gsl_matrix(std::vector<Feature> const& fv, int skipContextRows);
   
   std::vector<Feature>
-    gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows);
+    gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows);                // frees the matrix as well
 
   
   // Convert features <--> eigen vectors  
