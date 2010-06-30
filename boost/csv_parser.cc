@@ -20,102 +20,6 @@
    variables identify variables generated during processing (e.g., V1[missing]
    or Location[SC]).  
    
-
-   Input -----------------------------
-   
-   The input data should have the style of named columns. Names can consist of
-   characters, numbers, and the symbols " " (space), ".", "_", "[", "]", and
-   "/".  Others might ought to be added the in later parsing of variables.
-   Attributes can be assigned to the variable by listing name=value pairs of
-   attributes {within curly brackets} and separated by semi-colons. NO spaces
-   are allowed within the attributes.  Currently used attributes defined by the
-   software are
-
-      parent    attached to a variable derived from another (eg, categorical or missing)
-      category  category represented
-      stream    identifies a specific input stream  (defaults to main)
-      name      repeated name of the variable (non-blank text only)
-
-   For example, an input csv file with 3 variables might begin as follows
-
-      Var1, a/b, Var.3{stream=sub;priority=2;knots=4}
-       1, 2, 3
-       3, 4, 5
-       a,  , 5
-
-   Missing data in the input file is denoted by an empty field.  If the same
-   name is used for two (or more columns), the second occurance will have a _2
-   appended, then a _3, and so forth for others.  The input stream option is a
-   'convenience function' that avoids having to use the bracketed option
-   {stream=stream_name} for every variable in the file.
-
-   If the first input column is a list of two or more of the labels
-
-       "in", "out", or "na"
-
-   then the parser will treat this column differently; it will treat
-   this column as an indicator of which cases are to be used in
-   subsequent analysis.  Rather than generate 2 or 3 indicators (one
-   for every symbol), it will only generate 1 or 2.  These boolean
-   variables will be placed first in the file sent to the auction for
-   modeling. In the auction, only those cases marked "in" will be used
-   for estimation.  Those marked "na" have explanatory variables
-   available which can be employed in modeling, such as for lagged
-   variables or smoothing.  All will be predicted.
-
-   Known limitations:
-
-      No blanks at the end of the line are allowed!
-      You need a *mix* of in/out for the leading indicator (not all in).
-      
-   
-   Output -----------------------------
-
-   The first line of output gives n and k, the number of cases and the number of
-   variables to be written.
-   
-   The remaining output is written one column at a time, so the data is written
-   out in streaming style, with three lines for each variable:
-
-      (1) the name of the variable (square brackets denote an indicator)
-      (2) attribute for this variable as space delimited strings/numbers
-      (3) data
-     
-   As in JMP, square brackets in the name of a variable identify an indicator
-   for a category.  If a variable lacks attributes, the second line begins with
-   '*'.  The output consists of at least as many columns as in the input due to
-   the expansion caused by missing values and categorical indicators.
-
-   The presence of a non-numerical symbol (in the example, the 'a' in the 3rd
-   row) in the data for Var1 converts Var1 into a categorical variable. Every
-   unique value found in this column will cause the software to generate an
-   indicator (so, you'll get a lot of these if this was an accident and the
-   column really is numerical).
-
-   In this example, you'd get output columns called Var1[1], Var1[3], Var1[a].
-   For the second column, the presence of a missing value means that you'd get
-   the two output variables (the mean is 3).  The last variable is assigned to
-   stream sub.
-  
-      Var1[1]
-      name Var1[1]  stream main  parent Var1  category 1
-      1 0 0
-      Var1[3]
-      name Var1[3]  stream main  parent Var1  category 3
-      0 1 0
-      Var1[a]
-      name Var1[a]  stream main  parent Var1  category a
-      0 0 1
-      a/b
-      name a/b  stream main
-      2 4 3 
-      a/b[missing]
-      name a/b[missing]  stream main  parent a/b  category missing
-      0 0 1
-      Var.3
-      name Var.3  stream sub
-      3 5 5
-      
    11 Nov 09 ... Attributes read and written.   
     7 Jan 09 ... Debug, formatting, better messages and comments.
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
@@ -146,13 +50,14 @@
 #include <boost/spirit/utility/confix.hpp>
 #include <boost/spirit/utility/lists.hpp>
 #include <boost/spirit/utility/escape_char.hpp>
-#include <boost/lambda/lambda.hpp>
+// #include <boost/filesystem.hpp>
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace std;
 using namespace boost::spirit;
+// using namespace boost::filesystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -427,11 +332,20 @@ write_numerical_column  (std::string const& varName, StringVector const& attribu
 			 int column, int numberMissing, std::ostream& output, std::string tarPath)
 {
   StringPair prefixes (get_prefixes(tarPath));
+  // see if list of assigned attributes includes role
+  bool hasRole (false);
+  if (attributes.size())
+  { std::set<std::string> attrNames;
+    std::for_each(attributes.begin(), attributes.end(), [&attrNames](std::string const& s)->void { attrNames.insert(get_word_from_string(s)); });
+    hasRole = (attrNames.end() != attrNames.find("role"));
+    std::clog << "CSVP: Variable " << varName << " has preassigned role.\n";
+  }
   // start by writing the undecorated name to output on top line and as attribute
   std::string name (fill_blanks(varName));
   output << prefixes.first << name << endl;
-  // write rest of attributes
-  output << prefixes.first << "role x ";
+  // write attributes
+  output << prefixes.first;
+  if (!hasRole) output << "role x ";
   std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
   output << endl;
   // now write the observed data, with any missing value inserted
@@ -487,6 +401,14 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
 			  int column, bool dropLastLabel, std::ostream& output, std::string tarPath)
 {
   StringPair prefixes = get_prefixes(tarPath);
+  // see if list of assigned attributes includes role
+  bool hasRole (false);
+  if (attributes.size())
+  { std::set<std::string> attrNames;
+    std::for_each(attributes.begin(), attributes.end(), [&attrNames](std::string const& s)->void { attrNames.insert(get_word_from_string(s)); });
+    hasRole = (attrNames.end() != attrNames.find("role"));
+    std::clog << "CSVP: Variable " << varName << " has preassigned role.\n";
+  }
   // find the collection of unique values
   int nObs (data.size());
   std::set< std::string > uniqueValues;
@@ -503,8 +425,10 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
     // write name, then as attribute
     output << prefixes.first << name << endl;
     // write attributes for each indicator
-    output << prefixes.first << "role x parent " << fill_blanks(varName) << " category " << fill_blanks(*it) << " ";
+    output << prefixes.first;
+    if (!hasRole) output << "role x ";
     std::copy(attributes.begin(), attributes.end(), std::ostream_iterator<std::string>(output," "));
+    output << "parent " << fill_blanks(varName) << " category " << fill_blanks(*it) << " ";
     output << endl;
     // data
     if (tarPath.size()==0)
@@ -573,11 +497,12 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
 
   int nVars (varNames.size());
   int nObs  (data.size());
-  StringVector noAttr (0);
-
+  
   int column = 0;
   if (hasSelector)
-  { write_categorical_column("[in/out]", noAttr, data, column, true, output, tarPath);  // true = drop last label
+  { StringVector role;
+    role.push_back("role context");
+    write_categorical_column("cv.indicator", role, data, column, true, output, tarPath);  // true = drop last label
     ++column;
   }
   for (; column<nVars; ++column)
@@ -633,7 +558,7 @@ csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
   }
   // check for duplicated variable names
   check_for_duplicate_names (&inputColumnNames);
-  // insert default stream name if attribute not found
+  // insert default stream name if attribute not found  ... Auction does this automatically now
   //  for(unsigned int j=0; j<inputColumnNames.size(); ++j)
   //     inputAttributes[j] = set_default_stream_name ("main", inputAttributes[j]);
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
@@ -719,6 +644,7 @@ main (int argc, char** argv)
   { std::string outputPath (outputFileName);
     if (outputPath[outputPath.size()-1] != '/')      // make sure ends in /
       outputPath = outputPath + "/";
+    // if (!exists(outputPath) create_directory(outputPath);   boost is broken!!!
     std::string   indexFileName (outputPath+"index.sh");
     std::ofstream indexStream   (indexFileName.c_str());
     if (!indexStream)

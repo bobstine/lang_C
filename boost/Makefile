@@ -29,6 +29,8 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 
 USES = utils
 
+OPT = -std=c++0x
+
 # Use this for boost files that need compilation
 
 EXTERNAL_USES = boost_regex-gcc-1_38

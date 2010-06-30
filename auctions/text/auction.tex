@@ -55,6 +55,165 @@
 
 \clearpage
 
+\section*{Reading and handling data}  % ----------------------------------------
+
+ The first step of data processing is to convert everything into numbers.  The
+ code that runs the auction only accommodates numerical variables.  Everything
+ -- missing data, categorical variables -- must be represented numerically.  The
+ program {\tt csv\_parser} handles this chore.  (The file {\tt csv\_parser.cc}
+ is kept in the {\tt boost} directory.)  This command line tool converts data
+ given in a csv file into the format used in the auction.  The most useful
+ application of {\tt csv\_parser} puts files representing the variables into a
+ named directory along with a shell script {\tt index.sh} for writing the data
+ in streaming style.
+
+
+\subsection*{Parsing a csv file}
+
+ The first line of the input csv file holds the names of the variables and any
+ descriptive information, basically the sort of named columns used by JMP or R.
+  Names can consist of characters, numbers, spaces and the characters:
+ \begin{verbatim} ., _, [, ], / \end{verbatim}
+ Others might ought to be added the in later parsing of variables.  If the same
+ name is used for two (or more columns), the second occurance will have ``\_2''
+ appended, then ``\_3'', and so forth for others.
+
+ The first input column is used to identify an indicator for cross-validation.
+  If the first input column is a list of the labels ``in'' and ``out'', then
+ this variable will be flagged as indicating which cases to use in the model,
+ and which to reserve for validation.  Rather than generate 2 indicators (one
+ for every symbol as done for explantory categorical variables), it will only
+ generate 1.  These boolean variables will be placed first in the file sent to
+ the auction for modeling with a flag to be used for validation rather than as a
+ response or explanatory variable.  In the auction, only those cases marked "in"
+ will be used for estimation.  All cases will be predicted.
+
+ In addition to supplying names, this first line also assigns attributes to
+ variables.  This is done by listing name=value pairs of attributes within
+ curly brackets and separated by semi-colons.  No spaces are allowed within the
+ attributes.  Currently used attributes defined by the software are
+
+ \begin{tabular}{cl}
+   role   &  One of ``x'', ``y'' or ``context'' (defaults to x).     \cr
+   stream &  Identifies a specific input stream  (defaults to main). \cr
+ \end{tabular}
+
+ \noindent
+ You must make one variable the response, or the software won't know which to
+ use.  The default stream option is for convenience since it avoids having to
+ use the bracketed option {stream=main} for every variable in the file.
+ As an example, an input csv file with 3 variables might begin as follows
+ \begin{verbatim}
+      Var1, a/b, Var.3{stream=sub;priority=2;knots=4}
+       1, 2, 3
+       3, 4, 5
+       a,  , 5
+ \end{verbatim}
+ The presence of a non-numerical symbol (in the example, the 'a' in the 3rd row)
+ in the data for Var1 converts Var1 into a categorical variable. Every unique
+ value found in this column will cause the software to generate an indicator
+ (so, you'll get a lot of these if this was an accident and the column really is
+ numerical).
+
+ Identify missing data in the csv file by empty fields, as shown on the last
+ line of the prior example.  (You don't need to leave a blank space; ``,,''
+ would work on the third line of the example just as well.  {\tt csv\_parser}
+ automatically builds an indicator for any variable that has missing data and
+ fills the missing values with the mean of the observed values.
+
+ Known limitations:
+ \begin{itemize}
+   \item No blanks at the end of the line are allowed!
+   \item  You need a *mix* of in/out for the leading indicator (not all in).
+ \end{itemize}
+   
+\subsection*{Output of the csv parsing}
+
+ The parsed data are written into a named directory (which is creatded if it
+ does not exist).  The key file in this directory is a shell script named {\tt
+ index.sh}.  Executing this script produces the streaming style input expected
+ by the auction.  You can edit this script to produce test input, shorter data
+ series, or limit the number of variables.  Three lines in the script define the
+ data for each variable:
+\begin{enumerate}
+    \item  name of the variable (square brackets denote an indicator)
+    \item  attributes for this variable as space delimited strings/numbers
+    \item  command that sends the variable to standard output (usually {\tt
+           echo}.
+\end{enumerate}  
+ As in JMP, square brackets in the name of a variable identify an indicator for
+ a category. 
+
+
+\subsection{Data processing within the Auction} 
+ 
+
+ Numerical data is read from a file aud converted into two vectors of {\tt
+ Column} objects.  The read step is done by the routine {\tt
+ insert\_columns\_from\_file} called from the main function that sets up the
+ auction.  A {\tt Column} is a wrapper (envelope) class for the column data
+ object that holds the actual data; this avoids the overhead of copying.  Column
+ objects are lightweight.  The {\tt ColumnData} object just reads numbers
+ (doubles, in particular), then computes summary characteristics (including the
+ number of unique values and means) from the input values in {\tt
+ init\_properties}.  It knows nothing about the interpretation of names or
+ properties.  As far as a {\tt Column} is concerned, names and descriptions are
+ simply strings.  (The only conversion that happens in columns is to fill spaces
+ in names with the underscore character, converting for example ``the var'' into
+ ``the\_var''.)
+
+ The auction code carefully examines the names of the leading input variables to
+ determine how to use the supplied cases.  Cases may be of three types:
+\begin{itemize}
+\item Missing cases.  These supply information about possible explanatory
+ variables, but the not the response.  These are not predicted and are only used
+ for information about features (such as lagged variable values).  These do not
+ appear in the saved data file produced at the end of an analysis and do not
+ appear in the data object ({\tt gsl\_data}) that supports the regression model.
+\item In-sample or estimation cases.  These are complete $(y_i,\xx_i)$ tuples
+ used to identify the model.
+\item Out-of-sample or validation cases. These are complete cases, but will not
+ be used in the fitting process.  They only appear for calculation of
+ predictions for validation purposes.
+\end{itemize}
+ The input command-line argument ``x'' denote the number of leading cases which
+ are formally missing the response.  These {\em must} be the leading cases in
+ the data file.  These cases are neither used in fitting nor validation; they
+ are simply there for building predictive features.  These rows are skipped over
+ when transferring the response ({\tt build\_model\_data}) and accepted features
+ into the auction.  (Each expert knows rows to skip in the model. See the
+ function {\tt convert\_to\_model\_iterators} defined for the ExpertABC.)  If
+ the leading column is named ``[in/out][in]'', then the first data column is
+ treated as a boolean indicator of the in-sample and out-of-sample cases.  (For
+ extra cases, the values of any response column -- indicator and numerical value
+ -- are ignored.)
+
+
+ The parsing of the names of variables and the descriptions (property lists)
+ happens when the columns are convered into features.  Features are initialized
+ from columns.  As with columns, a feature is a wrapper hiding the particular
+ type of variable.  {\tt ColumnFeatures} hold a column; other types, such as
+ unary features, hold a function that converts the values in a another feature.
+  The function {\tt add\_attributes\_from\_paired\_list}, for example, is called by
+ a column feature to convert the ``description string'' read by a column into
+ the paired property list used by a feature.  Columns, for example, might simply
+ use this string as purely documenation, as in free text.  Features, in
+ contrast, expect to find that this string has a paired list of terms.
+
+ Columns and Features live separately from the code that actually fits the
+ regression. The GSL routines, such as those in {\tt gsl\_regr}, work with a
+ distinct data object, essentially a plain old C array.  The reason for this
+ duplication is to allow outside routines, such as features, to have a mix of
+ validation and estimation data, whereas the data inside the regression model is
+ {\em only} that which is used for fitting the model.  Also, this separation
+ makes it easy to handle the use of split samples for validation. Code for {\tt
+ for} loops needs to be able to iterate over the elements of the data very
+ quickly, so we pack the estimation cases adjacent to each other by permuting
+ the input data.  The validation cases are sorted away from the estimation cases
+ in the GSL objects, whereas they might be mixed together in the features.
+
+
+
 \section{Experts} % --------------------------------------------------------------------------
 
  The auction uses several types of experts.  (In the code, these are identified
@@ -668,77 +827,6 @@ incorporated into the variables
  proposed new variable, producing ``residuals'' $z_{res}$.  This is done using
  the current weights $W_0$.
 \end{description}
-
-\subsection{Reading and handling data}
-
- At the level of the auction, only numerical data is processed.  The auction
- code does not handle missing data nor indicators.  Any indication of
- missingness or role in the analysis must be handled prior to the auction, such
- as by the {\tt csv\_parser} function that uses the boost regex functions.
-
- Numerical data is read from a file aud converted into two vectors of {\tt
- Column} objects.  The read step is done by the routine {\tt
- insert\_columns\_from\_file} called from the main function that sets up the
- auction.  A {\tt Column} is a wrapper (envelope) class for the column data
- object that holds the actual data; this avoids the overhead of copying.  Column
- objects are lightweight.  The {\tt ColumnData} object just reads numbers
- (doubles, in particular), then computes summary characteristics (including the
- number of unique values and means) from the input values in {\tt
- init\_properties}.  It knows nothing about the interpretation of names or
- properties.  As far as a {\tt Column} is concerned, names and descriptions are
- simply strings.  (The only conversion that happens in columns is to fill spaces
- in names with the underscore character, converting for example ``the var'' into
- ``the\_var''.)
-
- The auction code carefully examines the names of the leading input variables to
- determine how to use the supplied cases.  Cases may be of three types:
-\begin{itemize}
-\item Missing cases.  These supply information about possible explanatory
- variables, but the not the response.  These are not predicted and are only used
- for information about features (such as lagged variable values).  These do not
- appear in the saved data file produced at the end of an analysis and do not
- appear in the data object ({\tt gsl\_data}) that supports the regression model.
-\item In-sample or estimation cases.  These are complete $(y_i,\xx_i)$ tuples
- used to identify the model.
-\item Out-of-sample or validation cases. These are complete cases, but will not
- be used in the fitting process.  They only appear for calculation of
- predictions for validation purposes.
-\end{itemize}
- The input command-line argument ``x'' denote the number of leading cases which
- are formally missing the response.  These {\em must} be the leading cases in
- the data file.  These cases are neither used in fitting nor validation; they
- are simply there for building predictive features.  These rows are skipped over
- when transferring the response ({\tt build\_model\_data}) and accepted features
- into the auction.  (Each expert knows rows to skip in the model. See the
- function {\tt convert\_to\_model\_iterators} defined for the ExpertABC.)  If
- the leading column is named ``[in/out][in]'', then the first data column is
- treated as a boolean indicator of the in-sample and out-of-sample cases.  (For
- extra cases, the values of any response column -- indicator and numerical value
- -- are ignored.)
-
-
- The parsing of the names of variables and the descriptions (property lists)
- happens when the columns are convered into features.  Features are initialized
- from columns.  As with columns, a feature is a wrapper hiding the particular
- type of variable.  {\tt ColumnFeatures} hold a column; other types, such as
- unary features, hold a function that converts the values in a another feature.
-  The function {\tt add\_attributes\_from\_paired\_list}, for example, is called by
- a column feature to convert the ``description string'' read by a column into
- the paired property list used by a feature.  Columns, for example, might simply
- use this string as purely documenation, as in free text.  Features, in
- contrast, expect to find that this string has a paired list of terms.
-
- Columns and Features live separately from the code that actually fits the
- regression. The GSL routines, such as those in {\tt gsl\_regr}, work with a
- distinct data object, essentially a plain old C array.  The reason for this
- duplication is to allow outside routines, such as features, to have a mix of
- validation and estimation data, whereas the data inside the regression model is
- {\em only} that which is used for fitting the model.  Also, this separation
- makes it easy to handle the use of split samples for validation. Code for {\tt
- for} loops needs to be able to iterate over the elements of the data very
- quickly, so we pack the estimation cases adjacent to each other by permuting
- the input data.  The validation cases are sorted away from the estimation cases
- in the GSL objects, whereas they might be mixed together in the features.
 
 
  \bibliography{/Users/bob/work/references/stat}

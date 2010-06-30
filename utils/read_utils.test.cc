@@ -25,7 +25,6 @@
 #include <ctime>
 #include <fstream>
 
-
 int
 main()
 {
@@ -34,9 +33,13 @@ main()
   std::string both("  both  ");
   std::string left("   left");
   std::string right("right  ");
-  std::cout << "Trim:  [" << both  << "]  ->  [" << trim(both)  << "]\n";
-  std::cout << "Trim:  [" << left  << "]  ->  [" << trim(left)  << "]\n";
-  std::cout << "Trim:  [" << right << "]  ->  [" << trim(right) << "]\n";
+  std::cout << "Trim:  [" << both  << "]  ->  [" << read_utils::trim(both)  << "]\n";
+  std::cout << "Trim:  [" << left  << "]  ->  [" << read_utils::trim(left)  << "]\n";
+  std::cout << "Trim:  [" << right << "]  ->  [" << read_utils::trim(right) << "]\n";
+
+  std::cout << "\nGet first word from string 'first word'" << get_word_from_string("first word") << std::endl;
+  std::cout << "Get first word from string 'firstword'" << get_word_from_string("firstword") << std::endl;
+  
   
   std::string       fileName("/Users/bob/C/utils/test/big_test.dat");
   std::string prefixFileName("/Users/bob/C/utils/test/prefix_test.dat");

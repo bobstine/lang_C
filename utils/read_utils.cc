@@ -29,6 +29,23 @@ operator>>(std::istream& input, std::vector<double>& vec)
 }
 
 
+//
+
+std::string
+get_word_from_string(std::string const& s)
+{
+  std::string r;
+
+  for(std::string::const_iterator it=s.begin(); it != s.end(); ++it)
+    if(' ' == *it)
+      return r;
+    else
+      r.push_back(*it);
+  return r;
+}
+
+
+
 //  This section is the scanf style input
 
 #include <cstdio>

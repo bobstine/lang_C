@@ -100,6 +100,12 @@ std::istream&
 operator>>(std::istream& input, std::vector<double>& vec);
 
 
+// Get a word from a string
+
+std::string
+get_word_from_string(std::string const& s);
+
+
 // Read into range of a vector defined by begin/end pairs; returns number read
 
 int 
