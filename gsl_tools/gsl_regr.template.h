@@ -398,7 +398,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,0, mN,newQ)).matrix);
   gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,0, mN,newQ)).matrix);
   mEngine.insert_analysis_matrix (QR, X);  // dest <- src
-  // insert shinkage terms on diagonal after zero out; ??? not right if collinear
+  // insert shrinkage terms on diagonal after zero out; ??? not right if collinear
   gsl_matrix_set_zero(&(gsl_matrix_submatrix(mQR, mN,0,    newQ,newQ)).matrix);
   QR   =              &(gsl_matrix_submatrix(mQR,  0,0, mN+newQ,newQ)).matrix;
   for(int j=0; j<newQ; ++j)
@@ -414,7 +414,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   if (status)   debug("GSLR",0) << "Warning. Status of QR decomp is " << status << std::endl;
   else          mQ = newQ;                                                          // reset Q to have new variables
   /*
-    This block of code controlled building QR when no shrinkage
+  //  This block of code controlled building QR when no shrinkage
   // copy new portions of X into QR
   gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,firstColumn, mN,numberColumns)).matrix);
   gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,firstColumn, mN,numberColumns)).matrix);
@@ -433,28 +433,30 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   else 
     status = gsl_linalg_partial_QR_decomp (QR, &vTau.vector, firstColumn);
   */
-  /*
-   { // debugging code that prints full QR decomposition
-     gsl_matrix *q (gsl_matrix_alloc(n,n));
-     gsl_matrix *r (gsl_matrix_alloc(n,newQ));
-     gsl_linalg_QR_unpack (&vQR.matrix, &vTau.vector, q, r);
-     gsl_matrix_const_view vQ (gsl_matrix_const_submatrix(q,0,0,n,newQ));
-     gsl_matrix_const_view vR (gsl_matrix_const_submatrix(r,0,0,newQ,newQ));
-     debug("GSLR",0)<< " ********  Q " << &vQ.matrix;
-     debug("GSLR",0) << " ********  R " << &vR.matrix;
-     gsl_matrix_free(q);
-     gsl_matrix_free(r);
+
+  { /*
+    // debugging code that prints full QR decomposition
+    gsl_matrix *q (gsl_matrix_alloc(mN+newQ,mN+newQ));
+    gsl_matrix *r (gsl_matrix_alloc(mN+newQ,newQ));
+    gsl_linalg_QR_unpack (QR, tau, q, r);
+    //    gsl_matrix_const_view vQ (gsl_matrix_const_submatrix(q,0,0,n,newQ));
+    gsl_matrix_const_view vR (gsl_matrix_const_submatrix(r,0,0,newQ,newQ));
+    //    debug("GSLR",0)<< " ********  Q " << &vQ.matrix;
+    debug("GSLR",0) << " ********  R " << &vR.matrix;
+    gsl_matrix_free(q);
+    gsl_matrix_free(r);
+    */
    }
-  */
+
   gsl_vector const* Y   (&gsl_vector_const_subvector(mpData->y(),0,mN).vector);          // store beta and residuals
   gsl_vector    *beta   (&gsl_vector_subvector(mBeta,0,mQ).vector);
   gsl_vector     *res   (&gsl_vector_subvector(mpData->live_e(),0,mN).vector);
   { gsl_vector  *e (gsl_vector_alloc(mN+mQ));
-    gsl_vector  *y (gsl_vector_alloc(mN+mQ));                                           // longer vectors for shrinkage
+    gsl_vector  *y (gsl_vector_alloc(mN+mQ));                                            // longer vectors for shrinkage
     gsl_vector_memcpy  (&gsl_vector_subvector(y,  0, mN).vector, Y);
-    gsl_vector_set_all (&gsl_vector_subvector(y, mN, newQ).vector, mYBar);
+    gsl_vector_set_all (&gsl_vector_subvector(y, mN, newQ).vector, 0.0);                 // pad y with 0 (y is centered, so this is mean)
     // not imp shrinkage
-    // mEngine.prepare_vector_for_analysis (y, &vY.vector);                               // resulting resids weighted by W^.5 if WLS
+    // mEngine.prepare_vector_for_analysis (y, &vY.vector);                              // resulting resids weighted by W^.5 if WLS
     gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     status = gsl_linalg_QR_lssolve (QR, tau, y, beta, e);
     gsl_set_error_handler(builtIn);

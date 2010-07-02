@@ -155,6 +155,7 @@ class ColumnFeature : public FeatureABC
   Column      column()         const { return mColumn; }
 
   Iterator    begin()          const { return make_anonymous_iterator(mColumn->begin()); }
+  Iterator    end()            const { return make_anonymous_iterator(mColumn->end()); }
   Range       range()          const { return make_anonymous_range(mColumn->range()); }
   bool        is_dummy()       const { return mColumn->is_dummy(); }
   bool        is_constant()    const { return (1 == mColumn->num_unique()); }
@@ -187,9 +188,10 @@ class LagFeature : public FeatureABC
   
   int         lag()            const { return mLag; }
 
-  Iterator    begin()          const { return make_anonymous_iterator(make_lag_iterator(mFeature->begin(),mLag)); }
-  Range       range()          const { Range r (mFeature->range()); return make_anonymous_range(make_lag_iterator(Ranges::begin(r),mLag),
-												make_lag_iterator(  Ranges::end(r),mLag)); }
+  Iterator    begin()          const { return make_anonymous_iterator(make_lag_iterator(mFeature->begin(), mLag)); }
+  Iterator    end()            const { return make_anonymous_iterator(make_lag_iterator(mFeature->end()  , mLag)); }
+  Range       range()          const { return make_anonymous_range(   make_lag_iterator(mFeature->begin(), mLag),
+								      make_lag_iterator(mFeature->end()  , mLag)); }
   bool        is_dummy()       const { return mFeature->is_dummy(); }
   bool        is_constant()    const { return mFeature->is_constant(); }
   double      average()        const { return mFeature->average(); }
@@ -224,6 +226,10 @@ class InteractionFeature : public FeatureABC
                                                                      make_binary_iterator(std::multiplies<double>(),
                                                                                           mFeature1->begin(),
                                                                                           mFeature2->begin())); }
+  Iterator    end()           const { return make_anonymous_iterator(
+                                                                     make_binary_iterator(std::multiplies<double>(),
+                                                                                          mFeature1->end(),
+                                                                                          mFeature2->end())); }
   Range       range()         const { return make_anonymous_range (
                                                                    make_binary_range(std::multiplies<double>(),
                                                                                      mFeature1->range(),
@@ -263,6 +269,7 @@ class LinearCombinationFeature : public FeatureABC
   Arguments   arguments()     const {        Arguments a; a[name()]=1; return a;}
   
   Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
+  Iterator    end()           const { return make_anonymous_iterator(mColumn->end()); }
   Range       range()         const { return make_anonymous_range(mColumn->range()); }
   double      average()       const { return mColumn->average(); }
   double      center()        const { return mColumn->average(); }
@@ -300,6 +307,7 @@ class UnaryFeature : public FeatureABC
   Arguments   arguments()  const;
   
   Iterator    begin()      const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->begin()));    }
+  Iterator    end()        const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->end()));    }
   Range       range()      const { return make_anonymous_range(make_unary_range(mOp,mFeature->range()));    }
   
   bool        is_dummy()   const { return mFeature->is_dummy(); }
@@ -335,6 +343,7 @@ class BinaryFeature : public FeatureABC
   Arguments   arguments()   const { return Arguments(); }
   
   Iterator    begin()       const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->begin(),mFeature2->begin())); }
+  Iterator    end()         const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->end(),mFeature2->end())); }
   Range       range()       const { return make_anonymous_range(make_binary_range(mOp,mFeature1->range(),mFeature2->range())); }
 
   bool        is_dummy()    const { return (mFeature1->is_dummy() && mFeature2->is_dummy()); }

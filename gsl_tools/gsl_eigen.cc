@@ -39,7 +39,7 @@ gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix
   gsl_eigen_symmv_workspace *scratch (gsl_eigen_symmv_alloc(nRows));
   gsl_eigen_symmv(gram, eVals, eVecs, scratch);
   gsl_eigen_symmv_sort(eVals, eVecs, GSL_EIGEN_SORT_VAL_DESC); 
-  debugging::debug("GSLE",2) << "Leading eigenvalues are ";
+  debugging::debug("GSLE",2) << "Leading eigenvalues are:\n";
   gsl_vector_print_head (debugging::debug("GSLE",2), eVals, min(10, eVals->size));
   gsl_eigen_symmv_free(scratch);
 }
@@ -92,11 +92,13 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   int nPC (mNumComponents);
   if (nPC==0)
   { double ei  (gsl_vector_get(eVals,0));
-    double ei1 (gsl_vector_get(eVals,1));                                // assume at least two
-    while (nPC < (int)eVals->size-1 && !gsl_isnan(ei) && (ei > 1.0)) // && ((ei > 1.25*ei1)))  // at least 25% more than next
-    { ++nPC;
-      ei = ei1;
-      ei1 = gsl_vector_get(eVals,nPC+1);
+    if (!gsl_isnan(ei))
+    { double ei1 (gsl_vector_get(eVals,1));                                                   // assume at least two
+      while (nPC < (int)eVals->size-1 && !gsl_isnan(ei1) && (ei > 1.0) && (ei > 1.25*ei1))    // at least 25% more than next
+      { ++nPC;
+	ei = ei1;
+	ei1 = gsl_vector_get(eVals,nPC+1);
+      }
     }
   }
   gsl_matrix *pc (0);

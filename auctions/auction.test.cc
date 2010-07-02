@@ -25,7 +25,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-
+   
 #include "auction.h"
   
 // from ranges
@@ -39,8 +39,7 @@
 // from utils; debug has the printing facility
 #include "column.h"
 #include "debug.h"
-#include "read_utils.h"
-
+#include "read_utils.h"     
 
 #include "gsl_model.h"
 #include "smoothing_spline.h"
@@ -479,7 +478,7 @@ identify_cv_indicator(std::vector<Column> const& columns, int extraCases)
   { debug("MAIN",0) << "Data lack CV indicator.\n";
     return indicator;
   }
-  if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator"))
+  if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator[in]"))
   { debug("MAIN",0) << "First context column is not in/out indicator; found '" << columns[0]->name()
 		    << "' instead. Using all cases for estimation.\n";
     return indicator;

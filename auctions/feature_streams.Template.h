@@ -1,6 +1,6 @@
+#include "adapter.h"
 #include "debug.h"
 
-#include "adapter.h"
 
 namespace {
   
@@ -373,15 +373,32 @@ template<class Source, class Pred, class Trans>
   SubspaceStream<Source, Pred, Trans>::pop()
 {
   assert (mBundle.size() > 0);
-  debugging::debug("SUBS",2) << "Popping bundle with " << mBundle.size() << " elements. \n";
+  debugging::debug("SUBS",2) << mName << " popping bundle with " << mBundle.size() << " elements.\n";
   //  show names
   //  for (FeatureVector::const_iterator it = mBundle.begin(); it != mBundle.end(); ++it)   std::cout << (*it)->name() << " ";
   //  std::cout << std::endl;
+
+  //  Dump the bundle to a file to see what's going on: stream to file and then transpose
+  /*  
+      std::string file ("/Users/bob/C/auctions/data/anes/bundle.txt");
+      std::ofstream bs (file.c_str());
+      if (bs)
+      { debugging::debug("SUBS", 3) << "Writing bundle to file " << file << std::endl;
+      for (unsigned int j=0; j<mBundle.size(); ++j)
+      { mBundle[j]->write_values_to(bs);
+      bs << std::endl;
+      }
+      }
+      else
+      debugging::debug("SUBS", 3) << " Non-fatal error; could not open file " << file << " to dump feature bundle.\n ";
+  */      
   std::vector<Feature> result (mTransformation(mBundle));
+  debugging::debug("SUBS",2) << mName << " transformation completed.\n";  
   mBundle.clear();
   return result;
 }
 
+  
 template<class Source, class Pred, class Trans>
   void
   SubspaceStream<Source, Pred, Trans>::increment_position()
@@ -394,28 +411,3 @@ template<class Source, class Pred, class Trans>
 }
 
 
-/*
-
-template <class Method>
-std::vector<Feature> 
-SubspaceBasis<Method>::operator()(std::vector<Feature> const& fv) const
-{
-  gsl_matrix *mat (ConvertFeaturesIntoMatrix(fv));
-  // form the decomposition of the corr matrix 
-  std::pair<gsl_vector*, std::vector<gsl_vector*> > basis = mMethod(mat);
-  int numPC ((int)basis.second.size());
-  if (numPC > 0)
-    std::cout << "SUBB: Leading eigenvalues are " << &gsl_vector_const_subvector(basis.first,0,numPC).vector << std::endl;
-  else
-    std::cout << "SUBB: *** Error ***    Subspace eigenvector decomposition returns no basis element.\n";
-  // convert the resulting vector of gsl vectors into features
-  std::vector<Feature> result;
-  for (int j=0; j<numPC; ++j)
-    result.push_back(new gslVectorFeature("Basis", basis.second[j]));
-  // free space allocated by conversion
-  gsl_vector_free(basis.first);
-  gsl_matrix_free(mat);
-  return result;
-}
-
-*/

@@ -19,7 +19,7 @@
 
 #include <Eigen/Array>
 #include <Eigen/SVD>
-
+ 
 
 class eigenSVD: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
 {

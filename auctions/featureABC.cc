@@ -134,6 +134,13 @@ FeatureABC::write_to (std::ostream& os)     const
 
 
 void
+FeatureABC::write_values_to(std::ostream& os) const
+{
+  std::copy(begin(), end(), std::ostream_iterator<double>(os," "));
+}
+
+
+void
 FeatureABC::print_to(std::ostream& os) const
 {
   os << name() ;

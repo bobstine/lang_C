@@ -81,6 +81,7 @@ class FeatureABC
   virtual Arguments   arguments()                               const = 0;                 //
   
   virtual Iterator    begin ()                                  const = 0;                 //
+  virtual Iterator    end ()                                    const = 0;                 //
   virtual Range       range ()                                  const = 0;                 //
   virtual double      average ()                                const = 0;                 // mean value
   virtual double      center ()                                 const = 0;                 // may or may not be average, easier to compute
@@ -88,8 +89,9 @@ class FeatureABC
   virtual bool        is_dummy()                                const;
   virtual bool        is_constant()                             const { return (0.0 == scale()); }
   
-  virtual void        write_to (std::ostream& os)               const;                     
-  virtual void        print_to (std::ostream& os)               const;
+  virtual void        write_to       (std::ostream& os)         const;                     // description of the type of feature
+          void        write_values_to(std::ostream& os)         const;                     // all of the data values
+  virtual void        print_to       (std::ostream& os)         const;                     // just the first few values
 
 protected:
 	  Arguments   join_arguments(Arguments const& a1, Arguments const& a2) const;
