@@ -19,8 +19,8 @@ namespace {
       return false;
     for (std::vector<Feature>::const_iterator it = vec.begin();it != vec.end(); ++it)
     { if (name == (*it)->name())
-      { debugging::debug(0) << "FETR: Found feature " << name << " in feature vector " << vecName << std::endl;
-	return true;
+      { debugging::debug("FETR", 3) << "Found feature " << name << " in " << vecName << std::endl;
+	return true; 
       }
     }
     return false;
@@ -220,7 +220,7 @@ FeatureProductStream<Source>::pop()
 
 
 
-//  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream  Cross-product stream
+//  Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream
 
 template<class Source1, class Source2>
   void
@@ -251,6 +251,7 @@ int
   int num (0);
   for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
     num += mFastSource.size() - *it;
+  // debugging::debug("CPST",4) << "Source sizes " << mSlowSource.size() << "," << mFastSource.size() << " give position " << mPos << " and " << num << " remaining\n.";
   return num;
 }
 
@@ -277,7 +278,8 @@ template<class Source1, class Source2>
 void
 CrossProductStream<Source1, Source2>::increment_position()
 {
-  mSlowPos = 0;
+  ++mPos[mSlowPos];  
+  mSlowPos = 0;                                 // now go back to check that list has not grown
   update_position_vector();
   for(std::vector<int>::const_iterator it=mPos.begin(); it!=mPos.end(); ++it)
   { if (*it < (int) mFastSource.size())
@@ -285,6 +287,7 @@ CrossProductStream<Source1, Source2>::increment_position()
     else
       ++mSlowPos;
   }
+  debugging::debug("CPST",4) << "Increment position to " << mSlowPos << " x " << mPos[mSlowPos] << std::endl;
   build_current_feature_name();
 }
 
@@ -298,7 +301,7 @@ CrossProductStream<Source1, Source2>::current_feature_is_okay(std::vector<Featur
     return false;
   if (mSlowSource[mSlowPos]->is_constant() || (mFastSource[mPos[mSlowPos]]->is_constant()) )
     return false;
-  if (mCurrentFeatureName=="")           // check that we have a name since streams may have grown
+  if (mCurrentFeatureName=="")               // check that we have a name since streams may have grown
     build_current_feature_name();
   if (found_feature_name_in_vector(mCurrentFeatureName, used, "model features"))  // try those that have been skipped before again
     return false;
@@ -310,13 +313,11 @@ template<class Source1, class Source2>
 typename std::vector<Feature>
 CrossProductStream<Source1, Source2>::pop()
 {
-  debugging::debug("CPST",0) << name() << " slow[" << mSlowPos << "/" << mSlowSource.size()
-			     << "] x fast[" << mPos[mSlowPos] << "/" << mFastSource.size() << "].\n";
-  debugging::debug("CPST",0) << "First fast feature is " << mFastSource[0]->name() << std::endl;
-  debugging::debug("CPST",0) << "First slow feature is " << mSlowSource[0]->name() << std::endl;
+  debugging::debug("CPST",3) << name() << " slow[" << mSlowPos << "/" << mSlowSource.size()
+			     << "] x fast[" << mPos[mSlowPos] << "/" << mFastSource.size() << "]: "
+			     << mSlowSource[0]->name() << " x " << mFastSource[0]->name() << std::endl;
   Feature  xs (mSlowSource[mSlowPos]);
   Feature  xf (mFastSource[mPos[mSlowPos]]);
-  ++mPos[mSlowPos];       // mark that we used this one
   increment_position();
   std::vector<Feature> result;
   result.push_back(Feature(xs,xf));
@@ -343,7 +344,7 @@ typename std::vector<Feature>
 PolynomialStream<Source>::pop()
 {
   Feature x  (mSource[mPos]);
-  debugging::debug(0) << "PLYS: " << name() << " stream making polynomial subspace from feature " <<  x->name() << std::endl;
+  debugging::debug("PLYS",4) << "Stream " << name() << " making polynomial subspace from feature " <<  x->name() << std::endl;
   increment_position();
   std::vector<Feature> result;
   if (!x->is_used_in_model())    // include X if not in model
@@ -373,7 +374,7 @@ template<class Source, class Pred, class Trans>
   SubspaceStream<Source, Pred, Trans>::pop()
 {
   assert (mBundle.size() > 0);
-  debugging::debug("SUBS",2) << mName << " popping bundle with " << mBundle.size() << " elements.\n";
+  debugging::debug("SUBS",4) << mName << " popping bundle with " << mBundle.size() << " elements.\n";
   //  show names
   //  for (FeatureVector::const_iterator it = mBundle.begin(); it != mBundle.end(); ++it)   std::cout << (*it)->name() << " ";
   //  std::cout << std::endl;
@@ -393,7 +394,7 @@ template<class Source, class Pred, class Trans>
       debugging::debug("SUBS", 3) << " Non-fatal error; could not open file " << file << " to dump feature bundle.\n ";
   */      
   std::vector<Feature> result (mTransformation(mBundle));
-  debugging::debug("SUBS",2) << mName << " transformation completed.\n";  
+  debugging::debug("SUBS",4) << mName << " transformation completed.\n";  
   mBundle.clear();
   return result;
 }

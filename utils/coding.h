@@ -84,6 +84,9 @@ double
 cauchyPDF (int k);
 
 double 
-universalPDF (int k);  // k must be positive or you're hosed.
+universalPDF (int k);                // k must be positive or you're hosed.
+
+double
+slowUniversalPDF (int k);            // skips over the initial five terms
 
 #endif

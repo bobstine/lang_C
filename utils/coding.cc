@@ -142,3 +142,12 @@ universalPDF (int k)
 }
   
   
+double
+slowUniversalPDF (int k)
+{
+  assert(k>0);
+  const double normalizer (2.865 - 1.5);   // adjust for skipping first 2 log-star terms
+  return exp2(-log_star(k+2))/normalizer;
+}
+
+  

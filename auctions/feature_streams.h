@@ -100,7 +100,7 @@ public:
       else
 	Stream::increment_position();
     }
-    //    debugging::debug("RGST",3) << "Regulated stream 'has_feature' returns false.\n";
+    debugging::debug("RGST",3) << "Regulated stream 'has_feature' returns false for stream '" << Stream::name() <<"\n";
     return false;
   }
 };
@@ -324,9 +324,11 @@ make_feature_product_stream (std::string name, Feature f, Source const& Src)
 /*  Allows combination of two dynamically growing sources. You *must* guarantee
     that the sources remain "alive" for the duration of the application.
 
+    Suppose the fast source has 4 elements.  Then
+
     Position vector {4,2,0} indicates that
-            var 0 of the slow source has been crossed with 0,1,2,3 of fast
-	    var 1                    has been crossed with 0,1     of fast
+            var 0 of the slow source has been crossed with 0,1,2,3 of fast (done with var 0 for now)
+	    var 1                    has been crossed with 0,1     of fast, next with third in fast
 	    var 2                    has not been crossed with any
 */
   

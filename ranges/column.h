@@ -163,7 +163,8 @@ operator<<(std::ostream& os, Column const& column)
 
 // Read columns as a stream from a stream input object:
 //        First line of stream gives number of observations expected for each column.
-//        Then come triples of lines: name, description, data
+//        Seems to work okay so long as this number is >= to the number present.
+//        Then come triples of lines for each column: name, description, data
 class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
   std::istream&    mStream;

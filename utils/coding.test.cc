@@ -52,43 +52,48 @@ int main(void)
   const double geoProb  = 0.6;
   const double geoShare = 0.5;
   
-  printf("   k  univ(k)  geo(k)   cauchy(k)   ell(k)   f-tresh(k) \n");
-  for (long k=1; k<7; ++k)
-    printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f \n",
+  printf("   k  univ(k)  slow(k)  geo(k)   cauchy(k)   ell(k)   f-tresh(k) \n");
+  for (long k=1; k<11; ++k)
+    printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f \n",
            k,
            universalPDF(k),
+	   slowUniversalPDF(k),
            geometricPDF(geoProb, k),
            cauchyPDF(k),
            codeIndexLength(geoShare, geoProb, k),
            fStatisticThreshold(geoShare, geoProb, k));
-  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f \n",
+  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f \n",
 	 (long) 50,
          universalPDF(50),
+	 slowUniversalPDF(50),
          geometricPDF(geoProb, 50),
          cauchyPDF(50),
          codeIndexLength(geoShare, geoProb, 50),
          fStatisticThreshold(geoShare, geoProb, 50));
-  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f \n",
+  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f \n",
          (long) 250,
          universalPDF(250),
+	 slowUniversalPDF(50),
          geometricPDF(geoProb, 250),
          cauchyPDF(250),
          codeIndexLength(geoShare, geoProb, 250),
          fStatisticThreshold(geoShare, geoProb, 250));
-  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f \n",
+  printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f \n",
          (long) 999,
          universalPDF(999),
+	 slowUniversalPDF(50),
          geometricPDF(geoProb, 999),
          cauchyPDF(999),
          codeIndexLength(geoShare, geoProb, 999),
          fStatisticThreshold(geoShare, geoProb, 999));
-  double sumGeo=0.0, sumCauchy=0.0, sumUniv=0.0;
-  for(long i=1; i<10000; ++i)
+  double sumGeo=0.0, sumCauchy=0.0, sumSlow = 0.0, sumUniv=0.0;
+  for(long i=1; i<25000; ++i)
   { sumGeo += geometricPDF(geoProb, i);
     sumUniv += universalPDF(i);
+    sumSlow += slowUniversalPDF(i);
     sumCauchy += cauchyPDF(i);
   }
-  printf("[inf] %9.6f %9.6f %9.6f\n", sumUniv, sumGeo, sumCauchy);
+  printf("[inf] %9.6f %9.6f %9.6f %9.6f\n", sumUniv, sumSlow, sumGeo, sumCauchy);
 }
 	 
 	   

@@ -176,9 +176,13 @@ main(int argc, char** argv)
     insert_columns_from_stream(std::cin, insertMap);
   else
   { std::ifstream inputFileStream(inputName.c_str());
+    if (!inputFileStream)
+    { std::clog << "Error: No input supplied; cannot open " << inputName << std::endl;
+      return 2;
+    }
     insert_columns_from_stream(inputFileStream, insertMap);
   }
-
+   
   std::string message;
   if (inputName.empty())
     message = "Standard input cin";
@@ -268,6 +272,7 @@ main(int argc, char** argv)
     
 
   //   Principle component type features
+  /*
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_PC>(),
@@ -277,7 +282,8 @@ main(int argc, char** argv)
 						    FeatureAcceptancePredicate(),  //                    0=use rule, true=standardize
 						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
 						    )));
-
+  */
+  
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<eigenSVD> > SS_SVD;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_SVD>(),

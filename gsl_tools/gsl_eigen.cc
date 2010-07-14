@@ -35,12 +35,12 @@ gsl_eigen::principal_components (gsl_matrix* gram, gsl_vector* eVals, gsl_matrix
   const unsigned int nRows (gram->size1);
   assert (nRows == gram->size2);
   assert (nRows == eVals->size);
-  debugging::debug("GSLE",2) << "Gram matrix is " << gram->size1 << "x" << gram->size2 << std::endl;
+  debugging::debug("GSLE",3) << "Gram matrix is " << gram->size1 << "x" << gram->size2 << std::endl;
   gsl_eigen_symmv_workspace *scratch (gsl_eigen_symmv_alloc(nRows));
   gsl_eigen_symmv(gram, eVals, eVecs, scratch);
   gsl_eigen_symmv_sort(eVals, eVecs, GSL_EIGEN_SORT_VAL_DESC); 
-  debugging::debug("GSLE",2) << "Leading eigenvalues are:\n";
-  gsl_vector_print_head (debugging::debug("GSLE",2), eVals, min(10, eVals->size));
+  debugging::debug("GSLE",3) << "Leading eigenvalues are:\n";
+  gsl_vector_print_head (debugging::debug("GSLE",3), eVals, min(10, eVals->size));
   gsl_eigen_symmv_free(scratch);
 }
 
@@ -88,17 +88,22 @@ gslPrincipalComponents::operator()(gsl_matrix const* data)   const
   gsl_vector *eVals (gsl_vector_alloc(nCols));
   gsl_matrix *eVecs (gsl_matrix_alloc(nCols,nCols));
   gsl_eigen::principal_components(covMat, eVals, eVecs);
+  // count number valid evalues
+  int nValid (0);
+  for (int i = 0; i<nCols; ++i)
+  { if (gsl_isnan(gsl_vector_get(eVals,i))) break;
+    ++nValid;
+  }
   // build the principal components; mNum 0 means to choose
   int nPC (mNumComponents);
-  if (nPC==0)
-  { double ei  (gsl_vector_get(eVals,0));
-    if (!gsl_isnan(ei))
-    { double ei1 (gsl_vector_get(eVals,1));                                                   // assume at least two
-      while (nPC < (int)eVals->size-1 && !gsl_isnan(ei1) && (ei > 1.0) && (ei > 1.25*ei1))    // at least 25% more than next
-      { ++nPC;
-	ei = ei1;
-	ei1 = gsl_vector_get(eVals,nPC+1);
-      }
+  if (nPC==0 && (nValid > 0))
+  { nPC = 1;
+    double ei  (gsl_vector_get(eVals,0));
+    double ei1 (gsl_vector_get(eVals,1));                                                   // assume at least two
+    while ((nPC < nValid-1) && (ei > 1.0) && (ei > 1.25*ei1))    // at least 25% more than next
+    { ++nPC;
+      ei = ei1;
+      ei1 = gsl_vector_get(eVals,nPC);
     }
   }
   gsl_matrix *pc (0);

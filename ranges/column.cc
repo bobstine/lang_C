@@ -136,22 +136,22 @@ insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap)
   while(true) 
   { Column col = *colStream;
     if(col->size() == 0) break;
-    debugging::debug("CLMN",4) << "Reading column " << col->name() << " with description " << col->description()
+    debugging::debug("CLMN",8) << "Reading column " << col->name() << " with description " << col->description()
 			       << "  [0]=" << *(col->begin()) << "  [n]=" << *(col->end()-1) << std::endl;
     ++colStream;
     std::string role (col->role());
-    if (!role.empty())
-    { NamedColumnInsertMap::iterator it (insertMap.find(role));
-      if (it != insertMap.end()) // col has a role and its among those with inserters
-      { ++k;                     // cannot use [] since no default constructor for back inserter
-	*(it->second)=col;
-	++(it->second);
-      }
-      else
-	debugging::debug("CLMN",1) << "Inserter for column '" << col->name() << "' with role '" << role << "' not found; not inserted.\n";
+    if (role.empty())
+    { debugging::debug("CLMN",0) << "Column '" << col->name() << "' lacks a role for the analysis; role x assigned.\n";
+      role = "x";
+    }
+    NamedColumnInsertMap::iterator it (insertMap.find(role));
+    if (it != insertMap.end()) // col has a role and its among those with inserters
+    { ++k;                     // cannot use [] since no default constructor for back inserter
+      *(it->second)=col;
+      ++(it->second);
     }
     else
-      debugging::debug("CLMN",1) << "Column '" << col->name() << "' lacks a role for the analysis; not inserted.\n";
+      debugging::debug("CLMN",1) << "Inserter for column '" << col->name() << "' with role '" << role << "' not found; not inserted.\n";
   }
   debugging::debug("CLMN",1) << "Inserted " << k << " columns, each of length " << n << std::endl;
 }

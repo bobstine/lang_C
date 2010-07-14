@@ -210,7 +210,7 @@ public:
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
-      return alpha * universalPDF(history.number_bids_since_last_success());
+      return alpha * slowUniversalPDF(history.number_bids_since_last_success());
     else
       return 0.0;
   }
