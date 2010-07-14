@@ -284,14 +284,14 @@ main(int argc, char** argv)
 						    )));
   */
   
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<eigenSVD> > SS_SVD;
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<pca> > SS_SVD;
   theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_SVD>(),
-			       make_subspace_stream("SVD basis", 
+			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
 						    64,                            // bundle size
 						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
-						    Eigen_adapter<eigenSVD>(eigenSVD(0, true), nContextCases)
+						    Eigen_adapter<pca>(pca(0, true), nContextCases)
 						    )));
   /*
     typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;

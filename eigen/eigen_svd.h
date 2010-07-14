@@ -21,22 +21,98 @@
 #include <Eigen/SVD>
  
 
-class eigenSVD: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
+namespace SVD
+{
+  double
+    mean (Eigen::VectorXd const& x);
+  double
+    standard_deviation (Eigen::VectorXd const& x);
+  
+  Eigen::MatrixXd
+    standardize_columns (Eigen::MatrixXd const& data);                               // norms so that X'X = 1       
+
+  Eigen::MatrixXd
+    sample_rows (Eigen::MatrixXd const& data, int nRows);
+
+  Eigen::MatrixXd
+    random_linear_combinations (int k, Eigen::MatrixXd const& data);
+}
+
+
+//  PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    
+
+class pca: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
 {
   int         mNumComponents;
   bool        mStandardize;
   
 public:
-  eigenSVD(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
+  pca(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
   
   int number_of_components() const { return mNumComponents; }
    
-  result_type operator()(Eigen::MatrixXd const& data) const;   // left singular vectors; prints associated singular values
-
- private:
-  Eigen::MatrixXd make_random_linear_combinations (int k, Eigen::MatrixXd const& data) const;
-  Eigen::MatrixXd standardize (Eigen::MatrixXd const& data) const;   // norms so that X'X = 1       
+  result_type operator()(Eigen::MatrixXd const& data) const;
 };
 
+
+
+//  RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    RKHS    
+
+namespace Kernel
+{
+  class Radial
+  {
+    static std::string classname;
+  public:
+    std::string const& name() const { return classname; }
+    double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
+  };
+  
+  class WeightedRadial
+  {
+    static std::string classname;
+    const Eigen::VectorXd mWts;
+  public:
+    WeightedRadial (Eigen::VectorXd wts) : mWts(wts) { };
+    
+    std::string const& name() const { return classname; }
+    double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
+  };
+  
+  
+  class Quadratic
+  {
+    static std::string classname;
+  public:
+    std::string const& name() const { return classname; }
+    double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
+  };
+  
+  
+  class L2
+  {
+    static std::string classname;
+  public:
+    std::string const& name() const { return classname; }
+    double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
+  };
+}
+ 
+
+template <class K>
+class rkhs: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
+{
+  int     mNumComponents;
+  bool    mStandardize;
+  
+public:
+  rkhs(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
+  
+  int number_of_components() const { return mNumComponents; }
+   
+  result_type operator()(Eigen::MatrixXd const& data) const;
+};
+
+#include "eigen_svd.Template.h"
 
 #endif

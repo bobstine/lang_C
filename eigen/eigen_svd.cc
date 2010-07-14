@@ -2,8 +2,44 @@
 
 #include <iostream>
 
+
+
+//   SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     
+
+double
+SVD::mean (Eigen::VectorXd const& x)
+{
+  return x.sum()/x.size();
+}
+
+double
+SVD::standard_deviation (Eigen::VectorXd const& x)
+{
+  Eigen::VectorXd centered (x.cwise() - mean(x));
+  return centered.squaredNorm()/(x.size()-1);
+}
+
+
 Eigen::MatrixXd
-eigenSVD::standardize (Eigen::MatrixXd const& data) const
+SVD::sample_rows(Eigen::MatrixXd const& m, int nRows)
+{
+  Eigen::MatrixXd result (nRows,m.cols());
+  int slotsLeft (nRows);
+  int rowsLeft  (m.rows());
+  while (rowsLeft && slotsLeft)
+  {
+    if ( ((double)(rand())/RAND_MAX) <  (((double)slotsLeft) / rowsLeft)  )
+    { result.row(nRows-slotsLeft) = m.row(rowsLeft-1);
+      --slotsLeft;
+    }
+    --rowsLeft;
+  }
+  return result;
+}
+
+
+Eigen::MatrixXd
+SVD::standardize_columns (Eigen::MatrixXd const& data)
 {
   Eigen::MatrixXd result (data.rows(), data.cols());
   Eigen::VectorXd mean (data.colwise().sum());
@@ -22,19 +58,19 @@ eigenSVD::standardize (Eigen::MatrixXd const& data) const
 
 
 Eigen::MatrixXd
-eigenSVD::make_random_linear_combinations (int k, Eigen::MatrixXd const& data) const
+SVD::random_linear_combinations (int k, Eigen::MatrixXd const& data)
 {
   Eigen::MatrixXd linComb (data.rows(),k);
-  for (int j=0; j<k; ++j)
-  { Eigen::VectorXd rand(Eigen::VectorXd::Random(data.cols()));
-    linComb.col(j) = data * rand;
-  }
+  Eigen::MatrixXd rand (Eigen::MatrixXd::Random(data.cols(), k));
+  linComb = data * rand;
   return linComb;
 }
 
 
+//    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    
+
 Eigen::MatrixXd
-eigenSVD::operator()(Eigen::MatrixXd const& data) const
+pca::operator()(Eigen::MatrixXd const& data) const
 {
   // form m >= max(5, num components)
   int m (floor(sqrt(data.cols())));
@@ -43,11 +79,11 @@ eigenSVD::operator()(Eigen::MatrixXd const& data) const
   // std::cout << "TESTING: Given " << mNumComponents << " requested, returning " << m << std::endl;
   Eigen::MatrixXd linComb;
   if (mStandardize)
-  { Eigen::MatrixXd sData (standardize(data));
-    linComb = make_random_linear_combinations(m,sData);
+  { Eigen::MatrixXd sData (SVD::standardize_columns(data));
+    linComb = SVD::random_linear_combinations(m,sData);
   }
   else
-    linComb = make_random_linear_combinations(m,data);
+    linComb = SVD::random_linear_combinations(m,data);
   // compute svd
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
@@ -60,4 +96,44 @@ eigenSVD::operator()(Eigen::MatrixXd const& data) const
     while ((k < s.size()) && (s(k) > 1.0/sqrt(3.0))) ++k;     // account for uniform variance
   }
   return u.block(0,0,u.rows(),k);
+}
+
+
+
+//   Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    
+ 
+std::string Kernel::Radial::classname          ("Radial Kernel");
+std::string Kernel::WeightedRadial::classname  ("Wtd Radial Kernel");
+std::string Kernel::Quadratic::classname       ("Quadratic Kernel");
+std::string Kernel::L2::classname              ("L2 Kernel");
+
+
+double
+Kernel::L2::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y)  const
+{
+  return x.dot(y);
+}
+
+
+double
+Kernel::Quadratic::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
+{
+  double l2 (1.0 + Kernel::L2()(x,y));
+  return l2*l2;
+}
+
+
+double
+Kernel::Radial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
+{
+  Eigen::VectorXd diff (x - y);
+  return exp(-diff.squaredNorm());
+}
+
+
+double
+Kernel::WeightedRadial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
+{
+  Eigen::VectorXd wdiff ((x - y).cwise()/mWts);
+  return exp(-wdiff.squaredNorm());
 }
