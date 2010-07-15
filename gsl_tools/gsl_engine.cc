@@ -22,7 +22,7 @@ using debugging::debug;
 void 
 olsEngine::configure (gslData *data)
 { 
-  debug("OLSE",0) << "Configuring OLS engine with n = " << mN << " with gslData pointer " << data << std::endl;
+  debug("OLSE",2) << "Configuring OLS engine with n = " << mN << " with gslData pointer " << data << std::endl;
 }
 
 
@@ -81,7 +81,7 @@ olsEngine::blas_dsyr(int blockSize, gsl_matrix const* Z, gsl_vector const*e, gsl
 {
   int nBlocks (mN/blockSize);
   if (nBlocks*blockSize != mN)
-  { debug("OLSE",0) << "Invalid block size " << blockSize << " in blas_dsyr\n";
+  { debug("OLSE",-1) << "Invalid block size " << blockSize << " in blas_dsyr\n";
     return;
   }
   int k (Z->size2);
@@ -244,7 +244,7 @@ wlsEngine::blas_dsyr(int blockSize, gsl_matrix const* Z, gsl_vector const*e, gsl
 {
   int nBlocks (mN/blockSize);
   if (nBlocks*blockSize != mN)
-  { debug("OLSE",0) << "Invalid block size " << blockSize << " in blas_dsyr\n";
+  { debug("OLSE",-1) << "Invalid block size " << blockSize << " in blas_dsyr\n";
     return;
   }
   int k (Z->size2);

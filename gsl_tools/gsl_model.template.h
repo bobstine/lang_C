@@ -19,6 +19,8 @@
 #include <numeric>
 // sqrt, log
 #include <math.h>
+// test for nan
+#include <gsl/gsl_math.h>
 // p-value for spline
 #include <gsl/gsl_cdf.h>
 
@@ -312,18 +314,18 @@ LogisticModel<Data>::maximize_log_likelihood(int df, int max_iterations)
     for (int i=0; i<n(); ++i) {
       double pi (prob[i]);
       double wi (pi*(1.0-pi));
-      if (wi <= 0.0 || wi >= 1.0) debug("GSLM",0) << "Error. Weights awry at case " << i << " with w[i]=" << wi << std::endl;
+      if (wi <= 0.0 || wi >= 1.0) debug("GSLM",-1) << "Error. Weights awry at case " << i << " with w[i]=" << wi << std::endl;
       gsl_vector_set(wts,i, wi );
       gsl_vector_set( ys,i, xb[i] + (gsl_vector_get(mOriginalY,i)-prob[i])/wi);  // pseudo-y response
     }
     GSLR::reweight(wts, ys);        // calls QR factorization, pseudo-y residuals
     logLike = calc_log_likelihood();   
-    if (logLike != logLike) {
-      debug("GSLM",0) << "Error.  Likelihood = NaN\n";
+    if (gsl_isnan(logLike)) {
+      debug("GSLM",-1) << "Error.  Likelihood = NaN\n";
       return std::make_pair(0.0,1.0);
     }
     else if (logLike <= mLL1)
-    { std::cout << "LOGM: *** Warning ***  Step did not improve log likelihood; exiting.\n";
+      { debug("GSLM",-1) << "*** Warning ***  Step did not improve log likelihood; exiting.\n";
       break;
     }
     else

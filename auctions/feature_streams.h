@@ -100,7 +100,7 @@ public:
       else
 	Stream::increment_position();
     }
-    debugging::debug("RGST",3) << "Regulated stream 'has_feature' returns false for stream '" << Stream::name() <<"\n";
+    debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
     return false;
   }
 };

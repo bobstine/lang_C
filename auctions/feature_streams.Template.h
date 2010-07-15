@@ -19,7 +19,7 @@ namespace {
       return false;
     for (std::vector<Feature>::const_iterator it = vec.begin();it != vec.end(); ++it)
     { if (name == (*it)->name())
-      { debugging::debug("FETR", 3) << "Found feature " << name << " in " << vecName << std::endl;
+      { debugging::debug("FETR", 4) << "Found feature " << name << " in " << vecName << std::endl;
 	return true; 
       }
     }
@@ -209,7 +209,7 @@ typename std::vector<Feature>
 FeatureProductStream<Source>::pop()
 {
   Feature  xd (mSource[mPos]);  // pop must increment counter *after* reading off top
-  debugging::debug("FPST",0) << name() << " stream making product of "
+  debugging::debug("FPST",2) << name() << " stream making product of "
 			     << mFeature->name() << " x Source[" << mPos << "] (" << xd->name() << ").\n";
   increment_position();
   std::vector<Feature> result;
@@ -251,7 +251,7 @@ int
   int num (0);
   for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
     num += mFastSource.size() - *it;
-  // debugging::debug("CPST",4) << "Source sizes " << mSlowSource.size() << "," << mFastSource.size() << " give position " << mPos << " and " << num << " remaining\n.";
+  debugging::debug("CPST",4) << "Source sizes " << mSlowSource.size() << "," << mFastSource.size() << " give position " << mPos << " and " << num << " remaining.\n";
   return num;
 }
 

@@ -23,10 +23,10 @@ gslRegression<Data, Engine>::initialize()
 {
   mN = mpData->n();                                                         // number for estimation, not incld validation
   mQ = 0;   mMaxQ = gslRegression_Max_Q;
-  debug("GSLR",0) << "Initializing gsl regression object with n=" << mN << "  max q =" << mMaxQ << std::endl;
+  debug("GSLR",2) << "Initializing gsl regression object with n=" << mN << "  max q =" << mMaxQ << std::endl;
   int nBlocks (mN/mBlockSize);
   if (mN != mBlockSize*nBlocks)
-  { debug("GSLR",0) << "*** ERROR ***  Invalid block size; " << mBlockSize << " is not a divisor of n = " << mN << std::endl;
+  { debug("GSLR",-1) << "*** ERROR ***  Invalid block size; " << mBlockSize << " is not a divisor of n = " << mN << std::endl;
     return;
   }
   allocate_memory();
@@ -81,7 +81,7 @@ gslRegression<Data,Engine>::prepare_predictors(C predictor_collection)
   sweep_x_from_z_into_zres();
   mZIsSingular = z_appears_singular();
   if (mZIsSingular) 
-    debug("GSLR",2) << " *** Warning ***  Detected singularity when evaluating predictor.\n";
+    debug("GSLR",3) << " *** Warning ***  Detected singularity when evaluating predictor.\n";
   else {
     compute_cross_products_z();
     compute_partial_coef_z();
@@ -263,7 +263,7 @@ gslRegression<Data,Engine>::white_f_stat()
   { double zz00   (gsl_matrix_get(mZZ,0,0));
     double zdz00  (gsl_matrix_get(zdz,0,0));
     if (zdz00 < 1.0e-30)
-    { debug("GSLR",2) << "Warning; near singular White variance. Setting to zero.\n";
+    { debug("GSLR",2) << "Warning: near singular White variance. Setting to zero.\n";
       return 0.0;
     }
     double ze (zz00 * gsl_vector_get(mC,0));
@@ -276,7 +276,7 @@ gslRegression<Data,Engine>::white_f_stat()
     gsl_set_error_handler(builtIn);
   }
   if (gslError) 
-  { debug("GSLR",3) << " *** Error ***   Z'DZ not PSD in Cholesky decomp. Return dRSS = 0.\n";
+  { debug("GSLR",-1) << " *** Error ***   Z'DZ not PSD in Cholesky decomp. Return dRSS = 0.\n";
     return 0.0;
   }
   //  e'Z (Z'DZ)º (Z'e)
@@ -295,7 +295,7 @@ double
 gslRegression<Data,Engine>::change_in_rss ()  const 
 {
   if (mZIsSingular)
-  { debug("GSLR",0) << "Singularity among added predictors\n";
+  { debug("GSLR",2) << "Singularity among added predictors\n";
     return 0.0;
   }
   const gsl_matrix *zz;
@@ -322,7 +322,7 @@ void
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights)                            // changes the estimates
 {
   gsl_vector *weights  (mEngine.weights());
-  debug("GSLR",0) << "Reweighting; initial weights are " << gsl_vector_get(newWeights,0) << " " << gsl_vector_get(newWeights,1) << std::endl;
+  debug("GSLR",2) << "Reweighting; initial weights are " << gsl_vector_get(newWeights,0) << " " << gsl_vector_get(newWeights,1) << std::endl;
   gsl_vector_memcpy(weights, newWeights);
   mEngine.weights_have_changed();
   mYBar += center_data_vector(mpData->live_y());       // re-center Y
@@ -339,7 +339,7 @@ template <class Data, class Engine>
 void 
 gslRegression<Data,Engine>::reweight(gsl_vector const* newWeights, gsl_vector const* newY)    // also inserts new response
 {
-  debug("GSLR",0) << "Replacing response in model with = " << mQ << " predictors.\n";
+  debug("GSLR",2) << "Replacing response in model with = " << mQ << " predictors.\n";
   gsl_vector_memcpy (mpData->live_y(), newY);
   mYBar = 0.0;          // reset in reweighting                                                    
   reweight(newWeights);
@@ -357,13 +357,13 @@ gslRegression<Data,Engine>::add_current_predictors ()
     return 0;
   }
   else  // NOTE: most recent predictors are in mDimZ past column mQ in mX
-  { debug("GSLR",1) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
+  { debug("GSLR",2) << "Adding " << mDimZ << " predictors (model has " << mQ << " predictors)... \n";
     int status (0);
     prepare_shrinkage();
     status = qr_decomposition(mQ, mDimZ);   // increments mQ += mDimZ if successful
     status += update_XtXinv();
     if (status)
-    { debug("GSLR",3) << " *** Error ***    Cannot invert X'X.\n"; 
+    { debug("GSLR",-1) << " *** Error ***    Cannot invert X'X.\n"; 
       mQ -= mDimZ;
     }
     return mQ;
@@ -381,7 +381,7 @@ template <class Data, class Engine>
     double ssx (0.0);
     gsl_blas_ddot (xj,xj, &ssx);
     lambda = sqrt(ssx/mWhiteF);
-    debug("GSLR",2) << " Column " << j << " [sandwich F=" << mWhiteF << ", ssx=" << ssx
+    debug("GSLR",3) << " Column " << j << " [sandwich F=" << mWhiteF << ", ssx=" << ssx
 		    << "] --> shrinkage diagonal lambda=" << lambda << std::endl;
     gsl_vector_set(mShrinkage,j,lambda);
   }
@@ -406,12 +406,12 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   // factor matrix
   int status (0);
   gsl_vector *tau  (&gsl_vector_subvector(mTau, 0, newQ).vector);
-  debug("GSLR",0) << "Refactoring matrix of " << newQ << " columns with shrinkage inserted.\n";
+  debug("GSLR",4) << "Refactoring matrix of " << newQ << " columns with shrinkage inserted.\n";
   { gsl_error_handler_t *builtIn (gsl_set_error_handler_off());
     status = gsl_linalg_QR_decomp(QR, tau); 
     gsl_set_error_handler(builtIn);
   }
-  if (status)   debug("GSLR",0) << "Warning. Status of QR decomp is " << status << std::endl;
+  if (status)   debug("GSLR",-1) << "Warning. Status of QR decomp is " << status << std::endl;
   else          mQ = newQ;                                                          // reset Q to have new variables
   /*
   //  This block of code controlled building QR when no shrinkage
@@ -465,7 +465,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
     gsl_vector_free(e);
   }
   if (status)
-    debug("GSLR",2) << "Warning. Status of QR lssolve is " << status << std::endl;
+    debug("GSLR",-1) << "Warning. Status of QR lssolve is " << status << std::endl;
   else
   { gsl_blas_ddot(res, res, &mRSS);
     compute_fitted_values(len());
@@ -604,7 +604,7 @@ template <class Data, class Engine>
   gslRegression<Data,Engine>::Bennett_evaluation (double const* z, double const* y, double const* mu, double m, double M)
 {
   if (mDimZ != 1)
-    debug("GSLR",3) << "Warning. Bennett evaluation for first Z only. \n";
+    debug("GSLR",-1) << "Warning. Bennett evaluation for first Z only. \n";
   
   // pick function that computes variance
   double (*var) (double,double) (((0 == m) && (1 == M)) ? binomialVar : whiteVar);
@@ -707,10 +707,10 @@ template <class Data, class Engine>
 void
 gslRegression<Data,Engine>::restore_state(gslRegressionState const& state)
 {
-  debug("GSLR",0) << "Restoring state from external object.\n";
+  debug("GSLR",4) << "Restoring state from external object.\n";
   // can only restore to a smaller model with equal number cases
   if ((state.q() > mQ) || (state.n() != mN))
-  { debug("GSLR",3) << "  *** Error ***   Cannot restore from object; its dimensions(" 
+  { debug("GSLR",-1) << "  *** Error ***   Cannot restore from object; its dimensions(" 
 	  << state.n() << "," << state.q() << ") do not conform.\n";
 	  return; }
   mQ = state.q();
@@ -737,7 +737,7 @@ template <class Data, class Engine>
 void
 gslRegression<Data,Engine>::allocate_memory()
 {
-  debug("GSLR",0) << "Allocating memory with n = " << mN << ", max q = " << mMaxQ << std::endl;
+  debug("GSLR",2) << "Allocating memory with n = " << mN << ", max q = " << mMaxQ << std::endl;
   // regr terms
   mBeta    = gsl_vector_alloc(1+mMaxQ);                    // room for intercept
   mC       = gsl_vector_alloc(mMaxQ);

@@ -59,25 +59,25 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   double afterTaxBid = tax_bid(expert, bid);
   if (0.0 == afterTaxBid) 
   { mHasActiveExpert = false;
-    debug("AUCT",3) << "Auction does not have an active expert to bid; terminating.\n";
+    debug("AUCT",0) << "Auction does not have an active expert to bid; terminating.\n";
     if (os) os << std::endl;
     return false;
   } 
   // extract chosen features
   FeatureVector features (expert->feature_vector());
   if (features.empty())
-  { debug("AUCT",3) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
+  { debug("AUCT",-1) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
     if (os) os << std::endl;
     return false;
   }
   else
-  { debug("AUCT",0) << "Winning expert " << expert->name()
+  { debug("AUCT",3) << "Winning expert " << expert->name()
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features);
   }
   // build variables for testing, conversion adjusts for context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
-  debug("AUCT",0) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (os)
     os << ", " << result.second << ", \"" << remove_comma(features[0]->name()) << "\"";
   // report bid result
@@ -131,7 +131,7 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature a
       break;
     else
     { mRecoveredAlpha += (*ee)->alpha();
-      debug("AUCT",0) << "Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
+      debug("AUCT",3) << "Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
       numberPurged += 1;
       mExperts.erase(ee);
     } 
@@ -181,7 +181,7 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   if (!priorityExpert.empty())                          // override results
   { highBid = priorityBid;
     winningExpert = priorityExpert;
-    debug(3) << "AUCT: Priority bidder takes bid " << highBid << std::endl;
+    debug("AUCT",3) << "Priority bidder takes bid " << highBid << std::endl;
   }
   if(os)
     os << "," << remove_comma(winningExpert->name()) << "," << highBid;

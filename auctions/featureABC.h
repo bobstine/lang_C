@@ -1,5 +1,3 @@
-// $Id: featureABC.h,v 3.6 2008/01/30 22:39:01 bob Exp $
-
 #ifndef _FEATUREABC_H_
 #define _FEATUREABC_H_
 

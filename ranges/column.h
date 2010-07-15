@@ -121,7 +121,7 @@ class Column
       ++x;
     ++n;
     if(n)
-      debugging::debug("CLMN",0) << "Error. Incomplete column read of column '" << name << "'. Expecting " << expect << " but read " << expect-n << std::endl;
+      debugging::debug("CLMN",-1) << "Error. Incomplete column read of column '" << name << "'. Expecting " << expect << " but read " << expect-n << std::endl;
     std::string rest;
     getline(is, rest);             // dump rest of data line
     mData->init_properties();

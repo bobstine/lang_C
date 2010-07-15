@@ -127,14 +127,14 @@ main(int argc, char** argv)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
-  debugging::debug_init(logStream, -1);
+  debugging::debug_init(logStream, 5);
 #else
-  debugging::debug_init(std::clog, -1);
+  debugging::debug_init(std::clog, 5);
 #endif
   
   // echo startup options to log file
-  debug("AUCT",4) << "Version build 0.90 (27 May 2009)\n";
-  debug("AUCT",4) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath
+  debug("AUCT",0) << "Version build 1.00 (14 Jul 2010)\n";
+  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
 		  << std::endl;
@@ -143,7 +143,7 @@ main(int argc, char** argv)
   std::string modelHTMLFileName  (outputPath + "model.html"); 
   std::string modelTextFileName  (outputPath + "model.txt");
   std::string modelDataFileName  (outputPath + "model_data.csv");
-  debug("AUCT",3) << "Output going to these files:\n"
+  debug("AUCT",2) << "Output going to these files:\n"
 #ifdef NDEBUG
 		  << "             log  --> " << debugFileName  << std::endl
 #endif
@@ -193,7 +193,7 @@ main(int argc, char** argv)
 		  << xColumns.size() << " Xs, and "
 		  << cColumns.size() << " context columns.\n";
   if (yColumns.empty())
-  { debug("MAIN",0) << "ERROR:  Data do not include variable with role y to be the response. Terminating.\n";
+  { debug("MAIN",-1) << "ERROR:  Data do not include variable with role y to be the response. Terminating.\n";
     return -1;
   }
 
@@ -201,7 +201,7 @@ main(int argc, char** argv)
   Column inOut = identify_cv_indicator(cColumns, extraCases); 
 
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",1)));
+  gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",2)));
   
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, extraCases);
@@ -217,7 +217,7 @@ main(int argc, char** argv)
   Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
 #endif
 
-  debug("AUCT",0) << "Assembling experts"  << std::endl;
+  debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
   // parasitic experts
@@ -322,12 +322,12 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-      { debug(3) << " @@@ Auction adds predictor @@@" << std::endl;
-	debug(3) << theAuction << std::endl << std::endl;
+      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
       progressStream << std::endl;                        // ends lines in progress file
     }
-    debug(4) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+    debug("AUCT",1) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
 
   // write model in HTML to a file
@@ -365,9 +365,9 @@ main(int argc, char** argv)
     output.close();
   }
    
-  debug(0) << "Auction is completed; disposing GSL data objects.\n";
+  debug("AUCT",3) << "Auction is completed; disposing GSL data objects.\n";
   delete (theData);
-  debug(0) << "Exiting; final clean-up done by ~ functions.\n";
+  debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   
   return 0;  
 }
