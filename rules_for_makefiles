@@ -52,7 +52,7 @@ $(level_9:.o=.test):  $(above_9)
 # path to library header files
 vpath %.a $(patsubst %, ../%, $(USES))
 
-INCLUDES = -I. -I /usr/local/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+INCLUDES = -I. -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
 
 # names of libraries
 LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm 

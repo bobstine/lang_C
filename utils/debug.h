@@ -29,16 +29,14 @@
 //
 //  object_name4:\t      level 4
 //
-// Use level 4 for outputting one line of major decisions
-// Use level 3 for outputting one line per major event 
-// use level 2 for most interesting diagonstics and most warnings
-// use level 1 for huge amounts of output.  This output will be turned off in product runs.
-// use level 0 for trace like output
-// use level -1 for so much output that you don't konw what to do with it
+// Use level -1 for error conditions.
+// Use level  0 for outputting one line of major decisions
+// Use level  1 for outputting one line per major event 
+// use level  2 for most interesting diagonstics and most warnings
+// use level  3 for huge amounts of output.  This output will be turned off in product runs.
+// use level  4 for trace like output
 
-// Macro's don't live in namespaces.  BUMMER!
-
-// In testing code use -1 as lower bound.  In production code use 2 as lower bound.
+// In production code use 0 as bound.
 //        If you use the above rule, then DEBUG0, DEBUG1 are the same
 //        These are the only two that I use.
 
@@ -47,7 +45,7 @@
 #ifndef NDEBUG
 #define DEBUG_LOWER_BOUND -1
 #else
-#define DEBUG_LOWER_BOUND -1   
+#define DEBUG_LOWER_BOUND -1  
 #endif
 
 
@@ -77,17 +75,17 @@ namespace debugging
     // CONSTRUCTORS
     ~Debug();
     Debug();
-    Debug(std::ostream& file_to_write_on,int minimum_debug_level);
+    Debug(std::ostream& file_to_write_on,int max_debug_level);
 
     // MANIPULATORS
     void set_prefix(const std::string & prefix);
-    void set_minimum_level(int);
+    void set_max_level(int);
     std::string prefix(int level);
     void panic();
     // ACCESSORS
     std::ostream& stream(int level);
     std::ostream& stream(); // uses last level used
-    int current_minimum_level() const;
+    int current_max_level() const;
     static Debug* get_singleton();
     
   protected:
@@ -96,9 +94,9 @@ namespace debugging
     std::ofstream   m_dev_null;
     std::ostream&   m_ostrm;
     std::string     m_prefix;
-    int        m_level;
-    int        m_last_level;
-    mutable  int m_panic;
+    int             m_level;
+    int             m_last_level;
+    mutable int     m_panic;
     
     static debugging::Debug* sp_singleton;
     Debug(const Debug &);            // Don't delete this.
@@ -107,7 +105,7 @@ namespace debugging
 
   void     debug_prefix(const std::string &);
 
-  std::string   debug_prefix(int level);  // prefix used for level of debugging
+  std::string   debug_prefix(int level);              // prefix used for level of debugging
   std::ostream& debug();                              // continues with last level of debugging
   std::ostream& debug(int);                           // prefix used for appropiate level
   std::ostream& debug(const std::string&, int level); // debug("prefix",level) << "message." << std::endl;
@@ -130,7 +128,7 @@ namespace debugging
   std::ostream&
   debug(const T* other, int level)  // typical usage: debug(this,2) << "Message" << std::endl;
   {
-    if(level >= debug_level())
+    if(level <= debug_level())
       start_debugging(other);
     return debug(level);
   };

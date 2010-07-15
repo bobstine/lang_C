@@ -1,4 +1,4 @@
-// $Id$-*- c++ -*-
+// -*- c++ -*-
 
 
 #include <iostream>
@@ -39,22 +39,116 @@ main()
     debug(2) << "level 2." << std::endl;
     debug(3) << "level 3." << std::endl;
   };
+
   {
     using namespace debugging;
     std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,0);  // minimum level of debugging
-    debug() << "testing four five six" << std::endl;
+    debug_init(std::cout,5);  // max level of debugging
+    debug() << "testing five" << std::endl;
     debug_prefix("foo");
-    debug( ) << "empty level (aka 0)" << std::endl;
+    debug( ) << "empty level" << std::endl;
+    debug(-1)<< "level -1 error condition." << std::endl;   // set off by line rather than nameLevel: 
+    debug(-1)<< "level -1 error.";
+    debug()  << "continued" << std::endl;
     debug(0) << "level 0." << std::endl;
+    debug(0) << "level 0.";
+    debug()  << "continued" << std::endl;
     debug(1) << "level 1." << std::endl;
+    debug(1) << "level 1.";
+    debug()  << "continued" << std::endl;
     debug(2) << "level 2." << std::endl;
+    debug(2) << "level 2.";
+    debug()  << "continued" << std::endl;
     debug(3) << "level 3." << std::endl;
+    debug(3) << "level 3.";
+    debug()  << "continued" << std::endl;
+    debug(4) << "level 4." << std::endl;
+    debug(4) << "level 4.";
+    debug()  << "continued" << std::endl;
+    debug(5) << "level 5." << std::endl;
+    debug(5) << "level 5.";
+    debug()  << "continued" << std::endl;
+  };
+
+  {
+    using namespace debugging;
+    std::cout << "---------------------" << std::endl;
+    debug_init(std::cout,4);  // max level of debugging
+    debug() << "testing four" << std::endl;
+    debug_prefix("foo");
+    debug( ) << "empty level" << std::endl;
+    debug(-1)<< "level -1 error condition." << std::endl;   // set off by line rather than nameLevel: 
+    debug(-1)<< "level -1 error.";
+    debug()  << "continued" << std::endl;
+    debug(0) << "level 0." << std::endl;
+    debug(0) << "level 0.";
+    debug()  << "continued" << std::endl;
+    debug(1) << "level 1." << std::endl;
+    debug(1) << "level 1.";
+    debug()  << "continued" << std::endl;
+    debug(2) << "level 2." << std::endl;
+    debug(2) << "level 2.";
+    debug()  << "continued" << std::endl;
+    debug(3) << "level 3." << std::endl;
+    debug(3) << "level 3.";
+    debug()  << "continued" << std::endl;
+    debug(4) << "level 4." << std::endl;
+    debug(4) << "level 4.";
+    debug()  << "continued" << std::endl;
+    debug(6) << "level 6." << std::endl;
+    debug(6) << "level 6.";
+    debug()  << "continued" << std::endl;
   };
   {
     using namespace debugging;
     std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,1);  // maximum reasonable level of debugging
+    debug_init(std::cout,3);  // max typical level of debugging
+    debug() << "testing three" << std::endl;
+    debug_prefix("foo");
+    debug( ) << "empty level (aka 0)" << std::endl;
+    debug(0) << "level 0." << std::endl;
+    debug(0) << "level 0.";
+    debug()  << "continued" << std::endl;
+    debug(1) << "level 1." << std::endl;
+    debug(1) << "level 1.";
+    debug()  << "continued" << std::endl;
+    debug(2) << "level 2." << std::endl;
+    debug(2) << "level 2.";
+    debug()  << "continued" << std::endl;
+    debug(3) << "level 3." << std::endl;
+    debug(3) << "level 3.";
+    debug()  << "continued" << std::endl;
+    debug(4) << "level 4." << std::endl;
+    debug(4) << "level 4.";
+    debug()  << "continued" << std::endl;
+  };
+  {
+    using namespace debugging;
+    std::cout << "---------------------" << std::endl;
+    debug_init(std::cout,2);  // less output
+    debug() << "testing two" << std::endl;
+    debug_prefix("foo");
+    debug( ) << "empty level (aka 0)" << std::endl;
+    debug(0) << "level 0." << std::endl;
+    debug(0) << "level 0.";
+    debug()  << "continued" << std::endl;
+    debug(1) << "level 1." << std::endl;
+    debug(1) << "level 1.";
+    debug()  << "continued" << std::endl;
+    debug(2) << "level 2." << std::endl;
+    debug(2) << "level 2.";
+    debug()  << "continued" << std::endl;
+    debug(3) << "level 3." << std::endl;
+    debug(3) << "level 3.";
+    debug()  << "continued" << std::endl;
+    debug(4) << "level 4." << std::endl;
+    debug(4) << "level 4.";
+    debug()  << "continued" << std::endl;
+  };
+  {
+    using namespace debugging;
+    std::cout << "---------------------" << std::endl;
+    debug_init(std::cout,1);   // less still
     debug() << "testing one" << std::endl;
     debug_prefix("foo");
     debug( ) << "empty level (aka 0)" << std::endl;
@@ -70,73 +164,15 @@ main()
     debug(3) << "level 3." << std::endl;
     debug(3) << "level 3.";
     debug()  << "continued" << std::endl;
-  };
-  {
-    using namespace debugging;
-    std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,2);  // maximum reasonable level of debugging
-    debug() << "testing two" << std::endl;
-    debug_prefix("foo");
-    debug( ) << "empty level (aka 0)" << std::endl;
-    debug(0) << "level 0." << std::endl;
-    debug(0) << "level 0.";
-    debug()  << "continued" << std::endl;
-    debug(1) << "level 1." << std::endl;
-    debug(1) << "level 1.";
-    debug()  << "continued" << std::endl;
-    debug(2) << "level 2." << std::endl;
-    debug(2) << "level 2.";
-    debug()  << "continued" << std::endl;
-    debug(3) << "level 3." << std::endl;
-    debug(3) << "level 3.";
+    debug(4) << "level 4." << std::endl;
+    debug(4) << "level 4.";
     debug()  << "continued" << std::endl;
   };
-  {
     using namespace debugging;
     std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,3);  // maximum reasonable level of debugging
-    debug() << "testing two" << std::endl;
-    debug_prefix("foo");
-    debug( ) << "empty level (aka 0)" << std::endl;
-    debug(0) << "level 0." << std::endl;
-    debug(0) << "level 0.";
-    debug()  << "continued" << std::endl;
-    debug(1) << "level 1." << std::endl;
-    debug(1) << "level 1.";
-    debug()  << "continued" << std::endl;
-    debug(2) << "level 2." << std::endl;
-    debug(2) << "level 2.";
-    debug()  << "continued" << std::endl;
-    debug(3) << "level 3." << std::endl;
-    debug(3) << "level 3.";
-    debug()  << "continued" << std::endl;
-  };
-  {
-    using namespace debugging;
-    std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,4);  // maximum reasonable level of debugging
-    debug() << "testing two" << std::endl;
-    debug_prefix("foo");
-    debug( ) << "empty level (aka 0)" << std::endl;
-    debug(0) << "level 0." << std::endl;
-    debug(0) << "level 0.";
-    debug()  << "continued" << std::endl;
-    debug(1) << "level 1." << std::endl;
-    debug(1) << "level 1.";
-    debug()  << "continued" << std::endl;
-    debug(2) << "level 2." << std::endl;
-    debug(2) << "level 2.";
-    debug()  << "continued" << std::endl;
-    debug(3) << "level 3." << std::endl;
-    debug(3) << "level 3.";
-    debug()  << "continued" << std::endl;
-  };
-  {
-    using namespace debugging;
-    std::cout << "---------------------" << std::endl;
-    debug_init(std::cout,-1);  // maximum reasonable level of debugging
+    debug_init(std::cout,0);  // only error codes, basic messages
     {
-      Debug_lock start("locked",3);
+      Debug_lock start("locked",0);
       debug_prefix("foo");
       debug("bar",0) << "level 0." << std::endl;
       debug(0) << "level 0.";
@@ -150,7 +186,11 @@ main()
       debug(3) << "level 3." << std::endl;
       debug(3) << "level 3.";
       debug()  << "continued" << std::endl;
+      debug(4) << "level 4." << std::endl;
+      debug(4) << "level 4.";
+      debug()  << "continued" << std::endl;
     }
+    {
     std::cout << "++++++++++++++++++" << std::endl;
     debug_prefix("foo");
     debug(0) << "level 0." << std::endl;
@@ -170,7 +210,7 @@ main()
   {
     using namespace debugging;
     std::cout << "$$$$$$$$$$$$$$$$$$" << std::endl;
-    debug_init(std::cout,-1);  // maximum reasonable level of debugging
+    debug_init(std::cout,-1);  // min output
     Debug_lock start("locked",2);
     {
       debug("shouldn't show up",0) << "level 0." << std::endl;
@@ -182,7 +222,7 @@ main()
     debug_init(std::cout,1);
     foo* f = new foo();
     f->print_debug();
-    debug("main",3) << "Important message from main." << std::endl;
+    debug("main",-1) << "Important message from main." << std::endl;
   }
 
   {

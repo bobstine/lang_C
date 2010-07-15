@@ -43,8 +43,8 @@ debugging::Debug::Debug(std::ostream& strm,int level):
   m_last_level(0),
   m_panic(0)
 {
-  assert(level <= 4); // no output
-  assert(level >= -1); // mucho output
+  assert(level <= 4);  // mucho output
+  assert(level >= -1); // error output
   if(sp_singleton)
     delete sp_singleton;
   sp_singleton = this;
@@ -59,9 +59,9 @@ debugging::Debug::set_prefix(const std::string & prefix)
 }
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void
-debugging::Debug::set_minimum_level(int min)
+debugging::Debug::set_max_level(int mx)
 {
-  m_level = min;
+  m_level = mx;
 }
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 std::string
@@ -69,7 +69,7 @@ debugging::Debug::prefix(int level)
 {
   m_last_level = level;
   if(level < 0)
-    return "--------------   "+m_prefix+"  ------------------\n";
+    return m_prefix+"*:\t";
   else if(level == 0)
     return m_prefix+"0:\t";
   else if(level == 1)
@@ -81,7 +81,7 @@ debugging::Debug::prefix(int level)
   else if(level == 4)
     return m_prefix+"4:\t";
   else
-    return m_prefix+"*:\t";
+    return "--------------------     " + m_prefix + "     --------------------\n";
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void
@@ -107,14 +107,14 @@ debugging::Debug::stream(int level)
 std::ostream&
 debugging::Debug::stream()
 {
-  if(m_last_level >= current_minimum_level())
+  if(m_last_level <= current_max_level())
     return m_ostrm;
   else
     return m_dev_null;
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int
-debugging::Debug::current_minimum_level() const
+debugging::Debug::current_max_level() const
 {
   if(m_panic > 0)
     {
@@ -176,7 +176,7 @@ debugging::debug_init(std::ostream & ostrm, int level)
     {
       new debugging::Debug(ostrm,DEBUG_LOWER_BOUND);
       debug("ALERT",4) << "Can't set debug level to " << level
-		       << " since " << DEBUG_LOWER_BOUND << " was compiled in as a lower bound." << std::endl;
+		       << " since " << DEBUG_LOWER_BOUND << " was compiled in as upper bound." << std::endl;
     }
   else
     new debugging::Debug(ostrm,level);
@@ -186,7 +186,7 @@ int
 debugging::debug_level()
 {
   if(Debug::get_singleton())
-    return Debug::get_singleton()->current_minimum_level();
+    return Debug::get_singleton()->current_max_level();
   else
     return 10;  // no debugging is being printed
 };
@@ -208,21 +208,21 @@ debugging::panic(const std::string& s)
 std::ostream&
 debugging::debug(const std::string& prefix, int level)
 {
-  if(level >= debug_level())
+  if(level <= debug_level())
     debug_prefix(prefix);
   return debug(level);
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 debugging::Debug_lock::~Debug_lock()
 {
-  debugging::Debug::get_singleton()->set_minimum_level(m_previous_level);
+  debugging::Debug::get_singleton()->set_max_level(m_previous_level);
 }
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 debugging::Debug_lock::Debug_lock(const std::string& prefix, int level):
-  m_previous_level(Debug::get_singleton()->current_minimum_level())
+  m_previous_level(Debug::get_singleton()->current_max_level())
 {
   if(level > m_previous_level)
-    Debug::get_singleton()->set_minimum_level(level);
+    Debug::get_singleton()->set_max_level(level);
   debug(prefix,level);
 }
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
