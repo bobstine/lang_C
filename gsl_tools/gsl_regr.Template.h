@@ -12,6 +12,7 @@
 #include "gsl_utils.h"
 
 #include <iomanip>
+#include <assert.h>
 
 using namespace debugging;
 

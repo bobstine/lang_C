@@ -1,6 +1,6 @@
 #include "adapter.h"
 #include "debug.h"
-
+#include <assert.h>
 
 namespace {
   

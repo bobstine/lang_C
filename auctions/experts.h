@@ -30,14 +30,12 @@ then it pops the feature off of the stream.
 #ifndef _EXPERTS_H_
 #define _EXPERTS_H_
 
-
-#include <assert.h>
-#include <map>
-
 #include "debug.h"
 
 #include "feature_streams.h"
 #include "bidders.h"
+
+#include <map>
 
 
 // need ABC since have a collection of experts due to templating
