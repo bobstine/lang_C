@@ -91,7 +91,7 @@ pca::operator()(Eigen::MatrixXd const& data) const
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
-  debug("EIGN",2) << "Singular values are {" << s.transpose() << "}\n";
+  debug("EIGN",3) << "Singular values are {" << s.transpose() << "}\n";
   // return those with sing value > 0 (at least 1) or desired number
   int k (mNumComponents);
   if (0 == k)

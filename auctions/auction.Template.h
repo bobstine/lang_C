@@ -73,7 +73,7 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   else
   { debug("AUCT",3) << "Winning expert " << expert->name()
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
-    print_features(features);
+    print_features(features, debug());
   }
   // build variables for testing, conversion adjusts for context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
@@ -328,18 +328,18 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
 
 template <class ModelClass>
 void
-Auction<ModelClass>::print_features(FeatureVector const& features)   const
+Auction<ModelClass>::print_features(FeatureVector const& features, std::ostream &os)   const
 {
   size_t nFeatures (features.size());
   
   if (1==nFeatures) 
-    mLogStream << "one feature: " << features[0]->name();
+    os << "one feature: " << features[0]->name();
   else 
-  { mLogStream << nFeatures << " features: "; 
+  { os << nFeatures << " features: "; 
     for (size_t j=0; j<nFeatures; ++j)  
-      mLogStream << features[j]->name() << ", ";
+      os << features[j]->name() << ", ";
   }
-  mLogStream << std::endl;
+  os << std::endl;
 }
 
 template <class ModelClass>

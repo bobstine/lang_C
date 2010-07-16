@@ -209,7 +209,7 @@ typename std::vector<Feature>
 FeatureProductStream<Source>::pop()
 {
   Feature  xd (mSource[mPos]);  // pop must increment counter *after* reading off top
-  debugging::debug("FPST",2) << name() << " stream making product of "
+  debugging::debug("FPST",3) << name() << " stream making product of "
 			     << mFeature->name() << " x Source[" << mPos << "] (" << xd->name() << ").\n";
   increment_position();
   std::vector<Feature> result;

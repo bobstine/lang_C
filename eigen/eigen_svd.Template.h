@@ -35,7 +35,7 @@ rkhs<K>::operator()(Eigen::MatrixXd const& input) const
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> soln(dist);
   Eigen::MatrixXd ev (soln.eigenvectors());
   Eigen::VectorXd s  (soln.eigenvalues());
-  debugging::debug("EIGN",2) << "Last 6 eigenvalues of distance matrix are {" << s.segment(dim-6,6).transpose() << "}; computing full dist matrix.\n";
+  debugging::debug("EIGN",3) << "Last 6 eigenvalues of distance matrix are {" << s.segment(dim-6,6).transpose() << "}; computing full dist matrix.\n";
   //  build augmented distance matrix, filling in all elements
   Eigen::MatrixXd aDist(n,dim);
   for (int i=0; i<n; ++i)
