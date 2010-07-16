@@ -85,7 +85,7 @@ parse_arguments(int argc, char** argv,
 		std::string& outputPath,
 		int &protection, int &blockSize,
 		int &nRounds, double &totalAlpha,
-		int &df, int &extraCases);
+		int &df, int &extraCases, int &debugLevel);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
@@ -116,25 +116,26 @@ main(int argc, char** argv)
   int           numberRounds         (200); 
   int           splineDF             (0);
   int           extraCases           (0);
-  
+  int           debugLevel           (3);
+    
 
   parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
-		  splineDF, extraCases);
+		  splineDF, extraCases, debugLevel);
 
-  
+   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
-  debugging::debug_init(logStream, 5);
+  debugging::debug_init(logStream, debugLevel);
 #else
-  debugging::debug_init(std::clog, 5);
+  debugging::debug_init(std::clog, debugLevel);
 #endif
   
   // echo startup options to log file
   debug("AUCT",0) << "Version build 1.00 (14 Jul 2010)\n";
-  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath
+  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
 		  << std::endl;
@@ -289,21 +290,21 @@ main(int argc, char** argv)
 			       UniversalBidder<SS_SVD>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    64,                            // bundle size
-						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    64,                                    // bundle size
+						    FeatureAcceptancePredicate(),          //      0=use rule, true=standardize
 						    Eigen_adapter<pca>(pca(0, true), nContextCases)
 						    )));
-  /*
-    typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
-    theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
-			       make_subspace_stream("RKHS components", 
+			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(), 
-						    20,                            // bundle size
+						    32,                                    // bundle size
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
-						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(3, true),0)    
-						    )));                                   // WARNING: cannot return more than 25 x's in subspace
-  */
+						    Eigen_adapter<rkhs<Kernel::Radial> >(rkhs<Kernel::Radial>(3, true),nContextCases)    
+						    )));
+
   
   // set up file for writing state of auction
   std::string progressCSVFileName (outputPath + "progress.csv");
@@ -383,7 +384,8 @@ parse_arguments(int argc, char** argv,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &nDF,
-		int    &extraCases)
+		int    &extraCases,
+		int    &debugLevel)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -392,6 +394,7 @@ parse_arguments(int argc, char** argv,
       static struct option long_options[] = {
 	  {"alpha",             1, 0, 'a'},  // has arg,
 	  {"calibrator-df",     1, 0, 'c'},  // has arg,
+	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
@@ -401,7 +404,7 @@ parse_arguments(int argc, char** argv,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:c:f:o:p:b:r:x:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:c:d:f:o:p:b:r:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -417,10 +420,14 @@ parse_arguments(int argc, char** argv,
 	      nDF = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
+	  case 'd' : 
+	    {
+	      debugLevel = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
 	  case 'f' :                                    
 	    {
 	      std::string name(optarg);
-	      // std::cout << "Read name from optional args..." << name << std::endl;
 	      inputFile = name;
 	      break;
 	    }
@@ -466,6 +473,8 @@ parse_arguments(int argc, char** argv,
 	      std::cout << "      -r#" << std::endl << std::endl;
 	      std::cout << "      --extra-cases=#          extra cases used in building features" << std::endl;
 	      std::cout << "      -x#" << std::endl << std::endl;
+	      std::cout << "      --debug-level=#          0 for little, 5 for copious" << std::endl;
+	      std::cout << "      -d#" << std::endl << std::endl;
 	      std::cout << "      --help                   generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);

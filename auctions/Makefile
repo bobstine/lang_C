@@ -72,14 +72,14 @@ credit_test: auction.test
 # ---  ann arbor models  -----------------------------------------------------------------------------
 
 anes_run: auction.test
-	./auction.test -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 # ---  dean models  ---------------------------------------------------------------------------------
 #                         Note: run the index file to put results into a file named "data"
 #
 theher_run: auction.test
-	./auction.test -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 5 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 

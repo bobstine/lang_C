@@ -1,15 +1,17 @@
 #include "eigen_svd.h"
-
+#include "debug.h"
+ 
 #include <iostream>
-
 
 int main(int, char **)
 {
+  debugging::debug_init(std::cout, 5);
+
   std::cout.precision(2);
 
-  int nRows (200);
-  int nCols (30);
-
+  int nRows (10000);   // needs to be more than 400 to test distance matrix calculations
+  int nCols (   32);
+ 
   // peek at an Eigen random vector... random on [-1,1]
   {
     Eigen::VectorXd x (Eigen::VectorXd::Random(30));
@@ -33,8 +35,15 @@ int main(int, char **)
   std::cout << "Basis with 3 elements and not standardized:\n" << basis.block(0,0,5,basis.cols()) << std::endl;
 
   // try the RKHS code
+  nBasisElements = 3;
+  standardize = false;
   Eigen::MatrixXd rkhsBasis (rkhs<Kernel::Radial>(nBasisElements, standardize)(data));
-  std::cout << "Basis of RKHS with data-determined count and standardized:\n" << rkhsBasis.block(0,0,5,basis.cols()) << std::endl;
+  std::cout << "RKHS basis is sized " << rkhsBasis.rows() << " " << rkhsBasis.cols() << std::endl;
+  std::cout << "Basis of RKHS with data-determined count and standardized:\n" << rkhsBasis.block(       0,0,10,basis.cols()) << std::endl;
+  std::cout << " more                                                    :\n" << rkhsBasis.block(  390-10,0,10,basis.cols()) << std::endl;
+  std::cout << " more                                                    :\n" << rkhsBasis.block( 1000-10,0,10,basis.cols()) << std::endl;
+  std::cout << " more                                                    :\n" << rkhsBasis.block( 2000-10,0,10,basis.cols()) << std::endl;
+  std::cout << " end                                                     :\n" << rkhsBasis.block(nRows-10,0,10,basis.cols()) << std::endl;
 
   return 0;
 }

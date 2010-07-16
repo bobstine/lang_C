@@ -18,7 +18,6 @@
  */
 
 #include <Eigen/Array>
-#include <Eigen/SVD>
  
 
 namespace SVD

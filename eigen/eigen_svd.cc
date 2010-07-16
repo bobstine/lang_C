@@ -1,8 +1,11 @@
 #include "eigen_svd.h"
 
-#include <iostream>
+#include "debug.h"
+
+#include <Eigen/SVD>
 
 
+using debugging::debug;
 
 //   SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     
 
@@ -88,7 +91,7 @@ pca::operator()(Eigen::MatrixXd const& data) const
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
-  std::cout << "ESVD : All singular values are {" << s.transpose() << "}\n";
+  debug("EIGN",2) << "Singular values are {" << s.transpose() << "}\n";
   // return those with sing value > 0 (at least 1) or desired number
   int k (mNumComponents);
   if (0 == k)
