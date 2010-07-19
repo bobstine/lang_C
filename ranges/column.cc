@@ -88,7 +88,7 @@ ColumnStream::initialize()
   getline(mStream, line);
   std::istringstream ss(line);
   ss >> mN;
-  debugging::debug("CLMN",3) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
+  debugging::debug("CLMN",4) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
 }
 
 bool

@@ -42,3 +42,4 @@ rand_projection.o: rand_projection.cc
 
 rand_projection: rand_projection.o eigen_svd.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
+

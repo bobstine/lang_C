@@ -522,13 +522,13 @@ build_model_data(Column y, Column inOut, int skip, std::ostream& os)
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        ((int)y->size()-skip);
   
-  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y;
+  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y << std::endl;
   if (useSubset)
-  { os << " and validation cases identified by " << inOut << std::endl;
+  { os << "Validation cases identified by " << inOut << std::endl;
     return new gslData(y->begin()+skip, inOut->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
   else
-  { os << " and no validation.\n";
+  { os << "No validation.\n";
     constant_iterator<bool>   noSelection(true);
     return new gslData(y->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 

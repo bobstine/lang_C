@@ -28,7 +28,7 @@ namespace SVD
     standard_deviation (Eigen::VectorXd const& x);
   
   Eigen::MatrixXd
-    standardize_columns (Eigen::MatrixXd const& data);                               // norms so that X'X = 1       
+    standardize_columns (Eigen::MatrixXd const& data, bool useSD=true);                  // if orthogonal, norms so X'X = 1
 
   Eigen::MatrixXd
     sample_rows (Eigen::MatrixXd const& data, int nRows);

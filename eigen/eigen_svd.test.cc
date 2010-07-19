@@ -36,7 +36,7 @@ int main(int, char **)
 
   // try the RKHS code
   nBasisElements = 3;
-  standardize = false;
+  standardize = true;
   Eigen::MatrixXd rkhsBasis (rkhs<Kernel::Radial>(nBasisElements, standardize)(data));
   std::cout << "RKHS basis is sized " << rkhsBasis.rows() << " " << rkhsBasis.cols() << std::endl;
   std::cout << "Basis of RKHS with data-determined count and standardized:\n" << rkhsBasis.block(       0,0,10,basis.cols()) << std::endl;

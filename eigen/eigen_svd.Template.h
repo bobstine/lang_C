@@ -8,7 +8,7 @@ rkhs<K>::operator()(Eigen::MatrixXd const& input) const
 {
   int n (input.rows());
   int p (input.cols());
-  // standardize by shrinking toward mean
+  // standardize to mean 0, var 1 or kernel makes no sense
   Eigen::MatrixXd data(n,p);
   if (mStandardize)
     data = SVD::standardize_columns(input);
