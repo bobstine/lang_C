@@ -130,7 +130,7 @@ double
 Kernel::Radial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
 {
   Eigen::VectorXd diff (x - y);
-  return exp(-0.5 * diff.squaredNorm());
+  return exp(-0.5 * diff.squaredNorm()/mScale2);
 }
 
 

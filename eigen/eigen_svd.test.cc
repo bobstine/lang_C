@@ -9,8 +9,8 @@ int main(int, char **)
 
   std::cout.precision(2);
 
-  int nRows (10000);   // needs to be more than 400 to test distance matrix calculations
-  int nCols (   32);
+  int nRows (1000);   // needs to be more than 400 to test distance matrix calculations
+  int nCols (  32);
  
   // peek at an Eigen random vector... random on [-1,1]
   {
@@ -22,13 +22,13 @@ int main(int, char **)
   // form random matrix
   Eigen::MatrixXd data (Eigen::MatrixXd::Random(nRows,nCols));
 
-  // sensible to let system choose number of components if normalized
+  // let system choose number of components if normalized
   int nBasisElements (0);
   bool standardize   (true);
   Eigen::MatrixXd basis (pca(nBasisElements,standardize)(data));
   std::cout << "Basis of data-determined count and standardized:\n" << basis.block(0,0,5,basis.cols()) << std::endl;
 
-  // othrwise better choose externally
+  // othrwise choose externally
   nBasisElements = 3;
   standardize = false;
   basis = pca(nBasisElements,standardize)(data);
@@ -39,11 +39,8 @@ int main(int, char **)
   standardize = true;
   Eigen::MatrixXd rkhsBasis (rkhs<Kernel::Radial>(nBasisElements, standardize)(data));
   std::cout << "RKHS basis is sized " << rkhsBasis.rows() << " " << rkhsBasis.cols() << std::endl;
-  std::cout << "Basis of RKHS with data-determined count and standardized:\n" << rkhsBasis.block(       0,0,10,basis.cols()) << std::endl;
-  std::cout << " more                                                    :\n" << rkhsBasis.block(  390-10,0,10,basis.cols()) << std::endl;
-  std::cout << " more                                                    :\n" << rkhsBasis.block( 1000-10,0,10,basis.cols()) << std::endl;
-  std::cout << " more                                                    :\n" << rkhsBasis.block( 2000-10,0,10,basis.cols()) << std::endl;
-  std::cout << " end                                                     :\n" << rkhsBasis.block(nRows-10,0,10,basis.cols()) << std::endl;
+  std::cout << " begin           :\n" << rkhsBasis.block(0       ,0,10,basis.cols()) << std::endl;
+  std::cout << " end             :\n" << rkhsBasis.block(nRows-10,0,10,basis.cols()) << std::endl;
 
   return 0;
 }
