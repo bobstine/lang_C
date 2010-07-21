@@ -290,7 +290,7 @@ main(int argc, char** argv)
 			       UniversalBidder<SS_SVD>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    64,                                    // bundle size
+						    59,                                    // bundle size
 						    FeatureAcceptancePredicate(),          //      0=use rule, true=standardize
 						    Eigen_adapter<pca>(pca(0, true), nContextCases)
 						    )));
@@ -300,7 +300,7 @@ main(int argc, char** argv)
 			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(), 
-						    32,                                    // bundle size
+						    31,                                    // bundle size
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
 						    Eigen_adapter<rkhs<Kernel::Radial> >(rkhs<Kernel::Radial>(3, true),nContextCases)    
 						    )));
@@ -328,7 +328,7 @@ main(int argc, char** argv)
       }
       progressStream << std::endl;                        // ends lines in progress file
     }
-    debug("AUCT",1) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
 
   // write model in HTML to a file

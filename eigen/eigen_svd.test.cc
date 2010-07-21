@@ -9,8 +9,8 @@ int main(int, char **)
 
   std::cout.precision(2);
 
-  int nRows (1000);   // needs to be more than 400 to test distance matrix calculations
-  int nCols (  32);
+  int nRows (10000);   // needs to be more than 400 to test distance matrix calculations
+  int nCols (   32);
  
   // peek at an Eigen random vector... random on [-1,1]
   {

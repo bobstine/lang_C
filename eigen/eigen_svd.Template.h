@@ -43,9 +43,9 @@ rkhs<K>::operator()(Eigen::MatrixXd const& input) const
       s  = soln.eigenvalues();      // weirdly sorted in ascending order
       debug("EIGN",3) << "Last 6 eigenvalues of distance matrix are {" << s.segment(dim-6,6).transpose() << "}; computing full dist matrix.\n";
       // find range of e-values
-      double min(s.minCoeff());
-      double max(s.maxCoeff());
-      double range (max-min);
+      float min(s.minCoeff());
+      float max(s.maxCoeff());
+      float range (max-min);
       debug("EIGN",3) << "E-value range is " << max << " - " << min << " = " << range << " gives ratio " << range/((max+min)/2) << std::endl;
       if (range/((max+min)/2) < 1.5)
 	scale = scale * 2;
@@ -80,7 +80,7 @@ rkhs<K>::operator()(Eigen::MatrixXd const& input) const
   debug("EIGN",4) << "Basis for rkhs with dim " << pc.rows() << "x" << pc.cols()
 			     << "; SD of RKHS basis elements are ";
   for(int j=0; j<nPC; ++j)
-    debug("EIGN",4) << SVD::standard_deviation(pc.col(j)) << " ";
-  std::cout << std::endl;
+    debug() << SVD::standard_deviation(pc.col(j)) << " ";
+  debug() << std::endl;
   return pc;
 }

@@ -62,10 +62,10 @@ namespace Kernel
   class Radial
   {
     static std::string classname;
-    double mScale2;  // sigma^2
+    float mScale2;  // sigma^2
   public:
     
-  Radial(double const& scale) : mScale2(scale*scale) {};   
+  Radial(float const& scale) : mScale2(scale*scale) {};   
 
     std::string const& name() const { return classname; }
     double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;

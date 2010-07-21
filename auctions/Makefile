@@ -79,7 +79,7 @@ anes_run: auction.test
 #                         Note: run the index file to put results into a file named "data"
 #
 theher_run: auction.test
-	./auction.test -d 3 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 
