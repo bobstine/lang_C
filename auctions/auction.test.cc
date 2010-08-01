@@ -1,5 +1,5 @@
 #define LINEAR_MODEL
-  
+   
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
