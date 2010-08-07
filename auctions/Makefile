@@ -59,14 +59,14 @@ crash_test: auction.test
 # options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size
 short_credit_test: auction.test
 #	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 50 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 5 -x 9000
+	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
 
 short_credit_test_ns: auction.test
-	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 5 -x 9000
+	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 5 -x 11544
 
 
 credit_test: auction.test
-	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
 
 
 # ---  ann arbor models  -----------------------------------------------------------------------------
