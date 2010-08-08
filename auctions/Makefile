@@ -12,8 +12,7 @@ include ../c_flags
 
 PROJECT_NAME = auction
 
-OPT      = -O2
-# OPT      = -O3 -DNDEBUG
+OPT      = -O3 -DNDEBUG
 # OPT      = -O2
 
 USES = gsl_tools eigen spline ranges random utils 
@@ -56,10 +55,10 @@ crash_test: auction.test
 
 # ---  credit models  -----------------------------------------------------------------------------
 
-# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size
+# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size  -d debug output level
 short_credit_test: auction.test
 #	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 50 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
+	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 0 -x 11544 -d 2
 
 short_credit_test_ns: auction.test
 	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 5 -x 11544

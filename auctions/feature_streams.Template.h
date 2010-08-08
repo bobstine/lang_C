@@ -77,9 +77,13 @@ template<class Model>
 std::string
 FitStream<Model>::feature_name () const
 {
-  std::ostringstream oss;
-  oss << mCount;
-  return mSignature + oss.str();
+  if(empty())
+    return std::string("");
+  else
+  { std::ostringstream oss;
+    oss << mCount;
+    return mSignature + oss.str();
+  }
 }
 
 

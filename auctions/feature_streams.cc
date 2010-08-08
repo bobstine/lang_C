@@ -91,14 +91,21 @@ FiniteStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<F
 std::string
 FiniteStream::feature_name() const                            
 {
-  return mFeatures.front().second->name();
+  if(empty())
+    return std::string("");
+  else
+    return mFeatures.front().second->name();
 }
 
 
 void
 FiniteStream::print_to(std::ostream& os)          const
 {
-  os << "FiniteStream " << mName << " @ " << mFeatures.front().second->name() << " with queue size " << mFeatures.size() << " ";
+  os << "FiniteStream " << mName;
+  if (empty())
+    os << " is empty.";
+  else
+    os << " @ " << feature_name() << " with queue size " << mFeatures.size() << " ";
 }
 
 void
@@ -123,9 +130,13 @@ LagStream::name()         const
 std::string 
 LagStream::feature_name() const 
 { 
-  std::ostringstream ss; 
-  ss << mLag; 
-  return mFeature->name()+"[t-"+ss.str()+"]"; 
+  if(empty())
+    return ("");
+  else
+  { std::ostringstream ss; 
+    ss << mLag; 
+    return mFeature->name()+"[t-"+ss.str()+"]";
+  }
 }
 
 std::vector<Feature>
@@ -140,7 +151,11 @@ LagStream::pop()
 void
 LagStream::print_to(std::ostream& os)          const
 {
-  os << "Lag feature stream " << name() << " at position " << mLag << " with " << mCyclesLeft << " cycles left.\n";
+  os << "Lag feature stream " << name();
+  if (empty())
+    os << " is empty.";
+  else
+    os << " at position " << mLag << " with " << mCyclesLeft << " cycles left.";
 }
     
 

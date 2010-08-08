@@ -315,7 +315,7 @@ main(int argc, char** argv)
     }
 
   
-  // run the auction with output to file
+  // ----------------------   run the auction with output to file  ---------------------------------
   {
     int round = 0;
     const int minimum_residual_df = 10;

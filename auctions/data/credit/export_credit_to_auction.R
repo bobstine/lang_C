@@ -79,6 +79,7 @@ write.county.var(   "S_MTPB60M",temp,4,"interact_with_parent quarter")
 temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
 write.county.var(   "S_REPB60M",temp,4,"interact_with_parent quarter")
 
+
 # 4 quarter indicators
 cat("# time period indicators \n",file=the.manifest, append=TRUE)
 for(q in 1:4) {
@@ -120,6 +121,7 @@ for (i in 2:length(use.cols)) {
 
 
 
+
 # --------------------------------------------------------------------------------
 #
 #  write state time series out in streaming format into separate
@@ -143,6 +145,23 @@ for (i in 2:length(use.cols)) {
 	write.state.var(use.cols[i]);
 }
 
+
+
+# --------------------------------------------------------------------------------
+#
+#  These attributes are fixed over time, such as land area or location
+#
+# --------------------------------------------------------------------------------
+
+# district/region indicators
+cat("# regional area indicators \n",file=the.manifest, append=TRUE)
+
+division <- County$division[eligible.counties]
+for(d in unique(division)) {
+	name <- paste("Division",d,sep="")
+	x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+	write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
+}
 
 
 
