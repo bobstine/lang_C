@@ -207,15 +207,23 @@ main(int argc, char** argv)
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, extraCases);
   featureSrc.print_summary(debug("MAIN",1));
-    
+
+  // initialize progress file to hold incremental round-by-round results
+  std::string progressCSVFileName (outputPath + "progress.csv");
+  std::ofstream progressStream (progressCSVFileName.c_str());
+  if (!progressStream)
+    { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
+      return -1;
+    }
+
   // --- build model and initialize auction with stream for log
 #ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
 #else
   // --- build logisitic model and auction
   LogisticModel <gslData> theRegr(theData, protection, blockSize);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
 #endif
 
   debug("AUCT",3) << "Assembling experts"  << std::endl;
@@ -306,27 +314,19 @@ main(int argc, char** argv)
 						    )));
 
   
-  // set up file for writing state of auction
-  std::string progressCSVFileName (outputPath + "progress.csv");
-  std::ofstream progressStream (progressCSVFileName.c_str());
-  if (!progressStream)
-    { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
-      return -1;
-    }
-
-  
   // ----------------------   run the auction with output to file  ---------------------------------
   {
     int round = 0;
+    theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
-      if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
+      if (theAuction.auction_next_feature())                     // true when adds predictor
       { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      progressStream << std::endl;                        // ends lines in progress file
+      progressStream << std::endl;                              // ends lines in progress file
     }
     debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }

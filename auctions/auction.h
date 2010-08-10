@@ -45,8 +45,7 @@ private:
   FeatureVector       mModelFeatures;     // those in the model
   FeatureVector       mRejectedFeatures;  // tried and not used
   FeatureSource       mFeatureSource; 
-  std::ostream&       mLogStream;         // send log messages
-
+  std::ostream&       mProgressStream;    // tracks progress by rounds
   
  public:
   ~Auction()
@@ -54,10 +53,10 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, int blockSize, std::ostream& logStream)
+  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
       mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
-      mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mLogStream(logStream) {  } 
+      mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
 
@@ -74,7 +73,8 @@ private:
   BiddingHistory         auction_history()          const { return BiddingHistory(mPayoffHistory, mModelFeatures, mRejectedFeatures); }
   Model const&           model()                    const { return mModel; }
 
-  bool                   auction_next_feature (std::ostream&);          // write to output csv file if not null
+  void                   prepare_to_start_auction ();
+  bool                   auction_next_feature     ();          
 
   void print_to                  (std::ostream& os)                      const;
   void print_model_features_to   (std::ostream& os)                      const;
@@ -85,10 +85,10 @@ private:
 
 
  private:
-  void                     write_csv_header_to (std::ostream& os)                        const;
+  void                     write_csv_header_to_progress_stream ()                        const;
 
   int                      purge_empty_experts();
-  std::pair<Expert,double> collect_bids(std::ostream&);
+  std::pair<Expert,double> collect_bids();
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);

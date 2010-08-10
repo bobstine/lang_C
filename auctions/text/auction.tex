@@ -229,6 +229,15 @@
  first' rather than 'breadth first' manner.  With experts, one does not have to
  examine, for example, every linear effect before considering a second-order
  effect.
+
+ {\bf Reserved Stream Names} There are two reserved stream names, both
+ distinguished by being in all caps.  The default stream name is ``MAIN''.  The
+ other reserved name is ``LOCKED''.  Variables in the locked stream are forced
+ into the model at the time of initialization.  Since all of these variables
+ will appeaer in the list of model features, they will automatically be
+ considered in interactions with several other experts.  Context variables do
+ not go into any stream; they are reserved for the context of the model.
+
 \begin{description}
 
 \item[Source experts] produce new features for consideration; in general, source
