@@ -185,14 +185,14 @@ LinearCombinationFeature::write_to (std::ostream& os) const
 
 void
 FeatureSource::initialize (std::vector<Column> cols)
-{ mStreams.push_back("main");       // default
+{ mStreams.push_back("MAIN");       // default
   StringSet streams;
-  streams.insert("main");
+  streams.insert("MAIN");
   for (std::vector<Column>::const_iterator it = cols.begin(); it != cols.end(); ++it)
   { Feature f(*it);
     StringSet streamSet (f->attribute_str_value("stream"));
     if (streamSet.empty())          // assign to default stream
-      f->add_attribute("stream", "main");
+      f->add_attribute("stream", "MAIN");
     else                            // check for new stream
       for(StringSet::const_iterator it=streamSet.begin(); it!=streamSet.end(); ++it)
 	if(streams.find(*it) == streams.end())

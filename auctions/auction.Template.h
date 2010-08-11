@@ -49,6 +49,18 @@ Auction<ModelClass>::prepare_to_start_auction ()
   if(mProgressStream) write_csv_header_to_progress_stream ();
 }
 
+
+template <class ModelClass>
+unsigned int
+Auction<ModelClass>::add_initial_features (FeatureVector const& f)
+{
+  debug("AUCT",2) << "Adding " << f.size() << " initial features to the auction model.\n";
+  // use an expert to handle the conversion (context rows, cross-validation ordering)
+  TestResult result (mModel.add_predictors_if_useful (mExperts[0]->convert_to_model_iterators(f), 1.1));
+  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  return f.size();
+}
+
   
 // Output to OS must be *csv* delimited columns; each item adds its own prefix , delimiter
 template <class ModelClass>
@@ -83,7 +95,7 @@ Auction<ModelClass>::auction_next_feature ()
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
     print_features(features, debug());
   }
-  // build variables for testing, conversion adjusts for context rows
+  // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (mProgressStream)

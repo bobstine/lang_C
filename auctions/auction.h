@@ -74,6 +74,7 @@ private:
   Model const&           model()                    const { return mModel; }
 
   void                   prepare_to_start_auction ();
+  unsigned int           add_initial_features     (FeatureVector const& f);
   bool                   auction_next_feature     ();          
 
   void print_to                  (std::ostream& os)                      const;

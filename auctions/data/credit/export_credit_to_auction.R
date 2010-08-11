@@ -41,7 +41,7 @@ cat("n=",n <- dims[1]*dims[2],"\n")   # 204,906
 #  write of county level data starts here 
 # --------------------------------------------
 
-# --- initilize the manifest file, removing one quarter for lags
+# --- initilize the manifest file, removing one quarter for lag alignment
 cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
     file=the.manifest, append=FALSE)  
 
@@ -51,36 +51,42 @@ in.out <- matrix(0,nrow=dims[1],ncol=dims[2]); in.out[,t.fit-1]<-1;  # -1 since 
 sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
 write.var("cv.indicator[in]", role = "context", in.out[,x.quarters]) 
 
-# --- write the response  (71-1 x 3000 counties)
+# --- write the response  (71-1 x n.eligible.counties)
 cat("# response variable\n",file=the.manifest, append=TRUE)
 y <- cLog(as.vector(unlist(County$REPB60M[eligible.counties,y.quarters])))
 write.var("REPB60M",  y, role="y")
 
-# 6 more variable, all lags
+# --- write lags of the response to define locked stream
+cat("# lags of the response\n",file=the.manifest, append=TRUE)
+y.lag <- cLog(as.vector(unlist(County$REPB60M[eligible.counties,x.quarters])))
+write.var("lag1_REPB60M",  y.lag                                             , role="x", attr.str="stream LOCKED")
+write.var("lag2_REPB60M",  c(rep(0,  n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+write.var("lag3_REPB60M",  c(rep(0,2*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+write.var("lag4_REPB60M",  c(rep(0,3*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+
+# --- 5 more variables, all are lagged by write.county.var function
 cat("# county variables \n",file=the.manifest, append=TRUE)
-write.county.var(   "REAU",cLog(County$REAU        ),4,"interact_with_parent quarter interact_with_parent period")
-write.county.var(  "UNEMP",cLog(County$unemployment),4,"interact_with_parent quarter interact_with_parent period")
-write.county.var("POVERTY",cLog(County$poverty     ),4,"interact_with_parent quarter interact_with_parent period")
-write.county.var("INPB60M",cLog(County$INPB60M     ),4,"interact_with_parent quarter interact_with_parent period")
-write.county.var("MTPB60M",cLog(County$MTPB60M     ),4,"interact_with_parent quarter interact_with_parent period")
-write.county.var("REPB60M",cLog(County$REPB60M     ),4,"interact_with_parent quarter interact_with_parent period")
+write.county.var(   "REAU",cLog(County$REAU        ),attr.str="interact_with_parent quarter interact_with_parent period")
+write.county.var(  "UNEMP",cLog(County$unemployment),attr.str="interact_with_parent quarter interact_with_parent period")
+write.county.var("POVERTY",cLog(County$poverty     ),attr.str="interact_with_parent quarter interact_with_parent period")
+write.county.var("INPB60M",cLog(County$INPB60M     ),attr.str="interact_with_parent quarter interact_with_parent period")
 
-# 6 spatial variables
+# --- 6 spatial variables
 temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
-write.county.var(   "S_REAU",temp,4,"interact_with_parent quarter")
+write.county.var(   "S_REAU",temp,attr.str="interact_with_parent quarter")
 temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
-write.county.var(  "S_UNEMP",temp,4,"interact_with_parent quarter")
+write.county.var(  "S_UNEMP",temp,attr.str="interact_with_parent quarter")
 temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
-write.county.var("S_Poverty",temp,4,"interact_with_parent quarter")
+write.county.var("S_Poverty",temp,attr.str="interact_with_parent quarter")
 temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
-write.county.var(   "S_INPB60M",temp,4,"interact_with_parent quarter")
+write.county.var(   "S_INPB60M",temp,attr.str="interact_with_parent quarter")
 temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
-write.county.var(   "S_MTPB60M",temp,4,"interact_with_parent quarter")
+write.county.var(   "S_MTPB60M",temp,attr.str="interact_with_parent quarter")
 temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
-write.county.var(   "S_REPB60M",temp,4,"interact_with_parent quarter")
+write.county.var(   "S_REPB60M",temp,attr.str="interact_with_parent quarter")
 
 
-# 4 quarter indicators
+# --- quarter indicators
 cat("# time period indicators \n",file=the.manifest, append=TRUE)
 for(q in 1:4) {
 	name <- paste("Quarter",q,sep="")
@@ -88,7 +94,7 @@ for(q in 1:4) {
 	write.var(name,x,role="x",attr.str=paste("stream time parent quarter category", q)) 
 }
 
-# 11 quarter segments
+# --- quarter segments
 for (q in seq(10,60,5)) {
 	cat(q," ")
 	name <- paste("Period",q,sep="")
@@ -151,14 +157,17 @@ for (i in 2:length(use.cols)) {
 #
 #  These attributes are fixed over time, such as land area or location
 #
+#             At some point, with more, need a C++ function like the expander
+#             for this type of data as well.
+#
 # --------------------------------------------------------------------------------
 
 # district/region indicators
-cat("# regional area indicators \n",file=the.manifest, append=TRUE)
+cat("# region indicators \n",file=the.manifest, append=TRUE)
 
 division <- County$division[eligible.counties]
 for(d in unique(division)) {
-	name <- paste("Division",d,sep="")
+	name <- paste("Division_",d,sep="")
 	x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
 	write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
 }

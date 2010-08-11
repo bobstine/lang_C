@@ -107,6 +107,8 @@ main(int argc, char** argv)
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
   
+  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
+
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
@@ -134,7 +136,6 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug("AUCT",0) << "Version build 1.00 (14 Jul 2010)\n";
   debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
@@ -216,7 +217,7 @@ main(int argc, char** argv)
       return -1;
     }
 
-  // --- build model and initialize auction with stream for log
+  // --- build model and initialize auction with csv stream for tracking progress
 #ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
   Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
@@ -242,31 +243,33 @@ main(int argc, char** argv)
 			       ));
 
 
-  // add a source column and interaction expert for each column stream *unless* its the context stream (used for neighbors)
+  // add a source column and interaction expert for each column with role=x
   { std::vector<std::string> streamNames (featureSrc.stream_names());
-    int numberBiddingStreams (0);
-    for(std::vector<std::string>::const_iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
-      if(*it != "context")
-	++numberBiddingStreams;
-    FiniteCauchyShare alphaShare (totalAlphaToSpend, numberBiddingStreams);   // spreads wealth among streams
+    for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
+    { if (*it == "LOCKED")
+      { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
+	streamNames.erase(it);
+	break;
+      }
+    }
+    debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
+    FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size());   // spreads wealth among streams
     typedef  FiniteStream                        FStream;
     typedef  InteractionStream < FeatureVector > IStream;
-    for (int s=0; s < (int) streamNames.size(); ++s)
-    { if (streamNames[s] != "context")
-      { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
-	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
-				     UniversalBidder<FStream>(), 
-				     make_finite_stream(streamNames[s],
-							featureSrc.features_with_attribute("stream",
-											   streamNames[s])) // 2 cycles through these features
-				     ));
-	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
-				     UniversalBoundedBidder<IStream>(),
-				     make_interaction_stream("Interact " + streamNames[s],
-							     featureSrc.features_with_attribute("stream",streamNames[s]),
-							     false)                   // skip squared terms
-				     ));
-      }
+    for (int s=0; s < (int)streamNames.size(); ++s)
+    { debug("MAIN",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
+      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
+				   UniversalBidder<FStream>(), 
+				   make_finite_stream(streamNames[s],
+						      featureSrc.features_with_attribute("stream",
+											 streamNames[s])) // 2 cycles through these features
+				   ));
+      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
+				   UniversalBoundedBidder<IStream>(),
+				   make_interaction_stream("Interact " + streamNames[s],
+							   featureSrc.features_with_attribute("stream",streamNames[s]),
+							   false)                   // skip squared terms
+				   ));
     }
   }
 
@@ -318,7 +321,12 @@ main(int argc, char** argv)
   {
     int round = 0;
     theAuction.prepare_to_start_auction();
-    const int minimum_residual_df = 10;
+    {
+      FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
+      if(lockIn.size() > 0)
+	theAuction.add_initial_features(lockIn);
+    }
+    const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
@@ -326,7 +334,7 @@ main(int argc, char** argv)
       { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      progressStream << std::endl;                              // ends lines in progress file
+      progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
