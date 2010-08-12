@@ -14,9 +14,9 @@ n.eligible.counties <- length(eligible.counties)
 n.avoid <- length(County$fips) - n.eligible.counties
 cat("Avoiding", n.avoid,"counties, leaving",n.eligible.counties,"counties.\n")  # 256, leave 2886
 
-# --- write a file to expand state level variables
-counties.per.state <- sapply(State$name, function(n) sum(County$state[eligible.counties]==n))
-cat(counties.per.state, file="/Users/bob/C/auctions/data/credit/counties.per.state")
+# --- time domain
+y.quarters     <- 2:n.time        # skip first for all of those initial lagged variables
+x.quarters     <- 1:(n.time-1)
 
 
 #-----------------------------------------------------------------------------------
@@ -27,83 +27,81 @@ cat(counties.per.state, file="/Users/bob/C/auctions/data/credit/counties.per.sta
 #				build file with data under the [unique] name varname
 #-----------------------------------------------------------------------------------
 
-y.quarters     <- 2:n.time        # skip first for all of those initial lagged variables
-x.quarters     <- 1:(n.time-1)
-dims           <- dim(County$REPB60M[eligible.counties,])
-the.directory  <- "/Users/bob/C/auctions/data/credit/auction.data/"
-the.manifest   <- "/Users/bob/C/auctions/data/credit/auction.data/index.sh"
 
-cat("n=",n <- dims[1]*dims[2],"\n")   # 204,906
+write.the.data <- function() {
+	dims           <- dim(County$REPB60M[eligible.counties,])
+	the.directory  <- "/Users/bob/C/auctions/data/credit/auction.data/"
+	the.manifest   <- "/Users/bob/C/auctions/data/credit/auction.data/index.sh"
 
+	cat("n=",n <- dims[1]*dims[2],"\n")   # 204,906
 
+# --- write a file to expand state level variables
+	counties.per.state <- sapply(State$name, function(n) sum(County$state[eligible.counties]==n))
+	cat(counties.per.state, file="/Users/bob/C/auctions/data/credit/counties.per.state")
 
 # --------------------------------------------
 #  write of county level data starts here 
 # --------------------------------------------
 
 # --- initilize the manifest file, removing one quarter for lag alignment
-cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
-    file=the.manifest, append=FALSE)  
+	cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
+	    file=the.manifest, append=FALSE)  
 
 # --- write the in/out selector; hold back q quarters 
-cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
-in.out <- matrix(0,nrow=dims[1],ncol=dims[2]); in.out[,t.fit-1]<-1;  # -1 since lagged
-sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
-write.var("cv.indicator[in]", role = "context", in.out[,x.quarters]) 
+	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
+	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); in.out[,t.fit-1]<-1;  # -1 since lagged
+	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
+	write.var("cv.indicator[in]", role = "context", in.out[,x.quarters]) 
 
 # --- write the response  (71-1 x n.eligible.counties)
-cat("# response variable\n",file=the.manifest, append=TRUE)
-y <- cLog(as.vector(unlist(County$REPB60M[eligible.counties,y.quarters])))
-write.var("REPB60M",  y, role="y")
+	cat("# response variable\n",file=the.manifest, append=TRUE)
+	y <<- cLog(as.vector(unlist(County$REPB60M[eligible.counties,y.quarters])))
+	write.var("REPB60M",  y, role="y")
 
 # --- write lags of the response to define locked stream
-cat("# lags of the response\n",file=the.manifest, append=TRUE)
-y.lag <- cLog(as.vector(unlist(County$REPB60M[eligible.counties,x.quarters])))
-write.var("lag1_REPB60M",  y.lag                                             , role="x", attr.str="stream LOCKED")
-write.var("lag2_REPB60M",  c(rep(0,  n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
-write.var("lag3_REPB60M",  c(rep(0,2*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
-write.var("lag4_REPB60M",  c(rep(0,3*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+	cat("# lags of the response\n",file=the.manifest, append=TRUE)
+	y.lag <<- cLog(as.vector(unlist(County$REPB60M[eligible.counties,x.quarters])))
+	write.var("lag1_REPB60M",  y.lag                                             , role="x", attr.str="stream LOCKED")
+	write.var("lag2_REPB60M",  c(rep(0,  n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+	write.var("lag3_REPB60M",  c(rep(0,2*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
+	write.var("lag4_REPB60M",  c(rep(0,3*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
 
 # --- 5 more variables, all are lagged by write.county.var function
-cat("# county variables \n",file=the.manifest, append=TRUE)
-write.county.var(   "REAU",cLog(County$REAU        ),attr.str="interact_with_parent quarter interact_with_parent period")
-write.county.var(  "UNEMP",cLog(County$unemployment),attr.str="interact_with_parent quarter interact_with_parent period")
-write.county.var("POVERTY",cLog(County$poverty     ),attr.str="interact_with_parent quarter interact_with_parent period")
-write.county.var("INPB60M",cLog(County$INPB60M     ),attr.str="interact_with_parent quarter interact_with_parent period")
+	cat("# county variables \n",file=the.manifest, append=TRUE)
+	write.county.var(   "REAU",cLog(County$REAU        ),attr.str="interact_with_parent quarter interact_with_parent period")
+	write.county.var(  "UNEMP",cLog(County$unemployment),attr.str="interact_with_parent quarter interact_with_parent period")
+	write.county.var("POVERTY",cLog(County$poverty     ),attr.str="interact_with_parent quarter interact_with_parent period")
+	write.county.var("INPB60M",cLog(County$INPB60M     ),attr.str="interact_with_parent quarter interact_with_parent period")
 
 # --- 6 spatial variables
-temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
-write.county.var(   "S_REAU",temp,attr.str="interact_with_parent quarter")
-temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
-write.county.var(  "S_UNEMP",temp,attr.str="interact_with_parent quarter")
-temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
-write.county.var("S_Poverty",temp,attr.str="interact_with_parent quarter")
-temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
-write.county.var(   "S_INPB60M",temp,attr.str="interact_with_parent quarter")
-temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
-write.county.var(   "S_MTPB60M",temp,attr.str="interact_with_parent quarter")
-temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
-write.county.var(   "S_REPB60M",temp,attr.str="interact_with_parent quarter")
-
+	temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
+	write.county.var(   "S_REAU",temp,attr.str="interact_with_parent quarter")
+	temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
+	write.county.var(  "S_UNEMP",temp,attr.str="interact_with_parent quarter")
+	temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
+	write.county.var("S_Poverty",temp,attr.str="interact_with_parent quarter")
+	temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
+	write.county.var(   "S_INPB60M",temp,attr.str="interact_with_parent quarter")
+	temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
+	write.county.var(   "S_MTPB60M",temp,attr.str="interact_with_parent quarter")
+	temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
+	write.county.var(   "S_REPB60M",temp,attr.str="interact_with_parent quarter")
 
 # --- quarter indicators
-cat("# time period indicators \n",file=the.manifest, append=TRUE)
-for(q in 1:4) {
-	name <- paste("Quarter",q,sep="")
-	x <- matrix(as.numeric(y.quarters%%4==q), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
-	write.var(name,x,role="x",attr.str=paste("stream time parent quarter category", q)) 
-}
+	cat("# time period indicators \n",file=the.manifest, append=TRUE)
+	for(q in 1:4) {
+		name <- paste("Quarter",q,sep="")
+		x <- matrix(as.numeric(y.quarters%%4==q), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+		write.var(name,x,role="x",attr.str=paste("stream time parent quarter category", q)) 
+	}
 
 # --- quarter segments
-for (q in seq(10,60,5)) {
-	cat(q," ")
-	name <- paste("Period",q,sep="")
-	x <- matrix(as.numeric(y.quarters >= q), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
-	write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
-}
-
-cat("\n   ------- DONE writing  -------\n")
-
+	for (q in seq(10,60,5)) {
+		cat(q," ")
+		name <- paste("Period",q,sep="")
+		x <- matrix(as.numeric(y.quarters >= q), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+		write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
+	}
 
 # --------------------------------------------------------------------------------
 #  write national time series out in streaming format into separate
@@ -115,17 +113,15 @@ cat("\n   ------- DONE writing  -------\n")
 
 
 # --- use only those variables that go back to the initial 1992 quarter
-use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
+	use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
                             124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
                              179:182,185:186,188:192,194:199)]
-cat("Writing",length(use.cols),"variables to national file.\n")
-write.national.var(use.cols[1], append=FALSE)    # start new file here                        
-for (i in 2:length(use.cols)) {
-	if (i%%5 == 0) cat(i,"");
-	write.national.var(use.cols[i]);
-}
-
-
+	cat("Writing",length(use.cols),"variables to national file.\n")
+	write.national.var(use.cols[1], append=FALSE)    # start new file here                        
+	for (i in 2:length(use.cols)) {
+		if (i%%5 == 0) cat(i,"");
+		write.national.var(use.cols[i]);
+	}
 
 
 # --------------------------------------------------------------------------------
@@ -136,21 +132,19 @@ for (i in 2:length(use.cols)) {
 #                      of times to repeat each value.
 # --------------------------------------------------------------------------------
 
-
 # --- use only TrenData variables that go back to the initial 1992 quarter
-use.cols <- c("poverty","income","labor.force","unemployment")
-use.cols <- c(use.cols,
+	use.cols <- c("poverty","income","labor.force","unemployment")
+	use.cols <- c(use.cols,
               names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
                              124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
                              179:182,185:186,188:192,194:199)])
 
-cat("# State variables that will be expanded\n", file=the.manifest, append=TRUE)
-write.state.var(use.cols[1])    # start new file here                        
-for (i in 2:length(use.cols)) {
-	if (i%%5 == 0) cat(i,"");
-	write.state.var(use.cols[i]);
-}
-
+	cat("# State variables that will be expanded\n", file=the.manifest, append=TRUE)
+	write.state.var(use.cols[1])    # start new file here                        
+	for (i in 2:length(use.cols)) {
+		if (i%%5 == 0) cat(i,"");
+		write.state.var(use.cols[i]);
+	}
 
 
 # --------------------------------------------------------------------------------
@@ -163,15 +157,16 @@ for (i in 2:length(use.cols)) {
 # --------------------------------------------------------------------------------
 
 # district/region indicators
-cat("# region indicators \n",file=the.manifest, append=TRUE)
+	cat("# region indicators \n",file=the.manifest, append=TRUE)
 
-division <- County$division[eligible.counties]
-for(d in unique(division)) {
-	name <- paste("Division_",d,sep="")
-	x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
-	write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
+	division <- County$division[eligible.counties]
+	for(d in unique(division)) {
+		name <- paste("Division_",d,sep="")
+		x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+		write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
+	}
+
 }
-
 
 
 # -----------------------------------------------------------------------------------
@@ -182,29 +177,43 @@ for(d in unique(division)) {
 #        initial cases, the familiar start-up problem.
 # -----------------------------------------------------------------------------------
 
-q.in  <- 1:(max(t.fit)-1); 
-q.out <- max(t.fit):(n.time-1)
+test.code <- function() {
+	i.fit   <- which(in.out==1)       # 161616
+	i.pred  <- (1+max(fit)):length(y) #  20202
+	cat("sample sizes are ", length(i.fit), " and ", length(i.pred))
 
-# subtract 1 to lag y relative to all others
-y <- cLog(as.vector(County$REPB60M)[eligible.counties,1+q.in])
 
-in.sample  <- as.vector(y[, t.fit    ]); length ( in.sample)  # 168000
-out.sample <- as.vector(y[, t.predict]); length (out.sample)  #  33000
+	FitData <- data.frame( 
+		y      = y[i.fit], 
+		y.lag1 = y.lag[i.fit],
+		y.lag2 = c(rep(0, n.eligible.counties),y.lag1)[i.fit],
+		y.lag3 = c(rep(0, n.eligible.counties),y.lag2)[i.fit],
+		y.lag4 = c(rep(0, n.eligible.counties),y.lag3)[i.fit]  )
+	regr <- lm(y ~ y.lag1 + y.lag2 + y.lag3 + y.lag4, data=FitData); summary(regr)
 
-sum(( in.sample - mean(in.sample))^2)  # 11.08426
-sum((out.sample - mean(in.sample))^2)  #  1.31477
 
-# --- compare to initial fits of auction regression
+	PredData <- data.frame( 
+		y      = y[i.pred], 
+		y.lag1 = y.lag[i.pred],
+		y.lag2 = c(rep(0, n.eligible.counties),y.lag1)[i.pred],
+		y.lag3 = c(rep(0, n.eligible.counties),y.lag2)[i.pred],
+		y.lag4 = c(rep(0, n.eligible.counties),y.lag3)[i.pred]  )
 
-y.test   <- as.vector(y[,q.in])
-r.test   <- as.vector(fill.missing.mat(County$REAU)   [eligible.counties,q.in-1])
-r2.test  <- as.vector(fill.missing.mat(County$REAU)   [eligible.counties,q.in-1]^2)
-pov.test <- as.vector(fill.missing.mat(County$poverty)[eligible.counties,q.in-1])
-mort.test<- as.vector(fill.missing.mat(County$MTPB60M)[eligible.counties,q.in-1])
+	pred <- predict(regr, newdata=PredData)
+	pred.err <- y[i.pred]-pred
+	
+	# Why does this seem to be so different from the CVSS in C???
+	sum(pred.err^2)  # 8.199123
 
-regr <- lm(y.test ~ r.test)          ; summary(regr)
-regr <- lm(y.test ~ r.test + r2.test); summary(regr)
-regr <- lm(y.test ~ r.test + r2.test + pov.test + mort.test); summary(regr)
+}
+
+
+
+
+
+
+
+
 
 
 
