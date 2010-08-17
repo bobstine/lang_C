@@ -34,42 +34,43 @@ template<class Model>
 bool
 FitStream<Model>::empty()  const
 {
-  if (mLastQ == mModel.q())
-    return true;
-  mLastQ = mModel.q();
-  return false;
+  if (mModel.q()==0) return true;
+  return(mLastQ == mModel.q());
 }
 
 template<class Model>
 bool
 FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
 {
-   std::string lastVarName = used.back()->name();                             // check name of last used feature for name signature
-   mIncreaseDegree = (std::string::npos != lastVarName.find(mSignature));     // ::npos means not found
-   if (mIncreaseDegree && (std::string::npos != lastVarName.find("fifth")))   // already topped out at fifth degree
-     return false;
-   else
-     return true;
+  assert (used.size() > 0);                                                  // otherwise the stream should be empty
+  std::string lastVarName = used.back()->name();                             // check name of last used feature for name signature
+  bool foundSig = (std::string::npos != lastVarName.find(mSignature));       // ::npos means not found
+  if (foundSig) 
+  { debugging::debug("FSTR",4) << "Fit stream already used; not okay.\n";
+    mLastQ = mModel.q();                                                     // signals empty
+    return false;
+  }
+  else
+  { debugging::debug("FSTR",4) << "Fit stream current feature is okay.\n";
+    return true;
+  }
 }
       
 template<class Model>
 std::vector<Feature>FitStream<Model>::pop()
 {
   std::vector<int> powers;
-  if (!mIncreaseDegree)                                                  // first attempt to calibrate
-  { ++mCount;
-    mFit = Column(feature_name().c_str(), mSkip + mModel.fit_length());                    // grab current fit
-    double *b (mFit->begin());
-    for(int i=0; i<mSkip; ++i)      *b++ = 0;
-    mModel.fill_with_fit(mFit->begin() + mSkip);
-    mFit->update();
-    powers.push_back(2);
-    powers.push_back(3);                                                 // square and cubic for first attempt
-  }                                                        
-  else                                                                   // use higher powers to improve
-  { powers.push_back(4);
-    powers.push_back(5);
-  }
+  mFit = Column(feature_name().c_str(), mSkip + mModel.fit_length());  // grab current fit
+  double *b (mFit->begin());
+  for(int i=0; i<mSkip; ++i)      *b++ = 0;
+  mModel.fill_with_fit(mFit->begin() + mSkip);
+  mFit->update();
+  powers.push_back(2);
+  powers.push_back(3);                                                 // square and cubic for first attempt
+  powers.push_back(4);
+  powers.push_back(5);
+  debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
+  mLastQ = mModel.q();                                                  // will be empty until next is added
   return powers_of_column_feature(mFit,powers);
 }
 
@@ -81,7 +82,7 @@ FitStream<Model>::feature_name () const
     return std::string("");
   else
   { std::ostringstream oss;
-    oss << mCount;
+    oss << mModel.q();
     return mSignature + oss.str();
   }
 }

@@ -196,26 +196,25 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 template<class Model>
 class FitStream
 {
-  int                    mCount;           // number of times popped a fitted value (used to name fit values)
   mutable int            mLastQ;           // used to detect change in model size
+  int                    mPower;
   Model          const&  mModel;
   std::string            mSignature;       // prefix for variable names so that it can recognize them
-  bool                   mIncreaseDegree;
   Column                 mFit;             // holds fit values from model
   int                    mSkip;            // context rows to pad when returning fit
 
 public:
   
-  FitStream(Model const& model, std::string s, int skip)
+  FitStream(Model const& model, int power, std::string s, int skip)
     :
-    mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
+    mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
-  std::string             name()                       const { return mModel.name(); }
+  std::string             name()                       const { return mSignature; }
   std::string             feature_name()               const; 
   FeatureVector           pop();
   void                    mark_position()              const { }
 
-  void                    print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(pop="<<mCount<<",skip="<<mSkip<<")"; }
+  void                    print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty()                                                                                const;
@@ -226,9 +225,9 @@ protected:                                 // expert calls these methods followi
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m, std::string signature, int skip)
+make_fit_stream (Model const& m, int powers, std::string signature, int skip)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature,skip));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,powers,signature,skip));
 }
 
 

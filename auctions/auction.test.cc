@@ -277,8 +277,8 @@ main(int argc, char** argv)
   if(splineDF > 0)
   { std::string signature("Y_hat_");
     theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(4, signature),                           // delay between bursts
-				 make_fit_stream(theRegr, signature, nContextCases)));
+				 FitBidder(5, signature),                           // delay between bursts
+				 make_fit_stream(theRegr, splineDF, signature, nContextCases)));
   }
   
     
@@ -320,12 +320,12 @@ main(int argc, char** argv)
   // ----------------------   run the auction with output to file  ---------------------------------
   {
     int round = 0;
-    theAuction.prepare_to_start_auction();
     {
       FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
       if(lockIn.size() > 0)
 	theAuction.add_initial_features(lockIn);
     }
+    theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
@@ -339,6 +339,8 @@ main(int argc, char** argv)
     debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
 
+  
+  // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
     std::ofstream output (modelHTMLFileName.c_str());

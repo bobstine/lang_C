@@ -22,6 +22,22 @@ namespace{
   }
 }
 
+//  intialization     intialization     intialization     intialization     intialization     intialization
+
+template <class ModelClass>
+unsigned int
+Auction<ModelClass>::add_initial_features (FeatureVector const& f)
+{
+  debug("AUCT",2) << "Adding " << f.size() << " initial features to the auction model.\n";
+  // use an expert to handle the conversion (context rows, cross-validation ordering)
+  TestResult result (mModel.add_predictors_if_useful (mExperts[0]->convert_to_model_iterators(f), 1.1));
+  for (unsigned int j=0; j<f.size(); ++j)
+    mModelFeatures.push_back(f[j]);
+  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  return f.size();
+}
+
+
 template <class Model>
 void
 Auction<Model>::write_csv_header_to_progress_stream () const
@@ -47,18 +63,6 @@ Auction<ModelClass>::prepare_to_start_auction ()
   assert (mRound == 0);
   mNumInitialExperts = number_of_experts();
   if(mProgressStream) write_csv_header_to_progress_stream ();
-}
-
-
-template <class ModelClass>
-unsigned int
-Auction<ModelClass>::add_initial_features (FeatureVector const& f)
-{
-  debug("AUCT",2) << "Adding " << f.size() << " initial features to the auction model.\n";
-  // use an expert to handle the conversion (context rows, cross-validation ordering)
-  TestResult result (mModel.add_predictors_if_useful (mExperts[0]->convert_to_model_iterators(f), 1.1));
-  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
-  return f.size();
 }
 
   

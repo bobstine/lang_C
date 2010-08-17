@@ -166,7 +166,7 @@ write.the.data <- function() {
 		write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
 	}
 
-}
+}  # end of write.the.data
 
 
 # -----------------------------------------------------------------------------------
@@ -177,38 +177,54 @@ write.the.data <- function() {
 #        initial cases, the familiar start-up problem.
 # -----------------------------------------------------------------------------------
 
-test.code <- function() {
-	i.fit   <- which(in.out==1)       # 161616
-	i.pred  <- (1+max(fit)):length(y) #  20202
+test.code <- function() {               
+	i.fit   <- which(in.out==1)         # 161616   when give up 8 quarters at start
+	i.pred  <- (1+max(i.fit)):length(y) #  20202
 	cat("sample sizes are ", length(i.fit), " and ", length(i.pred))
 
 
 	FitData <- data.frame( 
-		y      = y[i.fit], 
+		y      = y    [i.fit], 
 		y.lag1 = y.lag[i.fit],
-		y.lag2 = c(rep(0, n.eligible.counties),y.lag1)[i.fit],
-		y.lag3 = c(rep(0, n.eligible.counties),y.lag2)[i.fit],
-		y.lag4 = c(rep(0, n.eligible.counties),y.lag3)[i.fit]  )
+		y.lag2 = c(rep(0, 1 * n.eligible.counties),y.lag)[i.fit],
+		y.lag3 = c(rep(0, 2 * n.eligible.counties),y.lag)[i.fit],
+		y.lag4 = c(rep(0, 3 * n.eligible.counties),y.lag)[i.fit]  )
 	regr <- lm(y ~ y.lag1 + y.lag2 + y.lag3 + y.lag4, data=FitData); summary(regr)
 
 
 	PredData <- data.frame( 
-		y      = y[i.pred], 
+		y      = y    [i.pred], 
 		y.lag1 = y.lag[i.pred],
-		y.lag2 = c(rep(0, n.eligible.counties),y.lag1)[i.pred],
-		y.lag3 = c(rep(0, n.eligible.counties),y.lag2)[i.pred],
-		y.lag4 = c(rep(0, n.eligible.counties),y.lag3)[i.pred]  )
+		y.lag2 = c(rep(0, 1 * n.eligible.counties),y.lag)[i.pred],
+		y.lag3 = c(rep(0, 2 * n.eligible.counties),y.lag)[i.pred],
+		y.lag4 = c(rep(0, 3 * n.eligible.counties),y.lag)[i.pred]  )
 
-	pred <- predict(regr, newdata=PredData)
+	pred <- predict(regr, newdata=PredData	
 	pred.err <- y[i.pred]-pred
+
+	cbind(y[i.pred][1:5], pred[1:5], pred.err[1:5])
+	        [,1]       [,2]         [,3]
+		1 -0.9079815 -0.9169214  0.008939888
+		2 -0.9044820 -0.9085865  0.004104519
+		3 -0.8907590 -0.8797084 -0.011050630
+		4 -0.8951716 -0.8809081 -0.014263456
+		5 -0.9006647 -0.8978281 -0.002836630
 	
-	# Why does this seem to be so different from the CVSS in C???
-	sum(pred.err^2)  # 8.199123
+	# Slightly different with shrinkage applied in auction
+	sum(pred.err^2)  # 8.199123... with shrinkage its 8.128
 
 }
 
 
-
+coefs.from.auction <- function{
+                                     Summary of Regression Coefficient Estimates
+                       Predictor Name                    Estimate        SE         t        p
+                                    Intercept         -0.093429
+                                 lag1_REPB60M          0.364987     0.0021        174 0
+                                      lag2_REPB60M          0.227131    0.00221        103          0
+                                      lag3_REPB60M           0.15233    0.00221       68.9          0
+                                      lag4_REPB60M          0.150695     0.0021       71.8          0
+}
 
 
 
