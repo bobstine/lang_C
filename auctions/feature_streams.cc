@@ -121,12 +121,6 @@ FiniteStream::print_features_to (std::ostream& os) const
 
 //  LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams  
 
-std::string
-LagStream::name()         const 
-{ 
-  return mName; 
-}
-  
 std::string 
 LagStream::feature_name() const 
 { 

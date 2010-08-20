@@ -323,22 +323,23 @@ main(int argc, char** argv)
     {
       FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
       if(lockIn.size() > 0)
-	theAuction.add_initial_features(lockIn);
-    }
-    theAuction.prepare_to_start_auction();
-    const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
-    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
-    {
-      ++round;
-      if (theAuction.auction_next_feature())                     // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+      { theAuction.add_initial_features(lockIn);
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      theAuction.prepare_to_start_auction();
+      const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
+      while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
+      {
+	++round;
+	if (theAuction.auction_next_feature())                     // true when adds predictor
+	{ debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+	  debug("AUCT",3) << theAuction << std::endl << std::endl;
+	}
+	progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      }
+      debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
     }
-    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
-
   
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file

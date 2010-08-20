@@ -167,7 +167,8 @@ public:
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
     :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  std::string       name()                             const ;
+  std::string       name()                             const   { return mName; }
+
   std::string       feature_name()                     const ;
   FeatureVector     pop();
   int               number_remaining()                 const ;

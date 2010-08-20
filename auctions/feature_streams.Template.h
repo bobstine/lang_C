@@ -65,10 +65,8 @@ std::vector<Feature>FitStream<Model>::pop()
   for(int i=0; i<mSkip; ++i)      *b++ = 0;
   mModel.fill_with_fit(mFit->begin() + mSkip);
   mFit->update();
-  powers.push_back(2);
-  powers.push_back(3);                                                 // square and cubic for first attempt
-  powers.push_back(4);
-  powers.push_back(5);
+  for (int j = 2; j <= mPower; ++j)
+    powers.push_back(j);
   debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
   mLastQ = mModel.q();                                                  // will be empty until next is added
   return powers_of_column_feature(mFit,powers);

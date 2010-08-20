@@ -9,11 +9,6 @@
 source("/Users/bob/work/papers/credit-unemp/initialize.R")
 source("functions_build.R")
 
-# --- note number of counties in the data set
-n.eligible.counties <- length(eligible.counties)
-n.avoid <- length(County$fips) - n.eligible.counties
-cat("Avoiding", n.avoid,"counties, leaving",n.eligible.counties,"counties.\n")  # 256, leave 2886
-
 # --- time domain
 y.quarters     <- 2:n.time        # skip first for all of those initial lagged variables
 x.quarters     <- 1:(n.time-1)
@@ -26,7 +21,6 @@ x.quarters     <- 1:(n.time-1)
 #             add lines to index.sh and 
 #				build file with data under the [unique] name varname
 #-----------------------------------------------------------------------------------
-
 
 write.the.data <- function() {
 	dims           <- dim(County$REPB60M[eligible.counties,])
@@ -47,11 +41,25 @@ write.the.data <- function() {
 	cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
 	    file=the.manifest, append=FALSE)  
 
-# --- write the in/out selector; hold back q quarters 
+# --- write the in/out selector; hold back q quarters
+#     have n.time-1 total columns to write since lagged
+	# omits the last few quarters
+	t.include <- t.fit; t.exclude <- t.predict
+
+	# this version omits randomly
+	all.times <- c(t.fit,t.predict)
+	t.exclude <- sort( sample(all.times[-(1:3)],length(t.predict)))
+	t.include <- sort(setdiff(all.times, t.exclude))
+
+	# write to data directory
 	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
-	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); in.out[,t.fit-1]<-1;  # -1 since lagged
+	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); 
+	in.out[,t.include] <<- 1;
+	write.var("cv.indicator[in]", role = "context", in.out[,y.quarters]) 
+	
+	# check the sum
 	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
-	write.var("cv.indicator[in]", role = "context", in.out[,x.quarters]) 
+
 
 # --- write the response  (71-1 x n.eligible.counties)
 	cat("# response variable\n",file=the.manifest, append=TRUE)
@@ -178,8 +186,9 @@ write.the.data <- function() {
 # -----------------------------------------------------------------------------------
 
 test.code <- function() {               
-	i.fit   <- which(in.out==1)         # 161616   when give up 8 quarters at start
-	i.pred  <- (1+max(i.fit)):length(y) #  20202
+	i.fit   <- which(in.out[,y.quarters]==1)         # 161616   when give up 8 quarters at start
+	i.pred  <- which(in.out[,y.quarters]==0)         #  20202   after dump initial context rows
+	i.pred  <- i.pred[i.pred > (t.fit[1]-1)*n.eligible.counties]
 	cat("sample sizes are ", length(i.fit), " and ", length(i.pred))
 
 
@@ -188,7 +197,7 @@ test.code <- function() {
 		y.lag1 = y.lag[i.fit],
 		y.lag2 = c(rep(0, 1 * n.eligible.counties),y.lag)[i.fit],
 		y.lag3 = c(rep(0, 2 * n.eligible.counties),y.lag)[i.fit],
-		y.lag4 = c(rep(0, 3 * n.eligible.counties),y.lag)[i.fit]  )
+		y.lag4 = c(rep(0, 3 * n.eligible.counties),y.lag)[i.fit]      )
 	regr <- lm(y ~ y.lag1 + y.lag2 + y.lag3 + y.lag4, data=FitData); summary(regr)
 
 

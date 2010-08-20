@@ -62,10 +62,12 @@ main ()
   std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
   Feature lag2  (x,2);
   Feature lag4  (x,4);
+  Feature lag13 (x,1,3);
   Feature lag22 (x,2,2);
-  std::cout << lag2  << std::endl;
-  std::cout << lag4  << std::endl;
-  std::cout << lag22 << std::endl;
+  std::cout << "TEST: lag  2  ---> " << lag2  << std::endl;
+  std::cout << "TEST: lag  4  ---> " << lag4  << std::endl;
+  std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
+  std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
   
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
