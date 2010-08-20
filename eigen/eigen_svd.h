@@ -18,7 +18,6 @@
  */
 
 #include <Eigen/Array>
-#include <Eigen/SVD>
  
 
 namespace SVD
@@ -29,7 +28,7 @@ namespace SVD
     standard_deviation (Eigen::VectorXd const& x);
   
   Eigen::MatrixXd
-    standardize_columns (Eigen::MatrixXd const& data);                               // norms so that X'X = 1       
+    standardize_columns (Eigen::MatrixXd const& data, bool useSD=true);                  // if orthogonal, norms so X'X = 1
 
   Eigen::MatrixXd
     sample_rows (Eigen::MatrixXd const& data, int nRows);
@@ -63,7 +62,11 @@ namespace Kernel
   class Radial
   {
     static std::string classname;
+    float mScale2;  // sigma^2
   public:
+    
+  Radial(float const& scale) : mScale2(scale*scale) {};   
+
     std::string const& name() const { return classname; }
     double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
   };

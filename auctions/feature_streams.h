@@ -103,6 +103,7 @@ public:
     debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
     return false;
   }
+
 };
 
 
@@ -166,7 +167,8 @@ public:
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
     :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  std::string       name()                             const ;
+  std::string       name()                             const   { return mName; }
+
   std::string       feature_name()                     const ;
   FeatureVector     pop();
   int               number_remaining()                 const ;
@@ -195,27 +197,25 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 template<class Model>
 class FitStream
 {
-  int                    mCount;           // number of times popped a fitted value (used to name fit values)
   mutable int            mLastQ;           // used to detect change in model size
+  int                    mPower;
   Model          const&  mModel;
   std::string            mSignature;       // prefix for variable names so that it can recognize them
-  bool                   mIncreaseDegree;
   Column                 mFit;             // holds fit values from model
   int                    mSkip;            // context rows to pad when returning fit
 
 public:
   
-  FitStream(Model const& model, std::string s, int skip)
+  FitStream(Model const& model, int power, std::string s, int skip)
     :
-    mCount(0), mLastQ(0), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
+    mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
-  std::string             name()                       const { return mModel.name(); }
+  std::string             name()                       const { return mSignature; }
   std::string             feature_name()               const; 
   FeatureVector           pop();
   void                    mark_position()              const { }
 
-  void                    print_to(std::ostream& os)   const { os << "FitStream" << name()
-								  << "(pop=" << mCount << ",skip=" << mSkip << ")"; }
+  void                    print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
   bool  empty()                                                                                const;
@@ -226,9 +226,9 @@ protected:                                 // expert calls these methods followi
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m, std::string signature, int skip)
+make_fit_stream (Model const& m, int powers, std::string signature, int skip)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,signature,skip));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,powers,signature,skip));
 }
 
 
@@ -252,12 +252,12 @@ public:
   
   std::string             name()                              const { return mName; }
   
-  std::string             feature_name()                      const { return mCurrentFeatureName; }
+  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();                      
   void                    mark_position() {}
   
   int                     number_remaining()                  const;
-  void                    print_to(std::ostream& os)          const { os << mName << " @ " << mPos1 << " x " << mPos2 << " "; }
+  void                    print_to(std::ostream& os)          const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
   bool  empty ()                            const;
@@ -295,11 +295,11 @@ public:
                                                                                                build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }  
-  std::string             feature_name()                      const { return mCurrentFeatureName; }
+  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();
   void                    mark_position()                           { }
   int                     number_remaining()                  const { return mPos+1; }
-  void                    print_to(std::ostream& os)          const { os << "FPST: " << name() << " @ " << mPos << " "; }
+  void                    print_to(std::ostream& os)          const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " @ " << mPos << " "; }
   
 protected:
   bool  empty()  const;
@@ -349,7 +349,7 @@ public:
     : mName(name), mCurrentFeatureName(""), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
   
   std::string             name()                              const { return mName; }  
-  std::string             feature_name()                      const { return mCurrentFeatureName; }
+  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();     
   void                    mark_position()                           { }
   int                     number_remaining()                  const ;
@@ -400,7 +400,7 @@ public:
 
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   
-  void                  print_to(std::ostream& os)   const { os << "PLST: " << name() << " stream @ " << mPos ; }
+  void                  print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos ; }
   
 protected:
   bool                  empty()                      const { return  (number_remaining() == 0); }
@@ -448,12 +448,12 @@ public:
       mPredicate(pred), mTransformation(trans) { }
   
   std::string           name()                       const { return mName; }
-  std::string           feature_name()               const { return "basis"; }
+  std::string           feature_name()               const { if (empty()) return std::string(""); else return "basis"; }
   FeatureVector         pop();
   void                  mark_position() {}
   
   int                   number_remaining()           const { return (mSource.size()-mPos); }
-  void                  print_to(std::ostream& os)   const { os << "SUBS: " << name() << " stream @ " << mPos ; }
+  void                  print_to(std::ostream& os)   const { os << "SUBS: " << name(); if(empty()) os << " is empty."; else os << " stream @ " << mPos ; }
 
 protected:
   bool                  empty()                      const { return ((number_remaining()+(int)mBundle.size())<mBundleSize);} //too few to fill

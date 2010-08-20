@@ -43,7 +43,7 @@ debugging::Debug::Debug(std::ostream& strm,int level):
   m_last_level(0),
   m_panic(0)
 {
-  assert(level <= 4);  // mucho output
+  assert(level <= 5);  // mucho output
   assert(level >= -1); // error output
   if(sp_singleton)
     delete sp_singleton;

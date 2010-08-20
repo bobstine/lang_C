@@ -393,6 +393,9 @@ template <class Data, class Engine>
 int
 gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns)
 {
+  // caution message since we do this all globally to accommodate shrinkage
+  if ((firstColumn !=0) || (numberColumns != mQ))
+    debug("GSLR",3) << " Note.  Shrinkage requires full QR decomposion rather than partial QR.\n";
   const int newQ (mQ + mDimZ);
   assert((firstColumn + numberColumns) == newQ);
   // overwrite QR with the data including

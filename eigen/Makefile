@@ -12,7 +12,7 @@ PROJECT_NAME = eigen
 # OPT = -O0 
 # fast and who gives a damn about errors?
 
-OPT = -O2 -DNDEBUG
+OPT = -O3 -DNDEBUG
 
 USES = random utils
 
@@ -42,3 +42,4 @@ rand_projection.o: rand_projection.cc
 
 rand_projection: rand_projection.o eigen_svd.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
+

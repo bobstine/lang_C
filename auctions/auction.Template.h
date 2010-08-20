@@ -22,37 +22,61 @@ namespace{
   }
 }
 
-template <class Model>
-void
-Auction<Model>::write_csv_header_to(std::ostream& os) const
+//  intialization     intialization     intialization     intialization     intialization     intialization
+
+template <class ModelClass>
+unsigned int
+Auction<ModelClass>::add_initial_features (FeatureVector const& f)
 {
-  os << "Round, Time, Goodness of Fit, Total Alpha  ";
-  for (int b=0; b<number_of_experts(); ++b)
-    os << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
-  os << ", Winning Expert, Winning Bid, p value, Variable, Outcome, Payoff, Res SS, CVSS" << std::endl;
-  // initial conditions
-  std::pair<double,double> ss =  mModel.sums_of_squares();
-  os << " , , ,";
-  for (int b=0; b<number_of_experts(); ++b)    os << ",,, ";
-  os << ", , , , , , , " << ss.first << "," << ss.second << std::endl;
+  debug("AUCT",2) << "Adding " << f.size() << " initial features to the auction model.\n";
+  // use an expert to handle the conversion (context rows, cross-validation ordering)
+  TestResult result (mModel.add_predictors_if_useful (mExperts[0]->convert_to_model_iterators(f), 1.1));
+  for (unsigned int j=0; j<f.size(); ++j)
+    mModelFeatures.push_back(f[j]);
+  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  return f.size();
 }
 
 
+template <class Model>
+void
+Auction<Model>::write_csv_header_to_progress_stream () const
+{
+  mProgressStream << "Round, Time, Goodness of Fit, Total Alpha  ";
+  for (int b=0; b<number_of_experts(); ++b)
+    mProgressStream << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
+  mProgressStream << ", Winning Expert, Winning Bid, p value, Variable, Outcome, Payoff, Res SS, CVSS" << std::endl;
+  // initial conditions
+  std::pair<double,double> ss =  mModel.sums_of_squares();
+  mProgressStream << " , , ,";
+  for (int b=0; b<number_of_experts(); ++b)
+    mProgressStream << ",,, ";
+  mProgressStream << ", , , , , , , " << ss.first << "," << ss.second << std::endl;
+}
+
+
+template <class ModelClass>
+void
+Auction<ModelClass>::prepare_to_start_auction ()
+{
+  debug("AUCT",3) << "Preparing to run the auction.\n";
+  assert (mRound == 0);
+  mNumInitialExperts = number_of_experts();
+  if(mProgressStream) write_csv_header_to_progress_stream ();
+}
+
+  
 // Output to OS must be *csv* delimited columns; each item adds its own prefix , delimiter
 template <class ModelClass>
 bool
-Auction<ModelClass>::auction_next_feature (std::ostream& os)
+Auction<ModelClass>::auction_next_feature ()
 {
-  if (mRound == 0) // prior to first round
-  { mNumInitialExperts = number_of_experts();
-    write_csv_header_to (os);
-  }
   ++mRound;
   debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
   // reap empty custom experts
   purge_empty_experts();
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
-  std::pair<Expert,double> winner (collect_bids(os));  
+  std::pair<Expert,double> winner (collect_bids());  
   Expert  expert = winner.first;
   double  bid    = winner.second;
   // handle tax on bid
@@ -60,33 +84,33 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   if (0.0 == afterTaxBid) 
   { mHasActiveExpert = false;
     debug("AUCT",0) << "Auction does not have an active expert to bid; terminating.\n";
-    if (os) os << std::endl;
+    if (mProgressStream) mProgressStream << std::endl;
     return false;
   } 
   // extract chosen features
   FeatureVector features (expert->feature_vector());
   if (features.empty())
   { debug("AUCT",-1) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
-    if (os) os << std::endl;
+    if (mProgressStream) mProgressStream << std::endl;
     return false;
   }
   else
   { debug("AUCT",3) << "Winning expert " << expert->name()
 		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
-    print_features(features);
+    print_features(features, debug());
   }
-  // build variables for testing, conversion adjusts for context rows
+  // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
-  if (os)
-    os << ", " << result.second << ", \"" << remove_comma(features[0]->name()) << "\"";
+  if (mProgressStream)
+    mProgressStream << ", " << result.second << ", \"" << remove_comma(features[0]->name()) << "\"";
   // report bid result
   double amount;
   bool accepted (result.second < afterTaxBid);
   for (unsigned int j=0; j<features.size(); ++j)
   { features[j]->set_model_results(accepted, result.second);                // save attributes in feature for printing
     if (accepted) 
-    { mLogStream << "+F+   " << features[j] << std::endl;                   // show selected feature in output with key for grepping
+    { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
     else      
@@ -96,14 +120,14 @@ Auction<ModelClass>::auction_next_feature (std::ostream& os)
   { for(std::vector<Expert>::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
       (*it)->model_adds_current_variable();
     amount = pay_winning_expert(expert, features);                          // installs experts as needed
-    if (os)
+    if (mProgressStream)
     { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
-      os << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
+      mProgressStream << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
     }
   } else
   { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
-    if (os)
-      os <<               ", ,"               << amount <<           ", , ";
+    if (mProgressStream)
+      mProgressStream <<               ", ,"               << amount <<           ", , ";
   }
   return accepted;
 }
@@ -147,14 +171,14 @@ namespace {
 
 template <class ModelClass>
 std::pair<Expert,double>
-Auction<ModelClass>::collect_bids (std::ostream& os)
+Auction<ModelClass>::collect_bids ()
 {
-  if (os)  // write time stamp info
+  if (mProgressStream)  // write time stamp info
   { const time_t tmpTime (time(0));
     std::string timeStr (asctime(localtime(&tmpTime)));
-    os << mRound << ", " << timeStr.substr(0,timeStr.size()-5)
-       << ", " << model_goodness_of_fit()
-       << ", " << total_expert_alpha();
+    mProgressStream << mRound << ", " << timeStr.substr(0,timeStr.size()-5)
+		    << ", " << model_goodness_of_fit()
+		    << ", " << total_expert_alpha();
   }
   Expert         winningExpert,    priorityExpert;
   double         highBid (-7.7),   priorityBid (0.0);
@@ -162,12 +186,12 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
   int iExpert (0);
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
   { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
-    if (os)
+    if (mProgressStream)
       if (iExpert < mNumInitialExperts)
       {	if (bid > 0)
-	  os << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
+	  mProgressStream << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
 	else
-	  os << ",  , "                                                    << (*it)->alpha() << ", " << bid;
+	  mProgressStream << ",  , "                                                    << (*it)->alpha() << ", " << bid;
       }
     if (bid > highBid)
     { highBid = bid;
@@ -183,8 +207,8 @@ Auction<ModelClass>::collect_bids (std::ostream& os)
     winningExpert = priorityExpert;
     debug("AUCT",3) << "Priority bidder takes bid " << highBid << std::endl;
   }
-  if(os)
-    os << "," << remove_comma(winningExpert->name()) << "," << highBid;
+  if(mProgressStream)
+    mProgressStream << "," << remove_comma(winningExpert->name()) << "," << highBid;
   winningExpert->bid_accepted();                     // inform experts whether win/lose auction
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != winningExpert) (*it)->bid_declined();
@@ -328,18 +352,18 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
 
 template <class ModelClass>
 void
-Auction<ModelClass>::print_features(FeatureVector const& features)   const
+Auction<ModelClass>::print_features(FeatureVector const& features, std::ostream &os)   const
 {
   size_t nFeatures (features.size());
   
   if (1==nFeatures) 
-    mLogStream << "one feature: " << features[0]->name();
+    os << "one feature: " << features[0]->name();
   else 
-  { mLogStream << nFeatures << " features: "; 
+  { os << nFeatures << " features: "; 
     for (size_t j=0; j<nFeatures; ++j)  
-      mLogStream << features[j]->name() << ", ";
+      os << features[j]->name() << ", ";
   }
-  mLogStream << std::endl;
+  os << std::endl;
 }
 
 template <class ModelClass>
@@ -366,11 +390,11 @@ Auction<ModelClass>::write_model_to  (std::ostream& os) const
   mModel.print_to(os);
   // feature list has <= q items; does not include combinations based on prior predictor
   for (int j=0; j<int(mModelFeatures.size()); ++j)      
-  { mLogStream << "AUCT: Writing model feature " << mModelFeatures[j]->name()
-	       << " (" << j << " / " << mModelFeatures.size() << ")" 
-	       << " with range " << mModelFeatures[j]->range() << std::endl;
-    mLogStream << "       center = " << mModelFeatures[j]->center()
-	       << "    scale = " << mModelFeatures[j]->scale() << std::endl;
+  { debug("AUCT",2) << "AUCT: Writing model feature " << mModelFeatures[j]->name()
+		    << " (" << j << " / " << mModelFeatures.size() << ")" 
+		    << " with range " << mModelFeatures[j]->range() << std::endl
+		    << "       center = " << mModelFeatures[j]->center()
+		    << "    scale = " << mModelFeatures[j]->scale() << std::endl;
     mModelFeatures[j]->write_to(os);
   }
 }

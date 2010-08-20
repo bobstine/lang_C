@@ -1,8 +1,11 @@
 #include "eigen_svd.h"
 
-#include <iostream>
+#include "debug.h"
+
+#include <Eigen/SVD>
 
 
+using debugging::debug;
 
 //   SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     
 
@@ -16,7 +19,7 @@ double
 SVD::standard_deviation (Eigen::VectorXd const& x)
 {
   Eigen::VectorXd centered (x.cwise() - mean(x));
-  return centered.squaredNorm()/(x.size()-1);
+  return sqrt(centered.squaredNorm()/(x.size()-1));
 }
 
 
@@ -39,19 +42,19 @@ SVD::sample_rows(Eigen::MatrixXd const& m, int nRows)
 
 
 Eigen::MatrixXd
-SVD::standardize_columns (Eigen::MatrixXd const& data)
+SVD::standardize_columns (Eigen::MatrixXd const& data, bool useSD)
 {
   Eigen::MatrixXd result (data.rows(), data.cols());
-  Eigen::VectorXd mean (data.colwise().sum());
   // center cols, moving into result
-  mean = mean / data.rows();
+  Eigen::VectorXd mean (data.colwise().sum()/data.rows());
   for (int j=0; j<data.cols(); ++j)
     result.col(j) = data.col(j).cwise() - mean(j);
-  // scale so that x'x = 1
+  // scale
   Eigen::VectorXd ss (data.colwise().squaredNorm());
   for (int j=0; j<data.cols(); ++j)
-  { double sd (sqrt(ss(j)));
-    result.col(j) = result.col(j) / sd;
+  { double s = ss(j);
+    if (useSD) s /= data.rows()-1;  // sample var
+    result.col(j) = result.col(j) / sqrt(s);
   }
   return result;
 }
@@ -79,7 +82,7 @@ pca::operator()(Eigen::MatrixXd const& data) const
   // std::cout << "TESTING: Given " << mNumComponents << " requested, returning " << m << std::endl;
   Eigen::MatrixXd linComb;
   if (mStandardize)
-  { Eigen::MatrixXd sData (SVD::standardize_columns(data));
+  { Eigen::MatrixXd sData (SVD::standardize_columns(data, false));  // norm so x'x=1
     linComb = SVD::random_linear_combinations(m,sData);
   }
   else
@@ -88,7 +91,7 @@ pca::operator()(Eigen::MatrixXd const& data) const
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
-  std::cout << "ESVD : All singular values are {" << s.transpose() << "}\n";
+  debug("EIGN",3) << "Singular values are {" << s.transpose() << "}\n";
   // return those with sing value > 0 (at least 1) or desired number
   int k (mNumComponents);
   if (0 == k)
@@ -127,7 +130,7 @@ double
 Kernel::Radial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
 {
   Eigen::VectorXd diff (x - y);
-  return exp(-diff.squaredNorm());
+  return exp(-0.5 * diff.squaredNorm()/mScale2);
 }
 
 
@@ -135,5 +138,5 @@ double
 Kernel::WeightedRadial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
 {
   Eigen::VectorXd wdiff ((x - y).cwise()/mWts);
-  return exp(-wdiff.squaredNorm());
+  return exp(-0.5 * wdiff.squaredNorm());
 }

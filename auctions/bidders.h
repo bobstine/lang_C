@@ -152,7 +152,7 @@ class FitBidder
     std::vector<double> payoffs (state.payoff_history());
     if(!payoffs.empty() && payoffs.back() > 0)                       // last variable was added to model
       if (lastBidAccepted)                                           // it was mine, so pick the same bid
-	return (mCountDown == mDelayInterval) ? 0.25 : 0.025;
+	return (mCountDown == mDelayInterval) ? 0.25 : 0.01;         // p-values used to assess value of calibration
       else                                                           // was not mine, so adjust countdown
       {  --mCountDown;
 	 if(0 == mCountDown)

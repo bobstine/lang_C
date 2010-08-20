@@ -12,9 +12,9 @@ include ../c_flags
 
 PROJECT_NAME = auction
 
-OPT      = -O2
+# lose all auction output if compile with DNDEBUG
 # OPT      = -O3 -DNDEBUG
-# OPT      = -O2
+OPT      = -O2
 
 USES = gsl_tools eigen spline ranges random utils 
 
@@ -56,30 +56,33 @@ crash_test: auction.test
 
 # ---  credit models  -----------------------------------------------------------------------------
 
-# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size
-short_credit_test: auction.test
+# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size  -d debug output level
+#
+#   can also run from a pipe like this
 #	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 50 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
-	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 5 -x 9000
+#
+short_credit_test: auction.test
+	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 200 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
 short_credit_test_ns: auction.test
-	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 3000 -c 5 -x 9000
+	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 5 -x 11544
 
 
 credit_test: auction.test
-	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
+	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
 
 
 # ---  ann arbor models  -----------------------------------------------------------------------------
 
 anes_run: auction.test
-	./auction.test -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 # ---  dean models  ---------------------------------------------------------------------------------
 #                         Note: run the index file to put results into a file named "data"
 #
 theher_run: auction.test
-	./auction.test -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 

@@ -1,5 +1,5 @@
 #define LINEAR_MODEL
-  
+   
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
@@ -85,7 +85,7 @@ parse_arguments(int argc, char** argv,
 		std::string& outputPath,
 		int &protection, int &blockSize,
 		int &nRounds, double &totalAlpha,
-		int &df, int &extraCases);
+		int &df, int &extraCases, int &debugLevel);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
@@ -107,6 +107,8 @@ main(int argc, char** argv)
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
   
+  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
+
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
@@ -116,25 +118,25 @@ main(int argc, char** argv)
   int           numberRounds         (200); 
   int           splineDF             (0);
   int           extraCases           (0);
-  
+  int           debugLevel           (3);
+    
 
   parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
-		  splineDF, extraCases);
+		  splineDF, extraCases, debugLevel);
 
-  
+   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
-  debugging::debug_init(logStream, 5);
+  debugging::debug_init(logStream, debugLevel);
 #else
-  debugging::debug_init(std::clog, 5);
+  debugging::debug_init(std::clog, debugLevel);
 #endif
   
   // echo startup options to log file
-  debug("AUCT",0) << "Version build 1.00 (14 Jul 2010)\n";
-  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath
+  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
 		  << std::endl;
@@ -206,15 +208,23 @@ main(int argc, char** argv)
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, extraCases);
   featureSrc.print_summary(debug("MAIN",1));
-    
-  // --- build model and initialize auction with stream for log
+
+  // initialize progress file to hold incremental round-by-round results
+  std::string progressCSVFileName (outputPath + "progress.csv");
+  std::ofstream progressStream (progressCSVFileName.c_str());
+  if (!progressStream)
+    { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
+      return -1;
+    }
+
+  // --- build model and initialize auction with csv stream for tracking progress
 #ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
 #else
   // --- build logisitic model and auction
   LogisticModel <gslData> theRegr(theData, protection, blockSize);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, debug(0));
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
 #endif
 
   debug("AUCT",3) << "Assembling experts"  << std::endl;
@@ -233,31 +243,33 @@ main(int argc, char** argv)
 			       ));
 
 
-  // add a source column and interaction expert for each column stream *unless* its the context stream (used for neighbors)
+  // add a source column and interaction expert for each column with role=x
   { std::vector<std::string> streamNames (featureSrc.stream_names());
-    int numberBiddingStreams (0);
-    for(std::vector<std::string>::const_iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
-      if(*it != "context")
-	++numberBiddingStreams;
-    FiniteCauchyShare alphaShare (totalAlphaToSpend, numberBiddingStreams);   // spreads wealth among streams
+    for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
+    { if (*it == "LOCKED")
+      { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
+	streamNames.erase(it);
+	break;
+      }
+    }
+    debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
+    FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size());   // spreads wealth among streams
     typedef  FiniteStream                        FStream;
     typedef  InteractionStream < FeatureVector > IStream;
-    for (int s=0; s < (int) streamNames.size(); ++s)
-    { if (streamNames[s] != "context")
-      { debug("AUCT",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
-	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
-				     UniversalBidder<FStream>(), 
-				     make_finite_stream(streamNames[s],
-							featureSrc.features_with_attribute("stream",
-											   streamNames[s])) // 2 cycles through these features
-				     ));
-	theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
-				     UniversalBoundedBidder<IStream>(),
-				     make_interaction_stream("Interact " + streamNames[s],
-							     featureSrc.features_with_attribute("stream",streamNames[s]),
-							     false)                   // skip squared terms
-				     ));
-      }
+    for (int s=0; s < (int)streamNames.size(); ++s)
+    { debug("MAIN",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
+      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
+				   UniversalBidder<FStream>(), 
+				   make_finite_stream(streamNames[s],
+						      featureSrc.features_with_attribute("stream",
+											 streamNames[s])) // 2 cycles through these features
+				   ));
+      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
+				   UniversalBoundedBidder<IStream>(),
+				   make_interaction_stream("Interact " + streamNames[s],
+							   featureSrc.features_with_attribute("stream",streamNames[s]),
+							   false)                   // skip squared terms
+				   ));
     }
   }
 
@@ -265,8 +277,8 @@ main(int argc, char** argv)
   if(splineDF > 0)
   { std::string signature("Y_hat_");
     theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(4, signature),                           // delay between bursts
-				 make_fit_stream(theRegr, signature, nContextCases)));
+				 FitBidder(5, signature),                           // delay between bursts
+				 make_fit_stream(theRegr, splineDF, signature, nContextCases)));
   }
   
     
@@ -289,47 +301,47 @@ main(int argc, char** argv)
 			       UniversalBidder<SS_SVD>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    64,                            // bundle size
-						    FeatureAcceptancePredicate(),                 //      0=use rule, true=standardize
+						    59,                                    // bundle size
+						    FeatureAcceptancePredicate(),          //      0=use rule, true=standardize
 						    Eigen_adapter<pca>(pca(0, true), nContextCases)
 						    )));
-  /*
-    typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslRKHS<RadialKernel> > > SS_RKHS;
-    theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+
+  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
+  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
-			       make_subspace_stream("RKHS components", 
+			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(), 
-						    20,                            // bundle size
+						    31,                                    // bundle size
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
-						    GSL_adapter<gslRKHS<RadialKernel> >(gslRKHS<RadialKernel>(3, true),0)    
-						    )));                                   // WARNING: cannot return more than 25 x's in subspace
-  */
-  
-  // set up file for writing state of auction
-  std::string progressCSVFileName (outputPath + "progress.csv");
-  std::ofstream progressStream (progressCSVFileName.c_str());
-  if (!progressStream)
-    { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
-      return -1;
-    }
+						    Eigen_adapter<rkhs<Kernel::Radial> >(rkhs<Kernel::Radial>(3, true),nContextCases)    
+						    )));
 
   
-  // run the auction with output to file
+  // ----------------------   run the auction with output to file  ---------------------------------
   {
     int round = 0;
-    const int minimum_residual_df = 10;
-    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
-      ++round;
-      if (theAuction.auction_next_feature(progressStream)) // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+      FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
+      if(lockIn.size() > 0)
+      { theAuction.add_initial_features(lockIn);
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      progressStream << std::endl;                        // ends lines in progress file
+      theAuction.prepare_to_start_auction();
+      const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
+      while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
+      {
+	++round;
+	if (theAuction.auction_next_feature())                     // true when adds predictor
+	{ debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+	  debug("AUCT",3) << theAuction << std::endl << std::endl;
+	}
+	progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      }
+      debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
     }
-    debug("AUCT",1) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
-
+  
+  // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
     std::ofstream output (modelHTMLFileName.c_str());
@@ -383,7 +395,8 @@ parse_arguments(int argc, char** argv,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &nDF,
-		int    &extraCases)
+		int    &extraCases,
+		int    &debugLevel)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -392,6 +405,7 @@ parse_arguments(int argc, char** argv,
       static struct option long_options[] = {
 	  {"alpha",             1, 0, 'a'},  // has arg,
 	  {"calibrator-df",     1, 0, 'c'},  // has arg,
+	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
@@ -401,7 +415,7 @@ parse_arguments(int argc, char** argv,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:c:f:o:p:b:r:x:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:c:d:f:o:p:b:r:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -417,10 +431,14 @@ parse_arguments(int argc, char** argv,
 	      nDF = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
+	  case 'd' : 
+	    {
+	      debugLevel = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
 	  case 'f' :                                    
 	    {
 	      std::string name(optarg);
-	      // std::cout << "Read name from optional args..." << name << std::endl;
 	      inputFile = name;
 	      break;
 	    }
@@ -466,6 +484,8 @@ parse_arguments(int argc, char** argv,
 	      std::cout << "      -r#" << std::endl << std::endl;
 	      std::cout << "      --extra-cases=#          extra cases used in building features" << std::endl;
 	      std::cout << "      -x#" << std::endl << std::endl;
+	      std::cout << "      --debug-level=#          0 for little, 5 for copious" << std::endl;
+	      std::cout << "      -d#" << std::endl << std::endl;
 	      std::cout << "      --help                   generates this message" << std::endl;
 	      std::cout << "      -h" << std::endl << std::endl;
 	      exit(0);
@@ -513,14 +533,15 @@ build_model_data(Column y, Column inOut, int skip, std::ostream& os)
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        ((int)y->size()-skip);
   
-  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y;
+  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y << std::endl;
   if (useSubset)
-  { os << " and validation cases identified by " << inOut << std::endl;
+  { os << "        Validation cases identified by " << inOut << std::endl;
     return new gslData(y->begin()+skip, inOut->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
   } 
   else
-  { os << " and no validation.\n";
+  { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
     return new gslData(y->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
   } 
 }
+ 

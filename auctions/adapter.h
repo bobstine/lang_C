@@ -81,9 +81,9 @@ class Eigen_adapter
   
   FeatureVector operator()(FeatureVector const& fv)
     {
-      Eigen::MatrixXd in  = Convert::features_into_eigen_matrix(fv, mContextRows);
-      Eigen::MatrixXd out = mOp(in);
-      FeatureVector result (Convert::eigen_matrix_into_features(out, mContextRows));
+      Eigen::MatrixXd  in  = Convert::features_into_eigen_matrix(fv, mContextRows);
+      Eigen::MatrixXd  out = mOp(in);
+      FeatureVector result = Convert::eigen_matrix_into_features(out, mContextRows);
       return result;
     }
 };		    

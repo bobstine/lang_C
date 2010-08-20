@@ -229,6 +229,17 @@
  first' rather than 'breadth first' manner.  With experts, one does not have to
  examine, for example, every linear effect before considering a second-order
  effect.
+
+ {\bf Reserved Stream Names} There are three reserved stream names.  The default
+ stream name is ``MAIN''.  This is the default stream assigned to explanatory
+ variables that do not name a stream.  The second reserved name is ``LOCKED''.
+  Variables in the locked stream are forced into the model at the time of
+ initialization.  Since all of these variables will appeaer in the list of model
+ features, they will automatically be considered in interactions with several
+ other experts.  The third stream called ``CONTEXT'' holds variables that are
+ used to define neighborhoods of cases.  Context variables are used to build
+ explanatory variables, but do not appear in the auction themselves.
+
 \begin{description}
 
 \item[Source experts] produce new features for consideration; in general, source

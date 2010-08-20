@@ -44,6 +44,13 @@ trendata_build_nation: trendata_build_nation.o trendata.h
 	cp -f $@ ~/data/TrenData/nation/build_data
 
 
+
+bernoulli: bernoulli.o
+	$(GCC) $^ $(LDLIBS)  -o  $@
+
+
+
+
 csv_to_table: csv_to_table.o
 	$(GCC) csv_to_table.o $(LDLIBS) -o $@
 
