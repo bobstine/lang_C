@@ -277,7 +277,7 @@ main(int argc, char** argv)
   if(splineDF > 0)
   { std::string signature("Y_hat_");
     theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(0.0001, signature),                      // calibrate p-value
+				 FitBidder(0.00001, signature),                     // calibrate p-value
 				 make_fit_stream(theRegr, splineDF, signature, nContextCases)));
   }
   

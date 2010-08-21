@@ -114,7 +114,7 @@ FeatureABC::read_from (std::istream& is)
   }
   is >> mTried;
   is >> mInModel;
-  is >> mEntryPValue;
+  is >> mEntryBid;
 }
 
 
@@ -127,7 +127,7 @@ FeatureABC::write_to (std::ostream& os)     const
   if (!mAttributes.empty())
     for (AttrIter pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
       os << " [" << pA->first << " (" << pA->second << ")] ";
-  os << mTried << " " << mInModel << " " << mEntryPValue << std::endl;
+  os << "  tried=" << mTried << "  inModel=" << mInModel << "  bid=" << mEntryBid << std::endl;
 }
 
 
@@ -151,7 +151,7 @@ FeatureABC::print_to(std::ostream& os) const
   { os << " (tried; ";
     if (!mInModel)
       os << "not ";
-    os << "used; p-value " << mEntryPValue << ").";
+    os << "used; bid " << mEntryBid << ").";
   }
   os << "  Values " << range();
 }
