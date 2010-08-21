@@ -7,7 +7,7 @@
 #                       TARGETS 
 # 
 
-all: libs auctions/auctions.test.exec
+all: libs auctions/auction.test
 
 clean:
 	-rm -f */*.o  */*.d */*~  */core */lib*.a
