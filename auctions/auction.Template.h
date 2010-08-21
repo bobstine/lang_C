@@ -186,7 +186,7 @@ Auction<ModelClass>::collect_bids ()
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
   { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
     if (mProgressStream)
-      if (iExpert < mNumInitialExperts)
+      if (iExpert < mNumInitialExperts)                   // only track output for initial experts
       {	if (bid > 0)
 	  mProgressStream << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
 	else
