@@ -1,5 +1,7 @@
 include ../c_flags
 
+default: logistic_test
+
 ../c_flags: 
 	cp ../c_flags.sample ../c_flags
 
