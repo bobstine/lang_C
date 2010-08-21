@@ -22,6 +22,26 @@ namespace{
   }
 }
 
+//  utilities      utilities      utilities      utilities      utilities      utilities
+
+template <class ModelClass>
+FeatureVector
+Auction<ModelClass>::without_calibration_features(FeatureVector const& fv)          const
+{
+  FeatureVector result;
+  if(mCalibrateFit)
+  { for(FeatureVector::const_iterator i=fv.begin(); i != fv.end(); ++i)
+    { std::string name = (*i)->name();
+      bool foundSig = (std::string::npos != name.find(mCalibrationSignature));       // ::npos means not found
+      if (!foundSig) result.push_back(*i);
+    }
+    return result;
+  }
+  else  // no calibration means no calibration features
+    return fv;
+}
+
+
 //  intialization     intialization     intialization     intialization     intialization     intialization
 
 template <class ModelClass>
@@ -259,10 +279,11 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	  for(FeatureVector::const_iterator fit=toAppend.begin(); fit !=toAppend.end(); ++fit)
 	    fv.push_back(*fit);
 	}
+	fv = without_calibration_features(fv);
 	if (fv.size() > 0)
 	  spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
-				   UniversalBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-				   make_feature_product_stream((*f)->name() + " interactions", *f, fv)  ));
+				   UniversalBidder< RegulatedStream< FeatureProductStream > >(),
+				   make_feature_product_stream((*f)->name() + "x" + *s.begin(), *f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
       { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
@@ -273,8 +294,8 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       }
       // always add to interact winning feature with others in model stream
       spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,
-			       UniversalBoundedBidder< RegulatedStream< FeatureProductStream< std::vector<Feature> > > >(),
-			       make_feature_product_stream("model feature interact", *f, model_features())  ));
+			       UniversalBoundedBidder< RegulatedStream< FeatureProductStream > >(),
+			       make_feature_product_stream("model feature interact", *f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/spawned.size();
       for(std::vector<Expert>::const_iterator eit=spawned.begin(); eit != spawned.end(); ++eit)
       { (*eit)->increment_alpha(alpha);

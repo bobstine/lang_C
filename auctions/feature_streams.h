@@ -69,6 +69,7 @@
 #include <functional>
 // for finite streams
 #include <deque>     
+#include <queue>
 #include <iostream>
 #include <sstream>
 
@@ -279,42 +280,46 @@ make_interaction_stream (std::string const& name, Source const& s, bool useSquar
 
 //  FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    FeatureProductStream    
 
-template<class Source>
+class BidOrder
+{
+public:
+  bool operator()(Feature const& a, Feature const& b) const { return (a->entry_bid() < b->entry_bid()); }
+};
+
 class FeatureProductStream 
 {
   std::string  mName;
   std::string  mCurrentFeatureName;
   Feature      mFeature;
-  Source       mSource;              // not a reference; it holds the features... BIG BUG to put in a const&
-  int          mPos;
+  std::priority_queue<Feature, FeatureVector, BidOrder> mQueue;             // Make a priority queue out of a fixed source list of features
   
 public:
-    
-  FeatureProductStream(std::string name, Feature f, Source const& src)
-    : mName(""), mCurrentFeatureName(""), mFeature(f), mSource(src), mPos(mSource.size()-1)  { mName = name + ":" + f->name() + " x Source";
-                                                                                               build_current_feature_name(); }
+  
+  FeatureProductStream(std::string name, Feature f, FeatureVector const& src)
+    : mName(""), mCurrentFeatureName(""), mFeature(f)      { mName = name + ":" + f->name() + " x Source"; initialize_queue(src); build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();
   void                    mark_position()                           { }
-  int                     number_remaining()                  const { return mPos+1; }
-  void                    print_to(std::ostream& os)          const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " @ " << mPos << " "; }
+  int                     number_remaining()                  const { return mQueue.size(); }
+  void                    print_to(std::ostream& os)          const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " # " << mQueue.size() << " "; }
   
 protected:
-  bool  empty()  const;
+  bool  empty()  const { return mQueue.empty(); }
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);  
   void  increment_position();
 private:
+  void  initialize_queue(FeatureVector const& s);
   void  build_current_feature_name();
 };
 
 
 template <class Source>
-RegulatedStream< FeatureProductStream<Source> >
+RegulatedStream< FeatureProductStream >
 make_feature_product_stream (std::string name, Feature f, Source const& Src)
 {
-  return RegulatedStream< FeatureProductStream<Source> >(FeatureProductStream<Source>(name, f, Src));
+  return RegulatedStream< FeatureProductStream >(FeatureProductStream(name, f, Src));
 }
 
 

@@ -37,6 +37,7 @@ private:
   double              mRecoveredAlpha;    // collected from experts that expired
   bool                mHasActiveExpert;
   bool                mCalibrateFit;      // use calibration
+  std::string         mCalibrationSignature;
   int                 mRound;          
   std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
   int                 mNumInitialExperts; // for building csv file  (set when prior to csv header is written)
@@ -53,9 +54,9 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, int blockSize, std::ostream& progressStream)
+  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
-      mCalibrateFit(calibrate), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
+      mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.gof(); }
@@ -82,8 +83,6 @@ private:
   void print_model_to            (std::ostream& os, bool useHTML=false)  const;
   void write_model_to            (std::ostream& os)                      const;
   void write_model_data_to       (std::ostream& os)                      const;
-  
-
 
  private:
   void                     write_csv_header_to_progress_stream ()                        const;
@@ -93,7 +92,8 @@ private:
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
-
+  
+  FeatureVector            without_calibration_features(FeatureVector const& fv)         const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
   void                     print_features(FeatureVector const& fv, std::ostream&)        const;
