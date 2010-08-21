@@ -120,15 +120,14 @@ Auction<ModelClass>::auction_next_feature ()
   { for(std::vector<Expert>::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
       (*it)->model_adds_current_variable();
     amount = pay_winning_expert(expert, features);                          // installs experts as needed
-    if (mProgressStream)
-    { std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
-      mProgressStream << ",\"" << remove_comma(features[0]->name()) << "\"," << amount << "," << rss.first << "," << rss.second;
-    }
-  } else
-  { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
-    if (mProgressStream)
-      mProgressStream <<               ", ,"               << amount <<           ", , ";
+    if (mProgressStream)  mProgressStream << ",\"" << remove_comma(features[0]->name()) << "\"," << amount;
   }
+  else
+  { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
+    if (mProgressStream)  mProgressStream << ", ," << amount;
+  }
+  std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
+  if (mProgressStream) mProgressStream << "," << rss.first << "," << rss.second;
   return accepted;
 }
 
