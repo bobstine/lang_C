@@ -66,10 +66,6 @@ crash_test: auction.test
 short_credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 200 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
-short_credit_test_ns: auction.test
-	 ./auction.test.ns -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 5 -x 11544
-
-
 credit_test: auction.test
 	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
 

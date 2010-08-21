@@ -232,14 +232,15 @@ main(int argc, char** argv)
   int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
   // parasitic experts
+  
   theAuction.add_expert(Expert(parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
-
+    
   theAuction.add_expert(Expert(parasite, nContextCases, 0,
 			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Skipped-feature interactions",
+			       make_cross_product_stream("Accept x Reject",
 							 theAuction.model_features(), theAuction.rejected_features())
 			       ));
 
@@ -278,7 +279,7 @@ main(int argc, char** argv)
   if(splineDF > 0)
   { 
     theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(0.00001, calibrationSignature),          // calibrate p-value
+				 FitBidder(0.000001, calibrationSignature),         // calibrate p-value
 				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
   }
   

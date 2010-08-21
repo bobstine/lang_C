@@ -94,6 +94,7 @@ private:
   double                   collect_from_losing_expert (Expert e, double bid, bool singular);
   
   FeatureVector            without_calibration_features(FeatureVector const& fv)         const;
+  bool                     is_calibration_feature(Feature const& f)                      const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
   void                     print_features(FeatureVector const& fv, std::ostream&)        const;

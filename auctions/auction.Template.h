@@ -25,20 +25,24 @@ namespace{
 //  utilities      utilities      utilities      utilities      utilities      utilities
 
 template <class ModelClass>
+bool
+Auction<ModelClass>::is_calibration_feature(Feature const& f)                      const
+{
+  if(mCalibrateFit)
+  { std::string name = f->name();
+    return (std::string::npos != name.find(mCalibrationSignature));       // ::npos means not found
+  }
+  else return false;
+}
+
+template <class ModelClass>
 FeatureVector
 Auction<ModelClass>::without_calibration_features(FeatureVector const& fv)          const
 {
   FeatureVector result;
-  if(mCalibrateFit)
-  { for(FeatureVector::const_iterator i=fv.begin(); i != fv.end(); ++i)
-    { std::string name = (*i)->name();
-      bool foundSig = (std::string::npos != name.find(mCalibrationSignature));       // ::npos means not found
-      if (!foundSig) result.push_back(*i);
-    }
-    return result;
-  }
-  else  // no calibration means no calibration features
-    return fv;
+  for(FeatureVector::const_iterator i=fv.begin(); i != fv.end(); ++i)
+    if (!is_calibration_feature(*i)) result.push_back(*i);
+  return result;
 }
 
 
@@ -133,7 +137,7 @@ Auction<ModelClass>::auction_next_feature ()
     { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
-    else      
+    else if (!is_calibration_feature(features[j]))     
       mRejectedFeatures.push_back(features[j]);
   }
   if (accepted)                                                             // inform all experts that variable was added
