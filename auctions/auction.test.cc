@@ -268,7 +268,7 @@ main(int argc, char** argv)
 				   ));
       theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				   UniversalBoundedBidder<IStream>(),
-				   make_interaction_stream("Interact " + streamNames[s],
+				   make_interaction_stream("Interactions among " + streamNames[s],
 							   featureSrc.features_with_attribute("stream",streamNames[s]),
 							   false)                   // skip squared terms
 				   ));

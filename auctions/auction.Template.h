@@ -56,8 +56,10 @@ Auction<ModelClass>::add_initial_features (FeatureVector const& f)
   // use an expert to handle the conversion (context rows, cross-validation ordering)
   TestResult result (mModel.add_predictors_if_useful (mExperts[0]->convert_to_model_iterators(f), 1.1));
   for (unsigned int j=0; j<f.size(); ++j)
+  { f[j]->set_model_results(true, 0.10);                  // assign bid results as if accepted with large bid
     mModelFeatures.push_back(f[j]);
-  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  }
+  debug("AUCT",2) << "Test of initial features gives  <" << result.first << "," << result.second << ">\n";
   return f.size();
 }
 

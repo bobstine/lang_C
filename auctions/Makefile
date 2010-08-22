@@ -67,7 +67,7 @@ short_credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 200 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
 credit_test: auction.test
-	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 0 -x 11544
+	 gunzip -c data/credit/auction.data/data.gz | ./auction.test -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
 
 # ---  ann arbor models  -----------------------------------------------------------------------------
