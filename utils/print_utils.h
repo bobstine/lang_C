@@ -17,8 +17,11 @@
 #include <vector>
  
 // p-value for tabular summary
+#ifndef NOGSL
 #include <gsl/gsl_cdf.h>
-
+#else
+#include <math.h>
+#endif
 
 ////////////////////////  Stat Tabular Summary  //////////////////
 
@@ -53,7 +56,11 @@ void
       // output 2-sided z-values
       os << std::setiosflags(std::ios::left);
       if (z < 0) z = -z;
+#ifndef NOGSL
       double p (2.0*gsl_cdf_ugaussian_Q(z));
+#else
+      double p = exp(-2*exp(2 * log(z)));
+#endif
       if (p < 0.0000001) p = 0.0;
       os << std::setw(10)  << p;
       os << std::setiosflags(std::ios::right);
@@ -109,7 +116,11 @@ void
       os <<  "<TD>" << double(zInt)/100.  << "</TD> ";
       // output p-values
       if (z < 0) z = -z;
+#ifndef NOGSL
       double p (2.0*gsl_cdf_ugaussian_Q(z));
+#else
+      double p = exp(-2*exp(2 * log(z)));
+#endif
       if (p < 0.0000001) p = 0.0;
       os <<  "<TD>" << p  << "</TD>";
     }

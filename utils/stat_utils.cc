@@ -6,8 +6,11 @@
 
 
 // for distributions
+
+#ifndef NOGSL
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_cdf.h>
+#endif
 
 using namespace Stat_Utils;
 
@@ -49,7 +52,12 @@ Stat_Utils::t_test(double tStat, int df)
 {
   if (isnan(tStat) || isinf(tStat))
     return std::make_pair(0.0,1.001);
-  return std::make_pair(tStat, gsl_cdf_tdist_Q(tStat, df));    
+#ifndef NOGSL
+      double p = gsl_cdf_tdist_Q(tStat, df);    
+#else
+      double p = exp(-2*exp(2 * log(tStat)));
+#endif
+      return std::make_pair(tStat, p);
 }
 
 std::pair<double,double> 
@@ -57,7 +65,12 @@ Stat_Utils::f_test(double f, int numDF, int denDF)
 {
   if ( isnan(f) || isinf(f) || (f <= 0) )
     return std::make_pair(0.0,1.01);
-  return std::make_pair(f, gsl_cdf_fdist_Q(f, numDF, denDF));    
+#ifndef NOGSL
+      double p = gsl_cdf_fdist_Q(f, numDF, denDF);    
+#else
+      double p = exp(-2*f);  // wow!  THis is crappy
+#endif
+return std::make_pair(f, p);
 }
 
 std::pair<double,double> 
@@ -68,7 +81,12 @@ Stat_Utils::f_test(double numSS, int numDF, double denSS, int denDF)
        ( (numSS <= 0.0) || (denSS <= 0.0)) )
     return std::make_pair(0.0,1.01);
   double fRatio ((numSS * denDF)/(denSS * numDF));                      
-  return std::make_pair(fRatio, gsl_cdf_fdist_Q(fRatio, numDF, denDF));    
+#ifndef NOGSL
+      double p = gsl_cdf_fdist_Q(fRatio, numDF, denDF);    
+#else
+      double p = exp(-2*fRatio);  // wow!  THis is crappy
+#endif
+      return std::make_pair(fRatio, p);
 }
 
 
