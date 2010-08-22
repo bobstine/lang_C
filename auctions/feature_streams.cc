@@ -35,7 +35,7 @@ FiniteStream::insert_features(FeatureVector const& f)
 {
   for(FeatureVector::const_iterator it=f.begin(); it != f.end(); ++it)
     if (! (*it)->is_constant() )
-      mFeatures.push_back( std::make_pair(false,*it) );
+      mFeatures.push_back( *it );
 }
 
 
@@ -50,51 +50,38 @@ std::vector<Feature>
 FiniteStream::pop()                            
 {
   FeatureVector result;
-  result.push_back(mFeatures.front().second); 
+  result.push_back(mFeatures.front()); 
   increment_position();
   return result;
-}
-
-void
-FiniteStream::mark_position()
-{
-  for(QueueType::iterator it=mFeatures.begin(); it != mFeatures.end(); ++it)
-    it->first = false;            // all get an untried stamp
-}
-
-bool
-FiniteStream::empty()  const
-{
-  return ( (mFeatures.size()==0) || mFeatures.front().first );
 }
 
 
 void
 FiniteStream::increment_position()
 {
-  Feature f (mFeatures.front().second);
+  Feature f (mFeatures.front());
   mFeatures.pop_front();
   if (f->is_used_in_model())      // dump f from queue
     return;
   else                            // return with boolean indicator to show tried since last added
-    mFeatures.push_back(std::make_pair(true,f));   
+    mFeatures.push_back(f);   
 }
 
 
 bool
 FiniteStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&) const
 {
-  return !mFeatures.front().second->is_used_in_model();
+  return !mFeatures.front()->is_used_in_model();
 }
 
 
 std::string
 FiniteStream::feature_name() const                            
 {
-  if(empty())
+  if (empty())
     return std::string("");
   else
-    return mFeatures.front().second->name();
+    return mFeatures.front()->name();
 }
 
 
@@ -114,7 +101,7 @@ FiniteStream::print_features_to (std::ostream& os) const
   print_to(os);
   os << std::endl;
   for(QueueType::const_iterator it=mFeatures.begin(); it != mFeatures.end(); ++it)
-    os << "     " << it->first << "  " << it->second << std::endl;
+    os << " " << *it << std::endl;
 }
 
 
