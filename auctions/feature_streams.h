@@ -405,7 +405,7 @@ public:
 
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   
-  void                  print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos ; }
+  void                  print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos<<"/"<< mSource.size() ; }
   
 protected:
   bool                  empty()                      const { return  (number_remaining() == 0); }

@@ -134,12 +134,16 @@ Auction<ModelClass>::auction_next_feature ()
   double amount;
   bool accepted (result.second < afterTaxBid);
   for (unsigned int j=0; j<features.size(); ++j)
-  { features[j]->set_model_results(accepted, afterTaxBid);                  // save attributes in feature for printing
+  { bool newFeature (!features[j]->was_tried_in_model());
+    if (newFeature || accepted)
+      features[j]->set_model_results(accepted, afterTaxBid);                // save attributes only from first attempt in auction or when accepted
+    else
+      debugging::debug("AUCT",4) << "Old feature " << features[j]->name() << " tested in auction.\n";
     if (accepted) 
     { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
     }
-    else if (!is_calibration_feature(features[j]))     
+    else if ( (!is_calibration_feature(features[j])) && newFeature )     
       mRejectedFeatures.push_back(features[j]);
   }
   if (accepted)                                                             // inform all experts that variable was added

@@ -240,7 +240,7 @@ main(int argc, char** argv)
     
   theAuction.add_expert(Expert(parasite, nContextCases, 0,
 			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Accept x Reject",
+			       make_cross_product_stream("Interact accept x reject",
 							 theAuction.model_features(), theAuction.rejected_features())
 			       ));
 
@@ -268,7 +268,7 @@ main(int argc, char** argv)
 				   ));
       theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
 				   UniversalBoundedBidder<IStream>(),
-				   make_interaction_stream("Interactions among " + streamNames[s],
+				   make_interaction_stream("Interactions within " + streamNames[s],
 							   featureSrc.features_with_attribute("stream",streamNames[s]),
 							   false)                   // skip squared terms
 				   ));
@@ -279,7 +279,7 @@ main(int argc, char** argv)
   if(splineDF > 0)
   { 
     theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(0.000001, calibrationSignature),         // calibrate p-value
+				 FitBidder(0.000005, calibrationSignature),         // calibrate p-value
 				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
   }
   

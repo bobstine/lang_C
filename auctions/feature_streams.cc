@@ -25,9 +25,8 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
 //  Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream
 
 /*
-  These are assumed to own the given feature vector, and so are
-  free to wipe out variables once that they have been used in the
-  auction.
+  The initial boolean in each pair asks whether this variable has been tried
+  since the last time that the model changed (indicated by 'mark_position')
 */
 
 void

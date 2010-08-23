@@ -306,6 +306,15 @@ bool
 PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 { 
   Feature  feature (mSource[mPos]);
+  std::string name (feature->name());
+  debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << name << "'\n";
+  // avoid calibration variables, powers
+  if (name.size() >= 4 && "cube" == name.substr(0,4))
+    return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6))
+    return false;
+  if (std::string::npos != name.find("Y_hat_") )
+    return false;
   return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
 
