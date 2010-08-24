@@ -36,6 +36,9 @@ main()
     std::cout << c3 << std::endl;
     std::cout << c4 << std::endl;
     std::cout << c5 << std::endl;
+
+    IntegerColumn ic1 (c1);
+    std::cout << ic1 << std::endl;
   }
 
 

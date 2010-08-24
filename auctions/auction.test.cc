@@ -99,6 +99,8 @@ parse_column_format(std::string const& dataFileName, std::ostream&);
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int extraCases);
 
+void
+round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
 
 
 int
@@ -248,6 +250,11 @@ main(int argc, char** argv)
   for(unsigned int i=0; i<cColumns.size(); ++i)
     if (cColumns[i]->name() == "Pop_Neighbor")
     { debug("MAIN",2) << "Data include a neighbor context variable.\n";
+      std::vector<int>
+	for(double *pCol=c->begin(); pCol != c->end(); ++pCol)
+	  *b++ <- trunc(*pCol);
+    }
+
       theAuction.add_expert(Expert(parasite, nContextCases, 0,
 				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
 				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), cColumns[i])

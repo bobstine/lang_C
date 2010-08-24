@@ -27,6 +27,69 @@
 #include "debug.h"
 
 
+class IntegerColumn;
+
+class IntegerColumnData
+{
+  friend IntegerColumn;
+  
+ private:
+  std::string mName;
+  int mSize;
+  int *mBegin;
+  int *mEnd;
+  int mRefCount;
+  
+  ~IntegerColumnData()   { delete[] mBegin; }
+
+ IntegerColumnData(std::string name, size_t n)  : mName(name), mSize(n), mBegin(new int[n]), mEnd(mBegin+n), mRefCount(1) { assert(mBegin != NULL); }
+
+ public:
+  std::string     name()     const { return mName; }
+  int             size()     const { return mSize; }
+  int *           begin()    const { return mBegin; }
+  int *           end()      const { return mEnd; }
+}
+
+class IntegerColumn
+{
+ private:
+  IntegerColumnData       *  mData; 
+
+ public:
+  ~IntegerColumn() { if(--mData->mRefCount <= 0) delete mData; }
+  
+ IntegerColumn()                                     : mData( new IntegerColumnData("",0) ) {  }
+ IntegerColumn(IntegerColumn const& c)               : mData(c.mData) { ++c.mData->mRefCount; }
+ IntegerColumn(Column const& c)                      : mData( new IntegerColumnData(c->name(),c->size()) ) { transfer_from_double(c->begin()); }
+
+  void print_to(std::ostream os)
+  { int counter (mData->size());
+    if (counter > 10) counter = 10;
+    os << mData->name() << "[" << mData->size() << "]";
+    int * pInt (mData->begin());
+    while(counter--) os << " " << *pInt++;
+  }
+  
+ private:
+  void transfer_from_double (double *pDouble)
+  { int counter (mData->size());
+    int *pDest  (mData->begin()); 
+    while(counter--) *pDest++ = trunc(*pDouble++);
+  }
+}
+
+inline
+std::ostream&
+operator<<(std::ostream& os, IntegerColumn const& column)
+{
+  column.print_to(os);
+  return os;
+}
+
+
+
+
 
 class Column;
 
