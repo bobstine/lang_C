@@ -193,6 +193,49 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 }
 
 
+
+//  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     
+
+template<class Source>
+class NeighborhoodStream
+{
+  const std::string  mName;
+  Source const&      mSource;
+  const Column       mIndexColumn;
+  const int          mBlockSize;
+  int                mPos;
+  
+public:
+  
+  NeighborhoodStream(std::string const& name, Source const& src, Column const& col, int blkSize)
+    :  mName(name), mSource(src), mIndexColumn(col), mBlockSize(blkSize), mPos(0) { }
+  
+  std::string       name()                             const   { return mName; }
+
+  std::string       feature_name()                     const ;
+  FeatureVector     pop();
+  int               number_remaining()                 const ;
+  void              mark_position()                    const   {}
+  
+  void              print_to(std::ostream& os)         const;
+
+protected:
+  bool  empty()                                                                           const;
+  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
+  void  increment_position();
+};
+
+
+inline
+template<Source>
+RegulatedStream< NeighborhoodStream >
+make_neighborhood_stream (std::string const& name, Source const& src, Column const& col, int blockSize)
+{
+  return RegulatedStream< NeighborhoodStream >(NeighborhoodStream(name, src, col, blockSize));
+}
+
+
+
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
 template<class Model>

@@ -105,8 +105,18 @@ class Feature
 };
 
 
+
 typedef  std::vector<Feature>                 FeatureVector;
 
+FeatureVector
+features_with_name(std::string name, FeatureVector const& fv);
+
+FeatureVector
+powers_of_column_feature (Column const& col, std::vector<int> const& powers);
+  
+
+
+		       
 
 inline
 std::ostream&
@@ -318,11 +328,6 @@ class UnaryFeature : public FeatureABC
   
   void        write_to (std::ostream& os) const;
 };
-
-
-std::vector<Feature>
-powers_of_column_feature (Column const& col, std::vector<int> const& powers);
-  
 
 
 ////  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature

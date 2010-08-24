@@ -319,6 +319,76 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
 }
 
 
+
+
+//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
+
+template<class Source>
+std::string 
+NeighborhoodStream<Source>::feature_name() const 
+{ 
+  if(empty())
+    return ("");
+  else
+    return "Nbd(" + mFeature->name() + ")";
+}
+
+template<class Source>
+std::vector<Feature>
+NeighborhoodStream<Source>::pop()                
+{ 
+  increment_position(); 
+  FeatureVector(fv); 
+  //  fv.push_back(Feature(mFeature);   // index the feature
+  return fv; 
+}
+
+template<class Source>
+void
+NeighborhoodStream<Source>::print_to(std::ostream& os)          const
+{
+  os << "Neighborhood feature stream " << name();
+  if (empty())
+    os << " is empty.";
+  
+}
+    
+template<class Source>
+int
+NeighborhoodStream<Source>::number_remaining()                  const
+{
+  return  mMaxNeighborhood - mNeighborhood + mCyclesLeft * mMaxNeighborhood;
+}
+
+
+template<class Source>
+bool
+NeighborhoodStream<Source>::empty()  const
+{
+  return (mCyclesLeft==0) && (mNeighborhood > mMaxNeighborhood);
+}
+
+
+template<class Source>
+bool
+NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
+{
+  return (!mFeature->is_constant());   // need a better check here for whether lags are in model already
+}
+
+template<class Source>
+void
+NeighborhoodStream<Source>::increment_position()
+{
+  ++mNeighborhood;
+  if (mNeighborhood > mMaxNeighborhood && mCyclesLeft>0)
+  { --mCyclesLeft;
+    mNeighborhood = 1;
+  }
+}
+
+
+
 ///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream
 
 template<class Source, class Pred, class Trans>
