@@ -14,7 +14,10 @@ Feature::Feature(Op const& op, Feature const &x1, Feature const& x2)
   mFP = new BinaryFeature<Op>(op,x1,x2);
 }
 
-
+Feature(Feature const& f, Column const& indices)
+{
+  mFP = new IndexedFeature(f,indices);
+}
 
 //  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature
 

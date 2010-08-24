@@ -88,7 +88,10 @@ class Feature
 
   //  linear combination
   Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
-   
+
+  //  indexed feature
+  Feature(Feature const& f, Column const& indices);
+  
   //  unary feature
   template<class Op>
     Feature(Op const& op, Feature const &x);
@@ -202,6 +205,51 @@ class LagFeature : public FeatureABC
 };
   
 
+
+////  Indexed feature
+
+class IndexedFeature : public FeatureABC
+{
+ private:
+  Feature const& mBaseFeature;
+  std::string    mName;
+  Column  const& mData;
+  
+ public:
+ IndexedFeature(Feature const& f, Column const& indices)
+   : mBaseFeature(f), mName(f->name()+"["+indices->name()+"]"), mData(f->name().c_str(), indices->size())     { transfer_data(indices); }
+  
+  std::string class_name()     const { return "IndexedFeature"; }
+  std::string name()           const { return  mName; }
+  std::string operator_name()  const { return "[ ]"; }
+  Arguments   arguments()      const { return mFeature->arguments(); }
+  
+  Iterator    begin()          const { return make_anonymous_iterator(mData->begin()); }
+  Iterator    end()            const { return make_anonymous_iterator(mData->end()); }
+  Range       range()          const { return make_anonymous_range( mData->begin(), mData->end()); }
+  bool        is_dummy()       const { return mData->is_dummy(); }
+  bool        is_constant()    const { return mData->is_constant(); }
+  double      average()        const { return mData->average(); }
+  double      center()         const { return mData->average(); }
+  double      scale()          const { return mData->scale(); }
+  
+  void        write_to(std::ostream& os) const;
+ private:
+  void        transfer_data(Column const& c);
+};
+  
+void
+IndexedFeature::transfer_data(Column const& index)
+{
+  unsigned int counter (mData.size());
+  double *mDest (mData->begin());
+  double *mInd  (index->begin());
+  Iterator mSrc (mFeature->begin());
+  while (counter--)
+  { int i (trunc(*mInd++));
+    *mDest++ = mSrc[i];
+  }
+}
 
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 
