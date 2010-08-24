@@ -128,7 +128,7 @@ public:
   std::string         name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
 
   double              place_bid (BiddingHistory const& state);
-  void                model_adds_current_variable()           { mStream.mark_position(); }
+  void                model_adds_current_variable()           { /* placeholder */ }
 
   std::string         feature_name()                const     { return mStream.feature_name(); }       
   FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*

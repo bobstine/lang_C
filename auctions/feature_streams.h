@@ -50,8 +50,6 @@
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
 
-
-  31 May 2010 ... Use mark rather than cycles to determine how many more features to get from finite stream.
   
 */
 
@@ -113,11 +111,10 @@ public:
 
 class FiniteStream
 {
-  typedef std::pair<bool, Feature>  PairType;
-  typedef std::deque<PairType>      QueueType;
+  typedef std::deque<Feature>      QueueType;
 
-  std::string mName;            // name of the stream
-  QueueType   mFeatures;        // (tried since last accepted, feature)
+  std::string mName;
+  QueueType   mFeatures;    
 
 public:
   
@@ -128,7 +125,6 @@ public:
   std::string             feature_name()               const;
   FeatureVector           pop();
 
-  void                    mark_position();
   int                     number_remaining()           const;
 
   void                    print_to(std::ostream& os)   const;
@@ -137,7 +133,7 @@ public:
 protected:
   void  insert_features (FeatureVector const& features);
   
-  bool  empty()                                                                          const;
+  bool  empty()                                                                          const { return (mFeatures.size()==0); }
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
   void  increment_position();
 };
@@ -173,7 +169,6 @@ public:
   std::string       feature_name()                     const ;
   FeatureVector     pop();
   int               number_remaining()                 const ;
-  void              mark_position()                    const   {}
   
   void              print_to(std::ostream& os)         const;
 
@@ -257,7 +252,6 @@ public:
   std::string             name()                       const { return mSignature; }
   std::string             feature_name()               const; 
   FeatureVector           pop();
-  void                    mark_position()              const { }
 
   void                    print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
   
@@ -298,7 +292,6 @@ public:
   
   std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();                      
-  void                    mark_position() {}
   
   int                     number_remaining()                  const;
   void                    print_to(std::ostream& os)          const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
@@ -344,7 +337,7 @@ public:
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();
-  void                    mark_position()                           { }
+
   int                     number_remaining()                  const { return mQueue.size(); }
   void                    print_to(std::ostream& os)          const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " # " << mQueue.size() << " "; }
   
@@ -399,7 +392,7 @@ public:
   std::string             name()                              const { return mName; }  
   std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
   FeatureVector           pop();     
-  void                    mark_position()                           { }
+
   int                     number_remaining()                  const ;
   void                    print_to(std::ostream& os)          const ;           //   Note the mutable items since sources may change
   
@@ -444,7 +437,6 @@ public:
   std::string           name()                       const { return mName; }
   std::string           feature_name()               const;
   FeatureVector         pop();
-  void                  mark_position()                    { }
 
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   
@@ -498,7 +490,6 @@ public:
   std::string           name()                       const { return mName; }
   std::string           feature_name()               const { if (empty()) return std::string(""); else return "basis"; }
   FeatureVector         pop();
-  void                  mark_position() {}
   
   int                   number_remaining()           const { return (mSource.size()-mPos); }
   void                  print_to(std::ostream& os)   const { os << "SUBS: " << name(); if(empty()) os << " is empty."; else os << " stream @ " << mPos ; }
