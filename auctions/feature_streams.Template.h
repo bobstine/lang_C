@@ -163,66 +163,6 @@ InteractionStream<Source>::pop()
 }
 
 
-
-
-///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
-
-template<class Source>
-bool
-FeatureProductStream<Source>::empty() const
-{
-  return (mSource.empty() || (mPos < 0));
-}
-
-template<class Source>
-void
-FeatureProductStream<Source>::build_current_feature_name()
-{
-  if (empty())
-    mCurrentFeatureName = "";
-  else
-    mCurrentFeatureName = Feature(mFeature, mSource[mPos])->name();  // Feature(a,b) builds interaction
-}
-
-
-template<class Source>
-void
-FeatureProductStream<Source>::increment_position()
-{
-  --mPos;
-  build_current_feature_name();
-}
-
-
-template<class Source>
-bool
-FeatureProductStream<Source>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
-{
-  if ( mSource[mPos]->is_constant() ||                                            //  equiv to the internal feature
-       indicators_from_same_parent(mFeature, mSource[mPos]) ||                    //  save the effort 
-       found_feature_name_in_vector(mCurrentFeatureName, used, "model features")  //  skip if has been used already
-       )
-    return false;
-  return true;
-}
-
-
-template<class Source>
-typename std::vector<Feature>
-FeatureProductStream<Source>::pop()
-{
-  Feature  xd (mSource[mPos]);  // pop must increment counter *after* reading off top
-  debugging::debug("FPST",3) << name() << " stream making product of "
-			     << mFeature->name() << " x Source[" << mPos << "] (" << xd->name() << ").\n";
-  increment_position();
-  std::vector<Feature> result;
-  result.push_back(Feature(mFeature,xd));
-  
-  return(result);
-}
-
-
-
 //  Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream
 
 template<class Source1, class Source2>
@@ -366,8 +306,87 @@ bool
 PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 { 
   Feature  feature (mSource[mPos]);
+  std::string name (feature->name());
+  debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << name << "'\n";
+  // avoid calibration variables, powers
+  if (name.size() >= 4 && "cube" == name.substr(0,4))
+    return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6))
+    return false;
+  if (std::string::npos != name.find("Y_hat_") )
+    return false;
   return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
+
+
+
+
+//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
+
+template<class Source>
+std::string 
+NeighborhoodStream<Source>::feature_name() const 
+{ 
+  if(empty())
+    return ("");
+  else
+    return "Nbd(" + mFeature->name() + ")";
+}
+
+template<class Source>
+std::vector<Feature>
+NeighborhoodStream<Source>::pop()                
+{ 
+  increment_position(); 
+  FeatureVector(fv); 
+  //  fv.push_back(Feature(mFeature);   // index the feature
+  return fv; 
+}
+
+template<class Source>
+void
+NeighborhoodStream<Source>::print_to(std::ostream& os)          const
+{
+  os << "Neighborhood feature stream " << name();
+  if (empty())
+    os << " is empty.";
+  
+}
+    
+template<class Source>
+int
+NeighborhoodStream<Source>::number_remaining()                  const
+{
+  return  mMaxNeighborhood - mNeighborhood + mCyclesLeft * mMaxNeighborhood;
+}
+
+
+template<class Source>
+bool
+NeighborhoodStream<Source>::empty()  const
+{
+  return (mCyclesLeft==0) && (mNeighborhood > mMaxNeighborhood);
+}
+
+
+template<class Source>
+bool
+NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
+{
+  return (!mFeature->is_constant());   // need a better check here for whether lags are in model already
+}
+
+template<class Source>
+void
+NeighborhoodStream<Source>::increment_position()
+{
+  ++mNeighborhood;
+  if (mNeighborhood > mMaxNeighborhood && mCyclesLeft>0)
+  { --mCyclesLeft;
+    mNeighborhood = 1;
+  }
+}
+
 
 
 ///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream

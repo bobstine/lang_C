@@ -74,27 +74,28 @@ write.the.data <- function() {
 	write.var("lag3_REPB60M",  c(rep(0,2*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
 	write.var("lag4_REPB60M",  c(rep(0,3*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
 
-# --- 5 more variables, all are lagged by write.county.var function
+
+# --- 16 more variables, all are lagged by write.county.var function
 	cat("# county variables \n",file=the.manifest, append=TRUE)
-	write.county.var(   "REAU",cLog(County$REAU        ),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var(  "UNEMP",cLog(County$unemployment),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var("POVERTY",cLog(County$poverty     ),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var("INPB60M",cLog(County$INPB60M     ),attr.str="interact_with_parent quarter interact_with_parent period")
+	var.names <- c("unemployment", "poverty", "income", "pop.dens","INPB60M", "MTPB60M", "ATTDC",
+	               "RENARB", "REAU", "MTDTD", "MTNAB", "ATABB", "ATAU", "ATNB12", "ATNC", "BCNARB")
+	for(name in var.names) { write.county.var(toupper(name),cLog(County[[name]]),interact.with=c("quarter","period","division")) }
 
 # --- 6 spatial variables
 	temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
-	write.county.var(   "S_REAU",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_REAU",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
-	write.county.var(  "S_UNEMP",temp,attr.str="interact_with_parent quarter")
+	write.county.var(  "S_UNEMP",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
-	write.county.var("S_Poverty",temp,attr.str="interact_with_parent quarter")
+	write.county.var("S_Poverty",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
-	write.county.var(   "S_INPB60M",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_INPB60M",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
-	write.county.var(   "S_MTPB60M",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_MTPB60M",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
-	write.county.var(   "S_REPB60M",temp,attr.str="interact_with_parent quarter")
-
+	write.county.var(   "S_REPB60M",temp,interact.with=c("quarter","period","division"))
+	
+	
 # --- quarter indicators
 	cat("# time period indicators \n",file=the.manifest, append=TRUE)
 	for(q in 1:4) {
@@ -167,6 +168,12 @@ write.the.data <- function() {
 # district/region indicators
 	cat("# region indicators \n",file=the.manifest, append=TRUE)
 
+	# --- most populous neighbor (self if its bigger than any neighbor)
+	temp <- mapply(biggest.neighbor, eligible.counties)
+	temp <- match(temp, eligible.counties) # map into indices into eligible.counties
+	x <- matrix(temp, nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+	write.var("Pop_Neighbor",x,role="context") 
+	
 	division <- County$division[eligible.counties]
 	for(d in unique(division)) {
 		name <- paste("Division_",d,sep="")

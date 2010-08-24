@@ -45,6 +45,22 @@ Feature::operator=(Feature const& f)
   return *this;
 }
 
+//  utilities     utilities     utilities     utilities     utilities     utilities     utilities     utilities
+
+
+FeatureVector
+features_with_name(std::string name, FeatureVector const& fv)
+{
+  FeatureVector result;
+  for (FeatureVector::const_iterator it=fv.begin(); it != fv.end(); ++it)
+  { std::string fname ((*it)->name());
+    if (std::string::npos != fname.find(name))
+      result.push_back(*it);
+  }
+  return result;
+}
+
+
 
 //  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  
 

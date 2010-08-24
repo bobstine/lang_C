@@ -131,38 +131,30 @@ make_finite_bidder(Stream& stream)
 
 ////  FitBidder    FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder   FitBidder
 
+/*  Places bid after any variable is added to the model. */
 
 class FitBidder
 {
  private:
-  int         mDelayInterval;  // set randomly?
-  int         mCountDown;
+  double      mBidAmount;
   std::string mSignature;
  public:
   
-  FitBidder (int delay, std::string signature)    : mDelayInterval(delay),mCountDown(delay),mSignature(signature) {}
-
+  FitBidder (double bid, std::string signature)    : mBidAmount(bid), mSignature(signature) {}
   
   std::string name() const { return "Fit Bidder [" + mSignature + "]"; }
   
   template <class Stream>
     double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, BiddingHistory const& state)
   {
-    debugging::debug("BIDR",1) << "Fit bidder with countdown " << mCountDown << "/" << mDelayInterval << std::endl;
     std::vector<double> payoffs (state.payoff_history());
-    if(!payoffs.empty() && payoffs.back() > 0)                       // last variable was added to model
-      if (lastBidAccepted)                                           // it was mine, so pick the same bid
-	return (mCountDown == mDelayInterval) ? 0.25 : 0.01;         // p-values used to assess value of calibration
-      else                                                           // was not mine, so adjust countdown
-      {  --mCountDown;
-	 if(0 == mCountDown)
-	 { mCountDown = mDelayInterval;
-	   return .25;
-	 }
-	 else
-	   return 0.025;
-      }
-    else return 0.0;                                                 // dont bid when last not entered into auction
+    if(!payoffs.empty() && payoffs.back() > 0)                       // last variable was added
+    { if (lastBidAccepted)                                           // dont bid this round if last added was calibration
+	return 0;
+      else
+	return mBidAmount;
+    }
+    else return 0;                                                   // dont bid when last not entered into auction
   }
 	
 };

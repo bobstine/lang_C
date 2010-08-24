@@ -58,6 +58,13 @@ main ()
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
 
+  { // find name in feature vector
+    FeatureVector fv;
+    fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
+    std::cout << "TEST: eligible features are:\n" << fv << std::endl;
+    std::cout << "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
+  }
+  
   // a lag feature
   std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
   Feature lag2  (x,2);
