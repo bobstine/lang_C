@@ -60,6 +60,26 @@ features_with_name(std::string name, FeatureVector const& fv)
   return result;
 }
 
+  
+Feature
+make_indexed_feature(Feature const& f, std::string indexName, std::vector<int> index)
+{
+  debugging::debug("IDXF",3) << "Creating indexed feature with feature '" << f->name() << " with " << f->size()
+			     << " elements and " << index.size() << " indices.\n";
+  assert((int)index.size() == f->size());
+  int n (index.size());
+  std::vector<double> x (n);             // copy feature data into vector for indexing
+  { FeatureABC::Iterator mSrc (f->begin());
+    for (int i=0; i<n; ++i)
+      x[i] = *mSrc++;
+  }
+  std::string name (f->name()+"["+indexName+"]");
+  Column dest(name.c_str(), n);
+  double *pDest (dest->begin());
+  for (int i=0; i<n; ++i)
+    *pDest++ = x[index[i]];
+  return Feature(dest);
+}
 
 
 //  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  
@@ -80,6 +100,7 @@ LagFeature::write_to(std::ostream& os) const
   os << class_name() << " " << name() << std::endl;
   FeatureABC::write_to(os); 
 }
+
 
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 

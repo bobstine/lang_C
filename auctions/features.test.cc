@@ -20,9 +20,11 @@ main ()
   std::string name2("x2");
   double*     x1 = new double[n];
   double*     x2 = new double[n];
+  std::vector<int> index(n);
   for (int i=0; i<n; ++i)
   { x1[i] = i;
     x2[i] = 2 * i;
+    index[i] = n-1-i;
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
@@ -61,20 +63,21 @@ main ()
   { // find name in feature vector
     FeatureVector fv;
     fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
-    std::cout << "TEST: eligible features are:\n" << fv << std::endl;
-    std::cout << "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
+    std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
+    std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
   }
   
-  // a lag feature
-  std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
-  Feature lag2  (x,2);
-  Feature lag4  (x,4);
-  Feature lag13 (x,1,3);
-  Feature lag22 (x,2,2);
-  std::cout << "TEST: lag  2  ---> " << lag2  << std::endl;
-  std::cout << "TEST: lag  4  ---> " << lag4  << std::endl;
-  std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
-  std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
+  { // a lag feature
+    std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
+    Feature lag2  (x,2);
+    Feature lag4  (x,4);
+    Feature lag13 (x,1,3);
+    Feature lag22 (x,2,2);
+    std::cout << "TEST: lag  2  ---> " << lag2  << std::endl;
+    std::cout << "TEST: lag  4  ---> " << lag4  << std::endl;
+    std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
+    std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
+  }
   
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
@@ -85,6 +88,15 @@ main ()
   // make an interaction with the unary feature
   Feature prod (xx2, xSq);
   std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
+
+  { // indexed feature
+    std::cout << "\nTEST: indexed features (reverse):\n"
+	      << make_indexed_feature(x   ,"index",index) << std::endl;
+    std::cout << make_indexed_feature(xSq ,"index",index) << std::endl;
+    std::cout << make_indexed_feature(prod,"index",index) << std::endl;
+    std::cout << std::endl;
+  }
+  
 
   // make an interaction
   Feature inter (x, dup);
