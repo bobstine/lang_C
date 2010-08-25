@@ -62,22 +62,23 @@ features_with_name(std::string name, FeatureVector const& fv)
 
   
 Feature
-make_indexed_feature(Feature const& f, std::string indexName, std::vector<int> index)
+make_indexed_feature(Feature const& f, IntegerColumn const& i)
 {
   debugging::debug("IDXF",3) << "Creating indexed feature with feature '" << f->name() << " with " << f->size()
-			     << " elements and " << index.size() << " indices.\n";
-  assert((int)index.size() == f->size());
-  int n (index.size());
+			     << " elements and " << i->size() << " indices from " << i->name() << ".\n";
+  assert(i->size() == f->size());
+  int n (i->size());
   std::vector<double> x (n);             // copy feature data into vector for indexing
   { FeatureABC::Iterator mSrc (f->begin());
     for (int i=0; i<n; ++i)
       x[i] = *mSrc++;
   }
-  std::string name (f->name()+"["+indexName+"]");
+  std::string name (f->name()+"["+i->name()+"]");
   Column dest(name.c_str(), n);
   double *pDest (dest->begin());
+  int *pIndex (i->begin());
   for (int i=0; i<n; ++i)
-    *pDest++ = x[index[i]];
+    *pDest++ = x[*pIndex++];
   return Feature(dest);
 }
 

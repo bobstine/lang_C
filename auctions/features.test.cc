@@ -20,19 +20,21 @@ main ()
   std::string name2("x2");
   double*     x1 = new double[n];
   double*     x2 = new double[n];
-  std::vector<int> index(n);
+  double*     ii = new double[n];
   for (int i=0; i<n; ++i)
   { x1[i] = i;
     x2[i] = 2 * i;
-    index[i] = n-1-i;
+    ii[i] = n-1-i;
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
-  // make three columns
+  // make four columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
   Column  x2Column  (name2.c_str(), "x2 column",n, x2);
-  std::cout << xColumn1 << std::endl << x2Column << std::endl;
+  Column  iiColumn  ("Indices", "ii", n, ii);
+  IntegerColumn indices (iiColumn);
+  std::cout << xColumn1 << std::endl << x2Column << std::endl << iiColumn << std::endl << indices << std::endl;
   
   
   // feature source
@@ -91,9 +93,9 @@ main ()
 
   { // indexed feature
     std::cout << "\nTEST: indexed features (reverse):\n"
-	      << make_indexed_feature(x   ,"index",index) << std::endl;
-    std::cout << make_indexed_feature(xSq ,"index",index) << std::endl;
-    std::cout << make_indexed_feature(prod,"index",index) << std::endl;
+	      << make_indexed_feature(x   , indices) << std::endl;
+    std::cout << make_indexed_feature(xSq , indices) << std::endl;
+    std::cout << make_indexed_feature(prod, indices) << std::endl;
     std::cout << std::endl;
   }
   

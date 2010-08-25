@@ -37,6 +37,7 @@ main()
     std::cout << c4 << std::endl;
     std::cout << c5 << std::endl;
 
+    std::cout << "\nTEST: Integer columns...\n";
     IntegerColumn ic1 (c1);
     std::cout << ic1 << std::endl;
   }

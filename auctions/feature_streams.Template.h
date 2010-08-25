@@ -321,7 +321,7 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
 
 
 
-//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
+//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
 
 template<class Source>
 std::string 
@@ -337,9 +337,8 @@ template<class Source>
 std::vector<Feature>
 NeighborhoodStream<Source>::pop()                
 { 
-  increment_position(); 
-  FeatureVector(fv); 
-  //  fv.push_back(Feature(mFeature);   // index the feature
+  FeatureVector (fv); 
+  fv.push_back(make_indexed_feature(mFeature,mIndexColumn));
   return fv; 
 }
 
@@ -357,7 +356,7 @@ template<class Source>
 int
 NeighborhoodStream<Source>::number_remaining()                  const
 {
-  return  mMaxNeighborhood - mNeighborhood + mCyclesLeft * mMaxNeighborhood;
+  return 100;
 }
 
 
@@ -365,7 +364,7 @@ template<class Source>
 bool
 NeighborhoodStream<Source>::empty()  const
 {
-  return (mCyclesLeft==0) && (mNeighborhood > mMaxNeighborhood);
+  return mSource.size() == 0;
 }
 
 
@@ -373,7 +372,7 @@ template<class Source>
 bool
 NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
 {
-  return (!mFeature->is_constant());   // need a better check here for whether lags are in model already
+  return ( (!mFeature->is_constant()) && (!mFeature->is_used_in_model()) );
 }
 
 template<class Source>

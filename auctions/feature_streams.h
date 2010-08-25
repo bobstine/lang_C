@@ -196,14 +196,13 @@ class NeighborhoodStream
 {
   const std::string  mName;
   Source const&      mSource;
-  const Column       mIndexColumn;
-  const int          mBlockSize;
+  IntegerColumn      mIndexColumn;
   int                mPos;
   
 public:
   
-  NeighborhoodStream(std::string const& name, Source const& src, Column const& col, int blkSize)
-    :  mName(name), mSource(src), mIndexColumn(col), mBlockSize(blkSize), mPos(0) { }
+  NeighborhoodStream(std::string const& name, Source const& src, IntegerColumn const& indices)
+    :  mName(name), mSource(src), mIndexColumn(col), mPos(0) { }
   
   std::string       name()                             const   { return mName; }
 

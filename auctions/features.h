@@ -115,7 +115,7 @@ FeatureVector
 powers_of_column_feature (Column const& col, std::vector<int> const& powers);
   
 Feature
-make_indexed_feature (Feature const& f, std::string indexName, std::vector<int> indices);
+make_indexed_feature (Feature const& f, IntegerColumn const& i);
 
 		       
 

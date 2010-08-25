@@ -247,21 +247,17 @@ main(int argc, char** argv)
 			       ));
 
   // find neighborhood feature
+  IntegerColumn indices("",0);
   for(unsigned int i=0; i<cColumns.size(); ++i)
-    if (cColumns[i]->name() == "Pop_Neighbor")
-    { debug("MAIN",2) << "Data include a neighbor context variable.\n";
-      std::vector<int>
-	for(double *pCol=c->begin(); pCol != c->end(); ++pCol)
-	  *b++ <- trunc(*pCol);
-    }
-
+  { if (cColumns[i]->name() == "Pop_Neighbor")
+    { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
+      indices = IntegerColumn(cColumns[i]);
       theAuction.add_expert(Expert(parasite, nContextCases, 0,
 				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
-				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), cColumns[i])
+				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), indices)
 				   ));
-      break;
     }
-
+  }
 
   // add a source column and interaction expert for each column with role=x
   { std::vector<std::string> streamNames (featureSrc.stream_names());
