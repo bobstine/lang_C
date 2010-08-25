@@ -39,7 +39,13 @@ main()
 
   std::cout << "\nGet first word from string 'first word'" << get_word_from_string("first word") << std::endl;
   std::cout << "Get first word from string 'firstword'" << get_word_from_string("firstword") << std::endl;
-  
+
+  { // special chars
+    std::string test ("abcd^^gh*jk^*[]]");
+    std::cout << "\nRemove special charaters from " << test << " gives " << read_utils::remove_special_chars(test,"^*[]") << std::endl;
+    test = "^^cd*fg^*[]mmm";
+    std::cout << "\nRemove special charaters from " << test << " gives " << read_utils::remove_special_chars(test,"^*[]") << std::endl;
+  }
   
   std::string       fileName("/Users/bob/C/utils/test/big_test.dat");
   std::string prefixFileName("/Users/bob/C/utils/test/prefix_test.dat");

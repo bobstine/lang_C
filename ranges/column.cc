@@ -97,7 +97,8 @@ ColumnStream::read_next_column()
   mCurrentName = "";
   if(!mStream.eof())
   { getline(mStream, mCurrentName);
-    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));
+    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));    // no embedded blanks
+    mCurrentName = read_utils::remove_special_chars(mCurrentName, "[*^]");     // no special chars
   }
   if (mCurrentName.empty())
   { debugging::debug("CLMN",4) << "Stream '" << mStreamName << "' now empty.\n";

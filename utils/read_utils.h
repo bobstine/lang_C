@@ -51,6 +51,18 @@ namespace read_utils
     return result;
   }
 
+  inline std::string remove_special_chars(std::string const& src, std::string const& sc)   // overwrites them with an x
+  {
+    std::string result = src;
+    for (std::string::iterator it=result.begin(); it != result.end(); ++it)
+      for (std::string::const_iterator ic=sc.begin(); ic != sc.end(); ++ic)
+	if (*it == *ic)
+	{ *it = 'x';
+	  break;
+	}
+    return result;
+  }
+  
 // string stream io
 
   template <typename To, typename From>
