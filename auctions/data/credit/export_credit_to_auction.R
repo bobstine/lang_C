@@ -81,6 +81,14 @@ write.the.data <- function() {
 	               "RENARB", "REAU", "MTDTD", "MTNAB", "ATABB", "ATAU", "ATNB12", "ATNC", "BCNARB")
 	for(name in var.names) { write.county.var(toupper(name),cLog(County[[name]]),interact.with=c("quarter","period","division")) }
 
+#  Checking C++ code in auction for neighborhood variable: leading values, mean shoud agree
+#       Values from auction -0.798974 -0.765161 -0.763207 -0.807775 -0.807775 -0.798974 ...;  mean -0.824982
+#
+#  x.per  <- as.matrix(cLog(County$unemployment[eligible.counties[temp],x.quarters]))
+#  xv <- as.vector(x.per); xv[1:6]
+#  mean(xv)
+
+
 # --- 6 spatial variables
 	temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
 	write.county.var(   "S_REAU",temp,interact.with=c("quarter","period","division"))
@@ -168,10 +176,12 @@ write.the.data <- function() {
 # district/region indicators
 	cat("# region indicators \n",file=the.manifest, append=TRUE)
 
-	# --- most populous neighbor (self if its bigger than any neighbor)
+	# --- most populous neighbor (self if its bigger than any neighbor or neighbor not eligible)
 	temp <- mapply(biggest.neighbor, eligible.counties)
-	temp <- match(temp, eligible.counties) # map into indices into eligible.counties
-	x <- matrix(temp, nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+	temp <- match(temp, eligible.counties)  # map into indices into eligible.counties
+	temp[is.na(temp)] <- eligible.counties[which(is.na(temp))] # self-reference for the 9 not in eligible.counties
+	# --- offset so indexing works, noting that C is zero-based indexing whereas R is 1-based
+	x <- outer(temp-1, n.eligible.counties*(0:(length(y.quarters)-1)),FUN="+")
 	write.var("Pop_Neighbor",x,role="context") 
 	
 	division <- County$division[eligible.counties]

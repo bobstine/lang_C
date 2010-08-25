@@ -108,7 +108,7 @@ main(int argc, char** argv)
 {
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
-  
+
   debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
 
   // build vector of columns from file; set default parameter values
@@ -247,14 +247,14 @@ main(int argc, char** argv)
 			       ));
 
   // find neighborhood feature
-  IntegerColumn indices("",0);
+  IntegerColumn indices();
   for(unsigned int i=0; i<cColumns.size(); ++i)
   { if (cColumns[i]->name() == "Pop_Neighbor")
     { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
-      indices = IntegerColumn(cColumns[i]);
+      IntegerColumn indices(cColumns[i]);
       theAuction.add_expert(Expert(parasite, nContextCases, 0,
 				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
-				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), indices)
+				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), ".county", indices)
 				   ));
     }
   }

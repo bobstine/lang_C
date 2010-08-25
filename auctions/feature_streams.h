@@ -191,41 +191,42 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 
 //  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     
 
+
 template<class Source>
 class NeighborhoodStream
 {
   const std::string  mName;
   Source const&      mSource;
+  const std::string  mSignature;    // look for this in name of variable before using
   IntegerColumn      mIndexColumn;
   int                mPos;
   
 public:
-  
-  NeighborhoodStream(std::string const& name, Source const& src, IntegerColumn const& indices)
-    :  mName(name), mSource(src), mIndexColumn(col), mPos(0) { }
+
+  NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
+    :  mName(name), mSource(src), mIndexColumn(indices), mSignature(sig), mPos(0) { }
   
   std::string       name()                             const   { return mName; }
 
   std::string       feature_name()                     const ;
   FeatureVector     pop();
-  int               number_remaining()                 const ;
-  void              mark_position()                    const   {}
+  int               number_remaining()                 const   { return (mSource.size()-mPos); }
+  void              mark_position()                    const   { }
   
   void              print_to(std::ostream& os)         const;
 
 protected:
-  bool  empty()                                                                           const;
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
-  void  increment_position();
+  bool              empty()                      const { return  (number_remaining() == 0); }
+  void              increment_position()               { ++mPos; }
+  bool              current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
+
 };
 
-
-inline
-template<Source>
-RegulatedStream< NeighborhoodStream >
-make_neighborhood_stream (std::string const& name, Source const& src, Column const& col, int blockSize)
+template <class Source>
+RegulatedStream< NeighborhoodStream<Source> >
+make_neighborhood_stream (std::string const& name, Source const& src, std::string signature, IntegerColumn const& col)
 {
-  return RegulatedStream< NeighborhoodStream >(NeighborhoodStream(name, src, col, blockSize));
+  return RegulatedStream< NeighborhoodStream<Source> >(NeighborhoodStream<Source>(name, src, signature, col));
 }
 
 

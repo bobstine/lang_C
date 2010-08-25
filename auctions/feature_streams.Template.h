@@ -330,16 +330,20 @@ NeighborhoodStream<Source>::feature_name() const
   if(empty())
     return ("");
   else
-    return "Nbd(" + mFeature->name() + ")";
+    return mSource[mPos]->name() + "[" + mIndexColumn->name() + "]";
 }
 
 template<class Source>
 std::vector<Feature>
 NeighborhoodStream<Source>::pop()                
 { 
-  FeatureVector (fv); 
-  fv.push_back(make_indexed_feature(mFeature,mIndexColumn));
-  return fv; 
+  Feature x  (mSource[mPos]);
+  debugging::debug("NBDS",4) << "Stream " << name() << " making indexed feature from " <<  x->name() << std::endl;
+  increment_position();
+  FeatureVector result;
+  Feature ix (make_indexed_feature(x,mIndexColumn));
+  result.push_back(ix);
+  return result; 
 }
 
 template<class Source>
@@ -349,41 +353,28 @@ NeighborhoodStream<Source>::print_to(std::ostream& os)          const
   os << "Neighborhood feature stream " << name();
   if (empty())
     os << " is empty.";
-  
+  else
+    os << " has " << number_remaining() << " features.";
 }
-    
-template<class Source>
-int
-NeighborhoodStream<Source>::number_remaining()                  const
-{
-  return 100;
-}
-
-
-template<class Source>
-bool
-NeighborhoodStream<Source>::empty()  const
-{
-  return mSource.size() == 0;
-}
-
 
 template<class Source>
 bool
 NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
 {
-  return ( (!mFeature->is_constant()) && (!mFeature->is_used_in_model()) );
-}
-
-template<class Source>
-void
-NeighborhoodStream<Source>::increment_position()
-{
-  ++mNeighborhood;
-  if (mNeighborhood > mMaxNeighborhood && mCyclesLeft>0)
-  { --mCyclesLeft;
-    mNeighborhood = 1;
-  }
+  Feature  feature (mSource[mPos]);
+  std::string name (feature->name());
+  debugging::debug("NBDS",4) << " Neighborhood stream is considering variable '" << name << "'\n";
+  if (name.size() >= 4 && "cube" == name.substr(0,4))                  // avoid calibration variables, powers
+    return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6))
+    return false;
+  if (std::string::npos == name.find(mSignature))                      // must include the signature
+    return false;
+  if (std::string::npos != name.find(mIndexColumn->name()))            // avoid already-indexed variables
+    return false;
+  if (std::string::npos != name.find("Y_hat_") )
+    return false;
+  return ( (!feature->is_constant()) && (!feature->is_dummy()) );
 }
 
 

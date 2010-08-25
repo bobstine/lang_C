@@ -79,6 +79,7 @@ make_indexed_feature(Feature const& f, IntegerColumn const& i)
   int *pIndex (i->begin());
   for (int i=0; i<n; ++i)
     *pDest++ = x[*pIndex++];
+  dest.init_properties();
   return Feature(dest);
 }
 
