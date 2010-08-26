@@ -156,7 +156,7 @@ Auction<ModelClass>::auction_next_feature ()
   { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
     if (mProgressStream)  mProgressStream << ", ," << amount;
   }
-  std::pair<double,double> rss (mModel.sums_of_squares());              // resid ss, cv ss
+  std::pair<double,double> rss (mModel.sums_of_squares());                  // resid ss, cv ss
   if (mProgressStream) mProgressStream << "," << rss.first << "," << rss.second;
   return accepted;
 }
@@ -269,6 +269,16 @@ Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
   }
 }
 
+namespace {
+  int count_occurences (std::string const& s, char c)
+  {
+    int count (0);
+    for (std::string::const_iterator it=s.begin(); it!=s.end(); ++it)
+      if (*it == c) ++count;
+    return count;
+  }
+}
+
 template<class ModelClass>
 double
 Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& features)
@@ -277,12 +287,13 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   expert->payoff(mPayoff-tax);
   if (expert->role() != calibrate)
   { const double taxForEach = tax/features.size();
-    for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)     // add expert for interaction with other added features
-    { std::vector<Expert> spawned;
+    for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)       // add expert for interaction with other added features
+    {
+      std::vector<Expert> spawned;
       if ((*f)->has_attribute("interact_with_parent"))
       { std::set<std::string> s ((*f)->attribute_str_value("interact_with_parent"));
 	FeatureVector fv;
-	for(std::set<std::string>::const_iterator it=s.begin(); it != s.end(); ++it)    // could interact with children of many
+	for(std::set<std::string>::const_iterator it=s.begin(); it != s.end(); ++it)      // could interact with children of many
 	{ std::string parent (*it);  
 	  FeatureVector toAppend = mFeatureSource.features_with_attribute("parent",parent);
 	  debug("AUCT",4) << toAppend.size() << " features derived from interact_with attribute for parent " << parent << ".\n";
@@ -291,14 +302,15 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	}
 	fv = without_calibration_features(fv);
 	if (fv.size() > 0)
-	  spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
-				   UniversalBidder< RegulatedStream< FeatureProductStream > >(),
-				   make_feature_product_stream((*f)->name() + "x" + *s.begin(), *f, fv)  ));
+	  if(count_occurences((*f)->name(), '*') < 3)                                     // only add these interactions if not already big interaction
+	    spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
+				     UniversalBidder< RegulatedStream< FeatureProductStream > >(),
+				     make_feature_product_stream((*f)->name() + "x" + *s.begin(), *f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
       { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
-	int maxLag (*lagSet.begin());  // only one
-	spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,    // interacts winning feature with others in model stream
+	int maxLag (*lagSet.begin());                                                     // only one
+	spawned.push_back(Expert(custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
 				 UniversalBoundedBidder< RegulatedStream< LagStream > >(),
 				 make_lag_stream("Lag stream", *f, maxLag, mBlockSize, 2) ));  // 2 cycles over lags
       }
