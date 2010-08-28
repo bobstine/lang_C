@@ -20,7 +20,9 @@
 #include <math.h>
 
 void
-parse_arguments(int argc, char** argv, std::string &inputFile, std::string &outputFile, int &idCol, int &ansCol, int &nQues)
+parse_arguments(int argc, char** argv,
+		std::string &inputFile, std::string &outputFile,
+		int &idCol, int &ansCol, int &nQues)
 {
   int key;
   while (1)                              // read until empty key causes break
@@ -31,9 +33,10 @@ parse_arguments(int argc, char** argv, std::string &inputFile, std::string &outp
       {"questions",         1, 0, 'q'},  // has arg,
       {"id-column",         1, 0, 'i'},  // has arg,
       {"answer-column",     1, 0, 'a'},  // has arg,
+      {"dummy",             0, 0, 'd'},  // dummy so that others work
       {0, 0, 0, 0}                       // terminator 
     };
-    key = getopt_long (argc, argv, "f:o:i:a:q", long_options, &option_index);
+    key = getopt_long (argc, argv, "f:o:q:i:a:", long_options, &option_index);
     // std::cout << "Key  " << key << "  optarg " << optarg << std::endl;
     if (key == -1)
       break;
@@ -49,7 +52,7 @@ parse_arguments(int argc, char** argv, std::string &inputFile, std::string &outp
       }
     case 'q' :   // what the fuck is wrong with this???
       {
-	std::istringstream is(optarg); is >> nQues;    break;
+	nQues = read_utils::lexical_cast<int>(optarg);   break;
       }
     case 'i' :
       {
@@ -184,9 +187,9 @@ main(int argc, char** argv)
   // default is io via stdin and stdout
   std::string       inputFile ("");
   std::string       outputFile("");
-  int               idColumn(15);
-  int               answerColumn(30);
-  int               nQuestions(44);
+  int               idColumn    (29);
+  int               answerColumn(38);
+  int               nQuestions  (44);
 
   parse_arguments(argc, argv, inputFile, outputFile, idColumn, answerColumn, nQuestions);
   std::cout << "process_grades -f " << inputFile << " -o " << outputFile
