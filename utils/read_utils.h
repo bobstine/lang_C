@@ -21,6 +21,8 @@
 
 namespace read_utils
 {
+  int ctoi(char c);
+  
   inline std::string trim_right(const std::string &source , const std::string& t = " ")
   {
     std::string str = source;
@@ -97,8 +99,6 @@ namespace read_utils
     return y;
   }
 }
-
-
 
 // Read rest of current file line into c char string of indicated length
 
