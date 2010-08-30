@@ -104,7 +104,8 @@ LagFeature::write_to(std::ostream& os) const
 }
 
 
-//  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
+//  InteractionFeature     InteractionFeature     InteractionFeature     InteractionFeature
+
 
 void
 InteractionFeature::make_name()

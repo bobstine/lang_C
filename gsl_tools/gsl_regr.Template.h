@@ -120,15 +120,14 @@ gslRegression<Data,Engine>::sweep_x_from_z_into_zres()
     // Z is centered as is X, so no intercept in gamma = z'x (x'x)i
     gsl_matrix      *   g   (&gsl_matrix_submatrix (mGammaZ, 0,0, mDimZ, mQ).matrix); 
     gsl_vector const* tau   (&gsl_vector_const_subvector(mTau, 0, mQ).vector);
-    gsl_matrix const*  qr   (&gsl_matrix_const_submatrix(mQR, 0,0, mN+mQ, mQ).matrix); // pad for shrinkage
-    gsl_vector      *  Zj   (gsl_vector_alloc(mN+mQ));                                 //
-    gsl_vector      *  e    (gsl_vector_alloc(mN+mQ));                                 //
+    gsl_matrix const*  qr   (&gsl_matrix_const_submatrix(mQR, 0,0, mN, mQ).matrix); // do not shrink here
+    gsl_vector      *  Zj   (gsl_vector_alloc(mN));
+    gsl_vector      *  e    (gsl_vector_alloc(mN));
     for(int j = 0; j<mDimZ; ++j)
     { gsl_vector_view       vZRj (gsl_matrix_column (zres, j));
       gsl_vector_view       vGj  (gsl_matrix_row (g,j));
       // not impl shrinkage  mEngine.prepare_vector_for_analysis(Zj, &vZj.vector);
       gsl_vector_memcpy  (&gsl_vector_subvector(Zj, 0,mN).vector, &gsl_matrix_const_column(z,j).vector);
-      gsl_vector_set_all (&gsl_vector_subvector(Zj,mN,mQ).vector, gsl_vector_get(mZBar,j));
       gsl_linalg_QR_lssolve (qr, tau, Zj, &vGj.vector, e);
       gsl_vector_memcpy  (&gsl_matrix_column(zres,j).vector, &gsl_vector_subvector(e,0,mN).vector);
     }

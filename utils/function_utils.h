@@ -52,6 +52,16 @@ namespace Function_Utils
     double operator()(double x) const { double dev (x - mCenter); return dev*dev; }
   };
   
+
+  class CenteredMultiply : public std::binary_function<double,double,double> {
+  private:
+    double mAvg1, mAvg2;
+  public:
+  CenteredMultiply(double avg1, double avg2) : mAvg1(avg1), mAvg2(avg2) {};
+
+    double operator()(double x1, double x2) const { return (x1 - mAvg1)*(x2 - mAvg2); }
+  };
+  
   
   class Cube : public std::unary_function<double,double> {
   public:

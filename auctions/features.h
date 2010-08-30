@@ -19,7 +19,7 @@
   Interaction feature
 
        The cross product of two other features, which also may
-       be interactions as well.
+       be interactions as well.  Automatically centers components.
 
   LinearCombination feature
 
@@ -219,13 +219,14 @@ class InteractionFeature : public FeatureABC
 {
   Feature      mFeature1;
   Feature      mFeature2;
+  double       mAvg1, mAvg2;
   std::string  mName;
 
  public:
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2) { make_name();  }   // names built in using map to define canonical order
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mAvg1(f1->average()), mAvg2(f2->average()) { make_name();  }   // names built in using map to define canonical order
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
@@ -233,15 +234,15 @@ class InteractionFeature : public FeatureABC
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
   
   Iterator    begin()         const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(std::multiplies<double>(),
+                                                                     make_binary_iterator(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
                                                                                           mFeature1->begin(),
                                                                                           mFeature2->begin())); }
   Iterator    end()           const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(std::multiplies<double>(),
+                                                                     make_binary_iterator(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
                                                                                           mFeature1->end(),
                                                                                           mFeature2->end())); }
   Range       range()         const { return make_anonymous_range (
-                                                                   make_binary_range(std::multiplies<double>(),
+                                                                   make_binary_range(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
                                                                                      mFeature1->range(),
                                                                                      mFeature2->range())); }
   double      average()       const { return range_stats::average(range(), size()); }
