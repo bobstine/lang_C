@@ -55,7 +55,7 @@ write.the.data <- function() {
 	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
 	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); 
 	in.out[,t.include] <<- 1;
-	write.var("cv.indicator[in]", role = "context", in.out[,y.quarters]) 
+	write.var("cv.indicator", role = "context", in.out[,y.quarters]) 
 	
 	# check the sum
 	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
@@ -184,12 +184,32 @@ write.the.data <- function() {
 	x <- outer(temp-1, n.eligible.counties*(0:(length(y.quarters)-1)),FUN="+")
 	write.var("Pop_Neighbor",x,role="context") 
 	
+	# --- write the census division indicators
 	division <- County$division[eligible.counties]
 	for(d in unique(division)) {
 		name <- paste("Division_",d,sep="")
 		x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
 		write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
 	}
+	
+	# --- write the population neighborhood indicators for 50 most populous counties
+	pop <- County$population[eligible.counties,71]
+	id <- order(-pop)[1:50]
+	nbd <- lapply(eligible.counties[id], function(i) {c(i, County$neighbors[[i]], County$cousins[[i]])})
+	# --- map of locations
+	# map("county", col="gray"); 
+	# for(i in 1:50) draw.county(County$name[nbd[[i]]], col="yellow")
+	# map("county", tolower(County$name[eligible.counties[id]]), exact=TRUE, add=TRUE, fill=TRUE, col="cyan")
+	for(i in 1:length(nbd)) {
+		n <- nbd[[i]];
+		name <- paste("Cty_",gsub("[ ,]","_",County$name[n[1]]),sep=""); cat(name,"\n")
+		v  <- rep(0,n.eligible.counties); 
+		idx  <- match(n, eligible.counties); idx <- idx[!is.na(idx)]
+		v[idx] <- 1
+		x <- matrix(v, nrow=n.eligible.counties,ncol=length(x.quarters), byrow=FALSE)
+		write.var(name,x,role="x",attr.str=paste("stream geography parent county category", i))
+	}
+
 
 }  # end of write.the.data
 

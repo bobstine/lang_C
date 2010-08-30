@@ -204,7 +204,7 @@ class NeighborhoodStream
 public:
 
   NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  mName(name), mSource(src), mIndexColumn(indices), mSignature(sig), mPos(0) { }
+    :  mName(name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) { }
   
   std::string       name()                             const   { return mName; }
 

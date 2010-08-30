@@ -59,7 +59,7 @@ namespace read_utils
     for (std::string::iterator it=result.begin(); it != result.end(); ++it)
       for (std::string::const_iterator ic=sc.begin(); ic != sc.end(); ++ic)
 	if (*it == *ic)
-	{ *it = 'x';
+	{ *it = '_';
 	  break;
 	}
     return result;

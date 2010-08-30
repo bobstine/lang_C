@@ -137,6 +137,7 @@ namespace {
 double
 universalPDF (int k)  
 {
+  assert(k>0);
   const double normalizer (2.865);
   return exp2(-log_star(k))/normalizer;
 }

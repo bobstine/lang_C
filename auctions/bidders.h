@@ -202,7 +202,7 @@ public:
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
-      return alpha * slowUniversalPDF(history.number_bids_since_last_success());
+      return alpha * slowUniversalPDF(1+history.number_bids_since_last_success());   // add 1; cannot call with zero
     else
       return 0.0;
   }
@@ -236,7 +236,7 @@ public:
     if (n>0)
     { double fixedBid=1.0/(double)n;
       double bid = alpha * max( fixedBid,
-				universalPDF(history.number_bids_since_last_success())
+				universalPDF(1+history.number_bids_since_last_success())
 				);
       return (bid < maxbid) ? bid : maxbid;
     }
