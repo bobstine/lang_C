@@ -12,7 +12,7 @@ PROJECT_NAME = eigen
 # OPT = -O0 
 # fast and who gives a damn about errors?
 
-OPT = -O3 -DNDEBUG
+# OPT = -O3 -DNDEBUG
 
 USES = random utils
 
@@ -41,5 +41,12 @@ rand_projection.o: rand_projection.cc
 	$(GCC) $(CFLAGS) -std=c++0x -c $^ -o $@
 
 rand_projection: rand_projection.o eigen_svd.o
+	$(GCC) $^ $(LDLIBS)  -o  $@
+
+
+regression.o: regression.cc 
+	$(GCC) $(CFLAGS) -std=c++0x -c $^ -o $@
+
+regression: regression.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
