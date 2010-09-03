@@ -219,32 +219,29 @@ class InteractionFeature : public FeatureABC
 {
   Feature      mFeature1;
   Feature      mFeature2;
-  double       mAvg1, mAvg2;
+  double       mCtr1, mCtr2;
   std::string  mName;
 
  public:
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mAvg1(f1->average()), mAvg2(f2->average()) { make_name();  }   // names built in using map to define canonical order
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mCtr1(0.0), mCtr2(0.0) { center_features(); make_name();  }   // names built in using map to define canonical order
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
   std::string operator_name() const { return "*"; }
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
   
-  Iterator    begin()         const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
+  Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->begin(),
                                                                                           mFeature2->begin())); }
-  Iterator    end()           const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
+  Iterator    end()           const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->end(),
                                                                                           mFeature2->end())); }
-  Range       range()         const { return make_anonymous_range (
-                                                                   make_binary_range(Function_Utils::CenteredMultiply(mAvg1,mAvg2),
-                                                                                     mFeature1->range(),
-                                                                                     mFeature2->range())); }
+  Range       range()         const { return make_anonymous_range   (make_binary_range(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+										       mFeature1->range(),
+										       mFeature2->range())); }
   double      average()       const { return range_stats::average(range(), size()); }
   double      center()        const { return mFeature1->center()*mFeature2->center(); }
   double      scale()         const { return mFeature1->scale()*mFeature2->scale(); }
@@ -253,6 +250,7 @@ class InteractionFeature : public FeatureABC
   void        write_to (std::ostream& os) const;
 
  private:
+  void        center_features(); 
   void        make_name();
 };
 

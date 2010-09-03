@@ -405,7 +405,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   gsl_matrix_set_zero(&(gsl_matrix_submatrix(mQR, mN,0,    newQ,newQ)).matrix);
   QR   =              &(gsl_matrix_submatrix(mQR,  0,0, mN+newQ,newQ)).matrix;
   for(int j=0; j<newQ; ++j)
-    gsl_matrix_set(QR,mN+j,j, gsl_vector_get(mShrinkage,j));
+    gsl_matrix_set(QR,mN+j,j, gsl_vector_get(mShrinkage,j));      // insert 0 times gsl_vector_get to avoid shrinkage for testing residual SS, prediction SS
   // factor matrix
   int status (0);
   gsl_vector *tau  (&gsl_vector_subvector(mTau, 0, newQ).vector);
@@ -417,7 +417,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   if (status)   debug("GSLR",-1) << "Warning. Status of QR decomp is " << status << std::endl;
   else          mQ = newQ;                                                          // reset Q to have new variables
   /*
-  //  This block of code controlled building QR when no shrinkage
+  //  This block of code controlled building partial QR when no shrinkage
   // copy new portions of X into QR
   gsl_matrix   const  * X    (&(gsl_matrix_const_submatrix(mpData->x(),0,firstColumn, mN,numberColumns)).matrix);
   gsl_matrix          * QR   (&(gsl_matrix_submatrix      (mQR,        0,firstColumn, mN,numberColumns)).matrix);
@@ -449,8 +449,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
     gsl_matrix_free(q);
     gsl_matrix_free(r);
     */
-   }
-
+  }
   gsl_vector const* Y   (&gsl_vector_const_subvector(mpData->y(),0,mN).vector);          // store beta and residuals
   gsl_vector    *beta   (&gsl_vector_subvector(mBeta,0,mQ).vector);
   gsl_vector     *res   (&gsl_vector_subvector(mpData->live_e(),0,mN).vector);

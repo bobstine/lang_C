@@ -108,6 +108,15 @@ LagFeature::write_to(std::ostream& os) const
 
 
 void
+InteractionFeature::center_features()
+{
+  if (!mFeature1->is_dummy() && !mFeature1->is_constant())
+    mCtr1 = mFeature1->average();
+  if (!mFeature2->is_dummy() && !mFeature2->is_constant())
+    mCtr2 = mFeature2->average();
+}
+
+void
 InteractionFeature::make_name()
 {
   Arguments args (arguments());
