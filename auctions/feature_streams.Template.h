@@ -96,21 +96,25 @@ FitStream<Model>::feature_name () const
 //    f4                    *
 //                               mPos2 says which column; mPos1 tracks row, moving down from first row
 
-template<class Source>
-void
-InteractionStream<Source>::build_current_feature_name()
-{
-  if (empty())
-    mCurrentFeatureName = "";
-  else
-    mCurrentFeatureName = Feature(mSource[mPos1], mSource[mPos2])->name();
-}
 
 template<class Source>
 bool
 InteractionStream<Source>::empty() const
 {
+  // debugging::debug("INST",4) << "Interaction stream " << mName << " @ " << mPos1 << "," << mPos2 << " has " << mSource.size() << " in source." << std::endl;
   return (mPos2 >= (int) mSource.size());
+}
+
+
+template<class Source>
+void
+InteractionStream<Source>::build_current_feature_name()
+{
+  debugging::debug("INST",4) << "Interaction stream " << mName << " @ " << mPos1 << "," << mPos2 << " building feature name, source size " << mSource.size() << std::endl;
+  if (empty())
+    mCurrentFeatureName = "";
+  else
+    mCurrentFeatureName = Feature(mSource[mPos1], mSource[mPos2])->name();
 }
 
 
@@ -122,6 +126,7 @@ InteractionStream<Source>::increment_position()
   { ++mPos2;
     while ((mPos2 < (int) mSource.size()) && mSource[mPos2]->is_constant())  // skip constant columns
       ++mPos2;
+    debugging::debug("INST",4) << "Interaction stream " << mName << " moving to column " << mPos2 << std::endl;
     mPos1 = 0;
   }
   else
@@ -139,10 +144,14 @@ InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& u
       indicators_from_same_parent(mSource[mPos1], mSource[mPos2]) ||   // disjoint by definition
       (mSource[mPos1]->is_constant())                                  // no interactions with constant (mPos2 handled in increment)
       )
+  { debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding dummy variable." << std::endl;
     return false;
+  }
   std::string name (feature_name());
   if (found_feature_name_in_vector(name, used, "model features") || found_feature_name_in_vector(name,skipped, "skipped features"))
+  { debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding redundant variable." << std::endl;
     return false;
+  }
   return true;
 }
 
@@ -312,13 +321,11 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
   Feature  feature (mSource[mPos]);
   std::string name (feature->name());
   debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << name << "'\n";
-  // avoid calibration variables, powers
-  if (name.size() >= 4 && "cube" == name.substr(0,4))
-    return false;
-  if (name.size() >= 6 && "square" == name.substr(0,6))
-    return false;
-  if (std::string::npos != name.find("Y_hat_") )
-    return false;
+  // avoid calibration variables, powers, interactions
+  if (feature->degree()>1)                              return false;
+  if (name.size() >= 4 && "cube" == name.substr(0,4))   return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6)) return false;
+  if (std::string::npos != name.find("Y_hat_") )        return false;
   return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
 

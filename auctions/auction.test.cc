@@ -235,23 +235,24 @@ main(int argc, char** argv)
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
+  typedef  FiniteStream                                    FStream;
+  typedef  InteractionStream < FeatureVector >             IStream;
 
   // parasitic experts
-  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
-			       UniversalBidder< PolynomialStream<FeatureVector> >(),
-			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
-			       ));
+  theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,
+			       UniversalBidder<IStream>(),
+			       make_interaction_stream("Interact within accept", theAuction.model_features(), true)));    // include quad terms
     
   theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Interact accept x reject",
-							 theAuction.model_features(), theAuction.rejected_features())
+							 theAuction.model_features(), theAuction.rejected_features()) ));
+
+  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
+			       UniversalBidder< PolynomialStream<FeatureVector> >(),
+			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
 
-  theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,   // HERE
-			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Interact within accept", theAuction.model_features())
-			       ));
 
   // find neighborhood feature
   IntegerColumn indices();
@@ -267,36 +268,32 @@ main(int argc, char** argv)
   }
 
   // add a source and interaction expert for each stream with role=x
-  { std::vector<std::string> streamNames (featureSrc.stream_names());
-    for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
-    { if (*it == "LOCKED")
-      { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
-	streamNames.erase(it);
-	break;
-      }
+  std::vector<std::string> streamNames (featureSrc.stream_names());
+  for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
+  { if (*it == "LOCKED")
+    { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
+      streamNames.erase(it);
+      break;
     }
-    debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
+  }
+  debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
 
-    // allocate alpha over input source streams
-    //     this version uses precedence   FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size()); and replace alphaShare -> alphaShare(s)
-    double   alphaShare                          (totalAlphaToSpend/streamNames.size());
-    typedef  FiniteStream                        FStream;
-    typedef  InteractionStream < FeatureVector > IStream;
-    for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
-      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,      // priority, alpha
-				   UniversalBidder<FStream>(), 
-				   make_finite_stream(streamNames[s],
-						      featureSrc.features_with_attribute("stream",
-											 streamNames[s])) // 2 cycles through these features
-				   ));
-      theAuction.add_expert(Expert("Cross["+streamNames[s]+"2",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
-				   UniversalBoundedBidder<IStream>(),
-				   make_interaction_stream("Interactions within " + streamNames[s],
-							   featureSrc.features_with_attribute("stream",streamNames[s]),
-							   false)                   // skip squared terms
-				   ));
-    }
+  // allocate alpha over input source streams
+  //     this version uses precedence   FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size()); and replace alphaShare -> alphaShare(s)
+  double   alphaShare (totalAlphaToSpend/streamNames.size());
+  // interaction streams need a reference (since source may be dynamic)
+  std::vector< FeatureVector> featureStreams(streamNames.size());
+  for (int s=0; s < (int)streamNames.size(); ++s)
+  { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
+    featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
+    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // priority, alpha
+				 UniversalBidder<FStream>(), 
+				 make_finite_stream(streamNames[s],featureStreams[s])));
+    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
+				 UniversalBoundedBidder<IStream>(),
+				 make_interaction_stream("Interactions within " + streamNames[s],
+							 featureStreams[s], true)                             // include squared terms
+				 ));
   }
 
   //  Calibration expert
@@ -334,27 +331,25 @@ main(int argc, char** argv)
   */
   
   // ----------------------   run the auction with output to file  ---------------------------------
+  int round = 0;
   {
-    int round = 0;
+    FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
+    if(lockIn.size() > 0)
+    { theAuction.add_initial_features(lockIn);
+      debug("AUCT",3) << theAuction << std::endl << std::endl;
+    }
+    theAuction.prepare_to_start_auction();
+    const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
+    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
-      FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
-      if(lockIn.size() > 0)
-      { theAuction.add_initial_features(lockIn);
+      ++round;
+      if (theAuction.auction_next_feature())                     // true when adds predictor
+      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      theAuction.prepare_to_start_auction();
-      const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
-      while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
-      {
-	++round;
-	if (theAuction.auction_next_feature())                     // true when adds predictor
-	{ debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
-	  debug("AUCT",3) << theAuction << std::endl << std::endl;
-	}
-	progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
-      }
-      debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+      progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
+    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
   
   // ----------------------   write summary and data to various files  ---------------------------------

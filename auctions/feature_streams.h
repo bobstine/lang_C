@@ -280,13 +280,13 @@ private:
   int             mDiag;
   std::string     mName;
   std::string     mCurrentFeatureName;
-  Source          mSource;                     
+  Source const&   mSource;                     
   int             mPos1, mPos2;
   
 public:
   
   InteractionStream(std::string name, Source const& src, bool useSquares)
-    : mDiag(useSquares?0:1), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
+    : mDiag(useSquares?0:1), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(useSquares?0:1) { build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }
   
@@ -297,7 +297,7 @@ public:
   void                    print_to(std::ostream& os)          const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  empty ()                            const;
+  bool  empty ()                                              const;
   bool  current_feature_is_okay    (FeatureVector const& used, FeatureVector const& skipped)   const;
   void  increment_position();
 private:

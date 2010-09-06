@@ -70,12 +70,11 @@ public:
     : mName("none"), mRefCount(1), mRole(source), mSkip(0), mAlpha(0),
       mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
-  ExpertABC(std::string name, std::string desc, ExpertRole role, int skip, double alpha)
+  ExpertABC(std::string name, ExpertRole role, int skip, double alpha)
     : mName(name), mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha),
       mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   std::string            name()                             const { return mName; }
-  std::string            description()                      const = 0;
   int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
   ExpertRole             role()                             const { return mRole; }
   int                    skip()                             const { return mSkip; }
@@ -88,7 +87,7 @@ public:
 
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
-  
+  virtual std::string    description()                      const = 0;  
   virtual double         place_bid (BiddingHistory const& state)  = 0; 
   virtual std::string    feature_name()                     const = 0;
   virtual FeatureVector  feature_vector()                         = 0;

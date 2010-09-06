@@ -303,22 +303,26 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	fv = without_calibration_features(fv);
 	if (fv.size() > 0)
 	  if((*f)->degree() == 1)                                                        // only cross simple features with stream
-	    spawned.push_back(Expert("Spawn["+*f->name()+"_"+*s.begin()+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
+	    spawned.push_back(Expert("Spawn["+(*f)->name()+"_"+*s.begin()+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
 				     UniversalBidder< RegulatedStream< FeatureProductStream > >(),
 				     make_feature_product_stream((*f)->name() + "x" + *s.begin(), *f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
       { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
 	int maxLag (*lagSet.begin());                                                     // only one
-	spawned.push_back(Expert("Lag_"+*f->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
+	spawned.push_back(Expert("Lag_"+(*f)->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
 				 UniversalBoundedBidder< RegulatedStream< LagStream > >(),
 				 make_lag_stream("Lag stream", *f, maxLag, mBlockSize, 2) ));  // 2 cycles over lags
       }
-      // interact winning feature with rest of model stream   HERE
-      spawned.push_back(Expert("Cross[",*f->name(),",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
+      // interact winning feature with rest of model stream
+      spawned.push_back(Expert("Cross["+(*f)->name()+",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
 			       UniversalBoundedBidder< RegulatedStream< FeatureProductStream > >(),
 			       make_feature_product_stream("model feature interact", *f, without_calibration_features(model_features()))  ));
-      double alpha = taxForEach/spawned.size();
+      double alpha = taxForEach/(1+spawned.size());                                      // save share for global interaction expert
+      if(mExperts[0]->name() == "In/In")
+	mExperts[0]->increment_alpha(alpha);                                             // global expert in first slot
+      else
+	std::cerr << "ERROR: Interaction error not located at head of expert vector in auction.\n";
       for(std::vector<Expert>::const_iterator eit=spawned.begin(); eit != spawned.end(); ++eit)
       { (*eit)->increment_alpha(alpha);
 	add_expert(*eit);
