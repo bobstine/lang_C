@@ -161,6 +161,7 @@ class ColumnFeature : public FeatureABC
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn->name(); }
   std::string operator_name()  const { return ""; }
+  int         degree()         const { return 1; }
   Arguments   arguments()      const {        Arguments a; a[name()] = 1; return a; }
   
   Column      column()         const { return mColumn; }
@@ -195,6 +196,7 @@ class LagFeature : public FeatureABC
   std::string class_name()     const { return "LagFeature"; }
   std::string name()           const { return "Lag(" + mFeature->name() + ",t-" + mLagStr +")"; }
   std::string operator_name()  const { return "[-" + mLagStr + "]"; }
+  int         degree()         const { return mFeature->degree(); }
   Arguments   arguments()      const { return mFeature->arguments(); }
   
   int         lag()            const { return mLag; }
@@ -231,6 +233,7 @@ class InteractionFeature : public FeatureABC
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
   std::string operator_name() const { return "*"; }
+  int         degree()        const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
   
   Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
@@ -275,6 +278,7 @@ class LinearCombinationFeature : public FeatureABC
   std::string class_name()    const { return "LinearCombinationFeature"; }
   std::string name()          const { return mName; }
   std::string long_name()     const;
+  int         degree()        const { return (int) mFeatures.size(); }
   Arguments   arguments()     const {        Arguments a; a[name()]=1; return a;}
   
   Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
@@ -313,6 +317,7 @@ class UnaryFeature : public FeatureABC
 
   std::string class_name() const { return "UnaryFeature"; }
   std::string name()       const { return operator_traits<Op>::name() + "[" + mFeature->name() + "]"; }
+  int         degree()     const { return mFeature->degree(); }
   Arguments   arguments()  const;
   
   Iterator    begin()      const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->begin()));    }
@@ -344,6 +349,7 @@ class BinaryFeature : public FeatureABC
 
   std::string class_name()  const { return "BinaryFeature"; }
   std::string name()        const { return operator_traits<Op>::name() + "[ (" + mFeature1->name() + ")" + operator_traits<Op>::symbol() + "(" + mFeature2->name() + ") ]"; }
+  int         degree()      const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()   const { return Arguments(); }
   
   Iterator    begin()       const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->begin(),mFeature2->begin())); }

@@ -42,7 +42,6 @@ main()
     std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
-    fs.mark_position();
     fs.print_features_to(std::cout); std::cout << std::endl;
     
     int more (11);
@@ -52,8 +51,9 @@ main()
       fs.print_features_to(std::cout); std::cout << std::endl;
     }
 
+    std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
     fv[0]->set_model_results(true, 0.001);  // used in model, p-value
-    fs.mark_position();
+    more = 11;
     while(fs.has_feature(features,features) && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
@@ -61,8 +61,9 @@ main()
     }
 
     fs.print_features_to(std::cout); std::cout << std::endl;
-
   }
+  
+  std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
   // test dynamic cross-product stream
   typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
   std::vector<Feature> featuresSlow, featuresFast;

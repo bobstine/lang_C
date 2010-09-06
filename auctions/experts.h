@@ -53,6 +53,8 @@ class ExpertABC
   typedef     std::map<std::string, std::string>             Attributes;
   
 protected:
+  std::string mName;
+  std::string mDescription;
   int         mRefCount;
   ExpertRole  mRole;
   int         mSkip;              // leading context data cases to skip past
@@ -64,14 +66,16 @@ protected:
 public:
   virtual ~ExpertABC () { }
   
- ExpertABC()
-   : mRefCount(1), mRole(source), mSkip(0), mAlpha(0),
-    mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
-
- ExpertABC(ExpertRole role, int skip, double alpha)
-   : mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha),
-    mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
-
+  ExpertABC()
+    : mName("none"), mRefCount(1), mRole(source), mSkip(0), mAlpha(0),
+      mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+  
+  ExpertABC(std::string name, std::string desc, ExpertRole role, int skip, double alpha)
+    : mName(name), mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha),
+      mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+  
+  std::string            name()                             const { return mName; }
+  std::string            description()                      const = 0;
   int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
   ExpertRole             role()                             const { return mRole; }
   int                    skip()                             const { return mSkip; }
@@ -86,7 +90,6 @@ public:
   
   
   virtual double         place_bid (BiddingHistory const& state)  = 0; 
-  virtual std::string    name()                             const = 0;
   virtual std::string    feature_name()                     const = 0;
   virtual FeatureVector  feature_vector()                         = 0;
   
@@ -120,12 +123,12 @@ private:
 public:
   virtual ~StreamExpert () { };
   
-  StreamExpert (ExpertRole role, int skip, double alpha, Bidder b, Stream s)
-    : ExpertABC(role, skip, alpha), mBidder(b), mStream(s) { }
-  
+  StreamExpert (std::string name, ExpertRole role, int skip, double alpha, Bidder b, Stream s)
+    : ExpertABC(name, role, skip, alpha), mBidder(b), mStream(s) { }
+
+  std::string         description()  const { return mBidder.name()+"/"+mStream.name(); }
   Bidder const&       bidder()       const { return mBidder; }
   Stream const&       stream()       const { return mStream; }
-  std::string         name()         const { return mBidder.name() + "/" + mStream.name(); } // stream must have a name
 
   double              place_bid (BiddingHistory const& state);
   void                model_adds_current_variable()           { /* placeholder */ }
@@ -153,12 +156,12 @@ class Expert
   ~Expert() { if(mpExpert && (--mpExpert->mRefCount <= 0)) delete mpExpert; }
   
   // empty
-    Expert() : mpExpert(NULL) {  }
+  Expert() : mpExpert(NULL) {  }
   
   // stream expert
   template <class Bidder, class Stream>
-    Expert(ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)
-                                                      { mpExpert = new StreamExpert<Bidder,Stream> (role, skip, alpha, b, s); }
+  Expert(std::string name, ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)
+    { mpExpert = new StreamExpert<Bidder,Stream> (name, role, skip, alpha, b, s); }
 
   // copy
   Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  

@@ -118,6 +118,24 @@ write.the.data <- function() {
 		write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
 	}
 
+
+
+# --------------------------------------------------------------------------------
+#  prequential variables
+# --------------------------------------------------------------------------------
+
+# --- test
+#     yy <- County$REPB60M[eligible.counties[1:10],]
+#     z <- t(apply(yy, 1, function(y) build.prequential.ar(y,p=1))); dim(z)
+#     i <- 1; plot(z[i,],type="l"); points(1:length(yy[i,]), yy[i,])
+
+# --- build predictions (takes a while)
+	y.hat <- t(apply(County$REPB60M[eligible.counties,], 1, function(y) build.prequential.ar(y,p=4)))
+	write.var("PREQ_Y_4",y.hat,role="x",attr.str="stream MAIN max_lag 2"))
+
+
+
+
 # --------------------------------------------------------------------------------
 #  write national time series out in streaming format into separate
 #  file that can be concatenated onto the file produced by other commands.

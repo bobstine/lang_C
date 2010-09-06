@@ -88,7 +88,13 @@ FitStream<Model>::feature_name () const
 
 
 ///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteractgion Streams
-
+//
+//         f1    f2   f3   f4
+//    f1    *     *    *    *
+//    f2          *    *    *
+//    f3               *    *
+//    f4                    *
+//                               mPos2 says which column; mPos1 tracks row, moving down from first row
 
 template<class Source>
 void
@@ -112,15 +118,14 @@ template<class Source>
 void
 InteractionStream<Source>::increment_position()
 {
-  if (0 == mPos1)  // move to next column; traverses 'upper half' a column at a time, from diagonal 'up'
+  if (mPos1 == mPos2-mDiag)                                                   // move to next column
   { ++mPos2;
-    while ((mPos2 < (int)mSource.size())
-	   && mSource[mPos2]->is_constant())            // skip constant column
+    while ((mPos2 < (int) mSource.size()) && mSource[mPos2]->is_constant())  // skip constant columns
       ++mPos2;
-    mPos1 = (mUseSquares) ? mPos2 : mPos2-1;
+    mPos1 = 0;
   }
   else
-    --mPos1;
+    ++mPos1;
   build_current_feature_name();   // rebuild name
 }
 
@@ -194,7 +199,6 @@ int
   int num (0);
   for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
     num += mFastSource.size() - *it;
-  debugging::debug("CPST",4) << "Source sizes " << mSlowSource.size() << "," << mFastSource.size() << " give position " << mPos << " and " << num << " remaining.\n";
   return num;
 }
 

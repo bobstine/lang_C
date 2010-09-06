@@ -35,7 +35,7 @@ ExpertABC::convert_to_model_iterators(FeatureVector const& fv) const
 void
 ExpertABC::print_to(std::ostream& os) const
 {
-  os << "Expert[" << role_string() << "," << mSkip <<"]: " << name() << " with alpha " << mAlpha; 
+  os << "Expert " << name() << "[" << role_string() << "]" << description() << " with alpha=" << mAlpha << " skip=" << mSkip; 
 }
 
 

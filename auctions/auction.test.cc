@@ -230,20 +230,27 @@ main(int argc, char** argv)
   Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, calSig, blockSize, progressStream);
 #endif
 
+
+  // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
+
   // parasitic experts
-  
-  theAuction.add_expert(Expert(parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
     
-  theAuction.add_expert(Expert(parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
 			       UniversalBidder<CPStream>(),
 			       make_cross_product_stream("Interact accept x reject",
 							 theAuction.model_features(), theAuction.rejected_features())
+			       ));
+
+  theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,   // HERE
+			       UniversalBidder<CPStream>(),
+			       make_cross_product_stream("Interact within accept", theAuction.model_features())
 			       ));
 
   // find neighborhood feature
@@ -252,14 +259,14 @@ main(int argc, char** argv)
   { if (cColumns[i]->name() == "Pop_Neighbor")
     { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
       IntegerColumn indices(cColumns[i]);
-      theAuction.add_expert(Expert(parasite, nContextCases, 0,
+      theAuction.add_expert(Expert("Neighborhood", parasite, nContextCases, 0,
 				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
 				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), ".county", indices)
 				   ));
     }
   }
 
-  // add a source column and interaction expert for each column with role=x
+  // add a source and interaction expert for each stream with role=x
   { std::vector<std::string> streamNames (featureSrc.stream_names());
     for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
     { if (*it == "LOCKED")
@@ -277,13 +284,13 @@ main(int argc, char** argv)
     typedef  InteractionStream < FeatureVector > IStream;
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
-      theAuction.add_expert(Expert(source, nContextCases, alphaShare * 0.52,      // priority, alpha
+      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,      // priority, alpha
 				   UniversalBidder<FStream>(), 
 				   make_finite_stream(streamNames[s],
 						      featureSrc.features_with_attribute("stream",
 											 streamNames[s])) // 2 cycles through these features
 				   ));
-      theAuction.add_expert(Expert(source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
+      theAuction.add_expert(Expert("Cross["+streamNames[s]+"2",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
 				   UniversalBoundedBidder<IStream>(),
 				   make_interaction_stream("Interactions within " + streamNames[s],
 							   featureSrc.features_with_attribute("stream",streamNames[s]),
@@ -295,7 +302,7 @@ main(int argc, char** argv)
   //  Calibration expert
   if(splineDF > 0)
   { 
-    theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                     // no skipping, lots of alpha
 				 FitBidder(0.000005, calibrationSignature),         // calibrate p-value
 				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
   }
@@ -306,7 +313,7 @@ main(int argc, char** argv)
 
   /*
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<pca> > SS_SVD;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_SVD>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
@@ -316,7 +323,7 @@ main(int argc, char** argv)
 						    )));
 
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(), 

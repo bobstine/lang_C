@@ -277,7 +277,7 @@ class InteractionStream
 {
   
 private:
-  bool            mUseSquares;
+  int             mDiag;
   std::string     mName;
   std::string     mCurrentFeatureName;
   Source          mSource;                     
@@ -286,7 +286,7 @@ private:
 public:
   
   InteractionStream(std::string name, Source const& src, bool useSquares)
-    : mUseSquares(useSquares), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
+    : mDiag(useSquares?0:1), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(0) { build_current_feature_name(); }
   
   std::string             name()                              const { return mName; }
   

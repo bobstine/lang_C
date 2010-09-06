@@ -76,6 +76,7 @@ class FeatureABC
 
   virtual std::string class_name()                              const { return "FeatureABC"; }
   virtual std::string name()                                    const = 0;                 // pure virtual, must maintain const
+  virtual int         degree()                                  const = 0;                 // number of continuent features, eg 2 for simple interaction
   virtual Arguments   arguments()                               const = 0;                 //
   
   virtual Iterator    begin ()                                  const = 0;                 //
