@@ -45,6 +45,44 @@ Feature::operator=(Feature const& f)
   return *this;
 }
 
+//  utilities     utilities     utilities     utilities     utilities     utilities     utilities     utilities
+
+
+FeatureVector
+features_with_name(std::string name, FeatureVector const& fv)
+{
+  FeatureVector result;
+  for (FeatureVector::const_iterator it=fv.begin(); it != fv.end(); ++it)
+  { std::string fname ((*it)->name());
+    if (std::string::npos != fname.find(name))
+      result.push_back(*it);
+  }
+  return result;
+}
+
+  
+Feature
+make_indexed_feature(Feature const& f, IntegerColumn const& i)
+{
+  debugging::debug("IDXF",3) << "Creating indexed feature with feature '" << f->name() << " with " << f->size()
+			     << " elements and " << i->size() << " indices from " << i->name() << ".\n";
+  assert(i->size() == f->size());
+  int n (i->size());
+  std::vector<double> x (n);             // copy feature data into vector for indexing
+  { FeatureABC::Iterator mSrc (f->begin());
+    for (int i=0; i<n; ++i)
+      x[i] = *mSrc++;
+  }
+  std::string name (f->name()+"["+i->name()+"]");
+  Column dest(name.c_str(), n);
+  double *pDest (dest->begin());
+  int *pIndex (i->begin());
+  for (int i=0; i<n; ++i)
+    *pDest++ = x[*pIndex++];
+  dest.init_properties();
+  return Feature(dest);
+}
+
 
 //  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  
 
@@ -65,7 +103,18 @@ LagFeature::write_to(std::ostream& os) const
   FeatureABC::write_to(os); 
 }
 
-//  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
+
+//  InteractionFeature     InteractionFeature     InteractionFeature     InteractionFeature
+
+
+void
+InteractionFeature::center_features()
+{
+  if (!mFeature1->is_dummy() && !mFeature1->is_constant())
+    mCtr1 = mFeature1->average();
+  if (!mFeature2->is_dummy() && !mFeature2->is_constant())
+    mCtr2 = mFeature2->average();
+}
 
 void
 InteractionFeature::make_name()

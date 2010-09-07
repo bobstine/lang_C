@@ -88,23 +88,33 @@ FitStream<Model>::feature_name () const
 
 
 ///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteractgion Streams
+//
+//         f1    f2   f3   f4
+//    f1    *     *    *    *
+//    f2          *    *    *
+//    f3               *    *
+//    f4                    *
+//                               mPos2 says which column; mPos1 tracks row, moving down from first row
+
+
+template<class Source>
+bool
+InteractionStream<Source>::empty() const
+{
+  // debugging::debug("INST",4) << "Interaction stream " << mName << " @ " << mPos1 << "," << mPos2 << " has " << mSource.size() << " in source." << std::endl;
+  return (mPos2 >= (int) mSource.size());
+}
 
 
 template<class Source>
 void
 InteractionStream<Source>::build_current_feature_name()
 {
+  debugging::debug("INST",4) << "Interaction stream " << mName << " @ " << mPos1 << "," << mPos2 << " building feature name, source size " << mSource.size() << std::endl;
   if (empty())
     mCurrentFeatureName = "";
   else
     mCurrentFeatureName = Feature(mSource[mPos1], mSource[mPos2])->name();
-}
-
-template<class Source>
-bool
-InteractionStream<Source>::empty() const
-{
-  return (mPos2 >= (int) mSource.size());
 }
 
 
@@ -112,15 +122,15 @@ template<class Source>
 void
 InteractionStream<Source>::increment_position()
 {
-  if (0 == mPos1)  // move to next column; traverses 'upper half' a column at a time, from diagonal 'up'
+  if (mPos1 == mPos2-mDiag)                                                   // move to next column
   { ++mPos2;
-    while ((mPos2 < (int)mSource.size())
-	   && mSource[mPos2]->is_constant())            // skip constant column
+    while ((mPos2 < (int) mSource.size()) && mSource[mPos2]->is_constant())  // skip constant columns
       ++mPos2;
-    mPos1 = (mUseSquares) ? mPos2 : mPos2-1;
+    debugging::debug("INST",4) << "Interaction stream " << mName << " moving to column " << mPos2 << std::endl;
+    mPos1 = 0;
   }
   else
-    --mPos1;
+    ++mPos1;
   build_current_feature_name();   // rebuild name
 }
 
@@ -134,10 +144,14 @@ InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& u
       indicators_from_same_parent(mSource[mPos1], mSource[mPos2]) ||   // disjoint by definition
       (mSource[mPos1]->is_constant())                                  // no interactions with constant (mPos2 handled in increment)
       )
+  { debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding dummy variable." << std::endl;
     return false;
+  }
   std::string name (feature_name());
   if (found_feature_name_in_vector(name, used, "model features") || found_feature_name_in_vector(name,skipped, "skipped features"))
+  { debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding redundant variable." << std::endl;
     return false;
+  }
   return true;
 }
 
@@ -161,66 +175,6 @@ InteractionStream<Source>::pop()
   result.push_back(Feature(x1,x2));
   return result;
 }
-
-
-
-
-///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
-
-template<class Source>
-bool
-FeatureProductStream<Source>::empty() const
-{
-  return (mSource.empty() || (mPos < 0));
-}
-
-template<class Source>
-void
-FeatureProductStream<Source>::build_current_feature_name()
-{
-  if (empty())
-    mCurrentFeatureName = "";
-  else
-    mCurrentFeatureName = Feature(mFeature, mSource[mPos])->name();  // Feature(a,b) builds interaction
-}
-
-
-template<class Source>
-void
-FeatureProductStream<Source>::increment_position()
-{
-  --mPos;
-  build_current_feature_name();
-}
-
-
-template<class Source>
-bool
-FeatureProductStream<Source>::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
-{
-  if ( mSource[mPos]->is_constant() ||                                            //  equiv to the internal feature
-       indicators_from_same_parent(mFeature, mSource[mPos]) ||                    //  save the effort 
-       found_feature_name_in_vector(mCurrentFeatureName, used, "model features")  //  skip if has been used already
-       )
-    return false;
-  return true;
-}
-
-
-template<class Source>
-typename std::vector<Feature>
-FeatureProductStream<Source>::pop()
-{
-  Feature  xd (mSource[mPos]);  // pop must increment counter *after* reading off top
-  debugging::debug("FPST",3) << name() << " stream making product of "
-			     << mFeature->name() << " x Source[" << mPos << "] (" << xd->name() << ").\n";
-  increment_position();
-  std::vector<Feature> result;
-  result.push_back(Feature(mFeature,xd));
-  
-  return(result);
-}
-
 
 
 //  Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream
@@ -254,7 +208,6 @@ int
   int num (0);
   for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
     num += mFastSource.size() - *it;
-  debugging::debug("CPST",4) << "Source sizes " << mSlowSource.size() << "," << mFastSource.size() << " give position " << mPos << " and " << num << " remaining.\n";
   return num;
 }
 
@@ -366,8 +319,75 @@ bool
 PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 { 
   Feature  feature (mSource[mPos]);
+  std::string name (feature->name());
+  debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << name << "'\n";
+  // avoid calibration variables, powers, interactions
+  if (feature->degree()>1)                              return false;
+  if (name.size() >= 4 && "cube" == name.substr(0,4))   return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6)) return false;
+  if (std::string::npos != name.find("Y_hat_") )        return false;
   return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
+
+
+
+
+//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
+
+template<class Source>
+std::string 
+NeighborhoodStream<Source>::feature_name() const 
+{ 
+  if(empty())
+    return ("");
+  else
+    return mSource[mPos]->name() + "[" + mIndexColumn->name() + "]";
+}
+
+template<class Source>
+std::vector<Feature>
+NeighborhoodStream<Source>::pop()                
+{ 
+  Feature x  (mSource[mPos]);
+  debugging::debug("NBDS",4) << "Stream " << name() << " making indexed feature from " <<  x->name() << std::endl;
+  increment_position();
+  FeatureVector result;
+  Feature ix (make_indexed_feature(x,mIndexColumn));
+  result.push_back(ix);
+  return result; 
+}
+
+template<class Source>
+void
+NeighborhoodStream<Source>::print_to(std::ostream& os)          const
+{
+  os << "Neighborhood feature stream " << name();
+  if (empty())
+    os << " is empty.";
+  else
+    os << " has " << number_remaining() << " features.";
+}
+
+template<class Source>
+bool
+NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
+{
+  Feature  feature (mSource[mPos]);
+  std::string name (feature->name());
+  debugging::debug("NBDS",4) << " Neighborhood stream is considering variable '" << name << "'\n";
+  if (name.size() >= 4 && "cube" == name.substr(0,4))                  // avoid calibration variables, powers
+    return false;
+  if (name.size() >= 6 && "square" == name.substr(0,6))
+    return false;
+  if (std::string::npos == name.find(mSignature))                      // must include the signature
+    return false;
+  if (std::string::npos != name.find(mIndexColumn->name()))            // avoid already-indexed variables
+    return false;
+  if (std::string::npos != name.find("Y_hat_") )
+    return false;
+  return ( (!feature->is_constant()) && (!feature->is_dummy()) );
+}
+
 
 
 ///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream

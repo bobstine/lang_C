@@ -51,16 +51,16 @@ write.the.data <- function() {
 	t.exclude <- sort( sample(all.times[-(1:3)],length(t.predict)))
 	t.include <- sort(setdiff(all.times, t.exclude))
 
-	# write to data directory
+	# write cv indicator, population to data directory
 	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
 	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); 
-	in.out[,t.include] <<- 1;
-	write.var("cv.indicator[in]", role = "context", in.out[,y.quarters]) 
-	
+	neiin.out[,t.include] <<- 1;
+	write.var("cv.indicator", role = "context", in.out[,y.quarters]) 
 	# check the sum
 	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
 
-
+	write.var("population", role="context", County$population[,x.quarters])
+	
 # --- write the response  (71-1 x n.eligible.counties)
 	cat("# response variable\n",file=the.manifest, append=TRUE)
 	y <<- cLog(as.vector(unlist(County$REPB60M[eligible.counties,y.quarters])))
@@ -74,27 +74,34 @@ write.the.data <- function() {
 	write.var("lag3_REPB60M",  c(rep(0,2*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
 	write.var("lag4_REPB60M",  c(rep(0,3*n.eligible.counties),y.lag)[1:length(y)], role="x", attr.str="stream LOCKED")
 
-# --- 5 more variables, all are lagged by write.county.var function
+
+# --- 16 more variables, all are lagged by write.county.var function
 	cat("# county variables \n",file=the.manifest, append=TRUE)
-	write.county.var(   "REAU",cLog(County$REAU        ),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var(  "UNEMP",cLog(County$unemployment),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var("POVERTY",cLog(County$poverty     ),attr.str="interact_with_parent quarter interact_with_parent period")
-	write.county.var("INPB60M",cLog(County$INPB60M     ),attr.str="interact_with_parent quarter interact_with_parent period")
+	var.names <- c("unemployment", "poverty", "income", "pop.dens", "INPB60M", "MTPB60M", "ATTDC",
+	               "RENARB", "REAU", "MTDTD", "MTNAB", "ATABB", "ATAU", "ATNB12", "ATNC", "BCNARB")
+	for(name in var.names) { write.county.var(toupper(name),cLog(County[[name]]),interact.with=c("quarter","period","division")) }
+
+#  Check C++ code in auction for neighborhood variable: leading values, mean should agree
+#  		x.per  <- as.matrix(cLog(County$unemployment[eligible.counties[temp],x.quarters]))
+#  		xv <- as.vector(x.per); xv[1:6]
+#  		mean(xv)
+
 
 # --- 6 spatial variables
 	temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
-	write.county.var(   "S_REAU",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_REAU",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
-	write.county.var(  "S_UNEMP",temp,attr.str="interact_with_parent quarter")
+	write.county.var(  "S_UNEMP",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
-	write.county.var("S_Poverty",temp,attr.str="interact_with_parent quarter")
+	write.county.var("S_Poverty",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
-	write.county.var(   "S_INPB60M",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_INPB60M",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
-	write.county.var(   "S_MTPB60M",temp,attr.str="interact_with_parent quarter")
+	write.county.var(   "S_MTPB60M",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$REPB60M), spatial.variable))
-	write.county.var(   "S_REPB60M",temp,attr.str="interact_with_parent quarter")
-
+	write.county.var(   "S_REPB60M",temp,interact.with=c("quarter","period","division"))
+	
+	
 # --- quarter indicators
 	cat("# time period indicators \n",file=the.manifest, append=TRUE)
 	for(q in 1:4) {
@@ -110,6 +117,24 @@ write.the.data <- function() {
 		x <- matrix(as.numeric(y.quarters >= q), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
 		write.var(name,x,role="x",attr.str=paste("stream time parent period category", q))
 	}
+
+
+
+# --------------------------------------------------------------------------------
+#  prequential variables
+# --------------------------------------------------------------------------------
+
+# --- test
+#     yy <- County$REPB60M[eligible.counties[1:10],]
+#     z <- t(apply(yy, 1, function(y) build.prequential.ar(y,p=1))); dim(z)
+#     i <- 1; plot(z[i,],type="l"); points(1:length(yy[i,]), yy[i,])
+
+# --- build predictions (takes a while)
+	y.hat <- t(apply(County$REPB60M[eligible.counties,], 1, function(y) build.prequential.ar(y,p=4)))
+	write.var("PREQ_Y_4",y.hat,role="x",attr.str="stream MAIN max_lag 2"))
+
+
+
 
 # --------------------------------------------------------------------------------
 #  write national time series out in streaming format into separate
@@ -167,13 +192,76 @@ write.the.data <- function() {
 # district/region indicators
 	cat("# region indicators \n",file=the.manifest, append=TRUE)
 
+	# --- most populous neighbor (self if its bigger than any neighbor or neighbor not eligible)
+	temp <- mapply(biggest.neighbor, eligible.counties)
+	temp <- match(temp, eligible.counties)  # map into indices into eligible.counties
+	temp[is.na(temp)] <- eligible.counties[which(is.na(temp))] # self-reference for the 9 not in eligible.counties
+	# --- offset so indexing works, noting that C is zero-based indexing whereas R is 1-based
+	x <- outer(temp-1, n.eligible.counties*(0:(length(y.quarters)-1)),FUN="+")
+	write.var("Pop_Neighbor",x,role="context") 
+	
+	# --- write the census division indicators
 	division <- County$division[eligible.counties]
 	for(d in unique(division)) {
 		name <- paste("Division_",d,sep="")
-		x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=TRUE)
+		x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=FALSE)
 		write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
 	}
+	
+	# --- write the population neighborhood indicators for 50 most populous counties
+	pop <- County$population[eligible.counties,71]
+	id <- order(-pop)[1:50]
+	nbd <- lapply(eligible.counties[id], function(i) {c(i, County$neighbors[[i]], County$cousins[[i]])})
+	# --- map of locations
+	# map("county", col="gray"); 
+	# for(i in 1:50) draw.county(County$name[nbd[[i]]], col="yellow")
+	# map("county", tolower(County$name[eligible.counties[id]]), exact=TRUE, add=TRUE, fill=TRUE, col="cyan")
+	for(i in 1:length(nbd)) {
+		n <- nbd[[i]];
+		name <- paste("Cty_",gsub("[ ,]","_",County$name[n[1]]),sep=""); cat(name,"\n")
+		v  <- rep(0,n.eligible.counties); 
+		idx  <- match(n, eligible.counties); idx <- idx[!is.na(idx)]
+		v[idx] <- 1
+		x <- matrix(v, nrow=n.eligible.counties,ncol=length(x.quarters), byrow=FALSE)
+		write.var(name,x,role="x",attr.str=paste("stream geography parent county category", i))
+	}
+	
+	# --- build indicators for sparse regions
+	nbd <- lapply(eligible.counties, function(i) {c(i, County$neighbors[[i]], County$cousins[[i]])})
+	#     got to have at least 15
+	nbd <- nbd[sapply(nbd,length)>15]
+	#     sort on pop
+	nbd.pop <- sapply(nbd, function(n) sum(County$population[n,70]))
+	nbd <- nbd[order(nbd.pop)]; nbd.pop <- sort(nbd.pop)
+	#     save and remove those with too much overlap
+	save <- vector("list",50)
+	save[1] <- list(nbd[[1]]); nbd <- nbd[-1]; nbd.pop <- nbd.pop[-1]
+	j <- 2;
+	while(j<=length(save)) {
+		all <- unique(unlist(save))
+		common <- sapply(nbd, function(n) length(intersect(all,n)))
+		k <- which(common<4)[1]
+		save[[j]] <- nbd[[k]]; nbd <- nbd[-k]; ndb.pop <- nbd.pop[-k]
+		j <- j+1;
+		}
+	# check populations
+	sapply(save, function(n) sum(County$population[n,70]))
+	k <- 1; County$name[save[[k]]]; p <- County$population[save[[k]]]; sum(p)
+	# map
+	# map("county", col="gray"); # slow drawing
+	# for(i in 1:length(save)) draw.county(County$name[save[[i]]], col="yellow")
+	for(i in 1:length(save)) {
+		n <- save[[i]];
+		name <- paste("SparseCty_",gsub("[ ,]","_",County$name[n[1]]),sep=""); cat(name,"\n")
+		v  <- rep(0,n.eligible.counties); 
+		idx  <- match(n, eligible.counties); idx <- idx[!is.na(idx)]
+		v[idx] <- 1
+		x <- matrix(v, nrow=n.eligible.counties,ncol=length(x.quarters), byrow=FALSE)
+		# share parent with other indicators so don't try to interact
+		write.var(name,x,role="x",attr.str=paste("stream geography parent county category", i+50))
+	}
 
+	
 }  # end of write.the.data
 
 

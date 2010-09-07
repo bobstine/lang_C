@@ -21,6 +21,8 @@
 
 namespace read_utils
 {
+  int ctoi(char c);
+  
   inline std::string trim_right(const std::string &source , const std::string& t = " ")
   {
     std::string str = source;
@@ -51,6 +53,18 @@ namespace read_utils
     return result;
   }
 
+  inline std::string remove_special_chars(std::string const& src, std::string const& sc)   // overwrites them with an x
+  {
+    std::string result = src;
+    for (std::string::iterator it=result.begin(); it != result.end(); ++it)
+      for (std::string::const_iterator ic=sc.begin(); ic != sc.end(); ++ic)
+	if (*it == *ic)
+	{ *it = '_';
+	  break;
+	}
+    return result;
+  }
+  
 // string stream io
 
   template <typename To, typename From>
@@ -85,8 +99,6 @@ namespace read_utils
     return y;
   }
 }
-
-
 
 // Read rest of current file line into c char string of indicated length
 

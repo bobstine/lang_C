@@ -52,7 +52,7 @@ int main(void)
   const double geoProb  = 0.6;
   const double geoShare = 0.5;
   
-  printf("   k  univ(k)  slow(k)  geo(k)   cauchy(k)   ell(k)   f-tresh(k) \n");
+  printf("   k  univ(k)  slowk(k)  geo(k)   cauchy(k)   ell(k)   f-tresh(k) \n");
   for (long k=1; k<11; ++k)
     printf("[%3ld] %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f \n",
            k,

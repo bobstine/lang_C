@@ -5,6 +5,7 @@
  A Column puts a name on a numerical range and the various statistics of that range.
  Access to properties of the column come via operator->.
 
+ 24 Aug 10 ... Add integer columns.
  27 Apr 10 ... Column streams to use an input stream rather than file; columns have a 'role'
  11 Nov 09 ... Add description field to allow attributes when reading stream format data.
  25 May 09 ... Better form of dynamic storage (see Coplein, p67-68)
@@ -21,14 +22,19 @@
 #include <assert.h>
 
 #include <iostream>
+#include <math.h>
 
 #include "read_utils.h"
 #include "range.h"
 #include "debug.h"
 
 
-
 class Column;
+class IntegerColumn;
+
+
+//     Double Column     Double Column     Double Column     Double Column     Double Column     Double Column     
+
 
 class ColumnData
 {
@@ -144,6 +150,7 @@ class Column
   
   ColumnData* operator->()                const { return mData; }
   
+  void        init_properties()                 { mData->init_properties(); }
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
 
  private:
@@ -259,5 +266,62 @@ insert_columns_from_file (std::string const& fileName, int ny,
 int
 insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
 			  std::back_insert_iterator< std::vector<Column> > it);
+
+
+
+
+//    Integer Columns     Integer Columns     Integer Columns     Integer Columns     Integer Columns     
+
+class IntegerColumnData
+{
+  friend class IntegerColumn;
+  
+ private:
+  std::string mName;
+  int mSize;
+  int *mBegin;
+  int *mEnd;
+  int mRefCount;
+  
+  ~IntegerColumnData()   { delete[] mBegin; }
+
+ IntegerColumnData(size_t n, std::string name = " ")  : mName(name), mSize(n), mBegin(new int[n]), mEnd(mBegin+n), mRefCount(1) { assert(mBegin != NULL); }
+  
+ public:
+  std::string     name()     const { return mName; }
+  int             size()     const { return mSize; }
+  int *           begin()    const { return mBegin; }
+  int *           end()      const { return mEnd; }
+};
+
+
+class IntegerColumn
+{
+ private:
+  IntegerColumnData       *mData; 
+
+ public:
+  ~IntegerColumn() { if(--mData->mRefCount <= 0) delete mData; }
+  
+ IntegerColumn()                                     : mData( new IntegerColumnData(0) ) {  }
+ IntegerColumn(Column const& c)                      : mData( new IntegerColumnData(c->size(),c->name()) ) { transfer_from_double(c->begin()); }
+ IntegerColumn(IntegerColumn const& c)               : mData(c.mData) { ++c.mData->mRefCount; }
+  
+  IntegerColumnData* operator->()                const { return mData; }
+
+  void print_to(std::ostream& os)                const;
+  
+ private:
+  void transfer_from_double (double *pDouble);
+};
+
+inline
+std::ostream&
+operator<<(std::ostream& os, IntegerColumn const& column)
+{
+  column.print_to(os);
+  return os;
+}
+
 
 #endif

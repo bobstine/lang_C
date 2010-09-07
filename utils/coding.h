@@ -87,6 +87,6 @@ double
 universalPDF (int k);                // k must be positive or you're hosed.
 
 double
-slowUniversalPDF (int k);            // skips over the initial five terms
+slowUniversalPDF (int k);            // skips over the initial two terms
 
 #endif

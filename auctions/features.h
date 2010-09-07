@@ -19,7 +19,7 @@
   Interaction feature
 
        The cross product of two other features, which also may
-       be interactions as well.
+       be interactions as well.  Automatically centers components.
 
   LinearCombination feature
 
@@ -88,7 +88,7 @@ class Feature
 
   //  linear combination
   Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
-   
+
   //  unary feature
   template<class Op>
     Feature(Op const& op, Feature const &x);
@@ -105,8 +105,19 @@ class Feature
 };
 
 
+
 typedef  std::vector<Feature>                 FeatureVector;
 
+FeatureVector
+features_with_name(std::string name, FeatureVector const& fv);
+
+FeatureVector
+powers_of_column_feature (Column const& col, std::vector<int> const& powers);
+  
+Feature
+make_indexed_feature (Feature const& f, IntegerColumn const& i);
+
+		       
 
 inline
 std::ostream&
@@ -150,6 +161,7 @@ class ColumnFeature : public FeatureABC
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn->name(); }
   std::string operator_name()  const { return ""; }
+  int         degree()         const { return 1; }
   Arguments   arguments()      const {        Arguments a; a[name()] = 1; return a; }
   
   Column      column()         const { return mColumn; }
@@ -184,6 +196,7 @@ class LagFeature : public FeatureABC
   std::string class_name()     const { return "LagFeature"; }
   std::string name()           const { return "Lag(" + mFeature->name() + ",t-" + mLagStr +")"; }
   std::string operator_name()  const { return "[-" + mLagStr + "]"; }
+  int         degree()         const { return mFeature->degree(); }
   Arguments   arguments()      const { return mFeature->arguments(); }
   
   int         lag()            const { return mLag; }
@@ -202,38 +215,36 @@ class LagFeature : public FeatureABC
 };
   
 
-
 //  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature  InteractionFeature
 
 class InteractionFeature : public FeatureABC
 {
   Feature      mFeature1;
   Feature      mFeature2;
+  double       mCtr1, mCtr2;
   std::string  mName;
 
  public:
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2) { make_name();  }   // names built in using map to define canonical order
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mCtr1(0.0), mCtr2(0.0) { center_features(); make_name();  }   // names built in using map to define canonical order
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
   std::string operator_name() const { return "*"; }
+  int         degree()        const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
   
-  Iterator    begin()         const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(std::multiplies<double>(),
+  Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->begin(),
                                                                                           mFeature2->begin())); }
-  Iterator    end()           const { return make_anonymous_iterator(
-                                                                     make_binary_iterator(std::multiplies<double>(),
+  Iterator    end()           const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->end(),
                                                                                           mFeature2->end())); }
-  Range       range()         const { return make_anonymous_range (
-                                                                   make_binary_range(std::multiplies<double>(),
-                                                                                     mFeature1->range(),
-                                                                                     mFeature2->range())); }
+  Range       range()         const { return make_anonymous_range   (make_binary_range(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+										       mFeature1->range(),
+										       mFeature2->range())); }
   double      average()       const { return range_stats::average(range(), size()); }
   double      center()        const { return mFeature1->center()*mFeature2->center(); }
   double      scale()         const { return mFeature1->scale()*mFeature2->scale(); }
@@ -242,6 +253,7 @@ class InteractionFeature : public FeatureABC
   void        write_to (std::ostream& os) const;
 
  private:
+  void        center_features(); 
   void        make_name();
 };
 
@@ -266,6 +278,7 @@ class LinearCombinationFeature : public FeatureABC
   std::string class_name()    const { return "LinearCombinationFeature"; }
   std::string name()          const { return mName; }
   std::string long_name()     const;
+  int         degree()        const { return (int) mFeatures.size(); }
   Arguments   arguments()     const {        Arguments a; a[name()]=1; return a;}
   
   Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
@@ -304,6 +317,7 @@ class UnaryFeature : public FeatureABC
 
   std::string class_name() const { return "UnaryFeature"; }
   std::string name()       const { return operator_traits<Op>::name() + "[" + mFeature->name() + "]"; }
+  int         degree()     const { return mFeature->degree(); }
   Arguments   arguments()  const;
   
   Iterator    begin()      const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->begin()));    }
@@ -318,11 +332,6 @@ class UnaryFeature : public FeatureABC
   
   void        write_to (std::ostream& os) const;
 };
-
-
-std::vector<Feature>
-powers_of_column_feature (Column const& col, std::vector<int> const& powers);
-  
 
 
 ////  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature  BinaryFeature
@@ -340,6 +349,7 @@ class BinaryFeature : public FeatureABC
 
   std::string class_name()  const { return "BinaryFeature"; }
   std::string name()        const { return operator_traits<Op>::name() + "[ (" + mFeature1->name() + ")" + operator_traits<Op>::symbol() + "(" + mFeature2->name() + ") ]"; }
+  int         degree()      const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()   const { return Arguments(); }
   
   Iterator    begin()       const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->begin(),mFeature2->begin())); }

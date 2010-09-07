@@ -97,7 +97,8 @@ ColumnStream::read_next_column()
   mCurrentName = "";
   if(!mStream.eof())
   { getline(mStream, mCurrentName);
-    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));
+    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));    // no embedded blanks
+    mCurrentName = read_utils::remove_special_chars(mCurrentName, "*^");     // no special chars
   }
   if (mCurrentName.empty())
   { debugging::debug("CLMN",4) << "Stream '" << mStreamName << "' now empty.\n";
@@ -136,7 +137,7 @@ insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap)
   while(true) 
   { Column col = *colStream;
     if(col->size() == 0) break;
-    debugging::debug("CLMN",4) << "Reading column " << col->name() << " with description " << col->description()
+    debugging::debug("CLMN",3) << "Reading column " << col->name() << " with description " << col->description()
 			       << "  [0]=" << *(col->begin()) << "  [n]=" << *(col->end()-1) << std::endl;
     ++colStream;
     std::string role (col->role());
@@ -330,3 +331,30 @@ insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
   return (int) names.size();
 }
 
+
+
+//   IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      
+
+void
+IntegerColumn::print_to(std::ostream &os) const
+{
+  int counter (mData->size());
+  std::string more ("");
+  // print up to 10 elements
+  if (counter > 10)
+  { counter = 10;
+    more = "...";
+  }
+  os << mData->name() << "[" << mData->size() << "]";
+  int * pInt (mData->begin());
+  while(counter--) os << " " << *pInt++;
+  os << more;
+}
+
+void
+IntegerColumn::transfer_from_double (double *pDouble)
+{
+  int counter (mData->size());
+  int *pDest  (mData->begin()); 
+  while(counter--) *pDest++ = floor(*pDouble++);
+}

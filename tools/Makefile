@@ -13,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O2 -DNDEBUG
+# OPT = -O3 -DNDEBUG
 
 USES = ranges utils random
 
@@ -48,6 +48,14 @@ trendata_build_nation: trendata_build_nation.o trendata.h
 bernoulli: bernoulli.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
+
+
+# the last option is dying...
+process_608: process_grades
+	/Users/bob/C/tools/process_grades -f/Users/bob/courses/stat608/grades/2010/ag238001.sdf -i29 -a38 -q44
+
+process_grades: process_grades.o
+	$(GCC) process_grades.o $(LDLIBS) -o $@
 
 
 

@@ -99,6 +99,8 @@ parse_column_format(std::string const& dataFileName, std::ostream&);
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int extraCases);
 
+void
+round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
 
 
 int
@@ -106,7 +108,7 @@ main(int argc, char** argv)
 {
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
-  
+
   debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
 
   // build vector of columns from file; set default parameter values
@@ -218,86 +220,97 @@ main(int argc, char** argv)
     }
 
   // --- build model and initialize auction with csv stream for tracking progress
+  std::string calibrationSignature ("Y_hat_");
 #ifdef LINEAR_MODEL
   LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
+  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
 #else
   // --- build logisitic model and auction
   LogisticModel <gslData> theRegr(theData, protection, blockSize);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, blockSize, progressStream);
+  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, calSig, blockSize, progressStream);
 #endif
 
+
+  // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
   typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
+  typedef  FiniteStream                                    FStream;
+  typedef  InteractionStream < FeatureVector >             IStream;
+
   // parasitic experts
-  theAuction.add_expert(Expert(parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,
+			       UniversalBidder<IStream>(),
+			       make_interaction_stream("Interact within accept", theAuction.model_features(), true)));    // include quad terms
+    
+  theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
+			       UniversalBidder<CPStream>(),
+			       make_cross_product_stream("Interact accept x reject",
+							 theAuction.model_features(), theAuction.rejected_features()) ));
+
+  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream<FeatureVector> >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
 
-  theAuction.add_expert(Expert(parasite, nContextCases, 0,
-			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Skipped-feature interactions",
-							 theAuction.model_features(), theAuction.rejected_features())
-			       ));
 
-
-  // add a source column and interaction expert for each column with role=x
-  { std::vector<std::string> streamNames (featureSrc.stream_names());
-    for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
-    { if (*it == "LOCKED")
-      { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
-	streamNames.erase(it);
-	break;
-      }
-    }
-    debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
-    FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size());   // spreads wealth among streams
-    typedef  FiniteStream                        FStream;
-    typedef  InteractionStream < FeatureVector > IStream;
-    for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",2) << "Allocating alpha $" << alphaShare(s) << " to the source experts for stream " << streamNames[s] << std::endl;	
-      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.52,      // priority, alpha
-				   UniversalBidder<FStream>(), 
-				   make_finite_stream(streamNames[s],
-						      featureSrc.features_with_attribute("stream",
-											 streamNames[s])) // 2 cycles through these features
-				   ));
-      theAuction.add_expert(Expert(source, nContextCases, alphaShare(s) * 0.48,     // slightly less to avoid tie 
-				   UniversalBoundedBidder<IStream>(),
-				   make_interaction_stream("Interact " + streamNames[s],
-							   featureSrc.features_with_attribute("stream",streamNames[s]),
-							   false)                   // skip squared terms
+  // find neighborhood feature
+  IntegerColumn indices();
+  for(unsigned int i=0; i<cColumns.size(); ++i)
+  { if (cColumns[i]->name() == "Pop_Neighbor")
+    { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
+      IntegerColumn indices(cColumns[i]);
+      theAuction.add_expert(Expert("Neighborhood", parasite, nContextCases, 0,
+				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
+				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), ".county", indices)
 				   ));
     }
   }
 
+  // add a source and interaction expert for each stream with role=x
+  std::vector<std::string> streamNames (featureSrc.stream_names());
+  for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
+  { if (*it == "LOCKED")
+    { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
+      streamNames.erase(it);
+      break;
+    }
+  }
+  debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
+
+  // allocate alpha over input source streams
+  //     this version uses precedence   FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size()); and replace alphaShare -> alphaShare(s)
+  double   alphaShare (totalAlphaToSpend/streamNames.size());
+  // interaction streams need a reference (since source may be dynamic)
+  std::vector< FeatureVector> featureStreams(streamNames.size());
+  for (int s=0; s < (int)streamNames.size(); ++s)
+  { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
+    featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
+    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // priority, alpha
+				 UniversalBidder<FStream>(), 
+				 make_finite_stream(streamNames[s],featureStreams[s])));
+    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
+				 UniversalBoundedBidder<IStream>(),
+				 make_interaction_stream("Interactions within " + streamNames[s],
+							 featureStreams[s], true)                             // include squared terms
+				 ));
+  }
+
   //  Calibration expert
   if(splineDF > 0)
-  { std::string signature("Y_hat_");
-    theAuction.add_expert(Expert(calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(5, signature),                           // delay between bursts
-				 make_fit_stream(theRegr, splineDF, signature, nContextCases)));
+  { 
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                     // no skipping, lots of alpha
+				 FitBidder(0.000005, calibrationSignature),         // calibrate p-value
+				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
   }
   
     
 
   //   Principle component type features
+
   /*
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, GSL_adapter<gslPrincipalComponents> > SS_PC;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
-			       UniversalBidder<SS_PC>(),
-			       make_subspace_stream("PCA(res)", 
-						    theAuction.rejected_features(),
-						    20,                            // bundle size  
-						    FeatureAcceptancePredicate(),  //                    0=use rule, true=standardize
-						    GSL_adapter<gslPrincipalComponents>(gslPrincipalComponents(0,     true), nContextCases)
-						    )));
-  */
-  
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<pca> > SS_SVD;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
 			       UniversalBidder<SS_SVD>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
@@ -307,7 +320,7 @@ main(int argc, char** argv)
 						    )));
 
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
-  theAuction.add_expert(Expert(source, nContextCases, totalAlphaToSpend/6,
+  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),
 			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(), 
@@ -315,30 +328,28 @@ main(int argc, char** argv)
 						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
 						    Eigen_adapter<rkhs<Kernel::Radial> >(rkhs<Kernel::Radial>(3, true),nContextCases)    
 						    )));
-
+  */
   
   // ----------------------   run the auction with output to file  ---------------------------------
+  int round = 0;
   {
-    int round = 0;
+    FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
+    if(lockIn.size() > 0)
+    { theAuction.add_initial_features(lockIn);
+      debug("AUCT",3) << theAuction << std::endl << std::endl;
+    }
+    theAuction.prepare_to_start_auction();
+    const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
+    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
-      FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
-      if(lockIn.size() > 0)
-      { theAuction.add_initial_features(lockIn);
+      ++round;
+      if (theAuction.auction_next_feature())                     // true when adds predictor
+      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      theAuction.prepare_to_start_auction();
-      const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
-      while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
-      {
-	++round;
-	if (theAuction.auction_next_feature())                     // true when adds predictor
-	{ debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
-	  debug("AUCT",3) << theAuction << std::endl << std::endl;
-	}
-	progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
-      }
-      debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+      progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
+    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
   }
   
   // ----------------------   write summary and data to various files  ---------------------------------

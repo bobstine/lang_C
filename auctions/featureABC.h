@@ -46,16 +46,16 @@ class FeatureABC
   Attributes     mAttributes;
   bool           mTried;          // Has this feature been tried in the model?
   bool           mInModel;        // Is this feature a predictor in the model?
-  double         mEntryPValue;    // What p-value did the feature get?
+  double         mEntryBid;       // Bid on the feature when offered in auction
   
  public:
   virtual ~FeatureABC() { }
   
   FeatureABC (int size)
-    : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { }
+    : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { }
 
   FeatureABC (std::istream& is)
-    : mRefCount(1), mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryPValue(0.0) { read_from(is); }
+    : mRefCount(1), mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
 
   bool                operator== (FeatureABC const* f)          const { return name() == f->name(); }
 
@@ -71,11 +71,12 @@ class FeatureABC
   
   bool                was_tried_in_model ()                     const { return mTried; }
   bool                is_used_in_model ()                       const { return mInModel; }
-  double              entry_p_value ()                          const { return mEntryPValue; }
-  void                set_model_results(bool used, double pval)       { mTried=true; mInModel=used; mEntryPValue=pval; }
+  double              entry_bid ()                              const { return mEntryBid; }
+  void                set_model_results(bool used, double bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
 
   virtual std::string class_name()                              const { return "FeatureABC"; }
   virtual std::string name()                                    const = 0;                 // pure virtual, must maintain const
+  virtual int         degree()                                  const = 0;                 // number of continuent features, eg 2 for simple interaction
   virtual Arguments   arguments()                               const = 0;                 //
   
   virtual Iterator    begin ()                                  const = 0;                 //

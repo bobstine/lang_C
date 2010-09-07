@@ -20,17 +20,21 @@ main ()
   std::string name2("x2");
   double*     x1 = new double[n];
   double*     x2 = new double[n];
+  double*     ii = new double[n];
   for (int i=0; i<n; ++i)
   { x1[i] = i;
     x2[i] = 2 * i;
+    ii[i] = n-1-i;
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
-  // make three columns
+  // make four columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
   Column  x2Column  (name2.c_str(), "x2 column",n, x2);
-  std::cout << xColumn1 << std::endl << x2Column << std::endl;
+  Column  iiColumn  ("Indices", "ii", n, ii);
+  IntegerColumn indices (iiColumn);
+  std::cout << xColumn1 << std::endl << x2Column << std::endl << iiColumn << std::endl << indices << std::endl;
   
   
   // feature source
@@ -58,16 +62,24 @@ main ()
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
 
-  // a lag feature
-  std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
-  Feature lag2  (x,2);
-  Feature lag4  (x,4);
-  Feature lag13 (x,1,3);
-  Feature lag22 (x,2,2);
-  std::cout << "TEST: lag  2  ---> " << lag2  << std::endl;
-  std::cout << "TEST: lag  4  ---> " << lag4  << std::endl;
-  std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
-  std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
+  { // find name in feature vector
+    FeatureVector fv;
+    fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
+    std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
+    std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
+  }
+  
+  { // a lag feature
+    std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
+    Feature lag2  (x,2);
+    Feature lag4  (x,4);
+    Feature lag13 (x,1,3);
+    Feature lag22 (x,2,2);
+    std::cout << "TEST: lag  2  ---> " << lag2  << std::endl;
+    std::cout << "TEST: lag  4  ---> " << lag4  << std::endl;
+    std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
+    std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
+  }
   
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
@@ -78,6 +90,15 @@ main ()
   // make an interaction with the unary feature
   Feature prod (xx2, xSq);
   std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
+
+  { // indexed feature
+    std::cout << "\nTEST: indexed features (reverse):\n"
+	      << make_indexed_feature(x   , indices) << std::endl;
+    std::cout << make_indexed_feature(xSq , indices) << std::endl;
+    std::cout << make_indexed_feature(prod, indices) << std::endl;
+    std::cout << std::endl;
+  }
+  
 
   // make an interaction
   Feature inter (x, dup);

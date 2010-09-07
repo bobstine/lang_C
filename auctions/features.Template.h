@@ -15,7 +15,6 @@ Feature::Feature(Op const& op, Feature const &x1, Feature const& x2)
 }
 
 
-
 //  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature
 
 
