@@ -131,7 +131,7 @@ write.the.data <- function() {
 
 # --- build predictions (takes a while)
 	y.hat <- t(apply(County$REPB60M[eligible.counties,], 1, function(y) build.prequential.ar(y,p=4)))
-	write.var("PREQ_Y_4",y.hat,role="x",attr.str="stream MAIN max_lag 2"))
+	write.var("PREQ_Y_4",y.hat,role="x",attr.str="stream MAIN max_lag 2")
 
 
 

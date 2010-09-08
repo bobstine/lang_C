@@ -383,7 +383,7 @@ template <class Data, class Engine>
     lambda = sqrt(ssx/mWhiteF);
     debug("GSLR",3) << " Column " << j << " [sandwich F=" << mWhiteF << ", ssx=" << ssx
 		    << "] --> shrinkage diagonal lambda=" << lambda << std::endl;
-    gsl_vector_set(mShrinkage,j,lambda);
+    gsl_vector_set(mShrinkage,j, lambda);        // insert 0 in place of lambda to avoid shrinkage for testing residual SS, prediction SS
   }
 }
 
@@ -405,7 +405,7 @@ gslRegression<Data,Engine>::qr_decomposition (int firstColumn, int numberColumns
   gsl_matrix_set_zero(&(gsl_matrix_submatrix(mQR, mN,0,    newQ,newQ)).matrix);
   QR   =              &(gsl_matrix_submatrix(mQR,  0,0, mN+newQ,newQ)).matrix;
   for(int j=0; j<newQ; ++j)
-    gsl_matrix_set(QR,mN+j,j, gsl_vector_get(mShrinkage,j));      // insert 0 times gsl_vector_get to avoid shrinkage for testing residual SS, prediction SS
+    gsl_matrix_set(QR,mN+j,j, gsl_vector_get(mShrinkage,j));
   // factor matrix
   int status (0);
   gsl_vector *tau  (&gsl_vector_subvector(mTau, 0, newQ).vector);

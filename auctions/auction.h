@@ -40,7 +40,7 @@ private:
   std::string         mCalibrationSignature;
   int                 mRound;          
   std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
-  int                 mNumInitialExperts; // for building csv file  (set when prior to csv header is written)
+  int                 mNumInitialExperts; // for building results file  (set when prior to header is written)
   ExpertVector        mExperts;
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
@@ -85,7 +85,7 @@ private:
   void write_model_data_to       (std::ostream& os)                      const;
 
  private:
-  void                     write_csv_header_to_progress_stream ()                        const;
+  void                     write_header_to_progress_stream ()                            const;
 
   int                      purge_empty_experts();
   std::pair<Expert,double> collect_bids();

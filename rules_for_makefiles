@@ -10,7 +10,7 @@ CHOME = /Users/bob/C/
 #	$@ refers to current target name
 #	$? are more recent dependencies
 #	$< is name of the dependency (as in rules with % matching) 
-#	$* matches the stem of a matched dependency
+#	$* matches the stem of a matched dependency (ie, thing matching %)
 #
 #	Rules	The `target'.c files are automatically included as dependency.
 #		The wildcard `*' does not expand when used in dependencies.

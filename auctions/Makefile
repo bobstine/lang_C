@@ -70,20 +70,52 @@ credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/data      -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
 
+# in case cut..cut -f50-57 progress.csv > ss$*.csv
+short_credit_%: auction.test short_cv%.data
+	./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 400 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
+	cd $(resultpath); rm -f short_ss$*.csv; cp progress.csv short_ss$*.csv
+
+credit_%: auction.test cv%.data
+	./auction.test -f data/credit/auction.data/data -o data/credit/ -r 1000 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
+	cd $(resultpath); rm -f ss$*.csv; cp progress.csv ss$*.csv
+
+#            random seeds for generating cv files that define the runs
+seed1 = 4675
+seed2 = 345
+seed3 = 5634
+seed4 = 2639
+seed5 = 4675
+
+datapath = /Users/bob/C/auctions/data/credit/auction.data/
+resultpath = /Users/bob/C/auctions/data/credit/
+
+cv%.data: 
+	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
+	cd $(datapath); rm -f data; ./index.sh > data
+
+short_cv%.data: 
+	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
+	cd $(datapath); rm -f short.dat; ./short.sh > short.dat
+
+
+
 # ---  ann arbor models  -----------------------------------------------------------------------------
 
 anes_run: auction.test
 	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
 
 
+
 # ---  dean models  ---------------------------------------------------------------------------------
 #                         Note: run the index file to put results into a file named "data"
 #
+
 theher_run: auction.test
 	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
 
 
 
+# ---  miscellaneous test applications  -------------------------------------------------------------
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0

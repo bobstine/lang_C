@@ -50,6 +50,18 @@ bernoulli: bernoulli.o
 
 
 
+# random CV indicator
+random_indicator: random_indicator.o
+	$(GCC) random_indicator.o $(LDLIBS) -o $@
+
+doit: random_indicator
+	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s1772
+	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s345
+	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s5634
+	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s2639
+	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s4675
+
+
 # the last option is dying...
 process_608: process_grades
 	/Users/bob/C/tools/process_grades -f/Users/bob/courses/stat608/grades/2010/ag238001.sdf -i29 -a38 -q44

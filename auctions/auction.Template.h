@@ -66,18 +66,18 @@ Auction<ModelClass>::add_initial_features (FeatureVector const& f)
 
 template <class Model>
 void
-Auction<Model>::write_csv_header_to_progress_stream () const
+Auction<Model>::write_header_to_progress_stream () const
 {
-  mProgressStream << "Round, Time, Goodness of Fit, Total Alpha  ";
+  mProgressStream << "Round\tTime\tGoodness of Fit\tTotal Alpha";
   for (int b=0; b<number_of_experts(); ++b)
-    mProgressStream << ", " << mExperts[b]->name() << " Expert, Alpha, Current Bid";
-  mProgressStream << ", Winning Expert, Winning Bid, p value, Variable, Outcome, Payoff, Res SS, CVSS" << std::endl;
+    mProgressStream << "\t" << mExperts[b]->name() << "Expert\tAlpha\tCurrent Bid";
+  mProgressStream << "\tWinning Expert\tWinning Bid\tp value\tVariable\tOutcome\tPayoff\tRes SS\tCVSS" << std::endl;
   // initial conditions
   std::pair<double,double> ss =  mModel.sums_of_squares();
-  mProgressStream << " , , ,";
+  mProgressStream << "\t\t\t";
   for (int b=0; b<number_of_experts(); ++b)
-    mProgressStream << ",,, ";
-  mProgressStream << ", , , , , , , " << ss.first << "," << ss.second << std::endl;
+    mProgressStream << "\t\t\t";
+  mProgressStream << "\t\t\t\t\t\t\t" << ss.first << "\t" << ss.second << std::endl;
 }
 
 
@@ -88,7 +88,7 @@ Auction<ModelClass>::prepare_to_start_auction ()
   debug("AUCT",3) << "Preparing to run the auction.\n";
   assert (mRound == 0);
   mNumInitialExperts = number_of_experts();
-  if(mProgressStream) write_csv_header_to_progress_stream ();
+  if(mProgressStream) write_header_to_progress_stream ();
 }
 
   
@@ -129,7 +129,7 @@ Auction<ModelClass>::auction_next_feature ()
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (mProgressStream)
-    mProgressStream << ", " << result.second << ", \"" << remove_comma(features[0]->name()) << "\"";
+    mProgressStream << "\t" << result.second << "\t" << remove_comma(features[0]->name());
   // report bid result
   double amount;
   bool accepted (result.second < afterTaxBid);
@@ -150,14 +150,14 @@ Auction<ModelClass>::auction_next_feature ()
   { for(std::vector<Expert>::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
       (*it)->model_adds_current_variable();
     amount = pay_winning_expert(expert, features);                          // installs experts as needed
-    if (mProgressStream)  mProgressStream << ",\"" << remove_comma(features[0]->name()) << "\"," << amount;
+    if (mProgressStream)  mProgressStream << "\t" << remove_comma(features[0]->name()) << "\t" << amount;
   }
   else
   { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
-    if (mProgressStream)  mProgressStream << ", ," << amount;
+    if (mProgressStream)  mProgressStream << "\t\t" << amount;
   }
   std::pair<double,double> rss (mModel.sums_of_squares());                  // resid ss, cv ss
-  if (mProgressStream) mProgressStream << "," << rss.first << "," << rss.second;
+  if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second;
   return accepted;
 }
 
@@ -205,9 +205,10 @@ Auction<ModelClass>::collect_bids ()
   if (mProgressStream)  // write time stamp info
   { const time_t tmpTime (time(0));
     std::string timeStr (asctime(localtime(&tmpTime)));
-    mProgressStream << mRound << ", " << timeStr.substr(0,timeStr.size()-5)
-		    << ", " << model_goodness_of_fit()
-		    << ", " << total_expert_alpha();
+    mProgressStream << mRound
+		    << "\t" << timeStr.substr(0,timeStr.size()-5)
+		    << "\t" << model_goodness_of_fit()
+		    << "\t" << total_expert_alpha();
   }
   Expert         winningExpert,    priorityExpert;
   double         highBid (-7.7),   priorityBid (0.0);
@@ -218,9 +219,9 @@ Auction<ModelClass>::collect_bids ()
     if (mProgressStream)
       if (iExpert < mNumInitialExperts)                   // only track output for initial experts
       {	if (bid > 0)
-	  mProgressStream << ", \""    << remove_comma((*it)->feature_name()) << "\", " << (*it)->alpha() << ", " << bid; 
+	  mProgressStream << "\t"    << remove_comma((*it)->feature_name()) << "\t" << (*it)->alpha() << "\t" << bid; 
 	else
-	  mProgressStream << ",  , "                                                    << (*it)->alpha() << ", " << bid;
+	  mProgressStream << "\t\t"                                                 << (*it)->alpha() << "\t" << bid;
       }
     if (bid > highBid)
     { highBid = bid;
@@ -237,7 +238,7 @@ Auction<ModelClass>::collect_bids ()
     debug("AUCT",3) << "Priority bidder takes bid " << highBid << std::endl;
   }
   if(mProgressStream)
-    mProgressStream << "," << remove_comma(winningExpert->name()) << "," << highBid;
+    mProgressStream << "\t" << remove_comma(winningExpert->name()) << "\t" << highBid;
   winningExpert->bid_accepted();                     // inform experts whether win/lose auction
   for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
     if ((*it) != winningExpert) (*it)->bid_declined();
@@ -320,7 +321,9 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 			       make_feature_product_stream("model feature interact", *f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/(1+spawned.size());                                      // save share for global interaction expert
       if(mExperts[0]->name() == "In/In")
+      { debugging::debug("AUCT", 3) << "Assigning alpha " << alpha << " to In/In interaction expert and " << spawned.size() << " spawned experts.\n";
 	mExperts[0]->increment_alpha(alpha);                                             // global expert in first slot
+      }
       else
 	std::cerr << "ERROR: Interaction error not located at head of expert vector in auction.\n";
       for(std::vector<Expert>::const_iterator eit=spawned.begin(); eit != spawned.end(); ++eit)
