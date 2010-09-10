@@ -62,7 +62,7 @@ main()
 
     fs.print_features_to(std::cout); std::cout << std::endl;
   }
-  
+  /*  
   std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
   // test dynamic cross-product stream
   typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
@@ -115,7 +115,7 @@ main()
   { std::vector<Feature> fv (cp.pop());
     std::cout << "Popped feature " << fv[0] << std::endl;
   }
-
+  */
   std::cout << "\n\nDONE:\n";
   return 0;
 }

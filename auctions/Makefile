@@ -16,11 +16,11 @@ PROJECT_NAME = auction
 
 # lose all auction output if compile with DNDEBUG
 # OPT      = -O3 -DNDEBUG
-OPT      = -O2
+OPT      =  -DTHREADED
 
 USES = gsl_tools eigen spline ranges random utils 
 
-EXTERNAL_USES = gsl gslcblas
+EXTERNAL_USES = gsl gslcblas boost_thread
 
 ###########################################################################
 #
@@ -28,7 +28,7 @@ EXTERNAL_USES = gsl gslcblas
 #
 ###########################################################################
 
-level_0   = featureABC.o       bidders.o
+level_0   = featureABC.o       bidders.o  threaded.o
 level_1   = features.o
 level_2   = adapter.o          feature_streams.o
 level_3   = experts.o
@@ -70,7 +70,6 @@ credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/data      -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
 
-# in case cut..cut -f50-57 progress.csv > ss$*.csv
 short_credit_%: auction.test short_cv%.data
 	./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 400 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 	cd $(resultpath); rm -f short_ss$*.csv; cp progress.csv short_ss$*.csv

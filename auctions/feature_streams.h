@@ -49,11 +49,13 @@
     Lag              lags of a given feature
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
-
   
 */
 
 #include "features.h"
+#ifdef THREADED
+#include "threaded.h"
+#endif
 
 // polynomial
 #include "function_utils.h"
@@ -85,11 +87,13 @@
 */
   
 
+#ifndef THREADED
+
 template<class Stream>
 class RegulatedStream: public Stream
 {
 public:
-  RegulatedStream(Stream const& s): Stream(s) {}
+  RegulatedStream(Stream const& s): Stream(s) { }
   
   bool has_feature (FeatureVector const& used, FeatureVector const& skipped)
   {
@@ -102,8 +106,40 @@ public:
     debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
     return false;
   }
-
 };
+
+#else
+
+template<class Stream>
+class RegulatedStream: public Stream
+{  
+private:
+  Threaded< RegulatedStream<Stream> > m_thread;
+
+public:
+  RegulatedStream(Stream const& s)  : Stream(s), m_thread() { }
+  
+  bool has_feature (FeatureVector const& used, FeatureVector const& skipped)
+  {
+    while(m_thread.done() && !Stream::empty())
+    {
+      if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
+	return true;
+      else
+	m_thread(this);
+    }
+    debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
+    return false;
+  }
+
+  void
+  operator()()
+  {
+    Stream::increment_position();
+  }
+};
+#endif
+
 
 
 

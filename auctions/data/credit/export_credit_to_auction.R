@@ -129,9 +129,17 @@ write.the.data <- function() {
 #     z <- t(apply(yy, 1, function(y) build.prequential.ar(y,p=1))); dim(z)
 #     i <- 1; plot(z[i,],type="l"); points(1:length(yy[i,]), yy[i,])
 
-# --- build predictions (takes a while)
-	y.hat <- t(apply(County$REPB60M[eligible.counties,], 1, function(y) build.prequential.ar(y,p=4)))
-	write.var("PREQ_Y_4",y.hat,role="x",attr.str="stream MAIN max_lag 2")
+# --- recover from data file, match to R array dimension
+#     y.hat <- scan("/Users/bob/C/auctions/data/credit/auction.data/PREQ_Y_4")
+#     y.hat <- cbind(rep(0,n.eligible.counties),matrix(y.hat,nrow=n.eligible.counties))
+#     check recovered sequence; only missing the first one
+#     tt <- build.prequential.ar(cLog(unlist(County$REPB60M[eligible.counties[1],])))
+#     abs(tt-y.hat[1,])
+      
+      
+# --- build predictions on log scale (takes a while); align to use the y.quarters
+	y.hat<- t(apply(cLog(County$REPB60M[eligible.counties,]),1, function(y) build.prequential.ar(y,p=4)))
+	write.var("PREQ_Y_4",y.hat[,y.quarters],role="x",attr.str="stream MAIN max_lag 4")
 
 
 
