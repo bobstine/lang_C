@@ -16,7 +16,7 @@ trim_string(std::string const& str)
   return result;
 }
 
-
+ 
 int main()
 {
   std::string line;

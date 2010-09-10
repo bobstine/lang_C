@@ -16,7 +16,8 @@ PROJECT_NAME = auction
 
 # lose all auction output if compile with DNDEBUG
 # OPT      = -O3 -DNDEBUG
-OPT      =  -DTHREADED
+
+# OPT      =  -DTHREADED
 
 USES = gsl_tools eigen spline ranges random utils 
 
