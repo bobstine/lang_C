@@ -1,7 +1,7 @@
 //  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out
 
 
-#include "threaded.Template.h"
+#include "threaded.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //

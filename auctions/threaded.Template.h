@@ -1,8 +1,5 @@
 //  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out
 
-
-#include "threaded.h"
-
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  The key variable here is m_done.

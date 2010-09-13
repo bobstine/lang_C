@@ -3,7 +3,7 @@ include ../c_flags
 default: auction.test
 
 ../c_flags: 
-	cp ../c_flags.sample ../c_flags
+	cp ~/dot_files/c_flags.pb ../c_flags
 
 
 ###########################################################################
