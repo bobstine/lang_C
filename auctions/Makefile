@@ -84,10 +84,13 @@ seed1 = 4675
 seed2 = 345
 seed3 = 5634
 seed4 = 2639
-seed5 = 4675
+seed5 = 3154
 
 datapath = /Users/bob/C/auctions/data/credit/auction.data/
 resultpath = /Users/bob/C/auctions/data/credit/
+
+cv%.indicator: 
+	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
 
 cv%.data: 
 	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
