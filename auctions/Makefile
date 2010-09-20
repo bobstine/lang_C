@@ -92,6 +92,9 @@ resultpath = /Users/bob/C/auctions/data/credit/
 cv%.indicator: 
 	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
 
+cv%.indicator: 
+	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b1 -s$(seed$*) > cv$*.indicator
+
 cv%.data: 
 	/Users/bob/C/tools/random_indicator -p8 -n62 -c54 -b2886 -s$(seed$*) > $(datapath)cv.indicator\[in\]
 	cd $(datapath); rm -f data; ./index.sh > data
