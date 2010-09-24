@@ -25,7 +25,7 @@ EXTERNAL_USES =
 #
 ###########################################################################
 
-level_0   = eigen_svd.o
+level_0   = eigen_svd.o  regression.o
 
 
 ############################################################################
@@ -43,10 +43,4 @@ rand_projection.o: rand_projection.cc
 rand_projection: rand_projection.o eigen_svd.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
-
-regression.o: regression.cc 
-	$(GCC) $(CFLAGS) -std=c++0x -c $^ -o $@
-
-regression: regression.o
-	$(GCC) $^ $(LDLIBS)  -o  $@
 

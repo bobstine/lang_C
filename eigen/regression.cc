@@ -1,35 +1,49 @@
-#include "Eigen/Array"
-#include "Eigen/QR"
+#include "regression.h"
 
+#include <Eigen/LU>
 
-#include <iostream>
-
-
-int main(int, char **)
+LinearRegression::Matrix
+LinearRegression::insert_constant(Matrix const& m) const
 {
-  std::cout.precision(2);
+  Matrix result (m.rows(), m.cols()+1);
+  result.block(0,0,m.rows(),1).setOnes();
+  result.block(0,1,m.rows(),m.cols()) = m;
+  return result;
+}
 
-  int nRows (10);   // needs to be more than 400 to test distance matrix calculations
-  int nCols ( 3);
- 
-    
-  // form random matrix for response and predictors
-  Eigen::VectorXd y (Eigen::VectorXd::Random(nRows));
-  Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
 
-  // QR factorization
-  Eigen::QR<Eigen::MatrixXd> qr(X);
-  std::cout << qr.matrixR() << std::endl;
-  std::cout << qr.matrixQ() << std::endl << std::endl;
+LinearRegression::Vector
+LinearRegression::beta() const
+{
+  Matrix Ri (mR.inverse());
+  return Ri * Ri.transpose() * mR.transpose() * mQ.transpose() * mY;
+}
 
-  // tail end of a vector; this one gets you the last 4
-  std::cout << y.end(4).transpose() << std::endl;
 
-  // element access
-  std::cout << y.coeff(1) << std::endl;
-  y.coeffRef(1) = 44;
-  std::cout << y.coeff(1) << std::endl;
+std::pair<double,double>
+LinearRegression::test_new_predictor (Vector const& z) const
+{
+  Vector zRes (z - mQ * mQ.transpose() * z);
+  double xpy  (mResiduals.dot(zRes));
+  double num  ((xpy * xpy)/zRes.squaredNorm());
+  return std::make_pair( xpy/zRes.squaredNorm(), (n()-1-p()) * num/mResSS);
+}
 
-  // allows one to change without violating constness... const_cast_derived()
-  return 0;
+
+void
+LinearRegression::initialize()
+{
+  Eigen::QR<Eigen::MatrixXd> qr(mX);
+  mR = qr.matrixR();
+  mQ = qr.matrixQ();
+  mResiduals = mY - mQ * mQ.transpose() * mY;
+  mResSS = mResiduals.squaredNorm(); 
+}
+
+
+void
+LinearRegression::print_to (std::ostream& os) const
+{
+  os << "Linear Regression" << std::endl
+     << beta() << std::endl;
 }
