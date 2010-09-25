@@ -42,7 +42,8 @@ class LinearRegression
   Matrix  mQ;
   Matrix  mR;
   Vector  mResiduals;
-  double  mResSS;
+  double  mResidualSS;
+  double  mTotalSS;
   
  public:
   ~LinearRegression () { }
@@ -51,10 +52,15 @@ class LinearRegression
 
   
   int       n()             const   { return mX.rows(); };
-  int       p()             const   { return mX.cols()-1; }
+  int       p()             const   { return mX.cols()-1; }                      // -1 for intercept 
+  double    rmse()          const   { return sqrt(mResidualSS/(n()-mX.cols())); }
+  double    r_squared()     const   { assert(mTotalSS>0); return 1.0 - mResidualSS/mTotalSS; }
+
   Vector    residuals()     const   { return mResiduals; }
   Vector    fitted_values() const   { return mY - mResiduals; }
+
   Vector    beta()          const;
+  Vector    se_beta()       const;
   
 
   std::pair<double,double> test_new_predictor (Vector const& z) const;
@@ -64,7 +70,7 @@ class LinearRegression
 
  private:
   Matrix insert_constant(Matrix const& m) const;    // stuffs a 1 as first column
-  void initialize();                                // factors X, computes residuals
+  void initialize();                                // factors X, computes residuals, SS
   
 };
 
