@@ -83,20 +83,50 @@ std::pair<double,double>
 LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 {
   Vector zRes (z - mQ * mQ.transpose() * z);
+  Eigen::QR<Eigen::MatrixXd> qr(zRes);
   double ssz (zRes.squaredNorm());
   if(ssz < z.size() * epsilon)                // predictor is singular
     return std::make_pair(0.0,0.0);
   int residualDF (n()-2-p());
-  double ze  (mResiduals.dot(zRes));          //  slope of added var is  gamma (epz/zRes.squaredNorm);
+  double ze  (zRes.dot(mResiduals));          //  slope of added var is  gamma (epz/zRes.squaredNorm);
   if (blockSize==0)
   { double regrss ((ze * ze)/ssz);
     return Stat_Utils::f_test (regrss, 1, mResidualSS-regrss, residualDF);
   }
-  else                                        // reduces to (z'e)^2/(z'e^2z)
+  else if (blockSize==1)                      // reduces to (z'e)^2/(z'e^2z)
   { zRes = zRes.cwise() * mResiduals;
     double zeez (zRes.squaredNorm());
     return Stat_Utils::f_test (ze*ze/zeez, 1, residualDF);
   }
+  else return std::make_pair(0.0,0.0);
+}
+
+
+std::pair<double,double>
+LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
+{
+  Matrix zRes (z - mQ * mQ.transpose() * z);
+  Eigen::QR<Eigen::MatrixXd> qr(zRes);
+  Matrix R    (qr.matrixR());
+  Matrix Q    (qr.matrixQ());
+  for (int j=0; j<z.cols(); ++j)
+  { if(abs(R(j,j)) < z.rows() * epsilon)                   // predictor j is singular
+      return std::make_pair(0.0,0.0);
+  }
+  int residualDF (n()-1-p()-z.cols());
+  Vector Qe  (Q.transpose() * mResiduals);           // projection into space of new variables
+  if (blockSize==0)
+  { double regrss (Qe.squaredNorm());
+    return Stat_Utils::f_test (regrss, z.cols(), mResidualSS-regrss, residualDF);
+  }
+  else if (blockSize == 1)
+  { Matrix Ri     (R.inverse());
+    Vector rGamma (Ri.transpose() * Ri * Qe);
+    Matrix eQ     (mResiduals.asDiagonal() * Q);
+    Vector eQRg   (eQ * rGamma); 
+    return Stat_Utils::f_test (eQRg.squaredNorm(), z.cols(), residualDF);
+  }
+  else return std::make_pair(0.0,0.0);
 }
 
 
@@ -106,8 +136,8 @@ void
 LinearRegression::print_to (std::ostream& os) const
 {
   os.precision(4);
-  os << "Linear Regression               RMSE = " << rmse()      << "        R^2 = " << r_squared() << std::endl
-     << "                         Residual SS = " << mResidualSS << "   Total SS = " << mTotalSS << std::endl;
+  os << "Linear Regression        Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
+     << "                         Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
   os.precision(3);
   Vector b  (beta());
   Vector se (se_beta());

@@ -17,24 +17,23 @@ int main(int, char **)
 {
   std::cout.precision(2);
 
-  int nRows (10);   // needs to be more than 400 to test distance matrix calculations
+  int nRows (22);   // needs to be more than 400 to test distance matrix calculations
   int nCols ( 3);
   
   // form random matrix for response and predictors
   Eigen::VectorXd y (Eigen::VectorXd::Random(nRows));
-  Eigen::VectorXd z (Eigen::VectorXd::Random(nRows));
   Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
+  Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nCols));
 
-  //  write data so that can check test in JMP/R
-  Eigen::MatrixXd data(10,5);
-  data << y , X , z;
+  //  write data so that can check in JMP/R
+  Eigen::MatrixXd data(nRows,1+2*nCols);
+  data << y , X , Z;
 
   std::string fileName ("test.dat");
   std::ofstream output(fileName.c_str());
   output << data << std::endl;
     
   // build a regression
-    
   LinearRegression regr(y,X);
   std::cout << regr << std::endl;
 
@@ -44,8 +43,10 @@ int main(int, char **)
   std::cout << "Residuals    : " << regr.residuals().transpose()     << "  with sum  " << regr.residuals().sum() << std::endl;
 
   std::cout << "Test of X[2] : " << regr.f_test_predictor(X.col(2))  << std::endl;
-  std::cout << "Test of Z    : " << regr.f_test_predictor(z)         << std::endl;
-  std::cout << "White Test Z : " << regr.f_test_predictor(z, 1)      << std::endl;
+  std::cout << "Test of Z[0] : " << regr.f_test_predictor(Z.col(0))  << std::endl;
+  std::cout << "White   Z[0] : " << regr.f_test_predictor(Z.col(0),1)<< std::endl;
+  std::cout << "Test of Z    : " << regr.f_test_predictors(Z)        << std::endl;
+  std::cout << "White   Z    : " << regr.f_test_predictors(Z, 1)     << std::endl;
   
   
   // tail end of a vector; this one gets you the last 4

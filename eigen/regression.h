@@ -64,7 +64,8 @@ class LinearRegression
   Vector    beta()                   const;
   Vector    se_beta()                const;
 
-  std::pair<double,double>  f_test_predictor (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
+  std::pair<double,double>  f_test_predictor  (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
+  std::pair<double,double>  f_test_predictors (Matrix const& z, int blockSize = 0) const; 
   
   
   void print_to (std::ostream& os) const;
