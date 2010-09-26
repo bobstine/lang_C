@@ -40,9 +40,12 @@ int main(int, char **)
 
   std::cout << "Response     : " << y.transpose()                    << std::endl;
   std::cout << "Fitted values: " << regr.fitted_values().transpose() << std::endl;
+  std::cout << "Predictions  : " << regr.predict(X).transpose()      << std::endl;
   std::cout << "Residuals    : " << regr.residuals().transpose()     << "  with sum  " << regr.residuals().sum() << std::endl;
 
-  std::cout << "Test of Z    : " << regr.test_new_predictor(z)       << std::endl;
+  std::cout << "Test of X[2] : " << regr.f_test_predictor(X.col(2))  << std::endl;
+  std::cout << "Test of Z    : " << regr.f_test_predictor(z)         << std::endl;
+  std::cout << "White Test Z : " << regr.f_test_predictor(z, 1)      << std::endl;
   
   
   // tail end of a vector; this one gets you the last 4

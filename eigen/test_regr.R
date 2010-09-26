@@ -24,3 +24,9 @@ g/sqrt(res%*%res/(n-2))
 # --- full regr with 4 predictors
 full.regr <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4]+Data[,5])
 summary(full.regr)
+
+# --- white test of new predictor, block size 1
+
+g^2/(((z * e)%*%(z * e))/(z %*% z)^2)
+
+

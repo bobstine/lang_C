@@ -16,7 +16,7 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-EXTERNAL_USES = 
+EXTERNAL_USES = gsl
 
 
 ###########################################################################

@@ -35,7 +35,7 @@ class LinearRegression
 {
   typedef Eigen::VectorXd Vector;
   typedef Eigen::MatrixXd Matrix;
-  
+
  private:
   Vector  mY;
   Matrix  mX;
@@ -51,19 +51,20 @@ class LinearRegression
   LinearRegression (Vector const& y, Matrix const& x) :  mY(y), mX(insert_constant(x)) { initialize(); }
 
   
-  int       n()             const   { return mX.rows(); };
-  int       p()             const   { return mX.cols()-1; }                      // -1 for intercept 
-  double    rmse()          const   { return sqrt(mResidualSS/(n()-mX.cols())); }
-  double    r_squared()     const   { assert(mTotalSS>0); return 1.0 - mResidualSS/mTotalSS; }
+  int       n()                      const   { return mX.rows(); };
+  int       p()                      const   { return mX.cols()-1; }                      // -1 for intercept 
+  double    rmse()                   const   { return sqrt(mResidualSS/(n()-mX.cols())); }
+  double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
-  Vector    residuals()     const   { return mResiduals; }
-  Vector    fitted_values() const   { return mY - mResiduals; }
-
-  Vector    beta()          const;
-  Vector    se_beta()       const;
+  Vector    residuals()              const   { return mResiduals; }
+  Vector    fitted_values()          const   { return mY - mResiduals; }
   
+  Vector    predict(Matrix const& x) const;
+  
+  Vector    beta()                   const;
+  Vector    se_beta()                const;
 
-  std::pair<double,double> test_new_predictor (Vector const& z) const;
+  std::pair<double,double>  f_test_predictor (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
   
   
   void print_to (std::ostream& os) const;
