@@ -93,12 +93,20 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   { double regrss ((ze * ze)/ssz);
     return Stat_Utils::f_test (regrss, 1, mResidualSS-regrss, residualDF);
   }
-  else if (blockSize==1)                      // reduces to (z'e)^2/(z'e^2z)
+  else                                       // compute white estimate; in scalar case, reduces to (z'e)^2/(z'e^2z)
   { zRes = zRes.cwise() * mResiduals;
-    double zeez (zRes.squaredNorm());
+    double zeez (0.0);
+    if (blockSize == 1)
+      zeez = zRes.squaredNorm();
+    else
+    { assert (0 == n() % blockSize);
+      for(int row=0; row<n(); row +=blockSize)
+      { double ezi (mResiduals.segment(row,blockSize).dot(zRes.segment(row,blockSize)));
+	zeez += ezi * ezi;
+      }
+    }
     return Stat_Utils::f_test (ze*ze/zeez, 1, residualDF);
   }
-  else return std::make_pair(0.0,0.0);
 }
 
 
@@ -138,8 +146,8 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 	QeeQ += eQ * eQ.transpose();
 	row += blockSize;
       }
-      Matrix f = rGamma.transpose() * QeeQ * rGamma;
-      return Stat_Utils::f_test (f(0,0), z.cols(), residualDF);
+      double f = rGamma.dot(QeeQ * rGamma);
+      return Stat_Utils::f_test (f, z.cols(), residualDF);
     }
   }
 }

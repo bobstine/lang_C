@@ -42,12 +42,13 @@ int main(int, char **)
   std::cout << "Predictions  : " << regr.predict(X).transpose()      << std::endl;
   std::cout << "Residuals    : " << regr.residuals().transpose()     << "  with sum  " << regr.residuals().sum() << std::endl;
 
-  std::cout << "Test of X[2] : " << regr.f_test_predictor(X.col(2))  << std::endl;
-  std::cout << "Test of Z[0] : " << regr.f_test_predictor(Z.col(0))  << std::endl;
-  std::cout << "White   Z[0] : " << regr.f_test_predictor(Z.col(0),1)<< std::endl;
-  std::cout << "Test of Z    : " << regr.f_test_predictors(Z)        << std::endl;
-  std::cout << "White   Z    : " << regr.f_test_predictors(Z, 1)     << std::endl;
-  std::cout << "White Z, b=5 : " << regr.f_test_predictors(Z, 5)     << std::endl;
+  std::cout << "Test of X[2]   : " << regr.f_test_predictor(X.col(2))   << std::endl;
+  std::cout << "Test of Z[0]   : " << regr.f_test_predictor(Z.col(0))   << std::endl;
+  std::cout << "White   Z[0]   : " << regr.f_test_predictor(Z.col(0),1) << std::endl;
+  std::cout << "White Z[0],b=5 : " << regr.f_test_predictor(Z.col(0),5) << std::endl;
+  std::cout << "Test of Z      : " << regr.f_test_predictors(Z)         << std::endl;
+  std::cout << "White   Z      : " << regr.f_test_predictors(Z, 1)      << std::endl;
+  std::cout << "White Z, b=5   : " << regr.f_test_predictors(Z, 5)      << std::endl;
   
   
   // tail end of a vector; this one gets you the last 4
