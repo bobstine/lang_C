@@ -127,19 +127,19 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
       Vector eQRg   (eQ * rGamma); 
       return Stat_Utils::f_test (eQRg.squaredNorm(), z.cols(), residualDF);
     }
-    else
+    else // blocksize > 1
     { assert(0 == n() % blockSize);
       int p (z.cols());
-      Matrix eQ(n(),p);
+      Matrix QeeQ(p,p); QeeQ.setZero();
       int row (0);
+      Vector eQ(p);
       for(int block = 0; block<n()/blockSize; ++block)
-      {	eQ.row(row) = mResiduals.segment(row,blockSize).transpose() * Q.block(row,0,blockSize,p);
-	for (int j=1; j<blockSize; ++j)
-	  eQ.row(row+j) = eQ.row(row);
+      {	eQ = mResiduals.segment(row,blockSize).transpose() * Q.block(row,0,blockSize,p);
+	QeeQ += eQ * eQ.transpose();
 	row += blockSize;
       }
-      Vector eQRg   (eQ * rGamma); 
-      return Stat_Utils::f_test (eQRg.squaredNorm()/blockSize, z.cols(), residualDF);
+      Matrix f = rGamma.transpose() * QeeQ * rGamma;
+      return Stat_Utils::f_test (f(0,0), z.cols(), residualDF);
     }
   }
 }
