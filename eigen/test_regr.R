@@ -40,3 +40,28 @@ zzi <- solve(t(z) %*% z)
 t(g) %*% zzi %*% t(z) %*% diag(e*e) %*% z %*% zzi %*% g
 
 
+#  -  with blockSize
+bs <- 5
+m <- matrix(0,n,n)
+for(b in 1:(n/bs)) { r <- 1+bs*(b-1); i<- r:(r+bs-1); m[i,i] <- outer(e[i],e[i]) }
+t(g) %*% zzi %*% t(z) %*% m %*% z %*% zzi %*% g
+
+
+#  -  build as in C
+decomp <- qr(z)
+Q <- qr.Q(decomp);
+R <- qr.R(decomp)
+g <- solve(R) %*% t(Q) %*% e
+
+e[1:5]; Q[1:5,]; e[1:5] %*% Q[1:5,]
+
+q <- matrix(0,nrow=n, ncol=3)
+row <- 1;
+for (i in 1:(n/bs)){
+	q[row,] <- e[row:(row+bs-1)] %*% Q[row:(row+bs-1),]
+	q[row+4,] <- q[row+3,] <- q[row+2,] <- q[row+1,] <- q[row,]
+	row <- row + 5
+	}
+	
+t(Q) %*% m %*% Q
+t(q) %*% q

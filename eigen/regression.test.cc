@@ -17,7 +17,7 @@ int main(int, char **)
 {
   std::cout.precision(2);
 
-  int nRows (22);   // needs to be more than 400 to test distance matrix calculations
+  int nRows (30);   // needs to be more than 400 to test distance matrix calculations
   int nCols ( 3);
   
   // form random matrix for response and predictors
@@ -47,6 +47,7 @@ int main(int, char **)
   std::cout << "White   Z[0] : " << regr.f_test_predictor(Z.col(0),1)<< std::endl;
   std::cout << "Test of Z    : " << regr.f_test_predictors(Z)        << std::endl;
   std::cout << "White   Z    : " << regr.f_test_predictors(Z, 1)     << std::endl;
+  std::cout << "White Z, b=5 : " << regr.f_test_predictors(Z, 5)     << std::endl;
   
   
   // tail end of a vector; this one gets you the last 4

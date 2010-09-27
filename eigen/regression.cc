@@ -119,14 +119,29 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   { double regrss (Qe.squaredNorm());
     return Stat_Utils::f_test (regrss, z.cols(), mResidualSS-regrss, residualDF);
   }
-  else if (blockSize == 1)
+  else
   { Matrix Ri     (R.inverse());
     Vector rGamma (Ri.transpose() * Ri * Qe);
-    Matrix eQ     (mResiduals.asDiagonal() * Q);
-    Vector eQRg   (eQ * rGamma); 
-    return Stat_Utils::f_test (eQRg.squaredNorm(), z.cols(), residualDF);
+    if (blockSize == 1)
+    { Matrix eQ = mResiduals.asDiagonal() * Q;
+      Vector eQRg   (eQ * rGamma); 
+      return Stat_Utils::f_test (eQRg.squaredNorm(), z.cols(), residualDF);
+    }
+    else
+    { assert(0 == n() % blockSize);
+      int p (z.cols());
+      Matrix eQ(n(),p);
+      int row (0);
+      for(int block = 0; block<n()/blockSize; ++block)
+      {	eQ.row(row) = mResiduals.segment(row,blockSize).transpose() * Q.block(row,0,blockSize,p);
+	for (int j=1; j<blockSize; ++j)
+	  eQ.row(row+j) = eQ.row(row);
+	row += blockSize;
+      }
+      Vector eQRg   (eQ * rGamma); 
+      return Stat_Utils::f_test (eQRg.squaredNorm()/blockSize, z.cols(), residualDF);
+    }
   }
-  else return std::make_pair(0.0,0.0);
 }
 
 
