@@ -38,12 +38,12 @@ LinearRegression::initialize()
   mTotalSS = mY.redux(CenteredSquare(yBar));
   double y0 (mY(0));
   double d0 (y0 - yBar);
-  mTotalSS += d0*d0 - y0;  // patch Eigen reduction initialization with y[0]
+  mTotalSS += d0*d0 - y0;                          // patch Eigen reduction initialization with y[0]
   assert(mTotalSS>0); 
   Eigen::QR<Eigen::MatrixXd> qr(mX);
   mR = qr.matrixR();
   mQ = qr.matrixQ();
-  mResiduals = mY - mQ * mQ.transpose() * mY;
+  mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order
   mResidualSS = mResiduals.squaredNorm();
 }
 
@@ -82,8 +82,8 @@ LinearRegression::predict(Matrix const& x) const
 std::pair<double,double>
 LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 {
-  Vector zRes (z - mQ * mQ.transpose() * z);
-  Eigen::QR<Eigen::MatrixXd> qr(zRes);
+  //  caution: order matters, do not form the big projection matrix
+  Vector zRes (z - mQ * (mQ.transpose() * z));
   double ssz (zRes.squaredNorm());
   if(ssz < z.size() * epsilon)                // predictor is singular
     return std::make_pair(0.0,0.0);
@@ -112,7 +112,7 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 std::pair<double,double>
 LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 {
-  Matrix zRes (z - mQ * mQ.transpose() * z);
+  Matrix zRes (z - mQ * (mQ.transpose() * z));
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
   Matrix R    (qr.matrixR());
   Matrix Q    (qr.matrixQ());
@@ -160,10 +160,10 @@ LinearRegression::print_to (std::ostream& os) const
   os.precision(4);
   os << "Linear Regression        Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
      << "                         Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
-  os.precision(3);
   Vector b  (beta());
   Vector se (se_beta());
-  os << "Beta : " << b.transpose()              << std::endl
-     << " SE  : " << se.transpose()             << std::endl
-     << " t   : " << (b.cwise()/se).transpose() << std::endl;
+  Matrix summary(1+p(),3);
+  summary << b, se, (b.cwise()/se);
+  os.precision(3);
+  os << summary << std::endl;
 }
