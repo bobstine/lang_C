@@ -94,10 +94,9 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
     return Stat_Utils::f_test (regrss, 1, mResidualSS-regrss, residualDF);
   }
   else                                       // compute white estimate; in scalar case, reduces to (z'e)^2/(z'e^2z)
-  { zRes = zRes.cwise() * mResiduals;
-    double zeez (0.0);
+  { double zeez (0.0);
     if (blockSize == 1)
-      zeez = zRes.squaredNorm();
+      zeez = (zRes.cwise() * mResiduals).squaredNorm();
     else
     { assert (0 == n() % blockSize);
       for(int row=0; row<n(); row +=blockSize)
