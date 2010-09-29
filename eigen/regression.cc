@@ -20,6 +20,16 @@ LinearRegression::insert_constant(Matrix const& m) const
   return result;
 }
 
+void
+LinearRegression::orthogonalize_x_and_residuals()
+{
+  Eigen::QR<Eigen::MatrixXd> qr(mX);
+  mR = qr.matrixR();
+  mQ = qr.matrixQ();
+  mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order of evaluation
+  mResidualSS = mResiduals.squaredNorm();  
+}
+
 
 namespace {
   class CenteredSquare : public std::binary_function<double,double,double> {
@@ -40,11 +50,7 @@ LinearRegression::initialize()
   double d0 (y0 - yBar);
   mTotalSS += d0*d0 - y0;                          // patch Eigen reduction initialization with y[0]
   assert(mTotalSS>0); 
-  Eigen::QR<Eigen::MatrixXd> qr(mX);
-  mR = qr.matrixR();
-  mQ = qr.matrixQ();
-  mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order
-  mResidualSS = mResiduals.squaredNorm();
+  orthogonalize_x_and_residuals();
 }
 
 
@@ -53,8 +59,7 @@ LinearRegression::initialize()
 LinearRegression::Vector
 LinearRegression::beta() const
 {
-  Matrix Ri (mR.inverse());
-  return Ri * Ri.transpose() * mR.transpose() * mQ.transpose() * mY;
+  return mR.inverse() * (mQ.transpose() * mY);   // force order for calculations
 }
 
 LinearRegression::Vector
@@ -76,8 +81,7 @@ LinearRegression::predict(Matrix const& x) const
 }
 
 
-//     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     
-
+//     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests
 
 std::pair<double,double>
 LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
@@ -151,6 +155,17 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   }
 }
 
+//     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor
+
+void
+LinearRegression::add_predictors  (Matrix const& z)
+{
+  assert(z.rows() == mX.rows());
+  Matrix X(mX.rows(),mX.cols()+z.cols());
+  X << mX , z;
+  mX = X;
+  orthogonalize_x_and_residuals();
+}
 
 
 //     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     

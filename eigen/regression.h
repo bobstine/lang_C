@@ -35,6 +35,7 @@ class LinearRegression
 {
   typedef Eigen::VectorXd Vector;
   typedef Eigen::MatrixXd Matrix;
+  typedef std::pair<double, double> Test;
 
  private:
   Vector  mY;
@@ -58,22 +59,24 @@ class LinearRegression
 
   Vector    residuals()              const   { return mResiduals; }
   Vector    fitted_values()          const   { return mY - mResiduals; }
-  
   Vector    predict(Matrix const& x) const;
   
   Vector    beta()                   const;
   Vector    se_beta()                const;
 
-  std::pair<double,double>  f_test_predictor  (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
-  std::pair<double,double>  f_test_predictors (Matrix const& z, int blockSize = 0) const; 
+  Test      f_test_predictor  (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
+  Test      f_test_predictors (Matrix const& z, int blockSize = 0) const; 
+
+  void      add_predictor  (Vector const& z)  { add_predictors(z); }
+  void      add_predictors (Matrix const& z);
   
   
   void print_to (std::ostream& os) const;
 
  private:
   Matrix insert_constant(Matrix const& m) const;    // stuffs a 1 as first column
-  void initialize();                                // factors X, computes residuals, SS
-  
+  void initialize();                                // sets initial SS, calls orthgonalize
+  void orthogonalize_x_and_residuals();             // does the QR and finds residuals
 };
 
            

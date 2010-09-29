@@ -20,18 +20,24 @@ void print_time(time_t const& start)
 
 int main(int, char **)
 {
-  std::cout.precision(2);  std::cout << "\n\n";
+  std::cout.precision(2);  std::cout << "TEST:  Test of regression begins...\n\n";
 
+  // Timing
+  //   p = 3 predictors      0.19 sec on 13" with n = 400,000; 0.12 on 17"
+  //      20                                                   1.6
+  //      40                                                   5.2           but takes forever to calc beta when printing???
+  //      80                                                  21 
   int nRows (400000);   
-  int nCols (     3);
-
+  int nCols (    20);
+  int nAdd  (     3);
+  
   //  std::cin >> nRows;  std::cout << "Testing regression code with nRows = " << nRows << std::endl;
   
   // form random matrix for response and predictors
   Eigen::VectorXd y (Eigen::VectorXd::Random(nRows));
   Eigen::VectorXd z (Eigen::VectorXd::Random(nRows));
   Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
-  Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nCols));
+  Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
 
   //  write data so that can check in JMP/R
   /*
@@ -42,7 +48,7 @@ int main(int, char **)
     output << data << std::endl;
   */
   
-  // build a regression  0.19 sec on 13" with n = 400,000
+  // build a regression
   clock_t start = clock();     LinearRegression regr(y,X);       print_time(start);
   std::cout << regr << std::endl;
 
@@ -65,7 +71,9 @@ int main(int, char **)
   start = clock(); std::cout << "Test of Z      : " << regr.f_test_predictors(Z)         << std::endl; print_time(start);
   start = clock(); std::cout << "White   Z      : " << regr.f_test_predictors(Z, 1)      << std::endl; print_time(start);
   start = clock(); std::cout << "White Z, b=5   : " << regr.f_test_predictors(Z, 5)      << std::endl; print_time(start);
-  
+
+  start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor(z);                           print_time(start);
+  start = clock(); std::cout << "Adding 3 pred  : ";  regr.add_predictors(Z);                          print_time(start);
   
   // tail end of a vector; this one gets you the last 4
   //  std::cout << y.end(4).transpose() << std::endl;
