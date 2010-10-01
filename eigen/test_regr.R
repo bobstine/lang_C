@@ -59,6 +59,31 @@ g <- solve(t(z) %*% z, t(z) %*% e)
 t(g) %*% zzi %*% t(z) %*% m %*% z %*% zzi %*% g
 
 
+
+###################################################
+#  Check of shrinkage calculations
+#
+
+# remove 2-4 from 5, get SS and test stat
+z5.regr <- lm(Data[,5] ~ Data[,2]+Data[,3]+Data[,4])
+z <- residuals(z5.regr)
+ssz <- sum(z*z)
+X <- as.matrix(cbind(rep(1,n),Data[,2:5]))
+X <- rbind(X,matrix(0,nrow=5,ncol=ncol(X)))
+X[nrow(X),ncol(X)] <- sqrt(ssz/.005895)  # get F stat from C++
+solve(t(X)%*%X) %*% t(X[1:n,]) %*% Data[,1]
+
+# remove 2-5 plus shrinkage from 6-7
+Z <- as.matrix(Data[,6:7])
+Z <- rbind(Z,matrix(0,nrow=5,ncol=2))
+zres <- Z - X %*% (solve(t(X)%*%X) %*% t(X) %*% Z)
+ssz <- diag(t(zres) %*% zres)
+X <- cbind(X,Z)
+X <- rbind(X,matrix(0,nrow=2,ncol=ncol(X)))
+X[nrow(X)-1,ncol(X)-1] <- sqrt(ssz[1]/0.4586) # get F stat from C++
+X[nrow(X),ncol(X)]     <- sqrt(ssz[2]/0.4586)
+solve(t(X)%*%X) %*% t(X[1:n,]) %*% Data[,1]
+
 ###################################################
 #  Check of QR calculations
 #

@@ -80,7 +80,7 @@ LinearRegression::initialize()
 void
 LinearRegression::build_QR_and_residuals()
 {
-  // std::cout << "\n\n  in QR, X matrix for factoring is \n" << mX << "\n\n\n";
+  // std::cout << "\n\nREGR: in QR, X matrix for factoring is \n" << mX << "\n\n\n";
   Eigen::QR<Eigen::MatrixXd> qr(mX);
   mR = qr.matrixR();
   mQ = qr.matrixQ();

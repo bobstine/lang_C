@@ -42,7 +42,7 @@ public:
   ~ FStatistic() {}
   
   FStatistic()                                            // use empty version to signal singular
-    : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx() { }
+    : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx(Vector::Zero(1)) { }
   
   FStatistic(double f, int numDF, int denDF, Vector const& ssx)
     : mF(f), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
@@ -55,7 +55,7 @@ public:
   Vector sum_of_squares()           const { return mSSx; }
   double critical_value(double p)   const;
   
-  void   print_to(std::ostream& os) const { os << "F(" << mNumDF << "," << mDenDF << ") = " << mF << " (p=" << mPValue <<") { ss = " << mSSx.transpose() << "} "; }
+  void   print_to(std::ostream& os) const { os << "F(" << mNumDF << "," << mDenDF << ") = " << mF << " (p=" << mPValue <<") { ss = " << mSSx.transpose() << " } "; }
   
 private:
   void calc_p_value(); 
