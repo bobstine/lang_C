@@ -10,7 +10,6 @@ const double epsilon (1.0e-30);          // used to detect singularlity
 
 //     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic
 
-
 void
 FStatistic::calc_p_value()
 {
@@ -36,7 +35,7 @@ LinearRegression::Vector
 LinearRegression::pad_vector(Vector const& v, int k) const
 {
   Vector z (v.size()+k);
-  z.start(v.size) = v;
+  z.start(v.size()) = v;
   z.end(k).setZero();
   return z;
 }
@@ -46,9 +45,11 @@ LinearRegression::Matrix
 LinearRegression::insert_constant(Matrix const& m) const       // add prefix 1 col, rows for shrinkage
 {
   assert(m.rows() == mN);
-  Matrix result (mN, m.cols()+1);
-  result.block(0,0,mN,1).setOnes();
-  result.block(0,1,m.rows(),m.cols()) = m;
+  int nr (m.cols()+1);
+  Matrix result (mN+nr, nr);
+  result.corner(Eigen::TopLeft ,mN,1).setOnes();
+  result.corner(Eigen::TopRight,mN,m.cols()) = m;
+  result.corner(Eigen::BottomLeft, nr, nr).setZero();
   return result;
 }
 
@@ -66,14 +67,12 @@ namespace {
 void
 LinearRegression::initialize()
 {
-  double yBar (mY.start(mN).sum()/mN);
-  mTotalSS = mY.start(mN).redux(CenteredSquare(yBar));
+  double yBar (mY.sum()/mN);
+  mTotalSS = mY.redux(CenteredSquare(yBar));
   double y0 (mY(0));
   double d0 (y0 - yBar);
   mTotalSS += d0*d0 - y0;                          // patch Eigen reduction initialization with y[0]
   assert(mTotalSS>0);
-  mShrinkage = Vector(mX.cols()+1);                // do not shrink initial variables
-  mShrinkage.setZero();
   build_QR_and_residuals();
 }
 
@@ -81,12 +80,12 @@ LinearRegression::initialize()
 void
 LinearRegression::build_QR_and_residuals()
 {
+  // std::cout << "\n\n  in QR, X matrix for factoring is \n" << mX << "\n\n\n";
   Eigen::QR<Eigen::MatrixXd> qr(mX);
   mR = qr.matrixR();
-  mQ = Matrix(mN + mX.cols(), mX.cols());
-  mQ.corner(Eigen::TopLeft, mN, mX.cols) = qr.matrixQ();
+  mQ = qr.matrixQ();
   mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order of evaluation
-  mResidualSS = mResiduals.start(mN).squaredNorm();  
+  mResidualSS = mResiduals.squaredNorm();  
 }
 
 
@@ -132,11 +131,11 @@ LinearRegression::f_test_predictor (Vector const& input, int blockSize) const
   int residualDF (mN-2-p());
   assert(residualDF > 0);
   double ssz (zRes.squaredNorm());
+  Vector ssx(1);
+  ssx(0) = ssz;
   if(ssz < z.size() * epsilon)                // predictor is singular
     return FStatistic();
   double ze  (zRes.dot(mResiduals));          //  slope of added var is  gamma (epz/zRes.squaredNorm);
-  Vector ssx(1);
-  ssx(0) = zRes.dot(zRes);
   if (blockSize==0)
   { double regrss ((ze * ze)/ssz);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, ssx);
@@ -165,6 +164,7 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
   z.corner(Eigen::TopLeft   , mN,input.cols()) = input;
   z.corner(Eigen::BottomLeft, z.rows()-mN, input.cols()).setZero();
   Matrix zRes (z - mQ * (mQ.transpose() * z));
+  Vector ssx ((zRes.cwise() * zRes).colwise().sum());
   int residualDF (mN-1-p()-z.cols());
   assert(residualDF > 0);
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
@@ -175,7 +175,6 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
       return FStatistic();
   }
   Vector Qe  (Q.transpose() * mResiduals);                // projection into space of new variables
-  Vector ssx ((Q.cwise() * Q).colwise().sum());
   if (blockSize==0)
   { double regrss (Qe.squaredNorm());
     return FStatistic(regrss, z.cols(), mResidualSS-regrss, residualDF, ssx);
@@ -209,18 +208,19 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
 void
 LinearRegression::add_predictors  (Matrix const& z, FStatistic const& fstat)
 {
-  std::cout << "Adding predictor of dim " << z.rows() << "x" << z.cols() << std::endl;
+  std::cout << "Adding predictor with " << z.cols() << " columns and  entry stats " << fstat << std::endl;
   assert(z.rows() == mN);
+  // add rows and columns
   Matrix X(mX.rows()+z.cols(),mX.cols()+z.cols());
-  X.corner(Eigen::TopLeft,mX.rows(), mX.cols()) = mX;
+  X.corner(Eigen::TopLeft,    mX.rows(), mX.cols()) = mX;
+  X.corner(Eigen::BottomLeft,  z.cols(), mX.cols()).setZero();
   X.corner(Eigen::TopRight, mN, z.cols()) = z;
-  X.corner(Eigen::BottomLeft,z.cols(), mX.cols()).setZero();
-  X.corner(Eigen::BottomRight,X.rows()-mN,z.cols()).setZero();
+  X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
+  if (fstat.f_stat() > 0)
+  { Vector diag = fstat.sum_of_squares() / fstat.f_stat();
+    X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();
+  }
   mX = X;
-  double f (fstat.f_stat());   
-  if (f > 0)  // add in terms for shrinkage
-  { formX(mN
-    std::cout << "\n\n  X matrix \n" << mX << "\n\n\n";
   build_QR_and_residuals();
 }
 

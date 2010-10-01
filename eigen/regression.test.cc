@@ -74,8 +74,10 @@ int main(int, char **)
 
   FStatistic f(regr.f_test_predictor(z));
   start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor(z,f);                            print_time(start);
+  std::cout << regr;
   f = regr.f_test_predictors(Z);
   start = clock(); std::cout << "Adding 3 pred  : ";  regr.add_predictors(Z,f);                           print_time(start);
+  std::cout << regr;
   
   // tail end of a vector; this one gets you the last 4
   //  std::cout << y.end(4).transpose() << std::endl;
