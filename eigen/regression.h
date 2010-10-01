@@ -31,52 +31,101 @@
   
 */
 
+class FStatistic
+{
+  typedef Eigen::VectorXd Vector;
+  
+private:
+  double   mF;
+  int      mNumDF, mDenDF;
+  double   mPValue;
+  Vector   mSSx;             // length mNumDF
+  
+public:
+  ~ FStatistic() {}
+  
+  FStatistic()                                            // use empty version to signal singular
+    : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx() { }
+  
+  FStatistic(double f, int numDF, int denDF, Vector const& ssx)
+    : mF(f), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { calc_p_value(); }
+  
+  FStatistic(double numSS, int numDF, double denSS, int denDF, Vector ssx)
+    : mF((numSS/(double)numDF)/(denSS/(double)denDF)), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { calc_p_value(); }
+  
+  double f_stat()                   const { return mF; }
+  double p_value()                  const { return mPValue; }
+  Vector sum_of_squares()           const { return mSSx; }
+  double critical_value(double p)   const;
+  
+  void   print_to(std::ostream& os) const { os << "F(" << mNumDF << "," << mDenDF << ") = " << mF << " (p=" << mPValue <<") "; }
+  
+private:
+  void calc_p_value(); 
+};
+
+
+inline
+std::ostream&
+operator<<(std::ostream& os, FStatistic const& fStat)
+{
+  fStat.print_to(os);
+  return os;
+}
+
+
+
+
 class LinearRegression
 {
   typedef Eigen::VectorXd Vector;
   typedef Eigen::MatrixXd Matrix;
-  typedef std::pair<double, double> Test;
-
- private:
-  Vector  mY;
-  Matrix  mX;
-  Matrix  mQ;
+  typedef FStatistic      FStat;
+  
+private:
+  int     mN;          // number of obs without pseudorows used for shrinkage
+  Vector  mY;          // padded for shrinkage
+  Matrix  mX;          
+  Matrix  mQ;          // padded for shrinkage
   Matrix  mR;
-  Vector  mResiduals;
+  Vector  mResiduals;  // length matches y
   double  mResidualSS;
   double  mTotalSS;
+  Vector  mShrinkage;
   
- public:
+public:
   ~LinearRegression () { }
 
-  LinearRegression (Vector const& y, Matrix const& x) :  mY(y), mX(insert_constant(x)) { initialize(); }
+  LinearRegression (Vector const& y, Matrix const& x) :  mN(y.size()), mY(pad_vector(y,1+x.cols()), mX(insert_constant(x)) { initialize(); }
 
   
-  int       n()                      const   { return mX.rows(); };
+  int       n()                      const   { return mN; };
   int       p()                      const   { return mX.cols()-1; }                      // -1 for intercept 
-  double    rmse()                   const   { return sqrt(mResidualSS/(n()-mX.cols())); }
+  double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
-  Vector    residuals()              const   { return mResiduals; }
-  Vector    fitted_values()          const   { return mY - mResiduals; }
+  Vector    residuals()              const   { return mResiduals.start(mN); }             // the usual residuals
+  Vector    fitted_values()          const   { return (mY - mResiduals).start(mN); }
   Vector    predict(Matrix const& x) const;
   
   Vector    beta()                   const;
   Vector    se_beta()                const;
 
-  Test      f_test_predictor  (Vector const& z, int blockSize = 0) const;   // <f,pval>  f == 0 implies singular; blocksize>0 for white
-  Test      f_test_predictors (Matrix const& z, int blockSize = 0) const; 
+  FStat     f_test_predictor  (Vector const& z, int blockSize = 0) const;                // <f,pval>  f == 0 implies singular; blocksize>0 for white
+  FStat     f_test_predictors (Matrix const& z, int blockSize = 0) const; 
 
-  void      add_predictor  (Vector const& z)  { add_predictors(z); }
-  void      add_predictors (Matrix const& z);
-  
+  void      add_predictor  (Vector const& z)                      { add_predictors(z, FStatistic()); } // no shrinkage
+  void      add_predictor  (Vector const& z, FStat const& fstat)  { add_predictors(z, fstat); }
+  void      add_predictors (Matrix const& z)                      { add_predictors(z,FStatistic()); }   // no shrinkage
+  void      add_predictors (Matrix const& z, FStat const& fstat);
   
   void print_to (std::ostream& os) const;
 
  private:
+  Vector pad_vector(Vector const& v, int k) const;
   Matrix insert_constant(Matrix const& m) const;    // stuffs a 1 as first column
   void initialize();                                // sets initial SS, calls orthgonalize
-  void orthogonalize_x_and_residuals();             // does the QR and finds residuals
+  void build_QR_and_residuals();                    // does the QR and finds residuals
 };
 
            

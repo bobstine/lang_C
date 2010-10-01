@@ -70,6 +70,3 @@ Stat_Utils::f_test(double numSS, int numDF, double denSS, int denDF)
   double fRatio ((numSS * denDF)/(denSS * numDF));                      
   return std::make_pair(fRatio, gsl_cdf_fdist_Q(fRatio, numDF, denDF));    
 }
-
-
-

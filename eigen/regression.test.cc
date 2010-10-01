@@ -27,8 +27,8 @@ int main(int, char **)
   //      20                                                   1.6
   //      40                                                   5.2           but takes forever to calc beta when printing???
   //      80                                                  21 
-  int nRows (400000);   
-  int nCols (    20);
+  int nRows (40);   
+  int nCols (3);
   int nAdd  (     3);
   
   //  std::cin >> nRows;  std::cout << "Testing regression code with nRows = " << nRows << std::endl;
@@ -40,14 +40,14 @@ int main(int, char **)
   Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
 
   //  write data so that can check in JMP/R
-  /*
+  
     Eigen::MatrixXd data(nRows,1+2*nCols);
     data << y , X , Z;
     std::string fileName ("test.dat");
     std::ofstream output(fileName.c_str());
     output << data << std::endl;
-  */
-  
+
+    
   // build a regression
   clock_t start = clock();     LinearRegression regr(y,X);       print_time(start);
   std::cout << regr << std::endl;
@@ -59,11 +59,11 @@ int main(int, char **)
   std::cout << "Residuals    : " << regr.residuals().segment(0,show).transpose()     << "  with sum  " << regr.residuals().sum() << std::endl;
 
   // test the test routines
+  std::cout << "\nStarting of the timing routines for testing/adding predictors\n";
   start = clock(); std::cout << "Test of X[2]   : " << regr.f_test_predictor(X.col(2))   << std::endl; print_time(start);
-
   start = clock(); std::cout << "Test of col z  : " << regr.f_test_predictor(z)          << std::endl; print_time(start);
   start = clock(); std::cout << "Test 'matrix' z: " << regr.f_test_predictors(z)         << std::endl; print_time(start); std::cout << std::endl;
-  
+
   start = clock(); std::cout << "Test of Z[0]   : " << regr.f_test_predictor(Z.col(0))   << std::endl; print_time(start);
   start = clock(); std::cout << "White   Z[0]   : " << regr.f_test_predictor(Z.col(0),1) << std::endl; print_time(start);
   start = clock(); std::cout << "White Z[0],b=5 : " << regr.f_test_predictor(Z.col(0),5) << std::endl; print_time(start); std::cout << std::endl;
@@ -72,8 +72,10 @@ int main(int, char **)
   start = clock(); std::cout << "White   Z      : " << regr.f_test_predictors(Z, 1)      << std::endl; print_time(start);
   start = clock(); std::cout << "White Z, b=5   : " << regr.f_test_predictors(Z, 5)      << std::endl; print_time(start);
 
-  start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor(z);                           print_time(start);
-  start = clock(); std::cout << "Adding 3 pred  : ";  regr.add_predictors(Z);                          print_time(start);
+  FStatistic f(regr.f_test_predictor(z));
+  start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor(z,f);                            print_time(start);
+  f = regr.f_test_predictors(Z);
+  start = clock(); std::cout << "Adding 3 pred  : ";  regr.add_predictors(Z,f);                           print_time(start);
   
   // tail end of a vector; this one gets you the last 4
   //  std::cout << y.end(4).transpose() << std::endl;

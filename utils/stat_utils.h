@@ -3,6 +3,7 @@
 
 #include <vector>
 
+
 /////////////////////  Mean and SD summary  ////////////////
 
 namespace Stat_Utils {
@@ -14,9 +15,9 @@ namespace Stat_Utils {
   // p-values
   
   std::pair<double,double> t_test(double tStat, int df);
-  
+
   std::pair<double,double> f_test(double f,     int numDF,               int denDF); 
   std::pair<double,double> f_test(double numSS, int numDF, double denSS, int denDF); 
-}
 
+}
 #endif
