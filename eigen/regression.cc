@@ -3,6 +3,8 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_cdf.h>
 
+#include <iomanip>
+
 #include <Eigen/LU>
 
 const double epsilon (1.0e-30);          // used to detect singularlity
@@ -42,6 +44,15 @@ LinearRegression::pad_vector(Vector const& v, int k) const
 
 
 LinearRegression::Matrix
+LinearRegression::initial_x_matrix() const
+{
+  Matrix x(mN+1,1);
+  x.setOnes();
+  x(mN,0) = 0.0;
+  return x;
+}
+
+LinearRegression::Matrix
 LinearRegression::insert_constant(Matrix const& m) const       // add prefix 1 col, rows for shrinkage
 {
   assert(m.rows() == mN);
@@ -51,6 +62,14 @@ LinearRegression::insert_constant(Matrix const& m) const       // add prefix 1 c
   result.corner(Eigen::TopRight,mN,m.cols()) = m;
   result.corner(Eigen::BottomLeft, nr, nr).setZero();
   return result;
+}
+
+std::vector<std::string>
+LinearRegression::name_vec(std::string name) const
+{
+  std::vector<std::string> thename;
+  thename.push_back(name);
+  return thename;
 }
 
 
@@ -65,8 +84,11 @@ namespace {
 }
 
 void
-LinearRegression::initialize()
+LinearRegression::initialize(std::string y, std::vector<std::string> const& x)
 {
+  mNames.push_back(y);
+  for (unsigned int i=0; i<x.size(); ++i)
+    mNames.push_back(x[i]);
   double yBar (mY.sum()/mN);
   mTotalSS = mY.redux(CenteredSquare(yBar));
   double y0 (mY(0));
@@ -206,10 +228,14 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
 //     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor
 
 void
-LinearRegression::add_predictors  (Matrix const& z, FStatistic const& fstat)
+LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix const& z, FStatistic const& fstat)
 {
-  std::cout << "Adding predictor with " << z.cols() << " columns and  entry stats " << fstat << std::endl;
+  std::cout << "Adding " << z.cols() << " predictors with entry stats " << fstat << std::endl;
   assert(z.rows() == mN);
+  assert((int)names.size() == z.cols());
+  // names
+  for (unsigned int j=0; j<names.size(); ++j)
+    mNames.push_back(names[j]);
   // add rows and columns
   Matrix X(mX.rows()+z.cols(),mX.cols()+z.cols());
   X.corner(Eigen::TopLeft,    mX.rows(), mX.cols()) = mX;
@@ -229,13 +255,45 @@ LinearRegression::add_predictors  (Matrix const& z, FStatistic const& fstat)
 void
 LinearRegression::print_to (std::ostream& os) const
 {
-  os.precision(4);
-  os << "Linear Regression        Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
-     << "                         Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
+  os.precision(6);
+  os << "Linear Regression        y = " << mNames[0] << std::endl
+     << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
+     << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
   Vector b  (beta());
   Vector se (se_beta());
-  Matrix summary(1+p(),3);
-  summary << b, se, (b.cwise()/se);
   os.precision(3);
-  os << summary << std::endl;
+  os << std::setw(30) << "Intercept " << "  " << std::setw(8) << b[0] << "  " << std::setw(8) << se[0] << "  " << std::setw(8) << b[0]/se[0] << std::endl;
+  for (int j = 1; j<mX.cols(); ++j)
+    os << std::setw(30) << mNames[j]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
 }
+
+
+void
+LinearRegression::write_data_to (std::ostream& os) const
+{
+  int k (mX.cols());
+  for(int i=0; i<mN; ++i)
+  { os << mY(i) << "\t";
+    for (int j=1; j<k-1; ++j)  // skip intercept
+      os << mX(i,j) << "\t";
+    os << mX(i,k-1) << std::endl;
+  }
+}
+
+
+//     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
+
+
+void
+ValidatedRegression::print_to(std::ostream& os) const
+{
+  os.precision(6);
+  os << "Validated Regression      n(est) = " << mN << "    n(validate) " << n_validation_cases() << "    ";
+  if(mBlockSize > 0)
+    os << " with White SE(b=" << mBlockSize << ")";
+  os << std::endl
+     << "            Validation SS = " << validation_ss() << std::endl
+     << mModel;
+}
+
+

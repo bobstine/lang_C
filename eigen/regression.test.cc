@@ -1,6 +1,8 @@
 #include "regression.h"
 
+#include <vector>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 #include <time.h>
@@ -28,9 +30,9 @@ int main(int, char **)
   //      20                 2.6        1.6                 0.15      0.30        
   //      40                            5.2           
   //      80                           21 
-  int nRows (400000);   
-  int nCols     (20);
-  int nAdd       (3);
+  const int nRows (40);   
+  const int nCols     (3);
+  const int nAdd       (3);
   
   //  std::cin >> nRows;  std::cout << "Testing regression code with nRows = " << nRows << std::endl;
   
@@ -40,19 +42,54 @@ int main(int, char **)
   Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
   Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
 
-  //  write data so that can check in JMP/R
+  // names for variables
+  std::vector<std::string> xNames;
+  std::vector<std::string> zNames;
+  for (int i=0; i<nCols; ++i)
+  { std::ostringstream oss;
+    oss << "X" << i;
+    xNames.push_back(oss.str());
+  }
+  for (int i=0; i<nAdd; ++i)
+  { std::ostringstream oss;
+    oss << "Z" << i;
+    zNames.push_back(oss.str());
+  }
   
-  if (false)
+  //  write data so that can check in JMP/R
+  if (true)
   { Eigen::MatrixXd data(nRows,1+2*nCols);
     data << y , X , Z;
     std::string fileName ("test.dat");
     std::ofstream output(fileName.c_str());
     output << data << std::endl;
   }
-    
+
+
+  // check validation model (dup validation and estimation cases)
+  bool   cv[2*nRows];
+  double yPtr[nRows*2];
+  for(int i=0; i<nRows; ++i)
+  { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
+    cv[2*i] = true; cv[2*i+1]=false;
+  }
+  std::vector<std::pair<std::string, double*> > collection;
+  for(int j=0; j<nCols; ++j)
+  { double *xPtr = new double [nRows*2];
+    for(int i=0; i<nRows; ++i)
+    { xPtr[2*i] = X(i,j); xPtr[2*i+1] = X(i,j); }
+    collection.push_back(make_pair(xNames[j],xPtr));
+  }
+  ValidatedRegression vregr("Y", yPtr, cv, 2*nRows);
+  std::cout << vregr << std::endl;
+  vregr.add_predictors_if_useful (collection, 1.0);
+  std::cout << vregr << std::endl;
+
   // build a regression; no shrinkage for initial variables
   {
-    clock_t start = clock();     LinearRegression regr(y,X);       print_time(start);
+    clock_t start;
+    start = clock();     LinearRegression regr("y",y);       print_time(start);
+    start = clock();     regr.add_predictors(xNames,X);      print_time(start);
     std::cout << regr << std::endl;
     
     int show ((nRows > 10)?10:nRows);
@@ -75,17 +112,19 @@ int main(int, char **)
     start = clock(); std::cout << "White   Z      : " << regr.f_test_predictors(Z, 1)      << std::endl; print_time(start);
     start = clock(); std::cout << "White Z, b=5   : " << regr.f_test_predictors(Z, 5)      << std::endl; print_time(start);
     
-    start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor(z);                           print_time(start);  std::cout << regr << std::endl;
-    start = clock(); std::cout << "Adding k preds : ";  regr.add_predictors(Z);                          print_time(start);  std::cout << regr << std::endl;
+    start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor("z", z);                      print_time(start);  std::cout << regr << std::endl;
+    start = clock(); std::cout << "Adding k preds : ";  regr.add_predictors(zNames, Z);                  print_time(start);  std::cout << regr << std::endl;
   }
   // test shrinkage
   {
     std::cout << "\nTest: shrinkage in regression; refit models with shrinkage in place.\n";
-    LinearRegression sregr(y,X);
+    LinearRegression sregr("y", y);
+    sregr.add_predictors(xNames, X);
     std::cout << "Shrinking 1 pred  : ";
-    sregr.add_predictor(Z.col(0),sregr.f_test_predictor(Z.col(0)));    std::cout << sregr << std::endl;
+    sregr.add_predictor("Z[0]", Z.col(0),sregr.f_test_predictor(Z.col(0)));    std::cout << sregr << std::endl;
     std::cout << "Shrinking 2 pred  : ";
-    sregr.add_predictors(Z.block(0,1,Z.rows(),Z.cols()-1),sregr.f_test_predictors(Z.block(0,1,Z.rows(),Z.cols()-1)));  std::cout << sregr << std::endl;
+    std::vector<std::string> twoNames; twoNames.push_back("Z[1]"); twoNames.push_back("Z[2]");
+    sregr.add_predictors(twoNames, Z.block(0,1,Z.rows(),Z.cols()-1),sregr.f_test_predictors(Z.block(0,1,Z.rows(),Z.cols()-1)));  std::cout << sregr << std::endl;
   }
   // tail end of a vector; this one gets you the last 4
   //  std::cout << y.end(4).transpose() << std::endl;

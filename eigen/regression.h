@@ -28,6 +28,10 @@
 
 */
 
+
+
+//     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     
+
 class FStatistic
 {
   typedef Eigen::VectorXd Vector;
@@ -75,6 +79,7 @@ operator<<(std::ostream& os, FStatistic const& fStat)
 
 class LinearRegression
 {
+public:
   typedef Eigen::VectorXd Vector;
   typedef Eigen::MatrixXd Matrix;
   typedef FStatistic      FStat;
@@ -88,43 +93,111 @@ private:
   Vector  mResiduals;
   double  mResidualSS;
   double  mTotalSS;
+  std::vector<std::string> mNames;
   
 public:
   ~LinearRegression () { }
 
-  LinearRegression (Vector const& y, Matrix const& x) :  mN(y.size()), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)) { initialize(); }
+  LinearRegression ()
+    :  mN(0) { }
+  
+  LinearRegression (std::string yName, Vector const& y)
+    :  mN(y.size()), mY(pad_vector(y,1)), mX(initial_x_matrix()), mNames() { std::vector<std::string> xnames(0); initialize(yName, xnames); }
 
+  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
+    :  mN(y.size()), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)), mNames() { initialize(yName, xNames); }
   
   int       n()                      const   { return mN; };
   int       p()                      const   { return mX.cols()-1; }                      // -1 for intercept 
   double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }
+  double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
   Vector    residuals()              const   { return mResiduals.start(mN); }  
   Vector    fitted_values()          const   { return mY.start(mN) - mResiduals.start(mN); }
   Vector    predict(Matrix const& x) const;
-  
+
   Vector    beta()                   const;
   Vector    se_beta()                const;
+
+  template <class Iter> void fill_with_predictions   (Matrix const& x, Iter begin) const;
+  template <class Iter> void fill_with_fitted_values (Iter begin)                  const;
+  template <class Iter> void fill_with_beta          (Iter begin)                  const;
 
   FStat     f_test_predictor  (Vector const& z, int blockSize = 0) const;                // <f,pval>  f == 0 implies singular; blocksize>0 for white
   FStat     f_test_predictors (Matrix const& z, int blockSize = 0) const; 
 
-  void      add_predictor  (Vector const& z)                      { add_predictors(z, FStatistic()); } // no shrinkage
-  void      add_predictor  (Vector const& z, FStat const& fstat)  { add_predictors(z, fstat); }
-  void      add_predictors (Matrix const& z)                      { add_predictors(z,FStatistic()); }   // no shrinkage
-  void      add_predictors (Matrix const& z, FStat const& fstat);
+  void      add_predictor  (std::string name, Vector const& z)                               { add_predictors(name_vec(name), z, FStatistic()); } // no shrinkage
+  void      add_predictor  (std::string name, Vector const& z, FStat const& fstat)           { add_predictors(name_vec(name), z, fstat); }
+  void      add_predictors (std::vector<std::string> const& names, Matrix const& z)          { add_predictors(names, z, FStatistic()); }          // no shrinkage
+  void      add_predictors (std::vector<std::string> const& names, Matrix const& z, FStat const& fstat);
+
   
-  void print_to (std::ostream& os) const;
+  void print_to      (std::ostream& os) const;
+  void write_data_to (std::ostream& os) const;                                           // JMP style, with y followed by X columns (tab delimited)
 
  private:
   Vector pad_vector(Vector const& v, int k) const;
-  Matrix insert_constant(Matrix const& m) const;    // stuffs a 1 as first column
-  void initialize();                                // sets initial SS, calls orthgonalize
-  void build_QR_and_residuals();                    // does the QR and finds residuals
+  std::vector<std::string> name_vec(std::string name) const;
+  Matrix initial_x_matrix() const;
+  Matrix insert_constant(Matrix const& m) const;                        // stuffs a 1 as first column
+  void   initialize(std::string y, std::vector<std::string> const&x);   // sets initial SS, calls orthgonalize
+  void   build_QR_and_residuals();                                      // does the QR and finds residuals
 };
 
-           
+
+
+//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
+
+class ValidatedRegression
+{
+public:
+  typedef LinearRegression::Vector  Vector;
+  typedef LinearRegression::Matrix  Matrix;
+  
+private:
+  const int        mLength;         // total length estimation + validation
+  int              mBlockSize;
+  int              mN;              // number of estimation rows as identified on start
+  std::vector<int> mPermute;        // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
+  Vector           mValidationY;
+  Matrix           mValidationX;    // append when variable is added to model
+  LinearRegression mModel;
+  
+public:
+  ~ValidatedRegression () {  }
+  
+  ValidatedRegression() : mLength(0), mBlockSize(0), mN(0), mPermute() { }
+  
+  template<class Iter, class BIter>
+  ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize = 0)
+    :  mLength(len), mBlockSize(blockSize), mN(0), mPermute(len)    { initialize(yName, Y, B); }
+
+  int n_validation_cases() const  { return mLength - mN; }
+  int n_estimation_cases() const  { return mN; }
+
+  double estimation_ss() const { return mModel.residual_ss(); }
+  double validation_ss() const { return (mValidationY - mModel.predict(mValidationX)).squaredNorm(); }
+  std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
+    
+  template <class Iter> std::pair<double,double> add_predictor_if_useful  (std::string name, Iter it, double pToEnter);
+  template <class Iter> std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
+
+  void print_to(std::ostream& os) const;
+  
+private:
+  
+  template<class Iter, class BIter>
+  void initialize(std::string yName, Iter Y, BIter B);
+  
+  template<class Iter>
+  LinearRegression::Vector split_iterator(Iter it) const;
+  
+};
+
+
+
+
 ///////////////////////////  Printing Operators  /////////////////////////////
 
 inline
@@ -133,8 +206,25 @@ operator<<(std::ostream& os, LinearRegression const& regr)
 {
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
   regr.print_to(os);
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl << std::endl;
+  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
   return os;
 }
+
+
+inline
+std::ostream&
+operator<<(std::ostream& os, ValidatedRegression const& regr)
+{
+  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
+  regr.print_to(os);
+  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
+  return os;
+}
+
+
+
+
+#include "regression.Template.h"
+
 
 #endif
