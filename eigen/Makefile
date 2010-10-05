@@ -12,7 +12,7 @@ PROJECT_NAME = eigen
 # OPT = -O0 
 # fast and who gives a damn about errors?
 
-OPT = -O3 -DNDEBUG
+OPT = -O3
 
 USES = random utils
 

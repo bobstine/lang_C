@@ -1,5 +1,6 @@
 #include "regression.h"
-
+#include "debug.h"
+ 
 #include <vector>
 #include <iostream>
 #include <sstream>
@@ -20,8 +21,11 @@ void print_time(time_t const& start)
 }
 
 
+//     main     main     main     main     main     main     main     main     main     main     main     main     
+
 int main(int, char **)
 {
+  debugging::debug_init(std::cout,0);
   std::cout.precision(2);  std::cout << "TEST:  Test of regression begins...\n\n";
 
   // Timing to build regr with n = 400,000 rows    Time to test adding a 1 or 3 vars to a model with 30 predictors
@@ -57,34 +61,45 @@ int main(int, char **)
   }
   
   //  write data so that can check in JMP/R
-  if (true)
+  if (nRows < 100)
   { Eigen::MatrixXd data(nRows,1+2*nCols);
     data << y , X , Z;
     std::string fileName ("test.dat");
     std::ofstream output(fileName.c_str());
+    output.precision(7);
     output << data << std::endl;
   }
 
-
   // check validation model (dup validation and estimation cases)
-  bool   cv[2*nRows];
-  double yPtr[nRows*2];
-  for(int i=0; i<nRows; ++i)
-  { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
-    cv[2*i] = true; cv[2*i+1]=false;
-  }
-  std::vector<std::pair<std::string, double*> > collection;
-  for(int j=0; j<nCols; ++j)
-  { double *xPtr = new double [nRows*2];
+  {
+    bool   cv[2*nRows];
+    double yPtr[nRows*2];
     for(int i=0; i<nRows; ++i)
-    { xPtr[2*i] = X(i,j); xPtr[2*i+1] = X(i,j); }
-    collection.push_back(make_pair(xNames[j],xPtr));
+    { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
+      cv[2*i] = true; cv[2*i+1]=false;
+    }
+    std::vector<std::pair<std::string, double*> > xcollection;
+    for(int j=0; j<nCols; ++j)
+    { double *xPtr = new double [nRows*2];
+      for(int i=0; i<nRows; ++i)
+      { xPtr[2*i] = X(i,j); xPtr[2*i+1] = X(i,j); }
+      xcollection.push_back(make_pair(xNames[j],xPtr));
+    }
+    std::vector<std::pair<std::string, double*> > zcollection;
+    for(int j=0; j<nAdd; ++j)
+    { double *xPtr = new double [nRows*2];
+      for(int i=0; i<nRows; ++i)
+      { xPtr[2*i] = Z(i,j); xPtr[2*i+1] = Z(i,j); }
+      zcollection.push_back(make_pair(xNames[j],xPtr));
+    }
+    ValidatedRegression vregr("Y", yPtr, cv, 2*nRows);
+    std::cout << vregr << std::endl;
+    vregr.add_predictors_if_useful (xcollection, 1.0);
+    std::cout << vregr << std::endl;
+    vregr.add_predictors_if_useful (zcollection, 1.0);
+    std::cout << vregr << std::endl;
   }
-  ValidatedRegression vregr("Y", yPtr, cv, 2*nRows);
-  std::cout << vregr << std::endl;
-  vregr.add_predictors_if_useful (collection, 1.0);
-  std::cout << vregr << std::endl;
-
+  
   // build a regression; no shrinkage for initial variables
   {
     clock_t start;

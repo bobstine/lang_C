@@ -75,7 +75,7 @@ operator<<(std::ostream& os, FStatistic const& fStat)
 }
 
 
-
+//     LinearRegression      LinearRegression      LinearRegression      LinearRegression      LinearRegression      LinearRegression      
 
 class LinearRegression
 {
@@ -178,6 +178,7 @@ public:
 
   double estimation_ss() const { return mModel.residual_ss(); }
   double validation_ss() const { return (mValidationY - mModel.predict(mValidationX)).squaredNorm(); }
+
   std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
     
   template <class Iter> std::pair<double,double> add_predictor_if_useful  (std::string name, Iter it, double pToEnter);

@@ -92,7 +92,10 @@ LinearRegression::initialize(std::string y, std::vector<std::string> const& x)
   double yBar (mY.sum()/mN);
   mTotalSS = mY.redux(CenteredSquare(yBar));
   double y0 (mY(0));
+  // std::cout.precision(6);  // y0 seems farther from -1 than I would have guessed possible...
+  // std::cout << "TEST: y[0] = " << y0 << " with initial total SS = " << mTotalSS << " with ybar = " << yBar << std::endl;
   double d0 (y0 - yBar);
+  // std::cout << "TEST: " << mTotalSS << " + " << d0*d0 << " - " << y0 << " = " ;
   mTotalSS += d0*d0 - y0;                          // patch Eigen reduction initialization with y[0]
   assert(mTotalSS>0);
   build_QR_and_residuals();
@@ -107,7 +110,9 @@ LinearRegression::build_QR_and_residuals()
   mR = qr.matrixR();
   mQ = qr.matrixQ();
   mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order of evaluation
-  mResidualSS = mResiduals.squaredNorm();  
+  mResidualSS = mResiduals.squaredNorm();
+  if (mX.cols()==1)                                // set total SS using this more accurate calculation
+    mTotalSS = mResidualSS;
 }
 
 
@@ -135,7 +140,10 @@ LinearRegression::predict(Matrix const& x) const
 {
   assert(p() == x.cols());
   Vector b (beta());
-  return (x * b.end(x.cols())).cwise() + b(0);    // internal X has leading const column; input X lacks constant
+  if (p() == 0)
+    return Vector::Constant(mY.size(),b(0));
+  else
+    return (x * b.end(x.cols())).cwise() + b(0);    // internal X has leading const column; input X lacks constant
 }
 
 
@@ -230,7 +238,10 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
 void
 LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix const& z, FStatistic const& fstat)
 {
-  std::cout << "Adding " << z.cols() << " predictors with entry stats " << fstat << std::endl;
+  debugging::debug("LINR",2) << "Adding " << z.cols() << " predictors.";
+  if (fstat.f_stat() > 0)
+    debugging::debug("LINR",2) << "Entry stats " << fstat;
+  debugging::debug("LINR",2) << std::endl;
   assert(z.rows() == mN);
   assert((int)names.size() == z.cols());
   // names
@@ -288,7 +299,7 @@ void
 ValidatedRegression::print_to(std::ostream& os) const
 {
   os.precision(6);
-  os << "Validated Regression      n(est) = " << mN << "    n(validate) " << n_validation_cases() << "    ";
+  os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
   if(mBlockSize > 0)
     os << " with White SE(b=" << mBlockSize << ")";
   os << std::endl
