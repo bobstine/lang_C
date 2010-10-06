@@ -59,7 +59,7 @@ private:
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
   
-  double                 model_goodness_of_fit()    const { return mModel.gof(); }
+  double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
   int                    number_of_experts ()       const { return mExperts.size(); }
   int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
@@ -67,7 +67,7 @@ private:
   double                 recovered_alpha()          const { return mRecoveredAlpha; }
   bool                   has_active_expert()        const { return mHasActiveExpert; }  
 									 
-  int                    number_of_predictors()     const { return mModel.q(); }
+  int                    number_of_predictors()     const { return mModel.dimension(); }
   int                    number_of_features_tried() const { return mModelFeatures.size() + mRejectedFeatures.size(); }
   FeatureVector const&   model_features()           const { return mModelFeatures; }
   FeatureVector const&   rejected_features()        const { return mRejectedFeatures; }

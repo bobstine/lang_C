@@ -19,9 +19,9 @@ PROJECT_NAME = auction
 
 # OPT      =  -DTHREADED
 
-USES = gsl_tools eigen spline ranges random utils 
+USES =  gsl_tools eigen spline ranges random utils 
 
-EXTERNAL_USES = gsl gslcblas boost_thread
+EXTERNAL_USES = gsl boost_thread
 
 ###########################################################################
 #

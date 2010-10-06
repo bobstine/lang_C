@@ -393,7 +393,7 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
   std::ostringstream oss;
   oss << q;
   std::string name ("xb_" + oss.str());
-  int     n      (mModel.len());                 // include those used in validation
+  int     n      (mModel.n_all_cases());                 // include those used in validation
   LinearCombinationFeature *f = new LinearCombinationFeature(n, beta,useFeatures);
   return f;
 }

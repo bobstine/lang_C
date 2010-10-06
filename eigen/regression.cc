@@ -138,9 +138,9 @@ LinearRegression::se_beta() const
 LinearRegression::Vector
 LinearRegression::predict(Matrix const& x) const
 {
-  assert(p() == x.cols());
+  assert(q() == x.cols());
   Vector b (beta());
-  if (p() == 0)
+  if (q() == 0)
     return Vector::Constant(mY.size(),b(0));
   else
     return (x * b.end(x.cols())).cwise() + b(0);    // internal X has leading const column; input X lacks constant
@@ -158,7 +158,7 @@ LinearRegression::f_test_predictor (Vector const& input, int blockSize) const
   z.corner(Eigen::BottomLeft,z.rows()-mN,1).setZero();
   // order matters, do not form the big projection matrix
   Vector zRes (z - mQ * (mQ.transpose() * z));
-  int residualDF (mN-2-p());
+  int residualDF (mN-2-q());
   assert(residualDF > 0);
   double ssz (zRes.squaredNorm());
   Vector ssx(1);
@@ -195,7 +195,7 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
   z.corner(Eigen::BottomLeft, z.rows()-mN, input.cols()).setZero();
   Matrix zRes (z - mQ * (mQ.transpose() * z));
   Vector ssx ((zRes.cwise() * zRes).colwise().sum());
-  int residualDF (mN-1-p()-z.cols());
+  int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
   Matrix R    (qr.matrixR());
@@ -296,7 +296,7 @@ LinearRegression::write_data_to (std::ostream& os) const
 
 
 void
-ValidatedRegression::print_to(std::ostream& os) const
+ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 {
   os.precision(6);
   os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
@@ -307,4 +307,15 @@ ValidatedRegression::print_to(std::ostream& os) const
      << mModel;
 }
 
+void
+ValidatedRegression::write_data_to(std::ostream& os) const
+{
+  mModel.write_data_to(os);
+  for(int i=0; i<mValidationX.rows(); ++i)
+  { os << "\t";                // blank Y
+    for (int j=0; j<mValidationX.cols(); ++j)  // skip intercept
+      os << mValidationX(i,j) << "\t";
+    os << mValidationX(i,mValidationX.cols()) << std::endl;
+  }
+}
 

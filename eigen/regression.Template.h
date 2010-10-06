@@ -45,7 +45,7 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
   if (f.p_value() > pToEnter)
     return std::make_pair(f.f_stat(), f.p_value());
   debugging::debug("VALM",3) << "Adding " << k << " predictors to model\n";
-  if (0 == mModel.p())  // first added variables
+  if (0 == mModel.q())  // first added variables
     mValidationX = preds.corner(Eigen::BottomLeft, n_validation_cases(), k);
   else                  // add additional columns
   { Matrix x(mValidationX.rows(),mValidationX.cols()+k);
@@ -81,10 +81,27 @@ ValidatedRegression::initialize(std::string yName, Iter Y, BIter B)
 
 
 template<class Iter>
-LinearRegression::Vector ValidatedRegression::split_iterator(Iter it) const
+LinearRegression::Vector
+ValidatedRegression::split_iterator(Iter it) const
 {
   LinearRegression::Vector v(mLength);
-  for(int i=0; i<mLength; ++i, ++it)
-    v[ mPermute[i] ] = *it;
+  if (n_validation_cases()>0)
+  { for(int i=0; i<mLength; ++i, ++it)
+      v[ mPermute[i] ] = *it;
+  }
+  else // just copy directly into a eigen::vector
+  { for(int i=0; i<mLength; ++i, ++it)
+      v[ i ] = *it;
+  }
   return v;
+}
+
+
+template <class Iter>
+void
+ValidatedRegression::fill_with_fit(Iter it) const
+{
+  Vector fit (mModel.fitted_values());
+  for(int i = 0; i<n_estimation_cases(); ++i)   // these are first n, in order (no need to permute)
+    *it++ = fit(i);
 }

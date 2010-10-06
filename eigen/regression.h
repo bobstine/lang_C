@@ -108,7 +108,7 @@ public:
     :  mN(y.size()), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)), mNames() { initialize(yName, xNames); }
   
   int       n()                      const   { return mN; };
-  int       p()                      const   { return mX.cols()-1; }                      // -1 for intercept 
+  int       q()                      const   { return mX.cols()-1; }                      // -1 for intercept 
   double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }
   double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
@@ -147,7 +147,7 @@ public:
 
 
 
-//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
+//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
 
 class ValidatedRegression
 {
@@ -173,18 +173,25 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize = 0)
     :  mLength(len), mBlockSize(blockSize), mN(0), mPermute(len)    { initialize(yName, Y, B); }
 
+  double goodness_of_fit() const  { return mModel.r_squared(); }
+  int dimension()          const  { return mModel.q(); }
+  int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
+  
+  int n_all_cases()        const  { return mLength; }
   int n_validation_cases() const  { return mLength - mN; }
   int n_estimation_cases() const  { return mN; }
 
   double estimation_ss() const { return mModel.residual_ss(); }
-  double validation_ss() const { return (mValidationY - mModel.predict(mValidationX)).squaredNorm(); }
+  double validation_ss() const { if (n_validation_cases()>0) return (mValidationY - mModel.predict(mValidationX)).squaredNorm(); else return 0.0; }
 
   std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
     
   template <class Iter> std::pair<double,double> add_predictor_if_useful  (std::string name, Iter it, double pToEnter);
   template <class Iter> std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
-
-  void print_to(std::ostream& os) const;
+  template <class Iter> void fill_with_fit(Iter it) const;
+  
+  void print_to     (std::ostream& os, bool useHTML=false) const;
+  void write_data_to(std::ostream& os) const;
   
 private:
   

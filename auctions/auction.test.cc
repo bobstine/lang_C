@@ -1,5 +1,3 @@
-#define LINEAR_MODEL
-   
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
@@ -41,8 +39,7 @@
 #include "debug.h"
 #include "read_utils.h"     
 
-#include "gsl_model.h"
-#include "smoothing_spline.h"
+#include "regression.h"
 #include "eigen_svd.h"
 
 #include <iostream>
@@ -85,22 +82,14 @@ parse_arguments(int argc, char** argv,
 		std::string& outputPath,
 		int &protection, int &blockSize,
 		int &nRounds, double &totalAlpha,
-		int &df, int &extraCases, int &debugLevel);
+		int &df, int &prefixCases, int &debugLevel);
 
-std::pair< std::pair<int,double>, std::pair<int,double> >
-initialize_sums_of_squares(std::vector<Column> y);
-
-gslData*
-build_model_data(Column y, Column inOut, int skip, std::ostream& os);
-
-int
-parse_column_format(std::string const& dataFileName, std::ostream&);
-
-Column
-identify_cv_indicator(std::vector<Column> const& columns, int extraCases);
-
-void
-round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
+std::pair< std::pair<int,double>, std::pair<int,double> >  initialize_sums_of_squares(std::vector<Column> y);
+gslData*     build_model_data(Column y, Column inOut, int skip, std::ostream& os);
+ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os);
+int          parse_column_format(std::string const& dataFileName, std::ostream&);
+Column       identify_cv_indicator(std::vector<Column> const& columns, int prefixCases);
+void         round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
 
 
 int
@@ -116,16 +105,16 @@ main(int argc, char** argv)
   std::string   inputName            ("");                                  // empty implies cin
   std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int           protection           (3);
-  int           blockSize            (1);
+  int           blockSize            (0);                                   // no blocking implies standard testing
   int           numberRounds         (200); 
   int           splineDF             (0);
-  int           extraCases           (0);
+  int           prefixCases           (0);
   int           debugLevel           (3);
     
 
   parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
-		  splineDF, extraCases, debugLevel);
+		  splineDF, prefixCases, debugLevel);
 
    
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -140,7 +129,7 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
-		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << extraCases
+		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << prefixCases
 		  << std::endl;
   
   // open additional files for output
@@ -202,13 +191,13 @@ main(int argc, char** argv)
   }
 
   // check the cross validation indicator
-  Column inOut = identify_cv_indicator(cColumns, extraCases); 
+  Column inOut = identify_cv_indicator(cColumns, prefixCases); 
 
   // initialize data object held in underlying model [y and optional selector]
-  gslData *theData (build_model_data(yColumns[0], inOut, extraCases, debug("MAIN",2)));
+  //  gslData *theData (build_model_data(yColumns[0], inOut, prefixCases, debug("MAIN",2)));
   
   // organize data into feature streams
-  FeatureSource featureSrc (xColumns, extraCases);
+  FeatureSource featureSrc (xColumns, prefixCases);
   featureSrc.print_summary(debug("MAIN",1));
 
   // initialize progress file to hold incremental round-by-round results
@@ -221,16 +210,10 @@ main(int argc, char** argv)
 
   // --- build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
-#ifdef LINEAR_MODEL
-  LinearModel <gslData, olsEngine> theRegr(theData, protection, blockSize);
-  Auction<  LinearModel <gslData, olsEngine> > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
-#else
-  // --- build logisitic model and auction
-  LogisticModel <gslData> theRegr(theData, protection, blockSize);
-  Auction<  LogisticModel <gslData> > theAuction(theRegr, featureSrc, splineDF, calSig, blockSize, progressStream);
-#endif
-
-
+  ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, debug("MAIN",2));
+  Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
+  
+  
   // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
@@ -344,7 +327,7 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature())                     // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
+      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().dimension() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
@@ -388,8 +371,6 @@ main(int argc, char** argv)
     output.close();
   }
    
-  debug("AUCT",3) << "Auction is completed; disposing GSL data objects.\n";
-  delete (theData);
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   
   return 0;  
@@ -406,7 +387,7 @@ parse_arguments(int argc, char** argv,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &nDF,
-		int    &extraCases,
+		int    &prefixCases,
 		int    &debugLevel)
 {
   int key;
@@ -475,7 +456,7 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'x' :
 	    {
-	      extraCases = read_utils::lexical_cast<int>(optarg);
+	      prefixCases = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'h' :
@@ -508,7 +489,7 @@ parse_arguments(int argc, char** argv,
 
 
 Column
-identify_cv_indicator(std::vector<Column> const& columns, int extraCases)
+identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 {
   Column indicator;
   if (columns.empty())
@@ -524,10 +505,10 @@ identify_cv_indicator(std::vector<Column> const& columns, int extraCases)
   { if (columns[0]->is_dummy())
     { indicator = columns[0];
       double sum (0.0);
-      for (double *b (indicator->begin() + extraCases); b != indicator->end() ; ++ b)
+      for (double *b (indicator->begin() + prefixCases); b != indicator->end() ; ++ b)
 	sum += *b;
       debug("MAIN",0) << "CV indicator variable is " << indicator->name() << " with sum " << sum
-		      << " estimation cases after skipping " << extraCases << " leading cases.\n";
+		      << " estimation cases after skipping " << prefixCases << " leading cases.\n";
     }
     else
       debug("MAIN",0) << "ERROR: Proposed indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
@@ -556,3 +537,21 @@ build_model_data(Column y, Column inOut, int skip, std::ostream& os)
   } 
 }
  
+ValidatedRegression
+build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os)
+{
+  bool                      useSubset    (0 != inOut->size());
+  constant_iterator<double> equalWeights (1.0);
+  int                       nRows        ((int)y->size()-prefixRows);
+  
+  os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y << std::endl;
+  if (useSubset)
+  { os << "        Validation cases identified by " << inOut << std::endl;
+    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows);
+  } 
+  else
+  { os << "        No validation.\n";
+    constant_iterator<bool>   noSelection(true);
+    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows);  
+  } 
+}
