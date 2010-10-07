@@ -25,7 +25,7 @@
 */
    
 #include "auction.h"
-  
+    
 // from ranges
 #include "range.h"
 #include "range_ops.h"
@@ -327,7 +327,7 @@ main(int argc, char** argv)
     {
       ++round;
       if (theAuction.auction_next_feature())                     // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().dimension() << " @@@" << std::endl;
+      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
@@ -487,7 +487,7 @@ parse_arguments(int argc, char** argv,
     }
 }
 
-
+ 
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 {

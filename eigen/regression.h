@@ -85,15 +85,16 @@ public:
   typedef FStatistic      FStat;
   
 private:
-  int     mN;          // number of obs without pseudorows used for shrinkage
-  Vector  mY;          // padded for shrinkage
-  Matrix  mX;          // padded for shrinkage; shrinkage elements on diagonal
-  Matrix  mQ;          // decomp of X (so padded too)
-  Matrix  mR;
-  Vector  mResiduals;
-  double  mResidualSS;
-  double  mTotalSS;
-  std::vector<std::string> mNames;
+  int         mN;          // number of obs without pseudorows used for shrinkage
+  std::string mYName; 
+  Vector      mY;          // padded for shrinkage
+  Matrix      mX;          // padded for shrinkage; shrinkage elements on diagonal
+  Matrix      mQ;          // decomp of X (so padded too)
+  Matrix      mR;
+  Vector      mResiduals;
+  double      mResidualSS;
+  double      mTotalSS;
+  std::vector<std::string> mXNames; 
   
 public:
   ~LinearRegression () { }
@@ -102,14 +103,14 @@ public:
     :  mN(0) { }
   
   LinearRegression (std::string yName, Vector const& y)
-    :  mN(y.size()), mY(pad_vector(y,1)), mX(initial_x_matrix()), mNames() { std::vector<std::string> xnames(0); initialize(yName, xnames); }
+    :  mN(y.size()), mYName(yName), mY(pad_vector(y,1)), mX(initial_x_matrix()), mXNames() { initialize(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
-    :  mN(y.size()), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)), mNames() { initialize(yName, xNames); }
+    :  mN(y.size()), mYName(yName), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)), mXNames(xNames) { initialize(); }
   
   int       n()                      const   { return mN; };
   int       q()                      const   { return mX.cols()-1; }                      // -1 for intercept 
-  double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }
+  double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }  
   double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
@@ -141,7 +142,7 @@ public:
   std::vector<std::string> name_vec(std::string name) const;
   Matrix initial_x_matrix() const;
   Matrix insert_constant(Matrix const& m) const;                        // stuffs a 1 as first column
-  void   initialize(std::string y, std::vector<std::string> const&x);   // sets initial SS, calls orthgonalize
+  void   initialize();                                                  // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                      // does the QR and finds residuals
 };
 
@@ -174,7 +175,7 @@ public:
     :  mLength(len), mBlockSize(blockSize), mN(0), mPermute(len)    { initialize(yName, Y, B); }
 
   double goodness_of_fit() const  { return mModel.r_squared(); }
-  int dimension()          const  { return mModel.q(); }
+  int q()                  const  { return mModel.q(); }
   int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
   
   int n_all_cases()        const  { return mLength; }

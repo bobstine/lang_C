@@ -34,8 +34,8 @@ template<class Model>
 bool
 FitStream<Model>::empty()  const
 {
-  if (mModel.dimension()==0) return true;
-  return(mLastQ == mModel.dimension());
+  if (mModel.q()==0) return true;
+  return(mLastQ == mModel.q());
 }
 
 template<class Model>
@@ -47,7 +47,7 @@ FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std:
   bool foundSig = (std::string::npos != lastVarName.find(mSignature));       // ::npos means not found
   if (foundSig) 
   { debugging::debug("FSTR",4) << "Fit stream already used; not okay.\n";
-    mLastQ = mModel.dimension();                                             // signals empty
+    mLastQ = mModel.q();                                             // signals empty
     return false;
   }
   else
@@ -68,7 +68,7 @@ std::vector<Feature>FitStream<Model>::pop()
   for (int j = 2; j <= mPower; ++j)
     powers.push_back(j);
   debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
-  mLastQ = mModel.dimension();                                                  // will be empty until next is added
+  mLastQ = mModel.q();                                                         // will be empty until next is added
   return powers_of_column_feature(mFit,powers);
 }
 
@@ -80,7 +80,7 @@ FitStream<Model>::feature_name () const
     return std::string("");
   else
   { std::ostringstream oss;
-    oss << mModel.dimension();
+    oss << mModel.q();
     return mSignature + oss.str();
   }
 }

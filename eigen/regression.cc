@@ -84,11 +84,8 @@ namespace {
 }
 
 void
-LinearRegression::initialize(std::string y, std::vector<std::string> const& x)
+LinearRegression::initialize()
 {
-  mNames.push_back(y);
-  for (unsigned int i=0; i<x.size(); ++i)
-    mNames.push_back(x[i]);
   double yBar (mY.sum()/mN);
   mTotalSS = mY.redux(CenteredSquare(yBar));
   double y0 (mY(0));
@@ -238,15 +235,15 @@ LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
 void
 LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix const& z, FStatistic const& fstat)
 {
-  debugging::debug("LINR",2) << "Adding " << z.cols() << " predictors.";
+  debugging::debug("LINR",2) << "Adding matrix of predictors with dimension " << z.rows() << " x " << z.cols()
+			     << " predictors to regression with X which is " << mX.rows() << " x " << mX.cols() << std::endl;
   if (fstat.f_stat() > 0)
-    debugging::debug("LINR",2) << "Entry stats " << fstat;
-  debugging::debug("LINR",2) << std::endl;
+    debugging::debug("LINR",2) << "Entry stats " << fstat << std::endl;
   assert(z.rows() == mN);
   assert((int)names.size() == z.cols());
   // names
   for (unsigned int j=0; j<names.size(); ++j)
-    mNames.push_back(names[j]);
+    mXNames.push_back(names[j]);
   // add rows and columns
   Matrix X(mX.rows()+z.cols(),mX.cols()+z.cols());
   X.corner(Eigen::TopLeft,    mX.rows(), mX.cols()) = mX;
@@ -267,15 +264,15 @@ void
 LinearRegression::print_to (std::ostream& os) const
 {
   os.precision(6);
-  os << "Linear Regression        y = " << mNames[0] << std::endl
+  os << "Linear Regression        y = " << mYName << std::endl
      << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
      << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
-  os << std::setw(30) << "Intercept " << "  " << std::setw(8) << b[0] << "  " << std::setw(8) << se[0] << "  " << std::setw(8) << b[0]/se[0] << std::endl;
+  os << std::setw(30) << "Intercept "   << "  " << std::setw(8) << b[0] << "  " << std::setw(8) << se[0] << "  " << std::setw(8) << b[0]/se[0] << std::endl;
   for (int j = 1; j<mX.cols(); ++j)
-    os << std::setw(30) << mNames[j]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+    os << std::setw(30) << mXNames[j-1]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
 }
 
 
