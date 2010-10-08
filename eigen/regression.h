@@ -103,10 +103,10 @@ public:
     :  mN(0) { }
   
   LinearRegression (std::string yName, Vector const& y)
-    :  mN(y.size()), mYName(yName), mY(pad_vector(y,1)), mX(initial_x_matrix()), mXNames() { initialize(); }
+    :  mN(y.size()), mYName(yName), mY(y), mX(initial_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
-    :  mN(y.size()), mYName(yName), mY(pad_vector(y,x.cols()+1)), mX(insert_constant(x)), mXNames(xNames) { initialize(); }
+    :  mN(y.size()), mYName(yName), mY(y), mX(insert_constant(x)), mXNames(xNames) { initialize(); }
   
   int       n()                      const   { return mN; };
   int       q()                      const   { return mX.cols()-1; }                      // -1 for intercept 
@@ -182,8 +182,8 @@ public:
   int n_validation_cases() const  { return mLength - mN; }
   int n_estimation_cases() const  { return mN; }
 
-  double estimation_ss() const { return mModel.residual_ss(); }
-  double validation_ss() const { if (n_validation_cases()>0) return (mValidationY - mModel.predict(mValidationX)).squaredNorm(); else return 0.0; }
+  double estimation_ss()   const  { return mModel.residual_ss(); }
+  double validation_ss()   const;
 
   std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
     

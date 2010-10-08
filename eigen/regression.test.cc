@@ -71,7 +71,7 @@ int main(int, char **)
   }
 
   // check validation model (dup validation and estimation cases)
-  if (false) {
+  if (true) {
     std::cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
     double yPtr[nRows*2];
@@ -105,8 +105,6 @@ int main(int, char **)
   {
     clock_t start;
     start = clock();     LinearRegression regr("y",y);       print_time(start);
-    Eigen::MatrixXd empty(nRows,0);
-    std::cout << regr.predict(empty).transpose() << std::endl;
     start = clock();     regr.add_predictors(xNames,X);      print_time(start);
     std::cout << regr << std::endl;
     

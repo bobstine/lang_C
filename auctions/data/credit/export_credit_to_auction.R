@@ -37,14 +37,14 @@ write.the.data <- function() {
 #  write of county level data starts here 
 # --------------------------------------------
 
-# --- initilize the manifest file, removing one quarter for lag alignment
+# --- initialize the manifest file, removing one quarter for lag alignment
 	cat("#!/bin/sh\n# number of cases in each variable\necho", dims[1]*(dims[2]-1),"\n",
 	    file=the.manifest, append=FALSE)  
 
 # --- write the in/out selector; hold back q quarters
 #     have n.time-1 total columns to write since lagged
 	# omits the last few quarters
-	t.include <- t.fit; t.exclude <- t.predict
+	# t.include <- t.fit; t.exclude <- t.predict
 
 	# this version omits randomly
 	all.times <- c(t.fit,t.predict)
@@ -53,8 +53,8 @@ write.the.data <- function() {
 
 	# write cv indicator, population to data directory
 	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
-	in.out <<- matrix(0,nrow=dims[1],ncol=dims[2]); 
-	neiin.out[,t.include] <<- 1;
+	in.out <- matrix(0,nrow=dims[1],ncol=dims[2]); 
+	in.out[,t.include] <- 1;
 	write.var("cv.indicator", role = "context", in.out[,y.quarters]) 
 	# check the sum
 	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616

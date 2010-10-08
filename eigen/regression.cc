@@ -67,9 +67,9 @@ LinearRegression::insert_constant(Matrix const& m) const       // add prefix 1 c
 std::vector<std::string>
 LinearRegression::name_vec(std::string name) const
 {
-  std::vector<std::string> thename;
-  thename.push_back(name);
-  return thename;
+  std::vector<std::string> vec(1);
+  vec[0] = name;
+  return vec;
 }
 
 
@@ -105,10 +105,10 @@ LinearRegression::build_QR_and_residuals()
   // std::cout << "\n\nREGR: in QR, X matrix for factoring is \n" << mX << "\n\n\n";
   Eigen::QR<Eigen::MatrixXd> qr(mX);
   mR = qr.matrixR();
-  mQ = qr.matrixQ();
-  mResiduals = mY - mQ * (mQ.transpose() * mY);    // must group to get proper order of evaluation
+  mQ = qr.matrixQ().corner(Eigen::TopRight, mN, mX.cols());// avoid the extra rows used to obtain shrinkage, ie keep as n x (q+1)
+  mResiduals = mY - mQ * (mQ.transpose() * mY);            // must group to get proper order of evaluation
   mResidualSS = mResiduals.squaredNorm();
-  if (mX.cols()==1)                                // set total SS using this more accurate calculation
+  if (mX.cols()==1)                                        // set total SS using this more accurate calculation
     mTotalSS = mResidualSS;
 }
 
@@ -147,13 +147,10 @@ LinearRegression::predict(Matrix const& x) const
 //     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests
 
 FStatistic
-LinearRegression::f_test_predictor (Vector const& input, int blockSize) const
+LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 {
-  // add rows to match up with padded internal size
-  Matrix z (mX.rows(),1);
-  z.corner(Eigen::TopLeft   , mN        ,1) = input;
-  z.corner(Eigen::BottomLeft,z.rows()-mN,1).setZero();
   // order matters, do not form the big projection matrix
+  // note that Q is held only with the top n rows
   Vector zRes (z - mQ * (mQ.transpose() * z));
   int residualDF (mN-2-q());
   assert(residualDF > 0);
@@ -184,12 +181,9 @@ LinearRegression::f_test_predictor (Vector const& input, int blockSize) const
 
 
 FStatistic
-LinearRegression::f_test_predictors (Matrix const& input, int blockSize) const
+LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 {
-  // add rows to match up with padded internal size
-  Matrix z (mX.rows(), input.cols());
-  z.corner(Eigen::TopLeft   , mN,input.cols()) = input;
-  z.corner(Eigen::BottomLeft, z.rows()-mN, input.cols()).setZero();
+  // note that Q is held only with the top n rows
   Matrix zRes (z - mQ * (mQ.transpose() * z));
   Vector ssx ((zRes.cwise() * zRes).colwise().sum());
   int residualDF (mN-1-q()-z.cols());
@@ -270,9 +264,8 @@ LinearRegression::print_to (std::ostream& os) const
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
-  os << std::setw(30) << "Intercept "   << "  " << std::setw(8) << b[0] << "  " << std::setw(8) << se[0] << "  " << std::setw(8) << b[0]/se[0] << std::endl;
-  for (int j = 1; j<mX.cols(); ++j)
-    os << std::setw(30) << mXNames[j-1]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+  for (int j = 0; j<mX.cols(); ++j)
+    os << std::setw(30) << mXNames[j]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
 }
 
 
@@ -291,6 +284,21 @@ LinearRegression::write_data_to (std::ostream& os) const
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 
+
+double
+ValidatedRegression::validation_ss() const
+{
+  if (n_validation_cases()>0)
+  { if (q()==0)     // handle differently for initial case to avoid empty matrix
+    { // Vector b (mModel.beta());
+      return (mValidationY.cwise() - mModel.beta()(0)).squaredNorm();
+    }
+    else
+      return (mValidationY - mModel.predict(mValidationX)).squaredNorm();
+  }
+  else
+    return 0.0;
+}
 
 void
 ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
