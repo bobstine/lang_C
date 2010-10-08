@@ -14,11 +14,6 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-# use this version (or higher optimization) to hide more debugging
-# OPT = -O2 -DNDEBUG
-
-# OPT = -O3 -DNDEBUG
-
 # USES = 
 
 EXTERNAL_USES = gsl

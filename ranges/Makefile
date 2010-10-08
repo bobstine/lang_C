@@ -11,10 +11,6 @@ include ../c_flags
 
 PROJECT_NAME = ranges
 
-#OPT      =  -O4 -DNDEBUG -Wconversion
-
-# OPT = -O2 -std=c++0x
-
 USES = utils random
 
 

@@ -16,9 +16,6 @@ PROJECT_NAME = spline
 
 USES = ranges random utils
 
-OPT = -O2 -DNDEBUG
-
-
 ###########################################################################
 #
 #	Objects ... objects are listed in order of precedence

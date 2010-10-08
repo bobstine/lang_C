@@ -8,12 +8,6 @@ include ../c_flags
 
 PROJECT_NAME = eigen
 
-# slow and careful
-# OPT = -O0 
-# fast and who gives a damn about errors?
-
-# OPT = -O3 -DNDEBUG
-
 USES = random utils
 
 EXTERNAL_USES = gsl

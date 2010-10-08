@@ -9,22 +9,21 @@
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_cdf.h>
 
-using namespace Stat_Utils;
-
 namespace {
-
+  
   class CenterSquare {
     double mCenter;
   public:
-    CenterSquare(double center)
-      : mCenter(center) { }
+  CenterSquare(double center)
+    : mCenter(center) { }
     double operator()(double ss, double x)
-    {
-      double err (x - mCenter);
+    { double err (x - mCenter);
       return ss + err*err;
     }
   };
+
 }
+
 
 std::pair<double,double>
 Stat_Utils::mands (const std::vector<double>& x)

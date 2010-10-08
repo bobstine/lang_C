@@ -25,7 +25,7 @@
 */
    
 #include "auction.h"
-    
+     
 // from ranges
 #include "range.h"
 #include "range_ops.h"
@@ -48,6 +48,7 @@
 #include <set>
 #include <map>
 #include <getopt.h>
+#include <time.h>
 #include <assert.h>
 
 
@@ -75,6 +76,12 @@ private:
   { return 1.0/(double)((j+1)*(j+1)); }
 };
 
+
+double
+time_since(time_t const& start)
+{
+  return  double(clock() - start)/CLOCKS_PER_SEC;
+}
 
 void
 parse_arguments(int argc, char** argv,
@@ -326,10 +333,13 @@ main(int argc, char** argv)
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
+      clock_t start;
+      start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor
       { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
+      debug("AUCT",2) << "Time for round " << round <<  " was " << time_since(start) << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;

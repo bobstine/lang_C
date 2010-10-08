@@ -14,8 +14,6 @@ include ../c_flags
 
 PROJECT_NAME = random
 
-OPT      = -O2 -DNDEBUG
-
 USES     = utils
 
 
