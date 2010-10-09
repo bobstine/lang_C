@@ -126,11 +126,6 @@ Auction<ModelClass>::auction_next_feature ()
     print_features(features, debug());
   }
   // build variables for testing, conversion adjusts for initial context rows
-
-  std::cout << "***** " << "Considering " << features.size() << " features in regr:\n";
-  for (unsigned int i = 0; i < features.size(); ++i)
-    std::cout << "     " << Stat_Utils::mands(features[i]->begin(), features[i]->end(), features[i]->size()) << "   " << features[i] <<  std::endl;
-    
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
   if (mProgressStream)

@@ -289,8 +289,8 @@ main(int argc, char** argv)
   //  Calibration expert
   if(splineDF > 0)
   { 
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                     // no skipping, lots of alpha
-				 FitBidder(0.000005, calibrationSignature),         // calibrate p-value
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
+				 FitBidder(0.000005, calibrationSignature),                  
 				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
   }
   
@@ -330,6 +330,7 @@ main(int argc, char** argv)
     }
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
+    double totalTime (0.0);
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
     {
       ++round;
@@ -339,10 +340,13 @@ main(int argc, char** argv)
       { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
 	debug("AUCT",3) << theAuction << std::endl << std::endl;
       }
-      debug("AUCT",2) << "Time for round " << round <<  " was " << time_since(start) << std::endl;
+      double time = time_since(start);
+      totalTime += time;
+      debug("AUCT",2) << "Time for round " << round <<  " was " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds << " rounds.   ------ \n\n" << theAuction << std::endl;
+    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds
+		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
   }
   
   // ----------------------   write summary and data to various files  ---------------------------------
@@ -376,16 +380,14 @@ main(int argc, char** argv)
     if (! output)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
-    }
+    } 
     theAuction.write_model_data_to(output);
     output.close();
   }
-   
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
-  
   return 0;  
 }
-
+  
 
 
 void

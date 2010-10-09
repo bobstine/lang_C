@@ -178,7 +178,7 @@ public:
   int q()                  const  { return mModel.q(); }
   int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
   
-  int n_all_cases()        const  { return mLength; }
+  int n_total_cases()      const  { return mLength; }
   int n_validation_cases() const  { return mLength - mN; }
   int n_estimation_cases() const  { return mN; }
 
@@ -186,9 +186,11 @@ public:
   double validation_ss()   const;
 
   std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
-    
+
+  // iterators must include both the estimation and validation cases, as identified at creation
   template <class Iter> std::pair<double,double> add_predictor_if_useful  (std::string name, Iter it, double pToEnter);
   template <class Iter> std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
+
   template <class Iter> void fill_with_fit(Iter it) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;

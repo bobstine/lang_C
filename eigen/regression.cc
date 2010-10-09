@@ -7,7 +7,7 @@
 
 #include <Eigen/LU>
 
-const double epsilon (1.0e-30);          // used to detect singularlity
+const double epsilon (1.0e-50);          // used to detect singularlity
 
 
 //     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic
@@ -87,13 +87,7 @@ void
 LinearRegression::initialize()
 {
   double yBar (mY.sum()/mN);
-  mTotalSS = mY.redux(CenteredSquare(yBar));
-  double y0 (mY(0));
-  // std::cout.precision(6);  // y0 seems farther from -1 than I would have guessed possible...
-  // std::cout << "TEST: y[0] = " << y0 << " with initial total SS = " << mTotalSS << " with ybar = " << yBar << std::endl;
-  double d0 (y0 - yBar);
-  // std::cout << "TEST: " << mTotalSS << " + " << d0*d0 << " - " << y0 << " = " ;
-  mTotalSS += d0*d0 - y0;                          // patch Eigen reduction initialization with y[0]
+  mTotalSS = (mY.cwise() - yBar).squaredNorm();
   assert(mTotalSS>0);
   build_QR_and_residuals();
 }
@@ -157,8 +151,10 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   double ssz (zRes.squaredNorm());
   Vector ssx(1);
   ssx(0) = ssz;
-  if(ssz < z.size() * epsilon)                // predictor is singular
+  if(ssz < epsilon)                // predictor is singular
+  { debugging::debug("LINM",2) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
+  }
   double ze  (zRes.dot(mResiduals));          //  slope of added var is  gamma (epz/zRes.squaredNorm);
   if (blockSize==0)
   { double regrss ((ze * ze)/ssz);
@@ -192,8 +188,10 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   Matrix R    (qr.matrixR());
   Matrix Q    (qr.matrixQ());
   for (int j=0; j<z.cols(); ++j)
-  { if(abs(R(j,j)) < z.rows() * epsilon)                   // predictor j is singular
+  { if(abs(R(j,j)) < epsilon)                             // predictor j is singular
+    { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, diag of R = " << abs(R(j,j)) << std::endl;
       return FStatistic();
+    }
   }
   Vector Qe  (Q.transpose() * mResiduals);                // projection into space of new variables
   if (blockSize==0)
@@ -265,7 +263,7 @@ LinearRegression::print_to (std::ostream& os) const
   Vector se (se_beta());
   os.precision(3);
   for (int j = 0; j<mX.cols(); ++j)
-    os << std::setw(30) << mXNames[j]  << "  " << std::setw(8) << b[j] << "  " << std::setw(8) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+    os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  " << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
 }
 
 
@@ -273,8 +271,16 @@ void
 LinearRegression::write_data_to (std::ostream& os) const
 {
   int k (mX.cols());
+  // prefix line with var names
+  os << "Role\tFit\tResidual\t" << mYName;
+  for(int j=1; j<k; ++j)
+    os << "\t" << mXNames[j];
+  os << std::endl;
+  // now put the data
+  Vector fit (fitted_values());
+  Vector res (residuals());
   for(int i=0; i<mN; ++i)
-  { os << mY(i) << "\t";
+  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << mY[i] << "\t";
     for (int j=1; j<k-1; ++j)  // skip intercept
       os << mX(i,j) << "\t";
     os << mX(i,k-1) << std::endl;
@@ -316,11 +322,12 @@ void
 ValidatedRegression::write_data_to(std::ostream& os) const
 {
   mModel.write_data_to(os);
+  Vector preds (mModel.predict(mValidationX));
   for(int i=0; i<mValidationX.rows(); ++i)
-  { os << "\t";                // blank Y
-    for (int j=0; j<mValidationX.cols(); ++j)  // skip intercept
+  { os << "val\t" << preds[i] << "\t" << mValidationY[i]-preds[i] << "\t" << mValidationY[i] << "\t";
+    for (int j=0; j<mValidationX.cols()-1; ++j) 
       os << mValidationX(i,j) << "\t";
-    os << mValidationX(i,mValidationX.cols()) << std::endl;
+    os << mValidationX(i,mValidationX.cols()-1) << std::endl;
   }
 }
 

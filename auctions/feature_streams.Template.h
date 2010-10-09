@@ -34,8 +34,10 @@ template<class Model>
 bool
 FitStream<Model>::empty()  const
 {
-  if (mModel.q()==0) return true;
-  return(mLastQ == mModel.q());
+  if (mModel.q()==0)
+    return true;
+  else
+    return (mLastQ == mModel.q());
 }
 
 template<class Model>
@@ -47,7 +49,7 @@ FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std:
   bool foundSig = (std::string::npos != lastVarName.find(mSignature));       // ::npos means not found
   if (foundSig) 
   { debugging::debug("FSTR",4) << "Fit stream already used; not okay.\n";
-    mLastQ = mModel.q();                                             // signals empty
+    mLastQ = mModel.q();                                                     // signals empty
     return false;
   }
   else
@@ -60,9 +62,10 @@ template<class Model>
 std::vector<Feature>FitStream<Model>::pop()
 {
   std::vector<int> powers;
-  mFit = Column(feature_name().c_str(), mSkip + mModel.n_estimation_cases());  // grab current fit
-  double *b (mFit->begin());
-  for(int i=0; i<mSkip; ++i)      *b++ = 0;
+  mFit = Column(feature_name().c_str(), mSkip + mModel.n_total_cases());  // grab current fit
+  double *fit (mFit->begin());
+  for(int i=0; i<mSkip; ++i)
+    *fit++ = 0;
   mModel.fill_with_fit(mFit->begin() + mSkip);
   mFit->update();
   for (int j = 2; j <= mPower; ++j)

@@ -40,13 +40,10 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
   for(int j=0; j<k; ++j)
     preds.col(j) = split_iterator(c[j].second);
   FStatistic f (mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k),mBlockSize));    // block size determines if use white
-  debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " < " << pToEnter << " with block size " << mBlockSize << std::endl;
+  debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << mBlockSize << std::endl;
   if (f.p_value() > pToEnter)
     return std::make_pair(f.f_stat(), f.p_value());
-  debugging::debug("VALM",3) << "Adding " << k << " predictors to model: ";
-  for (int i=0; i<(int)c.size(); ++i)
-    debugging::debug("VALM",3) << "  " << c[i].first;
-  debugging::debug("VALM",3) << std::endl;
+  debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
   if (0 == mModel.q())  // first added variables
     mValidationX = preds.corner(Eigen::BottomLeft, n_validation_cases(), k);
   else                  // add additional columns
@@ -106,4 +103,5 @@ ValidatedRegression::fill_with_fit(Iter it) const
   Vector fit (mModel.fitted_values());
   for(int i = 0; i<n_estimation_cases(); ++i)   // these are first n, in order (no need to permute)
     *it++ = fit(i);
+  mModel.fill_with_predictions(mValidationX, it);
 }
