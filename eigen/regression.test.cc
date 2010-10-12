@@ -43,8 +43,14 @@ int main(int, char **)
   // form random matrix for response and predictors
   Eigen::VectorXd y (Eigen::VectorXd::Random(nRows));
   Eigen::VectorXd z (Eigen::VectorXd::Random(nRows));
+  Eigen::VectorXd w (Eigen::VectorXd::Zero  (nRows));
   Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
   Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
+
+  // define the weight vector
+  for (int i=0; i<nRows; ++i)
+    w[i] = 1.0 + i % 4;
+  std::cout << "TEST: weight vector is " << w.start(10).transpose() << std::endl;
 
   // names for variables
   std::vector<std::string> xNames;

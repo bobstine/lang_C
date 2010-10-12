@@ -33,16 +33,6 @@ FStatistic::critical_value(double p) const
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
-LinearRegression::Vector
-LinearRegression::pad_vector(Vector const& v, int k) const
-{
-  Vector z (v.size()+k);
-  z.start(v.size()) = v;
-  z.end(k).setZero();
-  return z;
-}
-
-
 LinearRegression::Matrix
 LinearRegression::initial_x_matrix() const
 {
@@ -145,22 +135,23 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 {
   // order matters, do not form the big projection matrix
   // note that Q is held only with the top n rows
-  Vector zRes (z - mQ * (mQ.transpose() * z));
+  //  Vector zRes (z - mQ * (mQ.transpose() * z));
+  Vector zRes (z - mQ * (mQ.transpose() *z));
+  double ssz  (zRes.squaredNorm());
   int residualDF (mN-2-q());
   assert(residualDF > 0);
-  double ssz (zRes.squaredNorm());
-  Vector ssx(1);
-  ssx(0) = ssz;
-  if(ssz < epsilon)                // predictor is singular
+  assert(ssz > 0);
+  if(ssz < epsilon)                                 // predictor is singular
   { debugging::debug("LINM",2) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
   }
-  double ze  (zRes.dot(mResiduals));          //  slope of added var is  gamma (epz/zRes.squaredNorm);
+  Eigen::Matrix<double,1,1> sszVec(ssz);
+  double ze  (zRes.dot(mResiduals));     // slope of added var is  gamma (epz/zRes.squaredNorm);
   if (blockSize==0)
   { double regrss ((ze * ze)/ssz);
-    return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, ssx);
+    return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, sszVec);
   }
-  else                                       // compute white estimate; in scalar case, reduces to (z'e)^2/(z'e^2z)
+  else                                              // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
   { double zeez (0.0);
     if (blockSize == 1)
       zeez = (zRes.cwise() * mResiduals).squaredNorm();
@@ -171,7 +162,7 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 	zeez += ezi * ezi;
       }
     }
-    return FStatistic(ze*ze/zeez, 1, residualDF, ssx);
+    return FStatistic(ze*ze/zeez, 1, residualDF, sszVec);
   }
 }
 
@@ -180,8 +171,8 @@ FStatistic
 LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 {
   // note that Q is held only with the top n rows
-  Matrix zRes (z - mQ * (mQ.transpose() * z));
-  Vector ssx ((zRes.cwise() * zRes).colwise().sum());
+  Matrix zRes   (z - mQ * (mQ.transpose() * z));
+  Vector zResSS (squared_norm(zRes));
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
@@ -196,7 +187,7 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   Vector Qe  (Q.transpose() * mResiduals);                // projection into space of new variables
   if (blockSize==0)
   { double regrss (Qe.squaredNorm());
-    return FStatistic(regrss, z.cols(), mResidualSS-regrss, residualDF, ssx);
+    return FStatistic(regrss, z.cols(), mResidualSS-regrss, residualDF, zResSS);
   }
   else
   { Matrix Ri     (R.inverse());
@@ -204,7 +195,7 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
     if (blockSize == 1)
     { Matrix eQ = mResiduals.asDiagonal() * Q;
       Vector eQRg   (eQ * rGamma); 
-      return FStatistic(eQRg.squaredNorm(), z.cols(), residualDF, ssx);
+      return FStatistic(eQRg.squaredNorm(), z.cols(), residualDF, zResSS);
     }
     else // blocksize > 1
     { assert(0 == mN % blockSize);
@@ -217,7 +208,7 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 	QeeQ += eQ * eQ.transpose();
 	row += blockSize;
       }
-      return FStatistic(rGamma.dot(QeeQ * rGamma), z.cols(), residualDF, ssx);
+      return FStatistic(rGamma.dot(QeeQ * rGamma), z.cols(), residualDF, zResSS);
     }
   }
 }
@@ -258,7 +249,7 @@ LinearRegression::print_to (std::ostream& os) const
   os.precision(6);
   os << "Linear Regression        y = " << mYName << std::endl
      << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
-     << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
+     << "            Residual SS = " << mResidualS << "    RMSE = " << rmse() << std::endl;
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);

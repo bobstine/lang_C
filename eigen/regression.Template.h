@@ -28,8 +28,7 @@ void LinearRegression::fill_with_predictions (Matrix const& x, Iter begin) const
 }
 
 
-//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
-
+//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression
 
 template <class Iter>
 std::pair<double,double>

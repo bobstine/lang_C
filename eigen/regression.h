@@ -85,16 +85,16 @@ public:
   typedef FStatistic      FStat;
   
 private:
-  int         mN;          // number of obs without pseudorows used for shrinkage
-  std::string mYName; 
-  Vector      mY;          // padded for shrinkage
-  Matrix      mX;          // padded for shrinkage; shrinkage elements on diagonal
-  Matrix      mQ;          // decomp of X (so padded too)
-  Matrix      mR;
-  Vector      mResiduals;
-  double      mResidualSS;
-  double      mTotalSS;
+  int                      mN;          // number of actual obs without pseudo-rows used for shrinkage
+  std::string              mYName; 
+  Vector                   mY;
+  Matrix                   mX;          // padded for shrinkage; shrinkage elements on diagonal of bottom rows
   std::vector<std::string> mXNames; 
+  Matrix                   mQ;          // decomp of X, without the added rows from shrinkage
+  Matrix                   mR;
+  Vector                   mResiduals;
+  double                   mResidualSS;
+  double                   mTotalSS;
   
 public:
   ~LinearRegression () { }
@@ -114,8 +114,8 @@ public:
   double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
-  Vector    residuals()              const   { return mResiduals.start(mN); }  
-  Vector    fitted_values()          const   { return mY.start(mN) - mResiduals.start(mN); }
+  Vector    residuals()              const   { return mResiduals; }  
+  Vector    fitted_values()          const   { return mY - mResiduals; }
   Vector    predict(Matrix const& x) const;
 
   Vector    beta()                   const;
@@ -138,12 +138,14 @@ public:
   void write_data_to (std::ostream& os) const;                                           // JMP style, with y followed by X columns (tab delimited)
 
  private:
-  Vector pad_vector(Vector const& v, int k) const;
-  std::vector<std::string> name_vec(std::string name) const;
-  Matrix initial_x_matrix() const;
+  std::vector<std::string> name_vec(std::string name) const;            // inits a vector with one string
+  Matrix initial_x_matrix() const;                                      // takes on the constant, terms for shrinkage
   Matrix insert_constant(Matrix const& m) const;                        // stuffs a 1 as first column
   void   initialize();                                                  // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                      // does the QR and finds residuals
+
+  // idioms
+  Vector squared_norm (Matrix const& a)                  const { return ((a.cwise() * a).colwise().sum()); } // diagonal of a'a
 };
 
 
