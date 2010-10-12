@@ -34,22 +34,31 @@ FStatistic::critical_value(double p) const
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
 LinearRegression::Matrix
-LinearRegression::initial_x_matrix() const
+LinearRegression::init_x_matrix() const
 {
   Matrix x(mN+1,1);
-  x.setOnes();
+  if (is_ols())
+    x.setOnes();
+  else
+    x.col(0).start(mN) = mSqrtWeights;
   x(mN,0) = 0.0;
   return x;
 }
 
 LinearRegression::Matrix
-LinearRegression::insert_constant(Matrix const& m) const       // add prefix 1 col, rows for shrinkage
+LinearRegression::init_x_matrix(Matrix const& m) const       // add prefix 1 col, rows for shrinkage
 {
   assert(m.rows() == mN);
   int nr (m.cols()+1);
   Matrix result (mN+nr, nr);
-  result.corner(Eigen::TopLeft ,mN,1).setOnes();
-  result.corner(Eigen::TopRight,mN,m.cols()) = m;
+  if(is_ols())
+  { result.col(0).start(mN).setOnes();
+    result.corner(Eigen::TopRight,mN,m.cols()) = m;
+  }
+  else
+  { result.col(0).start(mN) = mSqrtWeights;
+    result.corner(Eigen::TopRight,mN,m.cols()) = mSqrtWeights.asDiagonal() * m;
+  }
   result.corner(Eigen::BottomLeft, nr, nr).setZero();
   return result;
 }
@@ -63,21 +72,14 @@ LinearRegression::name_vec(std::string name) const
 }
 
 
-namespace {
-  class CenteredSquare : public std::binary_function<double,double,double> {
-  private:
-    double mCenter;
-  public:
-    CenteredSquare(double center) : mCenter(center) { }
-    double operator()(double total, double x) const { double dev (x - mCenter); return total+dev*dev; }
-  };
-}
-
 void
 LinearRegression::initialize()
 {
-  double yBar (mY.sum()/mN);
+  if(is_wls())
+    mY = mY.cwise() * mSqrtWeights;
+  double yBar (mY.dot(mX.col(0).start(mN))/mX.col(0).squaredNorm());
   mTotalSS = (mY.cwise() - yBar).squaredNorm();
+  std::cout << "******  yBar = " << yBar << "   TSS = " << mTotalSS << std::endl;
   assert(mTotalSS>0);
   build_QR_and_residuals();
 }
@@ -86,13 +88,12 @@ LinearRegression::initialize()
 void
 LinearRegression::build_QR_and_residuals()
 {
-  // std::cout << "\n\nREGR: in QR, X matrix for factoring is \n" << mX << "\n\n\n";
   Eigen::QR<Eigen::MatrixXd> qr(mX);
   mR = qr.matrixR();
-  mQ = qr.matrixQ().corner(Eigen::TopRight, mN, mX.cols());// avoid the extra rows used to obtain shrinkage, ie keep as n x (q+1)
-  mResiduals = mY - mQ * (mQ.transpose() * mY);            // must group to get proper order of evaluation
+  mQ = qr.matrixQ().corner(Eigen::TopRight, mN, mX.cols());   // avoid the extra rows used to obtain shrinkage, ie keep as n x (q+1)
+  mResiduals = mY - mQ * (mQ.transpose() * mY);               // must group to get proper order of evaluation
   mResidualSS = mResiduals.squaredNorm();
-  if (mX.cols()==1)                                        // set total SS using this more accurate calculation
+  if (mX.cols()==1)                                           // set total SS using this more accurate calculation
     mTotalSS = mResidualSS;
 }
 
@@ -122,7 +123,7 @@ LinearRegression::predict(Matrix const& x) const
   assert(q() == x.cols());
   Vector b (beta());
   if (q() == 0)
-    return Vector::Constant(mY.size(),b(0));
+    return Vector::Constant(x.rows(),b(0));
   else
     return (x * b.end(x.cols())).cwise() + b(0);    // internal X has leading const column; input X lacks constant
 }
@@ -136,16 +137,22 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   // order matters, do not form the big projection matrix
   // note that Q is held only with the top n rows
   //  Vector zRes (z - mQ * (mQ.transpose() * z));
-  Vector zRes (z - mQ * (mQ.transpose() *z));
+  Vector zRes;
+  if (is_wls())
+  { Vector wz (z.cwise() * mSqrtWeights);
+    Vector zRes (wz - mQ * (mQ.transpose() * wz));
+  }
+  else
+    Vector zRes (z - mQ * (mQ.transpose() * z));
   double ssz  (zRes.squaredNorm());
+  assert (ssz >= 0.0);
   int residualDF (mN-2-q());
   assert(residualDF > 0);
-  assert(ssz > 0);
   if(ssz < epsilon)                                 // predictor is singular
   { debugging::debug("LINM",2) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
   }
-  Eigen::Matrix<double,1,1> sszVec(ssz);
+  Vector sszVec(1); sszVec[0] = ssz;
   double ze  (zRes.dot(mResiduals));     // slope of added var is  gamma (epz/zRes.squaredNorm);
   if (blockSize==0)
   { double regrss ((ze * ze)/ssz);
@@ -171,7 +178,13 @@ FStatistic
 LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 {
   // note that Q is held only with the top n rows
-  Matrix zRes   (z - mQ * (mQ.transpose() * z));
+  Matrix zRes;
+  if (is_wls())
+  { Matrix wz (mSqrtWeights.asDiagonal() * z);
+    zRes = wz - mQ * (mQ.transpose() * wz);
+  }
+  else
+    zRes = z - mQ * (mQ.transpose() * z);
   Vector zResSS (squared_norm(zRes));
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
@@ -231,7 +244,10 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
   Matrix X(mX.rows()+z.cols(),mX.cols()+z.cols());
   X.corner(Eigen::TopLeft,    mX.rows(), mX.cols()) = mX;
   X.corner(Eigen::BottomLeft,  z.cols(), mX.cols()).setZero();
-  X.corner(Eigen::TopRight, mN, z.cols()) = z;
+  if (is_ols())
+    X.corner(Eigen::TopRight, mN, z.cols()) = z;
+  else
+    X.corner(Eigen::TopRight, mN, z.cols()) = mSqrtWeights.asDiagonal() * z;
   X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
   if (fstat.f_stat() > 0)
   { Vector diag = fstat.sum_of_squares() / fstat.f_stat();
@@ -247,9 +263,13 @@ void
 LinearRegression::print_to (std::ostream& os) const
 {
   os.precision(6);
-  os << "Linear Regression        y = " << mYName << std::endl
+  if (is_ols())
+    os << "Linear Regression          ";
+  else
+    os << "Weighted Linear Regression ";
+  os << "    y = " << mYName << std::endl
      << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
-     << "            Residual SS = " << mResidualS << "    RMSE = " << rmse() << std::endl;
+     << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
@@ -267,14 +287,18 @@ LinearRegression::write_data_to (std::ostream& os) const
   for(int j=1; j<k; ++j)
     os << "\t" << mXNames[j];
   os << std::endl;
-  // now put the data
-  Vector fit (fitted_values());
-  Vector res (residuals());
+  // now put the data in external coordinate system
+  Vector y    (is_ols() ? mY : mY.cwise()/mSqrtWeights);
+  Vector res  (raw_residuals());
+  Vector fit  (is_ols() ? fitted_values() : y - res);
   for(int i=0; i<mN; ++i)
-  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << mY[i] << "\t";
+  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
+    Vector row (mX.row(i));
+    if (is_wls())
+      row = row / mSqrtWeights[i];
     for (int j=1; j<k-1; ++j)  // skip intercept
-      os << mX(i,j) << "\t";
-    os << mX(i,k-1) << std::endl;
+      os << row[j] << "\t";
+    os << row[k-1] << std::endl;
   }
 }
 

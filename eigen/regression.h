@@ -85,12 +85,14 @@ public:
   typedef FStatistic      FStat;
   
 private:
-  int                      mN;          // number of actual obs without pseudo-rows used for shrinkage
+  int                      mN;           // number of actual obs without pseudo-rows used for shrinkage
+  Vector                   mWeights;     // Var(y_i) = 1/W_ii; weight vector is length 1 if not supplied (ie, for ols, weight vector is a scalar)
+  Vector                   mSqrtWeights;
   std::string              mYName; 
   Vector                   mY;
-  Matrix                   mX;          // padded for shrinkage; shrinkage elements on diagonal of bottom rows
+  Matrix                   mX;           // padded for shrinkage; shrinkage elements on diagonal of bottom rows
   std::vector<std::string> mXNames; 
-  Matrix                   mQ;          // decomp of X, without the added rows from shrinkage
+  Matrix                   mQ;           // decomp of X, without the added rows from shrinkage
   Matrix                   mR;
   Vector                   mResiduals;
   double                   mResidualSS;
@@ -101,12 +103,26 @@ public:
 
   LinearRegression ()
     :  mN(0) { }
-  
-  LinearRegression (std::string yName, Vector const& y)
-    :  mN(y.size()), mYName(yName), mY(y), mX(initial_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
+  
+  // OLS
+  LinearRegression (std::string yName, Vector const& y)
+    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+  
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
-    :  mN(y.size()), mYName(yName), mY(y), mX(insert_constant(x)), mXNames(xNames) { initialize(); }
+    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
+
+  
+  // WLS: if weighted, all things held are weighted by W
+  LinearRegression (std::string yName, Vector const& y, Vector const& w)
+    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+
+  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w)
+    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
+  
+
+  bool      is_wls()                 const   { return mWeights.size() > 1; }
+  bool      is_ols()                 const   { return mWeights.size() == 1; }
   
   int       n()                      const   { return mN; };
   int       q()                      const   { return mX.cols()-1; }                      // -1 for intercept 
@@ -114,8 +130,9 @@ public:
   double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
-  Vector    residuals()              const   { return mResiduals; }  
+  Vector    residuals()              const   { return mResiduals; }
   Vector    fitted_values()          const   { return mY - mResiduals; }
+  Vector    raw_residuals()          const   { if (is_ols()) return mResiduals; else return mResiduals.cwise()/mSqrtWeights; } 
   Vector    predict(Matrix const& x) const;
 
   Vector    beta()                   const;
@@ -138,11 +155,11 @@ public:
   void write_data_to (std::ostream& os) const;                                           // JMP style, with y followed by X columns (tab delimited)
 
  private:
-  std::vector<std::string> name_vec(std::string name) const;            // inits a vector with one string
-  Matrix initial_x_matrix() const;                                      // takes on the constant, terms for shrinkage
-  Matrix insert_constant(Matrix const& m) const;                        // stuffs a 1 as first column
-  void   initialize();                                                  // sets initial SS, calls orthgonalize
-  void   build_QR_and_residuals();                                      // does the QR and finds residuals
+  std::vector<std::string> name_vec(std::string name) const;          // inits a vector with one string
+  Matrix init_x_matrix()                const;                        // takes on the constant, terms for shrinkage
+  Matrix init_x_matrix(Matrix const& m) const;                        // stuffs a 1 as first column
+  void   initialize();                                                // sets initial SS, calls orthgonalize
+  void   build_QR_and_residuals();                                    // does the QR and finds residuals
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.cwise() * a).colwise().sum()); } // diagonal of a'a

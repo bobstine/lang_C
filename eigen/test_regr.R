@@ -7,7 +7,7 @@ p <- 3
 # --- initial regression with 3 predictors
 regr.3 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4])
 summary(regr.3)
-e <- residuals(regr.3);e[1:5]
+e <- residuals(regr.3);   e[1:5]
 
 
 # --- regr with 4 predictors
@@ -57,6 +57,31 @@ g^2 /((t(z) %*% m %*% z)/(z %*% z)^2)
 z <- cbind(residuals(z5.regr), residuals(z6.regr), residuals(z7.regr))
 g <- solve(t(z) %*% z, t(z) %*% e)
 t(g) %*% zzi %*% t(z) %*% m %*% z %*% zzi %*% g
+
+
+
+###########################################################
+###              
+###   WLS
+###
+###########################################################
+
+y <- Data[,1]
+w <- (1+(0:(n-1))%%4)
+
+# weighted mean
+(y %*% w)/ sum(w)
+
+# --- initial regression with intercept (ie, mean)
+regr.0 <- lm(Data[,1] ~ 1, weights=w   )
+summary(regr.0)
+anova(regr.0)
+
+# --- initial regression with 3 predictors
+regr.3 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4], weights=w   )
+summary(regr.3)
+e <- residuals(regr.3);   e[1:5]
+
 
 
 

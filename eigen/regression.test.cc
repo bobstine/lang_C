@@ -107,6 +107,19 @@ int main(int, char **)
     std::cout << vregr << std::endl;
   }
   
+  // weighted regression
+  {
+    std::cout << "TEST: build 3 predictor WLS fit\n";
+    clock_t start;
+    start = clock();     LinearRegression regr("y",y,w);     print_time(start);
+    start = clock();     regr.add_predictors(xNames,X);      print_time(start);
+    std::cout << regr << std::endl;
+    
+    int show ((nRows > 10)?10:nRows);
+    std::cout << "Fitted values: " << regr.fitted_values().start(show).transpose()   << std::endl;
+    std::cout << "Residuals    : " << regr.residuals().start(show).transpose()       << std::endl;
+    std::cout << "Raw Residuals: " << regr.raw_residuals().start(show).transpose()   << std::endl;
+  }
   // build a regression; no shrinkage for initial variables
   {
     clock_t start;
