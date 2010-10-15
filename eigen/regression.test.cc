@@ -1,6 +1,7 @@
+// -*- c++ -*-
 #include "regression.h"
 #include "debug.h"
- 
+
 #include <vector>
 #include <iostream>
 #include <sstream>

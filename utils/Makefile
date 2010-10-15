@@ -16,7 +16,7 @@ PROJECT_NAME = utils
 
 # USES = 
 
-EXTERNAL_USES = gsl
+# EXTERNAL_USES =
 
 
 ###########################################################################

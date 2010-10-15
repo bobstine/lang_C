@@ -1,4 +1,4 @@
-// $Id: auction.h,v 3.11 2008/06/19 22:55:08 bob Exp $
+// -*- c++ -*-
 
 #ifndef _AUCTION_H_
 #define _AUCTION_H_
@@ -12,8 +12,6 @@
 
 #include "features.h"
 #include "experts.h"
-#include "gsl_data.h"
-#include "gsl_model.h"
 
 #include <sstream>
 #include <vector>

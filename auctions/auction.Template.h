@@ -8,6 +8,9 @@
 
 // #include <functional>  mem_fun
 
+#include "debug.h"
+using debugging::debug;
+
 #include <set>
 #include <algorithm>
 

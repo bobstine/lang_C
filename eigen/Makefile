@@ -10,7 +10,7 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-EXTERNAL_USES = gsl
+# EXTERNAL_USES = 
 
 
 ###########################################################################
@@ -19,8 +19,8 @@ EXTERNAL_USES = gsl
 #
 ###########################################################################
 
-level_0   = eigen_svd.o  regression.o
-
+level_0   =  fstatistic.o
+level_1   =  eigen_svd.o  regression.o
 
 ############################################################################
 #

@@ -1,13 +1,20 @@
 #include "stat_utils.h"
 
 #include <numeric>  // for accumulate
-#include <math.h>   // for sqrt
+#include <math.h>   // for sqrt, nan
 #include <assert.h>
 
 
 // for distributions
-#include <gsl/gsl_sf_erf.h>
-#include <gsl/gsl_cdf.h>
+#include <boost/math/distributions/students_t.hpp>
+using boost::math::students_t;
+#include <boost/math/distributions/fisher_f.hpp>
+using boost::math::fisher_f;
+
+using boost::math::cdf;
+using boost::math::quantile;
+using boost::math::complement;
+
 
 namespace {
   
@@ -46,26 +53,35 @@ Stat_Utils::standard_deviation (std::vector<double> const& x, double avg)
 std::pair<double,double>
 Stat_Utils::t_test(double tStat, int df)
 {
-  if (isnan(tStat) || isinf(tStat))
+  if (std::isnan(tStat) || std::isinf(tStat))
     return std::make_pair(0.0,1.001);
-  return std::make_pair(tStat, gsl_cdf_tdist_Q(tStat, df));    
+  else
+  { students_t tdist(df);
+    return std::make_pair(tStat, cdf(complement(tdist, tStat)));
+  }    
 }
 
 std::pair<double,double> 
 Stat_Utils::f_test(double f, int numDF, int denDF)
 {
-  if ( isnan(f) || isinf(f) || (f <= 0) )
+  if ( std::isnan(f) || std::isinf(f) || (f <= 0) )
     return std::make_pair(0.0,1.01);
-  return std::make_pair(f, gsl_cdf_fdist_Q(f, numDF, denDF));    
+  else
+  { fisher_f fdist(numDF, denDF);
+    return std::make_pair(f, cdf(complement(fdist, f)));
+  }
 }
 
 std::pair<double,double> 
 Stat_Utils::f_test(double numSS, int numDF, double denSS, int denDF)
 {
-  if ( ( isnan(numSS) || isnan(denSS) ) ||
-       ( isinf(numSS) || isinf(denSS) ) ||
+  if ( ( std::isnan(numSS) || std::isnan(denSS) ) ||
+       ( std::isinf(numSS) || std::isinf(denSS) ) ||
        ( (numSS <= 0.0) || (denSS <= 0.0)) )
     return std::make_pair(0.0,1.01);
-  double fRatio ((numSS * denDF)/(denSS * numDF));                      
-  return std::make_pair(fRatio, gsl_cdf_fdist_Q(fRatio, numDF, denDF));    
+  else
+  { double fRatio ((numSS * denDF)/(denSS * numDF));
+    fisher_f fdist(numDF, denDF);
+    return std::make_pair(fRatio, cdf(complement(fdist,fRatio)));
+  }
 }

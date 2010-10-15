@@ -12,10 +12,10 @@
 #include <algorithm>
 #include <sstream>
 
-#include "gsl_iterator.h"
+
 
 //   GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL     GSL
-
+/*
 gsl_matrix *
 Convert::features_into_gsl_matrix(std::vector<Feature> const& v, int skipContextRows)
 {
@@ -48,6 +48,7 @@ Convert::gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows)
   }
   return result;
 }
+*/
 
 //   Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen
 

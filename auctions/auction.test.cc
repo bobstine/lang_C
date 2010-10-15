@@ -91,12 +91,13 @@ parse_arguments(int argc, char** argv,
 		int &nRounds, double &totalAlpha,
 		int &df, int &prefixCases, int &debugLevel);
 
-std::pair< std::pair<int,double>, std::pair<int,double> >  initialize_sums_of_squares(std::vector<Column> y);
-gslData*     build_model_data(Column y, Column inOut, int skip, std::ostream& os);
+std::pair< std::pair<int,double>, std::pair<int,double> >
+initialize_sums_of_squares(std::vector<Column> y);
+
 ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os);
-int          parse_column_format(std::string const& dataFileName, std::ostream&);
-Column       identify_cv_indicator(std::vector<Column> const& columns, int prefixCases);
-void         round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
+int                  parse_column_format(std::string const& dataFileName, std::ostream&);
+Column               identify_cv_indicator(std::vector<Column> const& columns, int prefixCases);
+void                 round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
 
 
 int
@@ -530,25 +531,6 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 
 
 // reads in response, initialized data object
-gslData*
-build_model_data(Column y, Column inOut, int skip, std::ostream& os)
-{
-  bool                      useSubset    (0 != inOut->size());
-  constant_iterator<double> equalWeights (1.0);
-  int                       nRows        ((int)y->size()-skip);
-  
-  os << "Building model data with " << y->size() << "-" << skip << "=" << nRows << " cases; response is " << y << std::endl;
-  if (useSubset)
-  { os << "        Validation cases identified by " << inOut << std::endl;
-    return new gslData(y->begin()+skip, inOut->begin()+skip, equalWeights, nRows, gslRegression_Max_Q);
-  } 
-  else
-  { os << "        No validation.\n";
-    constant_iterator<bool>   noSelection(true);
-    return new gslData(y->begin()+skip,  noSelection , equalWeights, nRows, gslRegression_Max_Q);  
-  } 
-}
- 
 ValidatedRegression
 build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os)
 {

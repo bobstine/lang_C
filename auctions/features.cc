@@ -1,7 +1,6 @@
 #include "features.h"
 
 #include "range_stats.h"
-#include "gsl_utils.h"
 
 #include <sstream>
 #include <set>

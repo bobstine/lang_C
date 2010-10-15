@@ -9,10 +9,6 @@
 
 #include "feature_streams.h"
 
-// principal components
-#include "gsl_eigen.h"
-// copy into gsl matrix
-#include "gsl_utils.h"
 
 bool 
 FeatureAcceptancePredicate::operator()(Feature const& f) const

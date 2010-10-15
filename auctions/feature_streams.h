@@ -61,10 +61,6 @@
 #include "function_utils.h"
 #include "debug.h"
 
-// principal components
-#include "gsl_eigen.h"
-#include <gsl/gsl_matrix.h>
-
 // operator
 #include <functional>
 // for finite streams

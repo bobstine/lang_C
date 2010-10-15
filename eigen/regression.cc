@@ -9,28 +9,6 @@
 
 const double epsilon (1.0e-50);          // used to detect singularlity
 
-
-//     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic     FStatistic
-
-void
-FStatistic::calc_p_value()
-{
-  if ( (mF <= 0.0) || gsl_isnan(mF) || gsl_isinf(mF) )
-    mPValue = 0.0;
-  else
-    mPValue = gsl_cdf_fdist_Q(mF, mNumDF, mDenDF);    
-}
-
-
-double
-FStatistic::critical_value(double p) const
-{
-  assert (0.0 <= p && p <= 1.0);
-  return gsl_cdf_fdist_Qinv(p, mNumDF, mDenDF);
-}
-
-
-
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
 LinearRegression::Matrix

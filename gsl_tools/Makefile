@@ -22,7 +22,8 @@ EXTERNAL_USES = gsl gslcblas
 #
 ###########################################################################
 
-level_0   = gsl_iterator.o
+level_0   = cdf/sf_erf.o
+level_1   = gsl_iterator.o
 level_1   = gsl_utils.o
 level_2   = gsl_eigen.o
 level_3   = gsl_data.o       gsl_kalman.o

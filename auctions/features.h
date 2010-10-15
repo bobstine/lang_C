@@ -45,11 +45,6 @@
 #include "range_stats.h"
 #include "operator_traits.h"
 #include "function_utils.h"
-// #include "iterators.h"      // for lag iterator
-
-#include "gsl_iterator.h"
-
-#include <gsl/gsl_vector.h>
 
 #include <iostream>
 #include <sstream>
