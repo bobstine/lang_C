@@ -11,7 +11,6 @@
 
 #include "features.h"
 
-#include <gsl/gsl_matrix.h>
 #include <Eigen/Array>
 
 #include <functional>
@@ -20,14 +19,7 @@
 
 namespace Convert
 {
-  // Convert features <--> gsl vectors
-  
-  gsl_matrix *
-    features_into_gsl_matrix(std::vector<Feature> const& fv, int skipContextRows);
-  
-  std::vector<Feature>
-    gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows);                // frees the matrix as well
-
+  // Convert features <--> gsl vectors  [ find in git repository prior to 10/15/2010 ]
   
   // Convert features <--> eigen vectors  
   
@@ -40,32 +32,6 @@ namespace Convert
 
 
 // Template class
-
-template <class OP>
-class GSL_adapter
-{
- private:
-  OP mOp;
-  int mContextRows;
-  
- public:
-  typedef  std::vector<Feature> FeatureVector;
-
-  GSL_adapter (OP op, int rows) : mOp(op), mContextRows(rows) { }
-  
-  FeatureVector operator()(FeatureVector const& fv)
-    {
-      gsl_matrix *in  = Convert::features_into_gsl_matrix(fv, mContextRows);
-      //      std::cout << "ADPT: Converting (" << fv[0]->size() << "," << fv.size() << ") into (" << in->size1 << "," << in->size2 << ") for GSL.\n";
-      gsl_matrix *out = mOp(in);
-      FeatureVector result (Convert::gsl_matrix_into_features(out, mContextRows));
-      gsl_matrix_free(in);
-      gsl_matrix_free(out);
-      return result;
-    }
-};		    
-
-
 
 template <class OP>
 class Eigen_adapter
