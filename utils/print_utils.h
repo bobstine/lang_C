@@ -16,9 +16,12 @@
 #include <iterator>
 #include <vector>
  
-// p-value for tabular summary
-#include <gsl/gsl_cdf.h>
+// for distributions
+#include <boost/math/distributions/students_t.hpp>
+using boost::math::students_t;
 
+using boost::math::cdf;
+using boost::math::complement;
 
 ////////////////////////  Stat Tabular Summary  //////////////////
 
@@ -27,7 +30,7 @@
 
 template <class SIter, class Iter>
 void
-  print_stat_summary_table (int k, SIter name, Iter est, Iter se, std::ostream &os)
+  print_stat_summary_table (int k, SIter name, Iter est, Iter se, int df, std::ostream &os)
 {
   const unsigned int maxNameString (50);
 
@@ -35,6 +38,7 @@ void
   os << "                                     Summary of Regression Coefficient Estimates\n";
   os << "                       Predictor Name                    Estimate        SE         t        p\n";
   // print the names in the first column, then est   se   t  p-val
+  students_t tdist(df);
   for (int i=0; i<k; ++i)
   { std::string aName (name[i]);
     if (aName.size() > maxNameString)
@@ -53,7 +57,7 @@ void
       // output 2-sided z-values
       os << std::setiosflags(std::ios::left);
       if (z < 0) z = -z;
-      double p (2.0*gsl_cdf_ugaussian_Q(z));
+      double p (2.0*cdf(complement(tdist, z)));
       if (p < 0.0000001) p = 0.0;
       os << std::setw(10)  << p;
       os << std::setiosflags(std::ios::right);
@@ -66,7 +70,7 @@ void
 
 template <class SIter, class Iter>
 void
-  print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, std::ostream &os)
+  print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, int df, std::ostream &os)
 {
   const unsigned int maxNameLength (50);
 
@@ -86,7 +90,8 @@ void
      << "<TH SCOPE=\"column\"> Std Error </TH>"
      << "<TH SCOPE=\"column\"> t-statistic </TH>"
      << "<TH SCOPE=\"column\"> p-value </TH>  </TR>\n";
-    
+
+  students_t tdist(df);
   // print the names in the first column, then est   se   t  p-val
   for (int i=0; i<k; ++i, ++name,++est,++se)
   { // trim names to allowed size
@@ -109,7 +114,7 @@ void
       os <<  "<TD>" << double(zInt)/100.  << "</TD> ";
       // output p-values
       if (z < 0) z = -z;
-      double p (2.0*gsl_cdf_ugaussian_Q(z));
+      double p (2.0*cdf(complement(tdist, z)));
       if (p < 0.0000001) p = 0.0;
       os <<  "<TD>" << p  << "</TD>";
     }
