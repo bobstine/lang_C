@@ -75,7 +75,7 @@
   A regulated stream injects the method 'has_feature' into a stream object.
   That stream object must implement the three functions empty,
   current_feature_is_ok and increment_position.  The stream will then have the
-  chance to bid in the auction and submit a feature to the model.
+  chance participate in the auction and submit a feature to the model via 'pop'.
 
   The regulated stream provides a 'consistent interface' for all streams without needing
   an abstract base class.  (Works since never have a collection of streams; streams are
