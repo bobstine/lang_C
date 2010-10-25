@@ -33,7 +33,7 @@ OPT = -std=c++0x
 
 # Use this for boost files that need compilation
 
-EXTERNAL_USES = boost_regex
+EXTERNAL_USES = boost_regex boost_thread
 
 ###########################################################################
 #
