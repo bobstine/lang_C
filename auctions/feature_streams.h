@@ -10,7 +10,7 @@
  *  Copyright 2008. All rights reserved.
  *
  
- Feature streams implement an abstract protocol and deliver upon request another
+ Feature streams implement an abstract protocol and deliver upon request the 'next'
  feature.  The regulator template wrapper-class enforce the common protocol for
  checking whether the stream is (a) empty and (b) has a non-trivial feature (eg,
  one that is not a constant). Template objects in the feature stream object
@@ -18,30 +18,26 @@
  These might be a model, a list of variables, a file, and so forth.
 
  Feature streams (along with bidders) are held in experts that participate in the
- auction. The *only* calls that come down from the expert are calls to the method
- 
+ auction. Experts call 
         RegulatedStream<base>::has_feature()
-
- This response is handled by the RegulatedStream that wraps the underlying
- stream.  The bidder at higher level may ask for the number remaining
- (number_remaining).  If the stream has a feature, then a winning expert will
- call
- 
+ before placing any bids.  The regulated stream coordinates a sequence of calls
+ to more primitive methods. The bidder at higher level may ask for the number
+ remaining (number_remaining).  If the stream has a feature, then a winning
+ expert will call
         pop()
+ which *must* return a feature vector.   pop() operator must
+        (a) run very fast
+        (b) return a vector of features
+        (c) advance indices/whatever keeps track of the status of the stream
+ Heavy lifting required in order to be able to pop() must be done elsewhere,
+ particularly in the method build_next_feature() [was increment_position()].
  
- which *must* return a feature vector (or else waste the bid).  The pop()
- operator must
-        (a) pop off the top element from the stack
-        (b) advance indices/whatever keeps track of the status of the stream
- Feature streams are a revised version of the old recommender classes.
-	
  Streams should be *lightweight*.  They will be copied heavily in the auction.
  Basically act as a stack/queue, a type of iterator really.  The stream itself
- does *not* hold data.
+ does *not* hold data, just the rules to build new variables.
 
- Flavors
-
-    Finite           chooses variables from a fixed set of columns
+ Types of streams ...
+    Finite           chooses variables from a fixed set of columns as a queue
     Fit              builds features depending on state of model (such as just added var)
     Interaction      interactions among features from a source of fixed size
     Feature-product  interactions between a feature and a fixed set (counts down, as vars in model)
@@ -97,6 +93,7 @@ public:
     { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
 	return true;
       else
+	//	Stream::build_next_feature();
 	Stream::increment_position();
     }
     debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
@@ -145,9 +142,10 @@ class FiniteStream
 {
   typedef std::deque<Feature>      QueueType;
 
-  std::string mName;
-  QueueType   mFeatures;    
-
+  std::string    mName;
+  QueueType      mFeatures;  
+  FeatureVector  mHead;
+  
 public:
   
   FiniteStream(std::string const& name, FeatureVector const& features)
@@ -155,10 +153,8 @@ public:
   
   std::string             name()                       const { return mName; }
   std::string             feature_name()               const;
-  FeatureVector           pop();
-
+  FeatureVector           pop()                              { FeatureVector z (mHead); mHead = FeatureVector(); return z; }
   int                     number_remaining()           const;
-
   void                    print_to(std::ostream& os)   const;
   void                    print_features_to (std::ostream& os) const;
   
@@ -167,7 +163,8 @@ protected:
   
   bool  empty()                                                                          const { return (mFeatures.size()==0); }
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
-  void  increment_position();
+  void  increment_position()  {};  // delete
+  void  build_next_feature();
 };
 
 
@@ -190,6 +187,7 @@ class LagStream
   const int          mBlockSize;
   int                mLag;
   int                mCyclesLeft;
+  FeatureVector      mHead;
   
 public:
   
@@ -199,7 +197,7 @@ public:
   std::string       name()                             const   { return mName; }
 
   std::string       feature_name()                     const ;
-  FeatureVector     pop();
+  FeatureVector     pop()                                      { FeatureVector z (mHead); mHead = FeatureVector(); return z; }
   int               number_remaining()                 const ;
   
   void              print_to(std::ostream& os)         const;
@@ -207,7 +205,8 @@ public:
 protected:
   bool  empty()                                                                           const;
   bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
-  void  increment_position();
+  void  increment_position() { } // dump
+  void  build_next_feature();
 
 };
 
@@ -221,8 +220,7 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 
 
 
-//  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     
-
+//  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream
 
 template<class Source>
 class NeighborhoodStream

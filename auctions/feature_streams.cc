@@ -20,11 +20,6 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
 
 //  Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream
 
-/*
-  The initial boolean in each pair asks whether this variable has been tried
-  since the last time that the model changed (indicated by 'mark_position')
-*/
-
 void
 FiniteStream::insert_features(FeatureVector const& f)
 {
@@ -41,25 +36,16 @@ FiniteStream::number_remaining() const
 }
 
 
-std::vector<Feature>
-FiniteStream::pop()                            
-{
-  FeatureVector result;
-  result.push_back(mFeatures.front()); 
-  increment_position();
-  return result;
-}
-
-
 void
-FiniteStream::increment_position()
+FiniteStream::build_next_feature()
 {
-  Feature f (mFeatures.front());
+  // dump any features that are already in the model
+  while(!mFeatures.empty() && mFeatures.front()->is_used_in_model())
+    mFeatures.pop_front();
+  mHead.push_back(mFeatures.front());
   mFeatures.pop_front();
-  if (f->is_used_in_model())      // dump f from queue
-    return;
-  else                            // return with boolean indicator to show tried since last added
-    mFeatures.push_back(f);   
+  // put the current feature on the back
+  mFeatures.push_back(mHead[0]);
 }
 
 
@@ -169,14 +155,18 @@ LagStream::feature_name() const
   }
 }
 
-std::vector<Feature>
-LagStream::pop()                
-{ 
-  increment_position(); 
-  FeatureVector(fv); 
-  fv.push_back(Feature(mFeature,mLag,mBlockSize)); 
-  return fv; 
+
+void
+LagStream::build_next_feature()
+{
+  ++mLag;
+  if (mLag > mMaxLag && mCyclesLeft>0)
+  { --mCyclesLeft;
+    mLag = 1;
+  }
+  mHead.push_back(Feature(mFeature,mLag,mBlockSize));
 }
+
 
 void
 LagStream::print_to(std::ostream& os)          const
@@ -208,13 +198,3 @@ LagStream::current_feature_is_okay(FeatureVector const&, FeatureVector const&)  
   return (!mFeature->is_constant());   // need a better check here for whether lags are in model already
 }
 
-
-void
-LagStream::increment_position()
-{
-  ++mLag;
-  if (mLag > mMaxLag && mCyclesLeft>0)
-  { --mCyclesLeft;
-    mLag = 1;
-  }
-}

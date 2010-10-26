@@ -48,7 +48,7 @@ FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std:
   std::string lastVarName = used.back()->name();                             // check name of last used feature for name signature
   bool foundSig = (std::string::npos != lastVarName.find(mSignature));       // ::npos means not found
   if (foundSig) 
-  { debugging::debug("FSTR",4) << "Fit stream already used; not okay.\n";
+  { debugging::debug("FSTR",4) << "Fit stream already used; current feature is not okay.\n";
     mLastQ = mModel.q();                                                     // signals empty
     return false;
   }
@@ -59,10 +59,11 @@ FitStream<Model>::current_feature_is_okay(std::vector<Feature> const& used, std:
 }
       
 template<class Model>
-std::vector<Feature>FitStream<Model>::pop()
+std::vector<Feature>
+FitStream<Model>::pop()
 {
   std::vector<int> powers;
-  mFit = Column(feature_name().c_str(), mSkip + mModel.n_total_cases());  // grab current fit
+  mFit = Column(feature_name().c_str(), mSkip + mModel.n_total_cases());     // grab current fit
   double *fit (mFit->begin());
   for(int i=0; i<mSkip; ++i)
     *fit++ = 0;
@@ -71,7 +72,7 @@ std::vector<Feature>FitStream<Model>::pop()
   for (int j = 2; j <= mPower; ++j)
     powers.push_back(j);
   debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
-  mLastQ = mModel.q();                                                         // will be empty until next is added
+  mLastQ = mModel.q();                                                       // will be empty until next is added
   return powers_of_column_feature(mFit,powers);
 }
 
