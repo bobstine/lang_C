@@ -13,7 +13,7 @@
  Feature streams implement an abstract protocol and deliver upon request the 'next'
  feature.  The regulator template wrapper-class enforce the common protocol for
  checking whether the stream is (a) empty and (b) has a non-trivial feature (eg,
- one that is not a constant). Template objects in the feature stream object
+ one that is not a constant).  Template objects in the feature stream object
  provide the data source that the stream uses to build the supplied features.
  These might be a model, a list of variables, a file, and so forth.
 
@@ -45,6 +45,11 @@
     Lag              lags of a given feature
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
+
+  Indexing
+    Streams follow the convention that the current indices define the current
+    feature.  Indices then increment after building the feature for the next
+    feature.
   
 */
 
@@ -70,8 +75,10 @@
 /*
   A regulated stream injects the method 'has_feature' into a stream object.
   That stream object must implement the three functions empty,
-  current_feature_is_ok and increment_position.  The stream will then have the
+  current_feature_is_ok and build_next_feature.  The stream will then have the
   chance participate in the auction and submit a feature to the model via 'pop'.
+
+       empty = true ... do not have a feature available nor the means to make one
 
   The regulated stream provides a 'consistent interface' for all streams without needing
   an abstract base class.  (Works since never have a collection of streams; streams are
@@ -93,8 +100,7 @@ public:
     { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
 	return true;
       else
-	//	Stream::build_next_feature();
-	Stream::increment_position();
+	Stream::build_next_feature();
     }
     debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
     return false;
@@ -128,15 +134,13 @@ public:
   void
   operator()()
   {
-    Stream::increment_position();
+    Stream::pop();
   }
 };
 #endif
 
 
-
-
-//  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream  FiniteStream
+//  FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     
 
 class FiniteStream
 {
@@ -152,19 +156,20 @@ public:
     :  mName(name) { insert_features(features);  }
   
   std::string             name()                       const { return mName; }
-  std::string             feature_name()               const;
-  FeatureVector           pop()                              { FeatureVector z (mHead); mHead = FeatureVector(); return z; }
-  int                     number_remaining()           const;
+  std::string             feature_name()               const { if (mHead.size()==0) return (std::string("")); else return mHead[0]->name(); }
+  int                     number_remaining()           const { return mFeatures.size(); }
+  FeatureVector           pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
+
   void                    print_to(std::ostream& os)   const;
   void                    print_features_to (std::ostream& os) const;
   
 protected:
-  void  insert_features (FeatureVector const& features);
-  
-  bool  empty()                                                                          const { return (mFeatures.size()==0); }
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped) const;
-  void  increment_position()  {};  // delete
+  bool  empty()                                                               const { return (mHead.size()==0) && (number_remaining()==0); }
   void  build_next_feature();
+  bool  current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const { return (mHead.size() != 0) && (!mHead[0]->is_used_in_model()); }
+
+private:
+  void  insert_features (FeatureVector const& features);
 };
 
 
@@ -195,18 +200,16 @@ public:
     :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
   std::string       name()                             const   { return mName; }
-
-  std::string       feature_name()                     const ;
-  FeatureVector     pop()                                      { FeatureVector z (mHead); mHead = FeatureVector(); return z; }
-  int               number_remaining()                 const ;
+  std::string       feature_name()                     const   { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int               number_remaining()                 const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
+  FeatureVector     pop()                                      { FeatureVector z (mHead); mHead.clear(); return z; }
   
   void              print_to(std::ostream& os)         const;
 
 protected:
-  bool  empty()                                                                           const;
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
-  void  increment_position() { } // dump
+  bool  empty()                                        const  { return (mHead.size() == 0) && (number_remaining() == 0); }
   void  build_next_feature();
+  bool  current_feature_is_okay(FeatureVector const&, FeatureVector const&)  const { return (!mFeature->is_constant()) && (mHead.size() != 0) && (!mHead[0]->is_used_in_model()); };
 
 };
 
@@ -230,26 +233,24 @@ class NeighborhoodStream
   const std::string  mSignature;    // look for this in name of variable before using
   IntegerColumn      mIndexColumn;
   int                mPos;
+  FeatureVector      mHead;
   
 public:
 
   NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  mName(name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) { }
+    :  mName(name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0), mHead() { }
   
-  std::string       name()                             const   { return mName; }
-
-  std::string       feature_name()                     const ;
-  FeatureVector     pop();
-  int               number_remaining()                 const   { return (mSource.size()-mPos); }
-  void              mark_position()                    const   { }
+  std::string    name()                             const   { return mName; }
+  std::string    feature_name()                     const   { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int            number_remaining()                 const   { return (mSource.size()-mPos); }
+  FeatureVector  pop()                                      { FeatureVector z (mHead); mHead.clear(); return z; }
   
-  void              print_to(std::ostream& os)         const;
+  void           print_to(std::ostream& os)         const;
 
 protected:
-  bool              empty()                      const { return  (number_remaining() == 0); }
-  void              increment_position()               { ++mPos; }
-  bool              current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
-
+  bool           empty()                            const   { return  (mHead.size() == 0) && (number_remaining() == 0); }
+  void           build_next_feature();
+  bool           current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
 };
 
 template <class Source>
@@ -272,23 +273,23 @@ class FitStream
   std::string            mSignature;       // prefix for variable names so that it can recognize them
   Column                 mFit;             // holds fit values from model
   int                    mSkip;            // context rows to pad when returning fit
-
+  FeatureVector          mHead;
+  
 public:
   
   FitStream(Model const& model, int power, std::string s, int skip)
-    :
-    mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
+    : mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip), mHead() {  }
   
-  std::string             name()                       const { return mSignature; }
-  std::string             feature_name()               const; 
-  FeatureVector           pop();
+  std::string     name()                       const { return mSignature; }
+  std::string     feature_name()               const { if (mHead.size() == 0) return std::string(""); else return mHead[0]->name(); }
+  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  void                    print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
+  void            print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
   
 protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
-  bool  empty()                                                                                const;
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const&);
-  void  increment_position()                                                                   const { };
+  bool            empty()                      const { return (mHead.size() == 0) && (mLastQ == mModel.q()); }
+  void            build_next_feature();
+  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const&);
 };
 
 
@@ -305,33 +306,34 @@ make_fit_stream (Model const& m, int powers, std::string signature, int skip)
 template<class Source>
 class InteractionStream
 {
-  
 private:
-  int             mDiag;
+  bool            mDiag;
   std::string     mName;
-  std::string     mCurrentFeatureName;
   Source const&   mSource;                     
-  int             mPos1, mPos2;
+  unsigned        mPos1, mPos2;
+  FeatureVector   mHead;
   
 public:
   
   InteractionStream(std::string name, Source const& src, bool useSquares)
-    : mDiag(useSquares?0:1), mName(name), mCurrentFeatureName(""), mSource(src), mPos1(0), mPos2(useSquares?0:1) { build_current_feature_name(); }
+    : mDiag(useSquares), mName(name), mSource(src), mPos1(0), mPos2(0), mHead() { set_initial_position(); }
   
-  std::string             name()                              const { return mName; }
+  std::string     name()                       const { return mName; }
+  std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int             number_remaining()           const;
+  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
   
-  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
-  FeatureVector           pop();                      
-  
-  int                     number_remaining()                  const;
-  void                    print_to(std::ostream& os)          const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
+  void            print_to(std::ostream& os)   const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
    
 protected:
-  bool  empty ()                                              const;
+  bool  empty ()                               const { return (mHead.size() == 0) && (number_remaining() == 0); }
+  void  build_next_feature();
   bool  current_feature_is_okay    (FeatureVector const& used, FeatureVector const& skipped)   const;
-  void  increment_position();
+
 private:
-  void  build_current_feature_name();
+  void  set_initial_position();
+  void  increment_positions();
+  void  inc_counters();
 };
 
 
@@ -354,30 +356,30 @@ public:
 
 class FeatureProductStream 
 {
-  std::string  mName;
-  std::string  mCurrentFeatureName;
-  Feature      mFeature;
+  std::string    mName;
+  Feature        mFeature;
   std::priority_queue<Feature, FeatureVector, BidOrder> mQueue;             // Make a priority queue out of a fixed source list of features
+  FeatureVector  mHead;
   
 public:
-  
   FeatureProductStream(std::string name, Feature f, FeatureVector const& src)
-    : mName(""), mCurrentFeatureName(""), mFeature(f)      { mName = name + ":" + f->name() + " x Source"; initialize_queue(src); build_current_feature_name(); }
+    : mName(""), mFeature(f), mHead()  { mName = name + ":" + f->name() + " x Source"; initialize_queue(src);  }
   
-  std::string             name()                              const { return mName; }  
-  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
-  FeatureVector           pop();
+  std::string     name()                       const { return mName; }  
+  std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int             number_remaining()           const { return mQueue.size(); }
+  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  int                     number_remaining()                  const { return mQueue.size(); }
-  void                    print_to(std::ostream& os)          const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " # " << mQueue.size() << " "; }
+  void            print_to(std::ostream& os)   const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " # " << mQueue.size() << " "; }
   
 protected:
-  bool  empty()  const { return mQueue.empty(); }
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);  
-  void  increment_position();
+  bool            empty()                      const { return mQueue.empty(); }
+  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);  
+  void            build_next_feature();
+
 private:
-  void  initialize_queue(FeatureVector const& s);
-  void  build_current_feature_name();
+  void            initialize_queue(FeatureVector const& s);
+
 };
 
 
@@ -408,32 +410,31 @@ template<class Source1, class Source2>
 class CrossProductStream 
 {
   std::string      mName;
-  std::string      mCurrentFeatureName;
   Source1 const&   mSlowSource;            // grows slowly
   Source2 const&   mFastSource;            // grows faster
   mutable int              mSlowPos;
   mutable std::vector<int> mPos;           // one indexing element for each feature in the slow source
+  FeatureVector    mHead;
   
 public:
     
   CrossProductStream(std::string name, Source1 const& slowSrc, Source2 const& fastSrc)
-    : mName(name), mCurrentFeatureName(""), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
+    : mName(name), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos(), mHead()  { update_position_vector(); }
   
-  std::string             name()                              const { return mName; }  
-  std::string             feature_name()                      const { if(empty()) return std::string(""); else return mCurrentFeatureName; }
-  FeatureVector           pop();     
+  std::string     name()                       const  { return mName; }  
+  std::string     feature_name()               const  { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int             number_remaining()           const;
+  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  int                     number_remaining()                  const ;
-  void                    print_to(std::ostream& os)          const ;           //   Note the mutable items since sources may change
+  void            print_to(std::ostream& os)   const;           //   Note the mutable items since sources may change
   
   // protected:
-  bool  empty() const;
-  bool  current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);
-  void  increment_position();
-
+  bool            empty()                      const  { return (mHead.size() == 0) && (number_remaining() == 0); }
+  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);
+  void            build_next_feature();
+  
 private:
-  void  update_position_vector()     const;
-  void  build_current_feature_name() ;
+  void            update_position_vector()     const;
 };
 
 
@@ -459,23 +460,25 @@ class PolynomialStream
   Source const&   mSource;  
   int             mPos;
   int             mDegree;
+  FeatureVector   mHead;
   
 public:
     
-  PolynomialStream(std::string name, Source const& src, int degree): mName(name), mSource(src), mPos(0), mDegree(degree) { }
+  PolynomialStream(std::string name, Source const& src, int degree)
+    : mName(name), mSource(src), mPos(0), mDegree(degree), mHead() { }
   
-  std::string           name()                       const { return mName; }
-  std::string           feature_name()               const;
-  FeatureVector         pop();
+  std::string     name()                       const { return mName; }
+  std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int             number_remaining()           const { return (mSource.size()-mPos); }
+  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  int                   number_remaining()           const { return (mSource.size()-mPos); }
   
-  void                  print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos<<"/"<< mSource.size() ; }
+  void            print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos<<"/"<< mSource.size() ; }
   
 protected:
-  bool                  empty()                      const { return  (number_remaining() == 0); }
-  void                  increment_position()               { ++mPos; }
-  bool                  current_feature_is_okay(FeatureVector const&, FeatureVector const&);
+  bool            empty()                      const { return  (number_remaining() == 0); }
+  void            build_next_feature();
+  bool            current_feature_is_okay(FeatureVector const&, FeatureVector const&);
 };
 
 
@@ -507,29 +510,25 @@ private:
   Source const&       mSource;  
   int                 mPos; 
   int                 mBundleSize;
-  FeatureVector       mBundle;
   Pred                mPredicate;       // is the current feature okay for use (hold this as object, not reference)
   Trans               mTransformation;
+  FeatureVector       mHead;
   
 public:
-    
   SubspaceStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
-    : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mBundle(), 
-      mPredicate(pred), mTransformation(trans) { }
+    : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans), mHead() { }
   
-  std::string           name()                       const { return mName; }
-  std::string           feature_name()               const { if (empty()) return std::string(""); else return "basis"; }
-  FeatureVector         pop();
+  std::string     name()                       const { return mName; }
+  std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
+  int             number_remaining()           const { return (mSource.size()-mPos); }  
+  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
   
-  int                   number_remaining()           const { return (mSource.size()-mPos); }
-  void                  print_to(std::ostream& os)   const { os << "SUBS: " << name(); if(empty()) os << " is empty."; else os << " stream @ " << mPos ; }
+  void            print_to(std::ostream& os)   const { os << "SUBS: " << name(); if(empty()) os << " is empty."; else os << " stream @ " << mPos ; }
 
 protected:
-  bool                  empty()                      const { return ((number_remaining()+(int)mBundle.size())<mBundleSize);} //too few to fill
-
-  bool                  current_feature_is_okay (FeatureVector const&, FeatureVector const&)
-                                                     const { return ((int)mBundle.size() >= mBundleSize);  }
-  void                  increment_position();
+  bool            empty()                      const { return ((number_remaining()+(int)mHead.size())<mBundleSize);} //too few to fill
+  void            build_next_feature();
+  bool            current_feature_is_okay (FeatureVector const&, FeatureVector const&) const { return (mHead.size() != 0);  }
 
 };
 

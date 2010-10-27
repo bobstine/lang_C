@@ -33,6 +33,7 @@ main()
     features.push_back(Feature(columns[1]));  
     features.push_back(Feature(columns[2]));  
 
+    std::cout << "TEST: making regulated finite stream\n";
     typedef RegulatedStream< FiniteStream > FS;
     FS fs (make_finite_stream("Fin St", features));
 
@@ -44,21 +45,24 @@ main()
     std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
     fs.print_features_to(std::cout); std::cout << std::endl;
     
-    int more (11);
+    int more (7);
+    while(fs.has_feature(features,features) && more--)
+    { std::vector<Feature> fv (fs.pop());
+      std::cout << "TEST:    Popped feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
+      fs.print_features_to(std::cout); std::cout << std::endl;
+    }
+
+    std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
+    fv[0]->set_model_results(true, 0.001);  // used in model, p-value
+    more = 7;
     while(fs.has_feature(features,features) && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
       fs.print_features_to(std::cout); std::cout << std::endl;
     }
 
-    std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
-    fv[0]->set_model_results(true, 0.001);  // used in model, p-value
-    more = 11;
-    while(fs.has_feature(features,features) && more--)
-    { std::vector<Feature> fv (fs.pop());
-      std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-      fs.print_features_to(std::cout); std::cout << std::endl;
-    }
+    return 0;
+    
 
     fs.print_features_to(std::cout); std::cout << std::endl;
   }
