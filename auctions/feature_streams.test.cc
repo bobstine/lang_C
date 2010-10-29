@@ -24,24 +24,24 @@ main()
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   
 
-  // test Finite streams
-  {
-    FeatureVector features;
+  FeatureVector features;
+  
+  std::cout << "\n\nTEST: building collection of features\n";
+  features.push_back(Feature(columns[0]));  std::cout << "      : Adding feature " << features[0] << std::endl;
+  features.push_back(Feature(columns[1]));  std::cout << "      : Adding feature " << features[1] << std::endl;
+  features.push_back(Feature(columns[2]));  std::cout << "      : Adding feature " << features[2] << std::endl;
+  features.push_back(Feature(columns[3]));  std::cout << "      : Adding feature " << features[2] << std::endl;
+  features.push_back(Feature(columns[4]));  std::cout << "      : Adding feature " << features[2] << std::endl;
     
-    std::cout << "\n\nTEST: adding features\n";
-    features.push_back(Feature(columns[0]));  
-    features.push_back(Feature(columns[1]));  
-    features.push_back(Feature(columns[2]));  
-
-    std::cout << "TEST: making regulated finite stream\n";
+  if (false)
+  {   // test Finite streams
+    std::cout << "\n\nTEST: making regulated finite stream\n";
     typedef RegulatedStream< FiniteStream > FS;
-    FS fs (make_finite_stream("Fin St", features));
+    FS fs (make_finite_stream("Test", features));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
-
     std::vector<Feature> fv (fs.pop());
     std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-
     std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
     fs.print_features_to(std::cout); std::cout << std::endl;
     
@@ -60,12 +60,26 @@ main()
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
       fs.print_features_to(std::cout); std::cout << std::endl;
     }
-
-    return 0;
-    
-
-    fs.print_features_to(std::cout); std::cout << std::endl;
   }
+
+  if (true)
+  {   // test lag streams
+    std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
+    RegulatedStream< LagStream > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    for (unsigned i=0; i<10; ++i)
+    { ls.build_next_feature(features,features);
+      ls.print_to(std::cout);
+    }
+    std::cout << "\nTEST: making regulated lag stream with t-2 marked\n";
+    RegulatedStream< LagStream > lags (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    lags.build_next_feature(features,features); lags.print_to(std::cout); 
+    lags.build_next_feature(features,features); lags.print_to(std::cout); features.push_back(lags.pop()[0]);  // add t-2 to "model features"
+    for (unsigned i=0; i<10; ++i)
+    { lags.build_next_feature(features,features);
+      lags.print_to(std::cout);
+    }
+  }
+  
   /*  
   std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
   // test dynamic cross-product stream

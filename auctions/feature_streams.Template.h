@@ -2,30 +2,6 @@
 #include "debug.h"
 #include <assert.h>
 
-namespace {
-  
-  bool indicators_from_same_parent(Feature const& f1, Feature const& f2)
-  {
-    return f1->has_attribute("category")
-      && f2->has_attribute("category")
-      && (f1->attribute_str_value("parent")==f2->attribute_str_value("parent"));
-  }
-  
-  bool found_feature_name_in_vector (std::string const& name, std::vector<Feature> const& vec, std::string const& vecName)
-  {
-    // std::cout << "Looking for " << name << " in " ;
-    // for(int i=0; i < (int) vec.size(); ++i)  std::cout << vec[i]->name() << ", "; std::cout << std::endl;
-    if (name.size() == 0)
-      return false;
-    for (std::vector<Feature>::const_iterator it = vec.begin();it != vec.end(); ++it)
-    { if (name == (*it)->name())
-      { debugging::debug("FETR", 4) << "Found feature " << name << " in " << vecName << std::endl;
-	return true; 
-      }
-    }
-    return false;
-  }
-}
 
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
@@ -126,10 +102,10 @@ InteractionStream<Source>::current_feature_is_okay(std::vector<Feature> const& u
 {
   if(mHead.size() == 0) return false;
   std::string name (feature_name());
-  if (found_feature_name_in_vector(name, used, "model features") || found_feature_name_in_vector(name,skipped, "skipped features"))
-  { debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding redundant variable." << std::endl;
-    return false;
-  }
+  //  if (found_name_in_feature_vector(name, used, "model features") || found_name_in_feature_vector(name,skipped, "skipped features"))
+  //{ debugging::debug("INST",4) << "Interaction stream " << mName << " avoiding redundant variable." << std::endl;
+  //  return false;
+  //}
   return true;
 }
   

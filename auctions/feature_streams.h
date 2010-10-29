@@ -19,22 +19,26 @@
 
  Feature streams (along with bidders) are held in experts that participate in the
  auction. Experts call 
-        RegulatedStream<base>::has_feature()
+        has_feature()
  before placing any bids.  The regulated stream coordinates a sequence of calls
  to more primitive methods. The bidder at higher level may ask for the number
  remaining (number_remaining).  If the stream has a feature, then a winning
  expert will call
         pop()
- which *must* return a feature vector.   pop() operator must
-        (a) run very fast
-        (b) return a vector of features
-        (c) advance indices/whatever keeps track of the status of the stream
- Heavy lifting required in order to be able to pop() must be done elsewhere,
- particularly in the method build_next_feature() [was increment_position()].
+ which return a feature vector.  pop() must (a) run very fast and (b) return a
+ vector of features.  Heavy lifting required in order to be able to pop() must
+ be done in the method build_next_feature().  In order to support some styles of
+ bidding, the stream will need to implement
+        number_remaining().
  
- Streams should be *lightweight*.  They will be copied heavily in the auction.
- Basically act as a stack/queue, a type of iterator really.  The stream itself
- does *not* hold data, just the rules to build new variables.
+ Stream properties...
+    Streams should be *lightweight*.  They will be copied heavily in the auction.
+    Basically act as a stack/queue, a type of iterator really.  The stream itself
+    does *not* hold data, just the rules to build new variables.
+
+    Indexing. Some streams use indices to keep track of their position in a list
+    of base features.  These indices should refer to the current head feature or
+    the most recent head.
 
  Types of streams ...
     Finite           chooses variables from a fixed set of columns as a queue
@@ -46,10 +50,7 @@
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
 
-  Indexing
-    Streams follow the convention that the current indices define the current
-    feature.  Indices then increment after building the feature for the next
-    feature.
+
   
 */
 
@@ -78,8 +79,6 @@
   current_feature_is_ok and build_next_feature.  The stream will then have the
   chance participate in the auction and submit a feature to the model via 'pop'.
 
-       empty = true ... do not have a feature available nor the means to make one
-
   The regulated stream provides a 'consistent interface' for all streams without needing
   an abstract base class.  (Works since never have a collection of streams; streams are
   hidden in experts, for which we *do* have an abstract base class.)
@@ -94,16 +93,16 @@ class RegulatedStream: public Stream
 public:
   RegulatedStream(Stream const& s): Stream(s) { }
   
-  bool has_feature (FeatureVector const& used, FeatureVector const& skipped)
+  bool has_feature (FeatureVector const& accepted, FeatureVector const& rejected)
   {
-    while(!Stream::empty())                               // empty signals to leave stream alone
-    { if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
-	return true;
+    if (Stream::has_feature_ready())
+      return true;
+    else
+      if (Stream::can_build_more_features())             // should be able to get one, so
+	Stream::build_next_feature(accepted, rejected);  // advance position using current state
       else
-	Stream::build_next_feature();
-    }
-    debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
-    return false;
+	debugging::debug("RGST",3) << "regulated stream '" << Stream::name() <<"' cannot build more features.\n";
+    return Stream::has_feature_ready();                  // may not have been able to build one after all
   }
 };
 
@@ -140,33 +139,50 @@ public:
 #endif
 
 
+//  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
+
+class BaseStream
+{
+private:
+  std::string   mName;
+  FeatureVector mHead;
+
+public:
+  BaseStream (std::string name) : mName(name), mHead() { }
+  
+  std::string    name()                            const { return mName; }
+  std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
+  void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
+  bool           has_feature_ready()               const { return !mHead.empty(); }
+
+  void           set_head(Feature const& f)              { mHead.clear(); mHead.push_back(f); }
+  void           set_head(FeatureVector const& fv)       { mHead = fv; }
+  
+  FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
+
+  // utilities used in checking features
+  bool indicators_from_same_parent  (Feature const& f1, Feature const& f2) const;
+  bool found_name_in_feature_vector (std::string const& name, FeatureVector const& vec, std::string const& vecName) const;
+};
+
+
 //  FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     
 
-class FiniteStream
+class FiniteStream:  public BaseStream
 {
-  typedef std::deque<Feature>      QueueType;
-
-  std::string    mName;
-  QueueType      mFeatures;  
-  FeatureVector  mHead;
+  std::deque<Feature>  mFeatures;  
   
 public:
   
   FiniteStream(std::string const& name, FeatureVector const& features)
-    :  mName(name) { insert_features(features);  }
+    : BaseStream("FiniteStream:" + name) { insert_features(features); }
   
-  std::string             name()                       const { return mName; }
-  std::string             feature_name()               const { if (mHead.size()==0) return (std::string("")); else return mHead[0]->name(); }
-  int                     number_remaining()           const { return mFeatures.size(); }
-  FeatureVector           pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
+  int   number_remaining()           const { return mFeatures.size(); }
+  bool  can_build_more_features()    const { return number_remaining()>0; }
 
-  void                    print_to(std::ostream& os)   const;
-  void                    print_features_to (std::ostream& os) const;
-  
-protected:
-  bool  empty()                                                               const { return (mHead.size()==0) && (number_remaining()==0); }
-  void  build_next_feature();
-  bool  current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const { return (mHead.size() != 0) && (!mHead[0]->is_used_in_model()); }
+  void  build_next_feature(FeatureVector const&, FeatureVector const&);
+
+  void  print_features_to (std::ostream& os) const;
 
 private:
   void  insert_features (FeatureVector const& features);
@@ -184,33 +200,23 @@ make_finite_stream (std::string const& name, FeatureVector const& features)
 
 //  LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream
 
-class LagStream
+class LagStream: public BaseStream
 {
-  const std::string  mName;
-  const Feature      mFeature;
+  const Feature      mFeature;       // construct lags of this feature
   const int          mMaxLag;
-  const int          mBlockSize;
+  const int          mBlockSize;     // blocking factor used if longitudinal
   int                mLag;
-  int                mCyclesLeft;
-  FeatureVector      mHead;
+  int                mCyclesLeft;    // cycle through the lags
   
 public:
   
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
-    :  mName(name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
+    :  BaseStream("LagStream:" + name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  std::string       name()                             const   { return mName; }
-  std::string       feature_name()                     const   { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int               number_remaining()                 const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
-  FeatureVector     pop()                                      { FeatureVector z (mHead); mHead.clear(); return z; }
-  
-  void              print_to(std::ostream& os)         const;
+  int   number_remaining()                 const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
+  bool  can_build_more_features()          const   { return  (!mFeature->is_constant()) && (number_remaining() > 0); } 
 
-protected:
-  bool  empty()                                        const  { return (mHead.size() == 0) && (number_remaining() == 0); }
-  void  build_next_feature();
-  bool  current_feature_is_okay(FeatureVector const&, FeatureVector const&)  const { return (!mFeature->is_constant()) && (mHead.size() != 0) && (!mHead[0]->is_used_in_model()); };
-
+  void  build_next_feature (FeatureVector const& accepted, FeatureVector const&);
 };
 
 
@@ -241,6 +247,7 @@ public:
     :  mName(name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0), mHead() { }
   
   std::string    name()                             const   { return mName; }
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string    feature_name()                     const   { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int            number_remaining()                 const   { return (mSource.size()-mPos); }
   FeatureVector  pop()                                      { FeatureVector z (mHead); mHead.clear(); return z; }
@@ -281,6 +288,7 @@ public:
     : mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip), mHead() {  }
   
   std::string     name()                       const { return mSignature; }
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const { if (mHead.size() == 0) return std::string(""); else return mHead[0]->name(); }
   FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
 
@@ -319,6 +327,7 @@ public:
     : mDiag(useSquares), mName(name), mSource(src), mPos1(0), mPos2(0), mHead() { set_initial_position(); }
   
   std::string     name()                       const { return mName; }
+    bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const;
   FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
@@ -366,6 +375,7 @@ public:
     : mName(""), mFeature(f), mHead()  { mName = name + ":" + f->name() + " x Source"; initialize_queue(src);  }
   
   std::string     name()                       const { return mName; }  
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const { return mQueue.size(); }
   FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
@@ -422,6 +432,7 @@ public:
     : mName(name), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos(), mHead()  { update_position_vector(); }
   
   std::string     name()                       const  { return mName; }  
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const  { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const;
   FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
@@ -468,6 +479,7 @@ public:
     : mName(name), mSource(src), mPos(0), mDegree(degree), mHead() { }
   
   std::string     name()                       const { return mName; }
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const { return (mSource.size()-mPos); }
   FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
@@ -519,6 +531,7 @@ public:
     : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans), mHead() { }
   
   std::string     name()                       const { return mName; }
+  bool              has_feature_ready()          const { return !mHead.empty(); }
   std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const { return (mSource.size()-mPos); }  
   FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
