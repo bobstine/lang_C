@@ -57,7 +57,7 @@ FitStream<Model>::build_next_feature(std::vector<Feature> const& accepted, std::
     for (int j = 2; j <= mPower; ++j)
       powers.push_back(j);
     debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
-    mHead = powers_of_column_feature(mFit,powers);
+    set_head(powers_of_column_feature(mFit,powers));
   }
   mLastQ = mModel.q();                                                        //  empty until other predictor is added to model
 }
@@ -134,7 +134,7 @@ InteractionStream<Source>::build_next_feature(FeatureVector const&, FeatureVecto
 {
   // increment position
   if( find_next_position() )
-    set_head(mSource[mPos1], mSource[mPos2]);
+    set_head(Feature(mSource[mPos1], mSource[mPos2]));
   else
     debugging::debug("INTS",3) << "Interaction stream not able to find new pair.\n";
 }
@@ -176,7 +176,7 @@ template<class Source1, class Source2>
     Feature  xf (mFastSource[mPos[mSlowPos]]);
     Feature candidate(xs,xf);
     if ( (!candidate->is_constant()) &&
-	 (!found_feature_name_in_vector(feature_name(), accepted, "model features")) )
+	 (!found_name_in_feature_vector(feature_name(), accepted, "model features")) )
     { set_head(candidate);
       return;
     }
@@ -206,7 +206,7 @@ PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector
 {
   while (mPos < mSource.size())
   { std::string fname (mSource[mPos]->name());
-    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << name << "'\n";
+    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "'\n";
     if ( (mSource[mPos]->degree()>1)                        ||       // avoid calibration variables, powers, interactions
 	 (fname.size() >= 4 && "cube" == fname.substr(0,4))   ||   
 	 (fname.size() >= 6 && "square" == fname.substr(0,6)) ||
@@ -218,7 +218,7 @@ PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector
     }
     else // use this feature
     { debugging::debug("PLYS",4) << "Stream " << name() << " making polynomial subspace from feature " <<  mSource[mPos]->name() << std::endl;
-      FeatureVector powers ();
+      FeatureVector powers;
       if (!mSource[mPos]->is_used_in_model())    // include X if not in model
 	powers.push_back(mSource[mPos]);
       powers.push_back(Feature(Function_Utils::Square(), mSource[mPos]));

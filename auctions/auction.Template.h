@@ -309,7 +309,7 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	  if((*f)->degree() == 1)                                                        // only cross simple features with stream
 	    spawned.push_back(Expert("Spawn["+(*f)->name()+"_"+*s.begin()+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
 				     UniversalBidder< RegulatedStream< FeatureProductStream > >(),
-				     make_feature_product_stream((*f)->name() + "x" + *s.begin(), *f, fv)  ));
+				     make_feature_product_stream(*f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
       { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
@@ -321,7 +321,7 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       // interact winning feature with rest of model stream
       spawned.push_back(Expert("Cross["+(*f)->name()+",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
 			       UniversalBoundedBidder< RegulatedStream< FeatureProductStream > >(),
-			       make_feature_product_stream("model feature interact", *f, without_calibration_features(model_features()))  ));
+			       make_feature_product_stream(*f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/(1+spawned.size());                                      // save share for global interaction expert
       if(mExperts[0]->name() == "In/In")
       { debugging::debug("AUCT", 3) << "Assigning alpha " << alpha << " to In/In interaction expert and " << spawned.size() << " spawned experts.\n";

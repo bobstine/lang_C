@@ -360,9 +360,9 @@ private:
 
 template <class Source>
 RegulatedStream< FeatureProductStream >
-make_feature_product_stream (std::string name, Feature f, Source const& Src)
+make_feature_product_stream (Feature f, Source const& Src)
 {
-  return RegulatedStream< FeatureProductStream >(FeatureProductStream(name, f, Src));
+  return RegulatedStream< FeatureProductStream >(FeatureProductStream(f, Src));
 }
 
 
@@ -424,7 +424,7 @@ template<class Source>
 class PolynomialStream : public BaseStream
 {
   Source const&   mSource;  
-  int             mPos;
+  unsigned        mPos;
   int             mDegree;
   
 public:
