@@ -299,7 +299,7 @@ class IntegerColumn
 {
  private:
   IntegerColumnData       *mData; 
-
+  
  public:
   ~IntegerColumn() { if(--mData->mRefCount <= 0) delete mData; }
   

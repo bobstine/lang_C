@@ -4,6 +4,40 @@
 
 
 
+
+//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams
+
+template<class Source>
+void
+NeighborhoodStream<Source>::build_next_feature(FeatureVector const&, FeatureVector const&)
+{
+  while (number_remaining()>0)
+  { std::string fname (mSource[mPos]->name());
+    if (
+	(mSource[mPos]->is_constant())                          ||
+	(mSource[mPos]->is_dummy())                             ||
+	(fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers
+	(fname.size() >= 6 && "square" == fname.substr(0,6))    ||
+	(std::string::npos != fname.find(mSignature))           ||     // includes calibration signature
+	(std::string::npos != fname.find(mIndexColumn->name())) ||     // already-indexed variable
+	(std::string::npos != fname.find("Y_hat_") )                   // calibration variable
+	)
+    {
+      ++mPos;
+    }
+    else  // build feature using current position
+    { debugging::debug("NBDS",4) << name() << " making neighborhood feature from " << mSource[mPos]->name() << std::endl;
+      set_head(make_indexed_feature(mSource[mPos],mIndexColumn));
+      ++mPos;
+      return;
+    }
+  }
+}
+
+
+
+
+
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
 
@@ -243,55 +277,6 @@ PolynomialStream<Source>::current_feature_is_okay(std::vector<Feature> const&, s
   if (std::string::npos != name.find("Y_hat_") )        return false;
   return ( ! (feature->is_dummy() || (feature->is_constant()) ) );
 }
-
-
-
-
-//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams  
-
-
-template<class Source>
-void
-NeighborhoodStream<Source>::build_next_feature()   
-{ 
-  Feature x  (mSource[mPos]);
-  debugging::debug("NBDS",4) << "Stream " << name() << " making indexed feature from " <<  x->name() << std::endl;
-  ++mPos; 
-  mHead.push_back(make_indexed_feature(x,mIndexColumn));
-}
-
-
-template<class Source>
-void
-NeighborhoodStream<Source>::print_to(std::ostream& os)          const
-{
-  os << "Neighborhood feature stream " << name();
-  if (empty())
-    os << " is empty.";
-  else
-    os << " has " << number_remaining() << " features.";
-}
-
-template<class Source>
-bool
-NeighborhoodStream<Source>::current_feature_is_okay(FeatureVector const&, FeatureVector const&)   const
-{
-  Feature  feature (mSource[mPos]);
-  std::string name (feature->name());
-  debugging::debug("NBDS",4) << " Neighborhood stream is considering variable '" << name << "'\n";
-  if (name.size() >= 4 && "cube" == name.substr(0,4))                  // avoid calibration variables, powers
-    return false;
-  if (name.size() >= 6 && "square" == name.substr(0,6))
-    return false;
-  if (std::string::npos == name.find(mSignature))                      // must include the signature
-    return false;
-  if (std::string::npos != name.find(mIndexColumn->name()))            // avoid already-indexed variables
-    return false;
-  if (std::string::npos != name.find("Y_hat_") )
-    return false;
-  return ( (!feature->is_constant()) && (!feature->is_dummy()) );
-}
-
 
 
 ///   SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream     SubspaceStream

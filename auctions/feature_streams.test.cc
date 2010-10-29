@@ -62,7 +62,7 @@ main()
     }
   }
 
-  if (true)
+  if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
     RegulatedStream< LagStream > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
@@ -77,6 +77,31 @@ main()
     for (unsigned i=0; i<10; ++i)
     { lags.build_next_feature(features,features);
       lags.print_to(std::cout);
+    }
+  }
+
+  if (true)
+  {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
+    std::cout << "\n\n\n\nTEST: making regulated neighborhood stream\n";
+    double *p = columns[5]->begin();
+    for (int i = 0; i < columns[5]->size(); ++i)
+      *p++ = i % 10;
+    std::cout << "    : getting integer column.\n";
+    IntegerColumn ic(columns[5]);
+    std::cout << "      Input column is " << columns[5] << std::endl;
+    std::cout << "      Integer column is " << ic << std::endl;
+    RegulatedStream< NeighborhoodStream<FeatureVector> > ns (make_neighborhood_stream("Test", features, "NBD", ic));
+    std::cout << "TEST: building features for neighborhood\n";
+    FeatureVector fv;
+    if (ns.has_feature(fv,fv))
+    { FeatureVector fv (ns.pop());
+      std::cout << "   feature is " << fv[0] << std::endl;
+    }
+    else std::cout << "    NS says it does not have a feature; its number remaining is " << ns.number_remaining() << std::endl;
+    
+    for (unsigned i=0; i<2; ++i)
+    { ns.build_next_feature(features,features);
+      ns.print_to(std::cout);
     }
   }
   

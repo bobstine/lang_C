@@ -117,7 +117,7 @@ FeatureProductStream::initialize_queue(FeatureVector const& s)
 
 
 bool
-FeatureProductStream::current_feature_is_okay(std::vector<Feature> const& used, std::vector<Feature> const&)
+FeatureProductStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
 {
   return  !( (mHead.size() == 0)                 ||
 	     mHead[0]->is_constant() //          ||                                    //  equiv to the internal feature

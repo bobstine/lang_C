@@ -232,33 +232,24 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 //  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream
 
 template<class Source>
-class NeighborhoodStream
+class NeighborhoodStream: public BaseStream
 {
-  const std::string  mName;
   Source const&      mSource;
   const std::string  mSignature;    // look for this in name of variable before using
   IntegerColumn      mIndexColumn;
   int                mPos;
-  FeatureVector      mHead;
   
 public:
 
   NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  mName(name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0), mHead() { }
+    :  BaseStream("NhoodStream:" + name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) {  }
   
-  std::string    name()                             const   { return mName; }
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string    feature_name()                     const   { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int            number_remaining()                 const   { return (mSource.size()-mPos); }
-  FeatureVector  pop()                                      { FeatureVector z (mHead); mHead.clear(); return z; }
-  
-  void           print_to(std::ostream& os)         const;
+  int   number_remaining()            const   { return (mSource.size()-mPos); }
+  bool  can_build_more_features()     const   { return number_remaining() > 0; }
 
-protected:
-  bool           empty()                            const   { return  (mHead.size() == 0) && (number_remaining() == 0); }
-  void           build_next_feature();
-  bool           current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped)  const;
+  void  build_next_feature(FeatureVector const& accepted, FeatureVector const& rejected);
 };
+
 
 template <class Source>
 RegulatedStream< NeighborhoodStream<Source> >
