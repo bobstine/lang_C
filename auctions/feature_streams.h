@@ -263,7 +263,7 @@ make_neighborhood_stream (std::string const& name, Source const& src, std::strin
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
 template<class Model>
-class FitStream
+class FitStream : public BaseStream
 {
   mutable int            mLastQ;           // used to detect change in model size
   int                    mPower;
@@ -271,24 +271,15 @@ class FitStream
   std::string            mSignature;       // prefix for variable names so that it can recognize them
   Column                 mFit;             // holds fit values from model
   int                    mSkip;            // context rows to pad when returning fit
-  FeatureVector          mHead;
   
 public:
   
   FitStream(Model const& model, int power, std::string s, int skip)
-    : mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip), mHead() {  }
+    : BaseStream("FitStream:" + s), mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
-  std::string     name()                       const { return mSignature; }
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const { if (mHead.size() == 0) return std::string(""); else return mHead[0]->name(); }
-  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
-
-  void            print_to(std::ostream& os)   const { os << "FitStream " << name(); if(empty()) os<<" is empty."; else os<<"(skip="<<mSkip<<")"; }
+  bool   can_build_more_features()   const  { return mLastQ != mModel.q(); }
   
-protected:                                 // expert calls these methods following regulated stream protocol, allowing to grab fit
-  bool            empty()                      const { return (mHead.size() == 0) && (mLastQ == mModel.q()); }
-  void            build_next_feature();
-  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const&);
+  void   build_next_feature(FeatureVector const& accepted, FeatureVector const& );
 };
 
 
@@ -303,37 +294,28 @@ make_fit_stream (Model const& m, int powers, std::string signature, int skip)
 //  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  
 
 template<class Source>
-class InteractionStream
+class InteractionStream : public BaseStream
 {
 private:
-  bool            mDiag;
+  bool            mIncludeDiagonal;
   std::string     mName;
   Source const&   mSource;                     
   unsigned        mPos1, mPos2;
-  FeatureVector   mHead;
   
 public:
   
   InteractionStream(std::string name, Source const& src, bool useSquares)
-    : mDiag(useSquares), mName(name), mSource(src), mPos1(0), mPos2(0), mHead() { set_initial_position(); }
+    : BaseStream("InteractStream:"+name), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size()) { }
   
-  std::string     name()                       const { return mName; }
-    bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int             number_remaining()           const;
-  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
-  
-  void            print_to(std::ostream& os)   const { os << mName; if(empty()) os<<" is empty."; else os << " @ " << mPos1 << " x " << mPos2 << " "; }
-   
-protected:
-  bool  empty ()                               const { return (mHead.size() == 0) && (number_remaining() == 0); }
-  void  build_next_feature();
-  bool  current_feature_is_okay    (FeatureVector const& used, FeatureVector const& skipped)   const;
+  int   number_remaining()           const;
+
+  bool  can_build_more_features ()   const { return number_remaining() > 0; }
+
+  void  build_next_feature(FeatureVector const& , FeatureVector const& );
 
 private:
-  void  set_initial_position();
-  void  increment_positions();
   void  inc_counters();
+  bool  find_next_position();
 };
 
 
@@ -354,32 +336,24 @@ public:
   bool operator()(Feature const& a, Feature const& b) const { return (a->entry_bid() < b->entry_bid()); }
 };
 
-class FeatureProductStream 
+class FeatureProductStream : public BaseStream
 {
-  std::string    mName;
   Feature        mFeature;
   std::priority_queue<Feature, FeatureVector, BidOrder> mQueue;             // Make a priority queue out of a fixed source list of features
-  FeatureVector  mHead;
   
 public:
-  FeatureProductStream(std::string name, Feature f, FeatureVector const& src)
-    : mName(""), mFeature(f), mHead()  { mName = name + ":" + f->name() + " x Source"; initialize_queue(src);  }
-  
-  std::string     name()                       const { return mName; }  
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int             number_remaining()           const { return mQueue.size(); }
-  FeatureVector   pop()                              { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  void            print_to(std::ostream& os)   const { os << "FPST: " << name(); if(empty()) os<<" is empty."; else os << " # " << mQueue.size() << " "; }
+  FeatureProductStream(Feature f, FeatureVector const& src)
+    : BaseStream("FPStream:"+f->name()), mFeature(f) { initialize_queue(src);  }
   
-protected:
-  bool            empty()                      const { return mQueue.empty(); }
-  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);  
-  void            build_next_feature();
+  int   number_remaining()           const { return mQueue.size(); }
+  
+  bool  can_build_more_features()    const { return number_remaining() > 0; }
+
+  void  build_next_feature(FeatureVector const& accepted, FeatureVector const&);
 
 private:
-  void            initialize_queue(FeatureVector const& s);
+  void  initialize_queue(FeatureVector const& s);
 
 };
 
@@ -408,33 +382,24 @@ make_feature_product_stream (std::string name, Feature f, Source const& Src)
   
 
 template<class Source1, class Source2>
-class CrossProductStream 
+class CrossProductStream : public BaseStream
 {
-  std::string      mName;
   Source1 const&   mSlowSource;            // grows slowly
   Source2 const&   mFastSource;            // grows faster
   mutable int              mSlowPos;
   mutable std::vector<int> mPos;           // one indexing element for each feature in the slow source
-  FeatureVector    mHead;
   
 public:
     
   CrossProductStream(std::string name, Source1 const& slowSrc, Source2 const& fastSrc)
-    : mName(name), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos(), mHead()  { update_position_vector(); }
+    : BaseStream("CPStream:"+name), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
   
-  std::string     name()                       const  { return mName; }  
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const  { if(mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int             number_remaining()           const;
-  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
+  int   number_remaining()              const;
+  
+  bool  can_build_more_features()       const { return number_remaining() > 0; }
 
-  void            print_to(std::ostream& os)   const;           //   Note the mutable items since sources may change
-  
-  // protected:
-  bool            empty()                      const  { return (mHead.size() == 0) && (number_remaining() == 0); }
-  bool            current_feature_is_okay(FeatureVector const& used, FeatureVector const& skipped);
-  void            build_next_feature();
-  
+  void  build_next_feature(FeatureVector const& accepted, FeatureVector const&);
+
 private:
   void            update_position_vector()     const;
 };
@@ -456,32 +421,23 @@ make_cross_product_stream (std::string const& name, Source1 const& slowSrc, Sour
 
 
 template<class Source>
-class PolynomialStream 
+class PolynomialStream : public BaseStream
 {
-  std::string     mName;
   Source const&   mSource;  
   int             mPos;
   int             mDegree;
-  FeatureVector   mHead;
   
 public:
     
   PolynomialStream(std::string name, Source const& src, int degree)
-    : mName(name), mSource(src), mPos(0), mDegree(degree), mHead() { }
+    : BaseStream("PolyStream:"+name), mSource(src), mPos(0), mDegree(degree) { }
   
-  std::string     name()                       const { return mName; }
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
   int             number_remaining()           const { return (mSource.size()-mPos); }
-  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
 
-  
-  void            print_to(std::ostream& os)   const { os << "PLST: " << name(); if(empty()) os<<" is empty."; else os<< " stream @ " << mPos<<"/"<< mSource.size() ; }
-  
-protected:
-  bool            empty()                      const { return  (number_remaining() == 0); }
-  void            build_next_feature();
-  bool            current_feature_is_okay(FeatureVector const&, FeatureVector const&);
+  bool            can_build_more_features()    const { return (number_remaining() > 0); }
+
+  void            build_next_feature(FeatureVector const&, FeatureVector const&);
+
 };
 
 
@@ -504,35 +460,26 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 
 
 template<class Source, class Pred, class Trans>
-class SubspaceStream 
+class SubspaceStream : BaseStream
 {
 public:
   
 private:
-  std::string         mName;
   Source const&       mSource;  
   int                 mPos; 
   int                 mBundleSize;
   Pred                mPredicate;       // is the current feature okay for use (hold this as object, not reference)
   Trans               mTransformation;
-  FeatureVector       mHead;
   
 public:
   SubspaceStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
-    : mName(name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans), mHead() { }
+    : BaseStream("Subspace:"+name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
   
-  std::string     name()                       const { return mName; }
-  bool              has_feature_ready()          const { return !mHead.empty(); }
-  std::string     feature_name()               const { if (mHead.size()==0) return std::string(""); else return mHead[0]->name(); }
-  int             number_remaining()           const { return (mSource.size()-mPos); }  
-  FeatureVector   pop()                               { FeatureVector z (mHead); mHead.clear(); return z; }
+  int    number_remaining()           const { return (mSource.size()-mPos); }  
   
-  void            print_to(std::ostream& os)   const { os << "SUBS: " << name(); if(empty()) os << " is empty."; else os << " stream @ " << mPos ; }
-
-protected:
-  bool            empty()                      const { return ((number_remaining()+(int)mHead.size())<mBundleSize);} //too few to fill
-  void            build_next_feature();
-  bool            current_feature_is_okay (FeatureVector const&, FeatureVector const&) const { return (mHead.size() != 0);  }
+  bool   can_build_more_features()    const { return number_remaining() > mBundleSize;} //too few to fill
+  
+  void   build_next_feature(FeatureVector const&, FeatureVector const&);
 
 };
 

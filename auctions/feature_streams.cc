@@ -112,31 +112,27 @@ void
 FeatureProductStream::initialize_queue(FeatureVector const& s)
 {
   for (FeatureVector::const_iterator is = s.begin(); is != s.end(); ++is)
-    mQueue.push(*is);
-}
-
-
-bool
-FeatureProductStream::current_feature_is_okay(std::vector<Feature> const&, std::vector<Feature> const&)
-{
-  return  !( (mHead.size() == 0)                 ||
-	     mHead[0]->is_constant() //          ||                                    //  equiv to the internal feature
-	     //	     indicators_from_same_parent(mFeature, mHead[0]) ||                     //  save the effort 
-	     // found_name_in_feature_vector(feature_name(), used, "model features")   //  skip if has been used already
-	     );
+    if (! (*is)->is_constant() )
+      mQueue.push(*is);
 }
 
 
 void
-FeatureProductStream::build_next_feature()
+FeatureProductStream::build_next_feature(FeatureVector const& accepted, FeatureVector const&)
 {
-  Feature  xd (mQueue.top());
-  debugging::debug("FPST",3) << name() << " stream making product of "
-			     << mFeature->name() << " x Queue[" << mQueue.size() << "] (" << xd->name() << ").\n";
-  // increment position
-  mQueue.pop();
-  // build feature vector
-  mHead.push_back(Feature(mFeature,xd));
+  while ( !mQueue.empty() && indicators_from_same_parent(mFeature, mQueue.top()) )
+    mQueue.pop();
+  while ( !mQueue.empty() )
+  { Feature candidate(mFeature,mQueue.top());
+    if (found_name_in_feature_vector(candidate->name(), accepted, "model features"))   //  skip if has been used already
+      mQueue.pop();
+    else
+    { debugging::debug("FPST",3) << name() << " constructing " << candidate << std::endl;
+      set_head(candidate);
+      mQueue.pop();
+      return;
+    }
+  }
 }
 
 

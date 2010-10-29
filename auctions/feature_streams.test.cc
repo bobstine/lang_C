@@ -80,7 +80,7 @@ main()
     }
   }
 
-  if (true)
+  if (false)
   {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
     std::cout << "\n\n\n\nTEST: making regulated neighborhood stream\n";
     double *p = columns[5]->begin();
