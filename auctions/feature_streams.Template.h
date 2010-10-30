@@ -211,7 +211,7 @@ PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector
 {
   while (mPos < mSource.size())
   { std::string fname (mSource[mPos]->name());
-    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "'\n";
+    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "' \n";
     if ( (mSource[mPos]->degree()>1)                        ||       // avoid calibration variables, powers, interactions
 	 (fname.size() >= 4 && "cube" == fname.substr(0,4))   ||   
 	 (fname.size() >= 6 && "square" == fname.substr(0,6)) ||
@@ -231,6 +231,8 @@ PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector
 	powers.push_back(Feature(Function_Utils::Cube(), mSource[mPos]));
       for (int j=4; j<=mDegree; ++j)
 	powers.push_back(Feature(Function_Utils::Power(j), mSource[mPos]));
+      set_head(powers);
+      ++mPos;
       return;
     }
   }

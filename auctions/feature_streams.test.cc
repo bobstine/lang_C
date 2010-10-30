@@ -80,6 +80,21 @@ main()
     }
   }
 
+
+  if (true)   // test polynomial streams
+  { std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
+    RegulatedStream< PolynomialStream<FeatureVector> > strm (make_polynomial_stream("Test", features, 4));   // degree 4
+    FeatureVector accepted, rejected;
+    strm.print_to(std::cout);
+    std::cout << "  Polynomial stream  has_feature=" << strm.has_feature(accepted, rejected) << " with " << strm.number_remaining() << " left.\n";
+    while(strm.has_feature(accepted,rejected))
+    { FeatureVector fv = strm.pop();
+      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << strm.number_remaining() << " remain" << std::endl;
+    }
+    std::cout << " stream has " << strm.number_remaining() << " features remaining\n";
+  }
+
+
   if (false)
   {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
     std::cout << "\n\n\n\nTEST: making regulated neighborhood stream\n";
@@ -106,7 +121,7 @@ main()
   }
 
   
-  if (true)     // test interactions
+  if (false)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
     IS is (make_interaction_stream("test", features, true /* use squares */));
