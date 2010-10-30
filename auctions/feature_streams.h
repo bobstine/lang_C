@@ -300,12 +300,12 @@ private:
   bool            mIncludeDiagonal;
   std::string     mName;
   Source const&   mSource;                     
-  unsigned        mPos1, mPos2;
+  int             mPos1, mPos2;
   
 public:
   
   InteractionStream(std::string name, Source const& src, bool useSquares)
-    : BaseStream("InteractStream:"+name), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size()) { }
+    : BaseStream("InteractionStream:"+name), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size()) { FeatureVector none; build_next_feature(none, none); }
   
   int   number_remaining()           const;
 

@@ -76,12 +76,14 @@ template<class Source>
 int   
 InteractionStream<Source>::number_remaining() const 
 {
+  int k (mSource.size());
   // indices at limit indicate empty
-  if ((mPos1 == mSource.size()) || (mPos2 == mSource.size()))
+  if ((mPos1 == k) || (mPos2 == k))
     return 0;
-  int d (mSource.size()); 
-  int m (mPos2+1); 
-  return (d * (d+1))/2 - (m*(1+m))/2 + mPos1;
+  else // crude, quick positive estimate
+  { int rowsLeft (k-mPos1);
+    return k-mPos2 + (rowsLeft * (rowsLeft-1))/2;
+  }
 }
 
 
@@ -89,18 +91,19 @@ template<class Source>
 void
 InteractionStream<Source>::inc_counters()
 {
-  unsigned Km1 (mSource.size()-1);
-    
-  if (mPos2 < Km1)
-  { ++mPos2;
-    return;
-  }
-  if (mPos1 < Km1)
+  int Km1 (mSource.size()-1);
+  
+  if (mPos2 < Km1)          // increment column counter only
+    ++mPos2;
+  else if (mPos1 < Km1)     // move to next row and reset column counter
   { ++mPos1;
-    mPos2 = mPos1 + (mIncludeDiagonal?0:1);
-    return;
+    if (mIncludeDiagonal && !mSource[mPos1]->is_dummy())    // dont square a dummy
+      mPos2 = mPos1;
+    else
+      mPos2 = mPos1 + 1;
   }
-  mPos1 = mSource.size();
+  else
+    mPos1 = mSource.size();
 }
 
 
@@ -108,24 +111,26 @@ template<class Source>
 bool
 InteractionStream<Source>::find_next_position()
 {
-  unsigned k (mSource.size());
+  int k (mSource.size());
   inc_counters();
   if ((mPos1 == k) || (mPos2 == k)) return false;
   // skip constants
   while (mSource[mPos1]->is_constant() && (mPos1 < k-1))
-  { ++mPos1;
-    mPos2 = mPos1 + (mIncludeDiagonal?0:1);
+  { debugging::debug("INTS",4) << name() << " encountered constant feature " << mSource[mPos1]->name() << "; skipping.\n";
+    mPos2 = k;
+    inc_counters();
   }
-  if ((mPos1 == k) || (mPos2 == k)) return false;
-  // dont square a dummy
-  if ((mPos1 == mPos2) && mSource[mPos1]->is_dummy())
-    ++mPos2;
-  if (mPos2 == k) return false;
   // need different parents
   while((mPos1 < k) && (mPos2 < k) && indicators_from_same_parent(mSource[mPos1], mSource[mPos2]))
+  { debugging::debug("INTS",4) << name() << " encountered features with common parent: " << mSource[mPos1]->name() << " & " << mSource[mPos2] << std::endl;
     inc_counters();
-  if ((mPos1 == k) || (mPos2 == k)) return false;
-  return true;
+  }
+  if ((mPos1 == k) || (mPos2 == k))
+  { debugging::debug("INTS",4) << name() << " is empty with indices " << mPos1 << "," << mPos2 << std::endl;
+    return false;
+  }
+  else
+    return true;
 }
 
 template<class Source>

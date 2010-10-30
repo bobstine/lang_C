@@ -27,12 +27,12 @@ main()
   FeatureVector features;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  features.push_back(Feature(columns[0]));  std::cout << "      : Adding feature " << features[0] << std::endl;
-  features.push_back(Feature(columns[1]));  std::cout << "      : Adding feature " << features[1] << std::endl;
-  features.push_back(Feature(columns[2]));  std::cout << "      : Adding feature " << features[2] << std::endl;
-  features.push_back(Feature(columns[3]));  std::cout << "      : Adding feature " << features[2] << std::endl;
-  features.push_back(Feature(columns[4]));  std::cout << "      : Adding feature " << features[2] << std::endl;
-    
+  for (int i=0; i<10; ++i)
+  { features.push_back(Feature(columns[i]));
+    std::cout << "      : Adding feature " << features[i] << std::endl;
+  }
+
+  
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
@@ -104,10 +104,31 @@ main()
       ns.print_to(std::cout);
     }
   }
+
   
-  if (true)
+  if (true)     // test interactions
+  { std::cout << "\n\nTEST:  Test of interaction stream.\n";
+    typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
+    IS is (make_interaction_stream("test", features, true /* use squares */));
+    std::cout << " IS has " << is.number_remaining() << " features remaining\n";
+    
+    FeatureVector accepted, rejected;
+    
+    std::cout << "TEST: has_feature = " << is.has_feature(accepted,rejected) << std::endl;
+    is.print_to(std::cout); std::cout << std::endl;
+    
+    std::cout << "TEST: pop off in loop\n";
+    int count (0);
+    while(is.has_feature(accepted,rejected))
+    { FeatureVector fv = is.pop();
+      std::cout << "  Popped feature " << ++count << ": " << fv[0] << "  ====  " << is.number_remaining() << " remain" << std::endl;
+    }
+    std::cout << " IS has " << is.number_remaining() << " features remaining\n";
+  }
+  
+  
+  if (false)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
-    // test dynamic cross-product stream
     typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
     std::vector<Feature> featuresSlow, featuresFast;
     CP cp (make_cross_product_stream("CP stream", featuresSlow, featuresFast));
