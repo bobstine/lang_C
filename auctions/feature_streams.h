@@ -117,24 +117,18 @@ private:
 public:
   RegulatedStream(Stream const& s)  : Stream(s), m_thread() { }
   
-  bool has_feature (FeatureVector const& used, FeatureVector const& skipped)
+  bool has_feature (FeatureVector const& accepted, FeatureVector const& rejected)
   {
-    while(m_thread.done() && !Stream::empty())
-    {
-      if (Stream::current_feature_is_okay(used,skipped))  // chance to check feature before bidding in context of model or auction
-	return true;
+    if(m_thread.done() && Stream::has_feature_ready())
+      return true;
+    else
+      if (Stream::can_build_more_features(accepted,rejected))  // chance to check feature before bidding in context of model or auction
+	m_thread( boost::bind( &Stream::build_next_feature, this, accepted, rejected ) );
       else
-	m_thread(this);
-    }
-    debugging::debug("RGST",3) << "'has_feature' returns false for regulated stream '" << Stream::name() <<"'.\n";
+	debugging::debug("RGST",3) << "threaded, regulated stream '" << Stream::name() <<"' cannot build more features.\n";
     return false;
-  }
+  } 
 
-  void
-  operator()()
-  {
-    Stream::pop();
-  }
 };
 #endif
 
