@@ -67,15 +67,15 @@ main()
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
     RegulatedStream< LagStream > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
     for (unsigned i=0; i<10; ++i)
-    { ls.build_next_feature(features,features);
+    { ls.build_next_feature();
       ls.print_to(std::cout);
     }
     std::cout << "\nTEST: making regulated lag stream with t-2 marked\n";
     RegulatedStream< LagStream > lags (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
-    lags.build_next_feature(features,features); lags.print_to(std::cout); 
-    lags.build_next_feature(features,features); lags.print_to(std::cout); features.push_back(lags.pop()[0]);  // add t-2 to "model features"
+    lags.build_next_feature(); lags.print_to(std::cout); 
+    lags.build_next_feature(); lags.print_to(std::cout); features.push_back(lags.pop()[0]);  // add t-2 to "model features"
     for (unsigned i=0; i<10; ++i)
-    { lags.build_next_feature(features,features);
+    { lags.build_next_feature();
       lags.print_to(std::cout);
     }
   }
@@ -115,7 +115,7 @@ main()
     else std::cout << "    NS says it does not have a feature; its number remaining is " << ns.number_remaining() << std::endl;
     
     for (unsigned i=0; i<2; ++i)
-    { ns.build_next_feature(features,features);
+    { ns.build_next_feature();
       ns.print_to(std::cout);
     }
   }

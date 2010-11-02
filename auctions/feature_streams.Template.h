@@ -9,7 +9,7 @@
 
 template<class Source>
 void
-NeighborhoodStream<Source>::build_next_feature(FeatureVector const&, FeatureVector const&)
+NeighborhoodStream<Source>::build_next_feature()
 {
   while (number_remaining()>0)
   { std::string fname (mSource[mPos]->name());
@@ -39,7 +39,7 @@ NeighborhoodStream<Source>::build_next_feature(FeatureVector const&, FeatureVect
 
 template<class Model>
 void
-FitStream<Model>::build_next_feature(std::vector<Feature> const& accepted, std::vector<Feature> const&)
+FitStream<Model>::build_next_feature()
 {
   // check for logic error
   assert(mLastQ != mModel.q());
@@ -135,7 +135,7 @@ InteractionStream<Source>::find_next_position()
 
 template<class Source>
 void
-InteractionStream<Source>::build_next_feature(FeatureVector const&, FeatureVector const&)
+InteractionStream<Source>::build_next_feature()
 {
   // increment position
   if( find_next_position() )
@@ -171,7 +171,7 @@ template<class Source1, class Source2>
 
 template<class Source1, class Source2>
   void
-  CrossProductStream<Source1, Source2>::build_next_feature(std::vector<Feature> const& accepted, std::vector<Feature> const&)
+  CrossProductStream<Source1, Source2>::build_next_feature()
 {
   debugging::debug("CPST",3) << name() << " slow[" << mSlowPos << "/" << mSlowSource.size()
 			     << "] x fast[" << mPos[mSlowPos] << "/" << mFastSource.size() << "]: "
@@ -207,7 +207,7 @@ template<class Source1, class Source2>
 
 template<class Source>
 void
-PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector const&)
+PolynomialStream<Source>::build_next_feature()
 {
   while (mPos < mSource.size())
   { std::string fname (mSource[mPos]->name());
@@ -259,7 +259,7 @@ PolynomialStream<Source>::build_next_feature(FeatureVector const&, FeatureVector
 
 template<class Source, class Pred, class Trans>
   void
-  SubspaceStream<Source, Pred, Trans>::build_next_feature(FeatureVector const&, FeatureVector const&)
+  SubspaceStream<Source, Pred, Trans>::build_next_feature()
 {
   debugging::debug("SUBS",4) << mName << " building bundle with " << mBundleSize << " elements.\n";
   // read input data into a feature vector

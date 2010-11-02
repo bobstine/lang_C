@@ -49,7 +49,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-
+#include <list>
 
 //template<class Op> class UnaryFeature;
 
@@ -101,7 +101,9 @@ class Feature
 
 
 
-typedef  std::vector<Feature>                 FeatureVector;
+typedef  std::vector<Feature>  FeatureVector;
+typedef  std::list  <Feature>  FeatureList;
+
 
 FeatureVector
 features_with_name(std::string name, FeatureVector const& fv);

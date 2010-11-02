@@ -61,6 +61,7 @@
 
 // polynomial
 #include "function_utils.h"
+#include "range.h"
 #include "debug.h"
 
 // operator
@@ -99,7 +100,7 @@ public:
       return true;
     else
       if (Stream::can_build_more_features())             // should be able to get one, so
-	Stream::build_next_feature(accepted, rejected);  // advance position using current state
+	Stream::build_next_feature();                    // advance position using current state
       else
 	debugging::debug("RGST",3) << "regulated stream '" << Stream::name() <<"' cannot build more features.\n";
     return Stream::has_feature_ready();                  // may not have been able to build one after all
@@ -137,18 +138,29 @@ public:
 
 class BaseStream
 {
-private:
-  std::string   mName;
-  FeatureVector mHead;
-
 public:
-  BaseStream (std::string name) : mName(name), mHead() { }
+  typedef       FeatureList::const_iterator FLIterator;
+  typedef       Ranges::range<FLIterator>   FeatureRange;
+
+  
+private:
+  std::string      mName;
+  FeatureRange     mAcceptedRange, mRejectedRange;   // provide context for generating new features
+  FeatureVector    mHead;                            // holds results of most recent build; cleared by pop
+  
+public:
+  virtual ~BaseStream() { }
+  
+  BaseStream (std::string name, FeatureRange const& accepted, FeatureRange const& rejected)
+    : mName(name), mAcceptedRange(accepted), mRejectedRange(rejected), mHead() { }
   
   std::string    name()                            const { return mName; }
   std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
   void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
   bool           has_feature_ready()               const { return !mHead.empty(); }
 
+  virtual void   build_next_feature()                    = 0;
+  
   void           set_head(Feature const& f)              { mHead.clear(); mHead.push_back(f); }
   void           set_head(FeatureVector const& fv)       { mHead = fv; }
   
@@ -168,13 +180,14 @@ class FiniteStream:  public BaseStream
   
 public:
   
-  FiniteStream(std::string const& name, FeatureVector const& features)
-    : BaseStream("FiniteStream:" + name) { insert_features(features); }
+  FiniteStream(std::string const& name, FeatureRange const& accepted, FeatureRange const& rejected,
+	       FeatureVector const& source)
+    : BaseStream("FiniteStream:" + name, accepted, rejected) { insert_features(source); }
   
   int   number_remaining()           const { return mFeatures.size(); }
   bool  can_build_more_features()    const { return number_remaining()>0; }
 
-  void  build_next_feature(FeatureVector const&, FeatureVector const&);
+  void  build_next_feature();
 
   void  print_features_to (std::ostream& os) const;
 
@@ -185,9 +198,10 @@ private:
 
 inline
 RegulatedStream< FiniteStream >
-make_finite_stream (std::string const& name, FeatureVector const& features)
+make_finite_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+		    FeatureVector const& source)
 {
-  return RegulatedStream< FiniteStream >(FiniteStream(name, features));
+  return RegulatedStream< FiniteStream >(FiniteStream(name, accepted, rejected, source));
 }
 
 
@@ -204,21 +218,23 @@ class LagStream: public BaseStream
   
 public:
   
-  LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
-    :  BaseStream("LagStream:" + name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
+  LagStream(std::string const& name, FeatureRange const& accepted, FeatureRange const& rejected,
+	    Feature const& f, int maxLag, int blockSize, int cycles)
+    :  BaseStream("LagStream:" + name, accepted, rejected), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
   int   number_remaining()                 const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
   bool  can_build_more_features()          const   { return  (!mFeature->is_constant()) && (number_remaining() > 0); } 
 
-  void  build_next_feature (FeatureVector const& accepted, FeatureVector const&);
+  void  build_next_feature ();
 };
 
 
 inline
 RegulatedStream< LagStream >
-make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize,  int numberCycles)
+make_lag_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+		 Feature const& f, int maxLag, int blockSize,  int numberCycles)
 {
-  return RegulatedStream< LagStream >(LagStream(name, f, maxLag, blockSize, numberCycles));
+  return RegulatedStream< LagStream >(LagStream(name, accepted, rejected, f, maxLag, blockSize, numberCycles));
 }
 
 
@@ -235,21 +251,23 @@ class NeighborhoodStream: public BaseStream
   
 public:
 
-  NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  BaseStream("NhoodStream:" + name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) {  }
+  NeighborhoodStream(std::string const& name, FeatureRange const& accepted, FeatureRange const& rejected,
+		     Source const& src, std::string sig, IntegerColumn const& indices)
+    :  BaseStream("NhoodStream:" + name, accepted, rejected), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) {  }
   
   int   number_remaining()            const   { return (mSource.size()-mPos); }
   bool  can_build_more_features()     const   { return number_remaining() > 0; }
 
-  void  build_next_feature(FeatureVector const& accepted, FeatureVector const& rejected);
+  void  build_next_feature();
 };
 
 
 template <class Source>
 RegulatedStream< NeighborhoodStream<Source> >
-make_neighborhood_stream (std::string const& name, Source const& src, std::string signature, IntegerColumn const& col)
+make_neighborhood_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+			  Source const& src, std::string signature, IntegerColumn const& col)
 {
-  return RegulatedStream< NeighborhoodStream<Source> >(NeighborhoodStream<Source>(name, src, signature, col));
+  return RegulatedStream< NeighborhoodStream<Source> >(NeighborhoodStream<Source>(name, accepted, rejected, src, signature, col));
 }
 
 
@@ -268,20 +286,22 @@ class FitStream : public BaseStream
   
 public:
   
-  FitStream(Model const& model, int power, std::string s, int skip)
-    : BaseStream("FitStream:" + s), mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
+  FitStream(FeatureRange const& accepted, FeatureRange const& rejected,
+	    Model const& model, int power, std::string s, int skip)
+    : BaseStream("FitStream:" + s, accepted, rejected), mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
   bool   can_build_more_features()   const  { return mLastQ != mModel.q(); }
   
-  void   build_next_feature(FeatureVector const& accepted, FeatureVector const& );
+  void   build_next_feature();
 };
 
 
 template <class Model>
 RegulatedStream< FitStream<Model> >
-make_fit_stream (Model const& m, int powers, std::string signature, int skip)
+make_fit_stream (BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+		 Model const& m, int powers, std::string signature, int skip)
 {
-  return RegulatedStream< FitStream<Model> >(FitStream<Model>(m,powers,signature,skip));
+  return RegulatedStream< FitStream<Model> >(FitStream<Model>(accepted, rejected, m,powers,signature,skip));
 }
 
 
@@ -298,14 +318,15 @@ private:
   
 public:
   
-  InteractionStream(std::string name, Source const& src, bool useSquares)
-    : BaseStream("InteractionStream:"+name), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size()) { FeatureVector none; build_next_feature(none, none); }
+  InteractionStream(std::string name,  FeatureRange const& accepted, FeatureRange const& rejected,
+		    Source const& src, bool useSquares)
+    : BaseStream("InteractionStream:"+name, accepted, rejected), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size())  { build_next_feature(); }
   
   int   number_remaining()           const;
 
   bool  can_build_more_features ()   const { return number_remaining() > 0; }
 
-  void  build_next_feature(FeatureVector const& , FeatureVector const& );
+  void  build_next_feature();
 
 private:
   void  inc_counters();
@@ -315,9 +336,10 @@ private:
 
 template <class Source>
 RegulatedStream< InteractionStream<Source> >
-make_interaction_stream (std::string const& name, Source const& s, bool useSquares)
+make_interaction_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+			 Source const& s, bool useSquares)
 {
-  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, s, useSquares));
+  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, accepted, rejected, s, useSquares));
 }
 
 
@@ -337,14 +359,15 @@ class FeatureProductStream : public BaseStream
   
 public:
 
-  FeatureProductStream(Feature f, FeatureVector const& src)
-    : BaseStream("FPStream:"+f->name()), mFeature(f) { initialize_queue(src);  }
+  FeatureProductStream(FeatureRange const& accepted, FeatureRange const& rejected,
+		       Feature f, FeatureVector const& src)
+    : BaseStream("FPStream:"+f->name(), accepted, rejected), mFeature(f) { initialize_queue(src);  }
   
   int   number_remaining()           const { return mQueue.size(); }
   
   bool  can_build_more_features()    const { return number_remaining() > 0; }
 
-  void  build_next_feature(FeatureVector const& accepted, FeatureVector const&);
+  void  build_next_feature();
 
 private:
   void  initialize_queue(FeatureVector const& s);
@@ -354,9 +377,10 @@ private:
 
 template <class Source>
 RegulatedStream< FeatureProductStream >
-make_feature_product_stream (Feature f, Source const& Src)
+make_feature_product_stream (BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+			     Feature f, Source const& Src)
 {
-  return RegulatedStream< FeatureProductStream >(FeatureProductStream(f, Src));
+  return RegulatedStream< FeatureProductStream >(FeatureProductStream(accepted, rejected, f, Src));
 }
 
 
@@ -385,25 +409,27 @@ class CrossProductStream : public BaseStream
   
 public:
     
-  CrossProductStream(std::string name, Source1 const& slowSrc, Source2 const& fastSrc)
-    : BaseStream("CPStream:"+name), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
+  CrossProductStream(std::string name, FeatureRange const& accepted, FeatureRange const& rejected,
+		     Source1 const& slowSrc, Source2 const& fastSrc)
+    : BaseStream("CPStream:"+name, accepted, rejected), mSlowSource(slowSrc), mFastSource(fastSrc), mSlowPos(0), mPos()  { update_position_vector(); }
   
-  int   number_remaining()              const;
+  int   number_remaining()           const;
   
-  bool  can_build_more_features()       const { return number_remaining() > 0; }
+  bool  can_build_more_features()    const { return number_remaining() > 0; }
 
-  void  build_next_feature(FeatureVector const& accepted, FeatureVector const&);
+  void  build_next_feature();
 
 private:
-  void            update_position_vector()     const;
+  void  update_position_vector()     const;
 };
 
 
 template <class Source1, class Source2>
 RegulatedStream< CrossProductStream<Source1, Source2> >
-make_cross_product_stream (std::string const& name, Source1 const& slowSrc, Source2 const& fastSrc)
+make_cross_product_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+			   Source1 const& slowSrc, Source2 const& fastSrc)
 {
-  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, slowSrc, fastSrc));
+  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, accepted, rejected, slowSrc, fastSrc));
 }
 
 
@@ -423,23 +449,25 @@ class PolynomialStream : public BaseStream
   
 public:
     
-  PolynomialStream(std::string name, Source const& src, int degree)
-    : BaseStream("PolyStream:"+name), mSource(src), mPos(0), mDegree(degree) { }
+  PolynomialStream(std::string name, FeatureRange const& accepted, FeatureRange const& rejected,
+		   Source const& src, int degree)
+    : BaseStream("PolyStream:"+name, accepted, rejected), mSource(src), mPos(0), mDegree(degree) { }
   
   int             number_remaining()           const { return (mSource.size()-mPos); }
 
   bool            can_build_more_features()    const { return (number_remaining() > 0); }
 
-  void            build_next_feature(FeatureVector const&, FeatureVector const&);
+  void            build_next_feature();
 
 };
 
 
 template <class Source>
 RegulatedStream< PolynomialStream<Source> >
-make_polynomial_stream (std::string const& name, Source const& src, int degree = 3)
+make_polynomial_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+			Source const& src, int degree = 3)
 {
-  return RegulatedStream< PolynomialStream<Source> >(PolynomialStream<Source>(name, src, degree));
+  return RegulatedStream< PolynomialStream<Source> >(PolynomialStream<Source>(name, accepted, rejected, src, degree));
 }
 
 
@@ -466,23 +494,25 @@ private:
   Trans               mTransformation;
   
 public:
-  SubspaceStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
-    : BaseStream("Subspace:"+name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
+  SubspaceStream(std::string name, FeatureRange const& accepted, FeatureRange const& rejected,
+		 Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
+    : BaseStream("Subspace:"+name, accepted, rejected), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
   
   int    number_remaining()           const { return (mSource.size()-mPos); }  
   
   bool   can_build_more_features()    const { return number_remaining() > mBundleSize;} //too few to fill
   
-  void   build_next_feature(FeatureVector const&, FeatureVector const&);
+  void   build_next_feature();
 
 };
 
 
 template <class Source, class Pred, class Trans>
 RegulatedStream< SubspaceStream<Source,Pred,Trans> >
-make_subspace_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
+make_subspace_stream (std::string const& name, BaseStream::FeatureRange const& accepted, BaseStream::FeatureRange const& rejected,
+		      Source const& src, int bundleSize, Pred pred, Trans trans)
 {
-  return RegulatedStream< SubspaceStream<Source,Pred,Trans> >(SubspaceStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans));
+  return RegulatedStream< SubspaceStream<Source,Pred,Trans> >(SubspaceStream<Source,Pred,Trans>(name, accepted, rejected, src, bundleSize, pred, trans));
 }
 
 
