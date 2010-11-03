@@ -30,24 +30,24 @@ template<class Source>
 void
 NeighborhoodStream<Source>::build_next_feature()
 {
-  while (number_remaining()>0)
-  { std::string fname (mSource[mPos]->name());
+  while (mRemain>0)
+  { std::string fname ((*mpFeature)->name());
     if (
-	(mSource[mPos]->is_constant())                          ||
-	(mSource[mPos]->is_dummy())                             ||
+	((*mpFeature)->is_constant())                           ||
+	((*mpFeature)->is_dummy())                              ||
 	(fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers
 	(fname.size() >= 6 && "square" == fname.substr(0,6))    ||
 	(std::string::npos != fname.find(mSignature))           ||     // includes calibration signature
 	(std::string::npos != fname.find(mIndexColumn->name())) ||     // already-indexed variable
 	(std::string::npos != fname.find("Y_hat_") )                   // calibration variable
 	)
-    { debugging::debug("NBDS",4) << name() << " rejected building feature from " << mSource[mPos]->name() << std::endl;
-      ++mPos;
+    { debugging::debug("NBDS",4) << name() << " rejected Building. feature from " << fname << std::endl;
+      --mRemain; ++mpFeature;
     }
     else  // build feature using current position
-    { debugging::debug("NBDS",4) << name() << " making neighborhood feature from " << mSource[mPos]->name() << std::endl;
-      set_head(make_indexed_feature(mSource[mPos],mIndexColumn));
-      ++mPos;
+    { debugging::debug("NBDS",4) << name() << " making neighborhood feature from " << fname << std::endl;
+      set_head(make_indexed_feature(*mpFeature,mIndexColumn));
+      --mRemain; ++mpFeature;
       return;
     }
   }
@@ -92,38 +92,22 @@ FitStream<Model>::build_next_feature()
 //    f4                    *
 //                               mPos2 says which column; mPos1 tracks row, moving down from first row
 
-template<class Source>
-int   
-InteractionStream<Source>::number_remaining() const 
-{
-  int k (mSource.size());
-  // indices at limit indicate empty
-  if ((mPos1 == k) || (mPos2 == k))
-    return 0;
-  else // crude, quick positive estimate
-  { int rowsLeft (k-mPos1);
-    return k-mPos2 + (rowsLeft * (rowsLeft-1))/2;
-  }
-}
-
 
 template<class Source>
 void
-InteractionStream<Source>::inc_counters()
+InteractionStream<Source>::inc_pointers()
 {
-  int Km1 (mSource.size()-1);
-  
-  if (mPos2 < Km1)          // increment column counter only
-    ++mPos2;
-  else if (mPos1 < Km1)     // move to next row and reset column counter
-  { ++mPos1;
-    if (mIncludeDiagonal && !mSource[mPos1]->is_dummy())    // dont square a dummy
-      mPos2 = mPos1;
-    else
-      mPos2 = mPos1 + 1;
+  ++mpColFeature; --mRemain;
+  if (mpColFeature == Ranges::end(mFeatureRange))   // move diagonal "row" pointer
+  { ++mpDiagFeature;
+    mpColFeature = mpDiagFeature;
+    if (!mIncludeDiagonal)
+      ++mpColFeature;
+    else if ((*mpDiagFeature)->is_dummy())  // dont square a dummy
+    { ++mpColFeature;
+      -- mRemain;
+    }
   }
-  else
-    mPos1 = mSource.size();
 }
 
 
@@ -131,37 +115,31 @@ template<class Source>
 bool
 InteractionStream<Source>::find_next_position()
 {
-  int k (mSource.size());
-  inc_counters();
-  if ((mPos1 == k) || (mPos2 == k)) return false;
+  inc_pointers();
+  if (mRemain == 0) return false;
   // skip constants
-  while (mSource[mPos1]->is_constant() && (mPos1 < k-1))
-  { debugging::debug("INTS",4) << name() << " encountered constant feature " << mSource[mPos1]->name() << "; skipping.\n";
-    mPos2 = k;
-    inc_counters();
-  }
+  while ((*mpDiagFeature)->is_constant())
+    inc_pointers();
   // need different parents
-  while((mPos1 < k) && (mPos2 < k) && indicators_from_same_parent(mSource[mPos1], mSource[mPos2]))
-  { debugging::debug("INTS",4) << name() << " encountered features with common parent: " << mSource[mPos1]->name() << " & " << mSource[mPos2] << std::endl;
-    inc_counters();
+  while(mRemain > 0 && indicators_from_same_parent(*mpDiagFeature, *mpColFeature))
+  { debugging::debug("INTS",4) << name() << " encountered features with common parent: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
+    inc_pointers();
   }
-  if ((mPos1 == k) || (mPos2 == k))
-  { debugging::debug("INTS",4) << name() << " is empty with indices " << mPos1 << "," << mPos2 << std::endl;
+  if (mRemain == 0)
+  { debugging::debug("INTS",4) << name() << " has run out of features.\n";
     return false;
   }
-  else
-    return true;
+  return true;
 }
 
 template<class Source>
 void
 InteractionStream<Source>::build_next_feature()
 {
-  // increment position
-  if( find_next_position() )
-    set_head(Feature(mSource[mPos1], mSource[mPos2]));
-  else
-    debugging::debug("INTS",3) << "Interaction stream not able to find new pair.\n";
+  assert(mRemain > 0);
+  assert(mpColFeature != Ranges::end(mFeatureRange));
+  set_head(Feature(*mpDiagFeature, *mpColFeature));
+  find_next_position();
 }
 
 

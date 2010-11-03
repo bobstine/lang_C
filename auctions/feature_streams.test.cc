@@ -84,7 +84,7 @@ main()
   }
 
 
-  if (true)   // test polynomial streams
+  if (false)   // test polynomial streams
   { std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
     RegulatedStream< PolynomialStream<FeatureVector> > strm (make_polynomial_stream("Test", features, 4));   // degree 4
     strm.print_to(std::cout);
@@ -122,7 +122,7 @@ main()
   }
 
   
-  if (false)     // test interactions
+  if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
     IS is (make_interaction_stream("test", make_range(empty), features, true /* use squares */));
@@ -141,7 +141,7 @@ main()
   }
   
   
-  if (false)    // test dynamic cross-product stream
+  if (true)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
     std::vector<Feature> featuresSlow, featuresFast;

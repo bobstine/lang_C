@@ -18,18 +18,24 @@
  These might be a model, a list of variables, a file, and so forth.
 
  Feature streams (along with bidders) are held in experts that participate in the
- auction. Experts call 
+ auction. Experts call
+ 
         has_feature()
- before placing any bids.  The regulated stream coordinates a sequence of calls
- to more primitive methods. The bidder at higher level may ask for the number
- remaining (number_remaining).  If the stream has a feature, then a winning
- expert will call
+	
+ before placing any bids.  The regulated class stream coordinates a sequence of
+ calls to primitive methods.  If the stream has a feature, then a winning expert
+ will call
+ 
         pop()
- which return a feature vector.  pop() must (a) run very fast and (b) return a
- vector of features.  Heavy lifting required in order to be able to pop() must
- be done in the method build_next_feature().  In order to support some styles of
- bidding, the stream will need to implement
-        number_remaining().
+
+ which must return a feature vector.  pop() must (a) run very fast and (b)
+ return a vector of features.  Heavy lifting required in order to be able to
+ pop() must be done in the method build_next_feature().  Certain classes of
+ bidders in the calling expert may ask for the number of remaining features in
+ order to determine how much to bid.  In order to support such bidding, the
+ stream will need to implement
+
+        number_remaining()
  
  Stream properties...
     Streams should be *lightweight*.  They will be copied heavily in the auction.
@@ -62,6 +68,7 @@
 // polynomial
 #include "function_utils.h"
 #include "range.h"
+#include "range_traits.h"
 #include "debug.h"
 
 // operator
@@ -98,11 +105,10 @@ public:
   {
     if (Stream::has_feature_ready())
       return true;
+    else if (Stream::can_build_more_features())             // should be able to get one, so
+      Stream::build_next_feature();                    // advance position using current state
     else
-      if (Stream::can_build_more_features())             // should be able to get one, so
-	Stream::build_next_feature();                    // advance position using current state
-      else
-	debugging::debug("RGST",3) << "regulated stream '" << Stream::name() <<"' cannot build more features.\n";
+      debugging::debug("RGST",3) << "regulated stream '" << Stream::name() <<"' cannot build more features.\n";
     return Stream::has_feature_ready();                  // may not have been able to build one after all
   }
 };
@@ -122,15 +128,14 @@ public:
   {
     if(m_thread.done() && Stream::has_feature_ready())
       return true;
+    else if (Stream::can_build_more_features())
+      m_thread( boost::bind( &Stream::build_next_feature, this ) );
     else
-      if (Stream::can_build_more_features())
-	m_thread( boost::bind( &Stream::build_next_feature, this ) );
-      else
-	debugging::debug("RGST",3) << "threaded, regulated stream '" << Stream::name() <<"' cannot build more features.\n";
+      debugging::debug("RGST",3) << "threaded, regulated stream '" << Stream::name() <<"' cannot build more features.\n";
     return false;
-  } 
-
+  }
 };
+
 #endif
 
 
@@ -176,6 +181,8 @@ public:
 
 //  FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     
 
+//  Builds revolving deque of features from given feature vector (typically read from a file)
+
 class FiniteStream:  public BaseStream
 {
   std::deque<Feature>  mFeatures;  
@@ -207,6 +214,8 @@ make_finite_stream (std::string const& name, FeatureVector const& source)
 
 
 //  LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream
+
+//  Build sequence of lags from a single feature
 
 class LagStream: public BaseStream
 {
@@ -240,21 +249,25 @@ make_lag_stream (std::string const& name, BaseStream::FeatureRange const& accept
 
 //  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream
 
+//  Build 'neighboring' features to those in a given source collection
+
 template<class Source>
 class NeighborhoodStream: public BaseStream
 {
-  Source const&      mSource;
-  const std::string  mSignature;    // look for this in name of variable before using
-  IntegerColumn      mIndexColumn;
-  int                mPos;
+  typedef typename range_traits<Source>::const_iterator Iter;
+  
+  Iter                mpFeature;
+  const std::string   mSignature;    // look for this in name of variable before using
+  IntegerColumn       mIndexColumn;
+  int                 mRemain;
   
 public:
 
   NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  BaseStream("NhoodStream:" + name), mSource(src), mSignature(sig), mIndexColumn(indices), mPos(0) {  }
+    :  BaseStream("NhoodStream:" + name), mpFeature(Ranges::begin(src)), mSignature(sig), mIndexColumn(indices), mRemain(src.size()) {  }
   
-  int   number_remaining()            const   { return (mSource.size()-mPos); }
-  bool  can_build_more_features()     const   { return number_remaining() > 0; }
+  int   number_remaining()            const   { return mRemain; }
+  bool  can_build_more_features()     const   { return mRemain > 0; }
 
   void  build_next_feature();
 };
@@ -308,25 +321,29 @@ template<class Source>
 class InteractionStream : public BaseStream
 {
 private:
-  FeatureRange    mAccepted;
-  bool            mIncludeDiagonal;
-  std::string     mName;
-  Source const&   mSource;                     
-  int             mPos1, mPos2;
+  typedef typename range_traits<Source>::const_iterator Iter;
+  
+  FeatureRange        mAccepted;
+  bool                mIncludeDiagonal;
+  Ranges::range<Iter> mFeatureRange;
+  Iter                mpDiagFeature, mpColFeature;
+  int                 mRemain;
   
 public:
   
   InteractionStream(std::string name,  FeatureRange const& accepted, Source const& src, bool useSquares)
-    : BaseStream("InteractionStream:"+name), mAccepted(accepted), mIncludeDiagonal(useSquares), mSource(src), mPos1(-1), mPos2(src.size())  { build_next_feature(); }
+    : BaseStream("InteractionStream:"+name), mAccepted(accepted), mIncludeDiagonal(useSquares), mFeatureRange(Ranges::make_range(src)),
+      mpDiagFeature(Ranges::begin(src)), mpColFeature(Ranges::begin(src)), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
   
-  int   number_remaining()           const;
+  int   number_remaining()           const { return mRemain; }
 
-  bool  can_build_more_features ()   const { return number_remaining() > 0; }
+  bool  can_build_more_features ()   const { return mRemain > 0; }
 
   void  build_next_feature();
 
 private:
-  void  inc_counters();
+  int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
+  void  inc_pointers();
   bool  find_next_position();
 };
 
