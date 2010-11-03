@@ -16,6 +16,8 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
   return !(f->is_constant() || f->is_dummy() || (f->name() == "Basis"));
 }
 
+
+
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
 
 bool
@@ -27,10 +29,10 @@ BaseStream::indicators_from_same_parent(Feature const& f1, Feature const& f2) co
 }
 
 std::string
-BaseStream::last_name_in_list (FeatureRange const& r) const
+BaseStream::last_name_in_list (FeatureList const& features) const
 {
   std::string name ("");
-  for (FeatureIterator it = Ranges::begin(r); it != Ranges::end(r); ++it)
+  for (FeatureIterator it = features.begin(); it != features.end(r); ++it)
     name = (*it)->name();
   return name;
 }
@@ -80,30 +82,26 @@ FiniteStream::print_features_to (std::ostream& os) const
 void
 LagStream::build_next_feature()
 {
-  while (true)
-  { ++mLag;
-    if (mLag > mMaxLag)
-    { if (mCyclesLeft>0)  // go around again
-      { --mCyclesLeft;
-	mLag = 1;
-      }
-      else return;        // cannot generate more
+  ++mLag;
+  if (mLag > mMaxLag)
+  { if (mCyclesLeft>0)  // go around again
+    { --mCyclesLeft;
+      mLag = 1;
     }
-    Feature lag(mFeature,mLag,mBlockSize);
-    if (!found_name_among_features(lag->name(), mAccepted, "model features"))
-    { set_head(lag);
-      return;
-    }
+    else return;        // cannot generate more
   }
+  Feature lag(mFeature,mLag,mBlockSize);
+  set_head(lag);
 }
+
 
 
 ///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
 
 void
-FeatureProductStream::initialize_queue(FeatureVector const& s)
+FeatureProductStream::initialize_queue(FeatureList const& s)
 {
-  for (FeatureVector::const_iterator is = s.begin(); is != s.end(); ++is)
+  for (FeatureList::const_iterator is = s.begin(); is != s.end(); ++is)
     if (! (*is)->is_constant() )
       mQueue.push(*is);
 }
