@@ -10,9 +10,11 @@
 #include "column.h"
 #include "features.h"
 #include "feature_streams.h"
+#include "range.h"
 
 #include <iostream>
 
+using Ranges::make_range;
 
 int
 main()
@@ -25,6 +27,7 @@ main()
   
 
   FeatureVector features;
+  FeatureList   empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
   for (int i=0; i<10; ++i)
@@ -39,14 +42,14 @@ main()
     typedef RegulatedStream< FiniteStream > FS;
     FS fs (make_finite_stream("Test", features));
 
-    std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
     std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-    std::cout << "TEST: FS has_feature = " << fs.has_feature(features, features) << std::endl;
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     fs.print_features_to(std::cout); std::cout << std::endl;
     
     int more (7);
-    while(fs.has_feature(features,features) && more--)
+    while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
       fs.print_features_to(std::cout); std::cout << std::endl;
@@ -55,7 +58,7 @@ main()
     std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
     fv[0]->set_model_results(true, 0.001);  // used in model, p-value
     more = 7;
-    while(fs.has_feature(features,features) && more--)
+    while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
       fs.print_features_to(std::cout); std::cout << std::endl;
@@ -65,13 +68,13 @@ main()
   if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
-    RegulatedStream< LagStream > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    RegulatedStream< LagStream > ls (make_lag_stream("Test", make_range(empty), features[0], 4, 1, 2)); // max lag 4, 2 cycles
     for (unsigned i=0; i<10; ++i)
     { ls.build_next_feature();
       ls.print_to(std::cout);
     }
     std::cout << "\nTEST: making regulated lag stream with t-2 marked\n";
-    RegulatedStream< LagStream > lags (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    RegulatedStream< LagStream > lags (make_lag_stream("Test", make_range(empty), features[0], 4, 1, 2)); // max lag 4, 2 cycles
     lags.build_next_feature(); lags.print_to(std::cout); 
     lags.build_next_feature(); lags.print_to(std::cout); features.push_back(lags.pop()[0]);  // add t-2 to "model features"
     for (unsigned i=0; i<10; ++i)
@@ -84,10 +87,9 @@ main()
   if (true)   // test polynomial streams
   { std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
     RegulatedStream< PolynomialStream<FeatureVector> > strm (make_polynomial_stream("Test", features, 4));   // degree 4
-    FeatureVector accepted, rejected;
     strm.print_to(std::cout);
-    std::cout << "  Polynomial stream  has_feature=" << strm.has_feature(accepted, rejected) << " with " << strm.number_remaining() << " left.\n";
-    while(strm.has_feature(accepted,rejected))
+    std::cout << "  Polynomial stream  has_feature=" << strm.has_feature() << " with " << strm.number_remaining() << " left.\n";
+    while(strm.has_feature())
     { FeatureVector fv = strm.pop();
       std::cout << "  Leading popped feature: " << fv[0] << "  ; " << strm.number_remaining() << " remain" << std::endl;
     }
@@ -107,8 +109,7 @@ main()
     std::cout << "      Integer column is " << ic << std::endl;
     RegulatedStream< NeighborhoodStream<FeatureVector> > ns (make_neighborhood_stream("Test", features, "NBD", ic));
     std::cout << "TEST: building features for neighborhood\n";
-    FeatureVector fv;
-    if (ns.has_feature(fv,fv))
+    if (ns.has_feature())
     { FeatureVector fv (ns.pop());
       std::cout << "   feature is " << fv[0] << std::endl;
     }
@@ -124,17 +125,15 @@ main()
   if (false)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
-    IS is (make_interaction_stream("test", features, true /* use squares */));
+    IS is (make_interaction_stream("test", make_range(empty), features, true /* use squares */));
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
-    FeatureVector accepted, rejected;
-    
-    std::cout << "TEST: has_feature = " << is.has_feature(accepted,rejected) << std::endl;
+    std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
     is.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "TEST: pop off in loop\n";
     int count (0);
-    while(is.has_feature(accepted,rejected))
+    while(is.has_feature())
     { FeatureVector fv = is.pop();
       std::cout << "  Popped feature " << ++count << ": " << fv[0] << "  ====  " << is.number_remaining() << " remain" << std::endl;
     }
@@ -146,9 +145,9 @@ main()
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
     std::vector<Feature> featuresSlow, featuresFast;
-    CP cp (make_cross_product_stream("CP stream", featuresSlow, featuresFast));
+    CP cp (make_cross_product_stream("CP stream",  make_range(empty), featuresSlow, featuresFast));
     
-    std::cout << "TEST: has_feature = " << cp.has_feature(featuresSlow, featuresFast) << std::endl;
+    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
     cp.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "\n\nTEST: adding features\n";
@@ -156,16 +155,16 @@ main()
     featuresFast.push_back(Feature(columns[1]));  std::cout << "Fast <- " << columns[1]->name() << std::endl;
     featuresFast.push_back(Feature(columns[2]));  std::cout << "Fast <- " << columns[2]->name() << std::endl;
     
-    std::cout << "TEST: has_feature = " << cp.has_feature(featuresSlow, featuresFast) << std::endl;
+    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
     cp.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "TEST: first pops\n";
     FeatureVector blank;
-    while(!cp.has_feature(blank,blank))
+    while(!cp.has_feature())
     { std::vector<Feature> fv (cp.pop());
       std::cout << "Popped feature " << fv[0] << std::endl;
     }
-    std::cout << "TEST: has_feature = " << cp.has_feature(featuresSlow, featuresFast) << std::endl;
+    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
     cp.print_to(std::cout); std::cout << std::endl;
 
     return 0;
@@ -175,11 +174,11 @@ main()
     featuresFast.push_back(Feature(columns[4]));  std::cout << "Fast <- " << columns[4]->name() << std::endl;
     featuresFast.push_back(Feature(columns[5]));  std::cout << "Fast <- " << columns[5]->name() << std::endl;
     
-    std::cout << "TEST: has_feature = " << cp.has_feature(featuresSlow, featuresFast) << std::endl;
+    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
     cp.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "\nTEST: second pops\n";
-    while(cp.has_feature(blank,blank))
+    while(cp.has_feature())
     { std::vector<Feature> fv (cp.pop());
       std::cout << "Popped feature " << fv[0] << std::endl;
     }
@@ -189,11 +188,11 @@ main()
     featuresSlow.push_back(Feature(columns[7]));  std::cout << "Slow <- " << columns[7]->name() << std::endl;
     featuresFast.push_back(Feature(columns[8]));  std::cout << "Fast <- " << columns[8]->name() << std::endl;
     
-    std::cout << "TEST: has_feature = " << cp.has_feature(featuresSlow, featuresFast) << std::endl;
+    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
     cp.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "\nTEST: third pops\n";
-    while(!cp.has_feature(blank,blank))
+    while(!cp.has_feature())
     { std::vector<Feature> fv (cp.pop());
       std::cout << "Popped feature " << fv[0] << std::endl;
     }

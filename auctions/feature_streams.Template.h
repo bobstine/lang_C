@@ -1,7 +1,26 @@
 #include "adapter.h"
 #include "debug.h"
+#include "range_traits.h"
+
 #include <assert.h>
 
+
+//  BaseStream
+
+template< class Collection >
+bool
+BaseStream::found_name_among_features (std::string const& name, Collection const& features, std::string const& description) const
+{
+   if (name.size() == 0)
+     return false;
+   for (typename range_traits<Collection>::const_iterator it = Ranges::begin(features); it != Ranges::end(features); ++it)
+  { if (name == (*it)->name())
+    { debugging::debug("FETR", 4) << "Found feature " << name << " in " << description << std::endl;
+      return true; 
+    }
+  }
+  return false;
+}
 
 
 
@@ -44,7 +63,8 @@ FitStream<Model>::build_next_feature()
   // check for logic error
   assert(mLastQ != mModel.q());
   // need to check name of last accepted; dont have one if its us
-  if (std::string::npos != accepted.back()->name().find(mSignature))                   // npos means not found; != npos means found
+  std::string lastName (last_name_in_list(mAccepted));
+  if (std::string::npos != lastName.find(mSignature))                          // npos means not found; != npos means found
     debugging::debug("FITS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
   else // build powers of current fit
   { std::vector<int> powers;
@@ -181,7 +201,7 @@ template<class Source1, class Source2>
     Feature  xf (mFastSource[mPos[mSlowPos]]);
     Feature candidate(xs,xf);
     if ( (!candidate->is_constant()) &&
-	 (!found_name_in_feature_vector(feature_name(), accepted, "model features")) )
+	 (!found_name_among_features(feature_name(), mAccepted, "model features")) )
     { set_head(candidate);
       return;
     }
@@ -212,11 +232,11 @@ PolynomialStream<Source>::build_next_feature()
   while (mPos < mSource.size())
   { std::string fname (mSource[mPos]->name());
     debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "' \n";
-    if ( (mSource[mPos]->degree()>1)                        ||       // avoid calibration variables, powers, interactions
+    if ( (mSource[mPos]->degree()>1)                          ||       // avoid calibration variables, powers, interactions
 	 (fname.size() >= 4 && "cube" == fname.substr(0,4))   ||   
 	 (fname.size() >= 6 && "square" == fname.substr(0,6)) ||
-	 (std::string::npos != fname.find("Y_hat_") )        ||
-	 (mSource[mPos]->is_dummy())                        ||
+	 (std::string::npos != fname.find("Y_hat_") )         ||
+	 (mSource[mPos]->is_dummy())                          ||
 	 (mSource[mPos]->is_constant())      )               
     {
       ++mPos;

@@ -26,22 +26,14 @@ BaseStream::indicators_from_same_parent(Feature const& f1, Feature const& f2) co
     && (f1->attribute_str_value("parent")==f2->attribute_str_value("parent"));
 }
 
-bool
-BaseStream::found_name_in_feature_vector (std::string const& name, FeatureVector const& vec, std::string const& vecName) const
+std::string
+BaseStream::last_name_in_list (FeatureRange const& r) const
 {
-  // std::cout << "Looking for " << name << " in " ;
-  // for(int i=0; i < (int) vec.size(); ++i)  std::cout << vec[i]->name() << ", "; std::cout << std::endl;
-  if (name.size() == 0)
-    return false;
-  for (std::vector<Feature>::const_iterator it = vec.begin();it != vec.end(); ++it)
-  { if (name == (*it)->name())
-    { debugging::debug("FETR", 4) << "Found feature " << name << " in " << vecName << std::endl;
-      return true; 
-    }
-  }
-  return false;
+  std::string name ("");
+  for (FeatureIterator it = Ranges::begin(r); it != Ranges::end(r); ++it)
+    name = (*it)->name();
+  return name;
 }
-
 
 
 
@@ -58,7 +50,7 @@ FiniteStream::insert_features(FeatureVector const& f)
 }
 
 void
-FiniteStream::build_next_feature(FeatureVector const&, FeatureVector const&)
+FiniteStream::build_next_feature()
 {
   // dump any features that are already in the model
   while(!mFeatures.empty() && mFeatures.front()->is_used_in_model())
@@ -86,7 +78,7 @@ FiniteStream::print_features_to (std::ostream& os) const
 //  LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams  
 
 void
-LagStream::build_next_feature(FeatureVector const& accepted, FeatureVector const&)
+LagStream::build_next_feature()
 {
   while (true)
   { ++mLag;
@@ -98,7 +90,7 @@ LagStream::build_next_feature(FeatureVector const& accepted, FeatureVector const
       else return;        // cannot generate more
     }
     Feature lag(mFeature,mLag,mBlockSize);
-    if (!found_name_in_feature_vector(lag->name(), accepted, "model features"))
+    if (!found_name_among_features(lag->name(), mAccepted, "model features"))
     { set_head(lag);
       return;
     }
@@ -118,13 +110,13 @@ FeatureProductStream::initialize_queue(FeatureVector const& s)
 
 
 void
-FeatureProductStream::build_next_feature(FeatureVector const& accepted, FeatureVector const&)
+FeatureProductStream::build_next_feature()
 {
   while ( !mQueue.empty() && indicators_from_same_parent(mFeature, mQueue.top()) )
     mQueue.pop();
   while ( !mQueue.empty() )
   { Feature candidate(mFeature,mQueue.top());
-    if (found_name_in_feature_vector(candidate->name(), accepted, "model features"))   //  skip if has been used already
+    if (found_name_among_features(candidate->name(), mAccepted, "model features"))   //  skip if has been used already
       mQueue.pop();
     else
     { debugging::debug("FPST",3) << name() << " constructing " << candidate << std::endl;
