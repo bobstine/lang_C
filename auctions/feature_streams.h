@@ -23,14 +23,14 @@
         has_feature()
 	
  before placing any bids.  The regulated class stream coordinates a sequence of
- calls to primitive methods and handles access to the underlying model via the
- call to
+ calls to primitive methods and handles access to a source of changing collections
+ of features via the call to
 
         can_make_more_features(accepted, rejected)
 
-  This must the the *only* access to these lists in order to keep the thread
-  code away from them. If the stream has/makes a feature, then a winning expert
-  will call
+ The stream must not store these lists of features and can only access them
+ during this call. If the stream has/makes a feature, then a winning expert will
+ call
  
         pop()
 
@@ -99,6 +99,8 @@
 
 #ifndef THREADED
 
+class NoModel;
+
 template<class Stream, class Model>
 class RegulatedStream
 {
@@ -120,11 +122,42 @@ public:
     return mStream.has_feature_ready();                  // may not have been able to build one after all
   }
 
-  FeatureVector pop() { return mStream.pop(); }
+  FeatureVector pop()                            { return mStream.pop(); }
+  void          print_to(std::ostream &os) const { mStream.print_to(os); }
+
+  // these cannot answer since have no count
+  // int number_remaining() { return mStream.number_remaining(); }
+  
+};
+
+
+template<class Stream>
+class RegulatedStream<Stream, NoModel>
+{
+private:
+  Stream       mStream;
+  
+public:
+  RegulatedStream(Stream const& s): mStream(s) { }
+  
+  bool has_feature ()
+  {
+    if (mStream.has_feature_ready())
+      return true;
+    else if (mStream.can_build_more_features())
+      mStream.build_next_feature();                    // advance position using current state
+    else
+      debugging::debug("RGST",3) << "regulated stream '" << mStream.name() <<"' cannot build more features.\n";
+    return mStream.has_feature_ready();                  // may not have been able to build one after all
+  }
+
+  FeatureVector pop()                            { return mStream.pop(); }
+  void          print_to(std::ostream &os) const { mStream.print_to(os); }
 
   int number_remaining() { return mStream.number_remaining(); }
   
 };
+
 
 #else
 
@@ -194,8 +227,9 @@ public:
 
 
 //  FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     
-
+//
 //  Builds revolving deque of features from given feature vector (typically read from a file)
+//
 
 class FiniteStream:  public BaseStream
 {
@@ -206,8 +240,8 @@ public:
   FiniteStream(std::string const& name, FeatureVector const& source)
     : BaseStream("FiniteStream:" + name) { insert_features(source); }
   
-  int   number_remaining()                                              const { return mFeatures.size(); }
-  bool  can_build_more_features(FeatureList const&, FeatureList const&) const { return number_remaining()>0; }
+  int   number_remaining()                   const { return mFeatures.size(); }
+  bool  can_build_more_features()            const { return number_remaining()>0; }
 
   void  build_next_feature();
 
@@ -218,18 +252,19 @@ private:
 };
 
 
-template<class Model>
-RegulatedStream< FiniteStream, Model >
-make_finite_stream (Model const& m, std::string const& name, FeatureVector const& source)
+inline
+RegulatedStream< FiniteStream, NoModel >
+make_finite_stream (std::string const& name, FeatureVector const& source)
 {
-  return RegulatedStream< FiniteStream, Model >(FiniteStream(name, source), m);
+  return RegulatedStream< FiniteStream, NoModel >(FiniteStream(name, source));
 }
 
 
 
 //  LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream
-
+//
 //  Build sequence of lags from a single feature
+//
 
 class LagStream: public BaseStream
 {
@@ -244,25 +279,26 @@ public:
   LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
     :  BaseStream("LagStream:" + name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
   
-  int   number_remaining()                                              const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
-  bool  can_build_more_features(FeatureList const&, FeatureList const&) const   { return  number_remaining() > 0; } 
+  int   number_remaining()        const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
+  bool  can_build_more_features() const   { return  number_remaining() > 0; } 
 
   void  build_next_feature ();
 };
 
 
-template< class Model >
-RegulatedStream< LagStream, Model >
-make_lag_stream (Model const& m, std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
+inline
+RegulatedStream< LagStream, NoModel >
+make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
 {
-  return RegulatedStream< LagStream, Model >(LagStream(name, f, maxLag, blockSize, numberCycles), m);
+  return RegulatedStream< LagStream, NoModel >(LagStream(name, f, maxLag, blockSize, numberCycles));
 }
 
 
 
 //  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream
-
+//
 //  Build 'neighboring' features to those in a given source collection
+//
 
 template<class Source>
 class NeighborhoodStream: public BaseStream
@@ -430,7 +466,7 @@ public:
   CrossProductStream(std::string name)
     : BaseStream("CPStream:"+name), mSlowIterator(), mFastIterators()  {  }
   
-  int   number_remaining() const { return -1; }
+  int   number_remaining() const { assert(false); return -1; }                                    // here for interface only
 
   bool  can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) const;
 
@@ -455,11 +491,13 @@ make_cross_product_stream (Model m, std::string const& name)
 enum ModelStreamID {acceptedStreamID, rejectedStreamID};
 
 
+
 //  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
 //
 //      This stream forms polynomials from features in a *dynamically growing* list. 
 //      Canonical example of a stream that builds polynomials from rejected model features.
 
+// ought to have dynamic/static versions depending on whether there's a class.
 
 class PolynomialStream : public BaseStream
 {
@@ -480,6 +518,15 @@ public:
   void  build_next_feature();
   
 };
+
+
+
+inline
+RegulatedStream< PolynomialStream, NoModel >
+make_polynomial_stream (std::string const& name, ModelStreamID id, FeatureList const& src, int degree = 3)
+{
+  return RegulatedStream< PolynomialStream, NoModel>(PolynomialStream(name, id, src, degree));
+}
 
 
 template <class Model>

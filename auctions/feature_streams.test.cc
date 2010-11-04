@@ -14,6 +14,8 @@
 
 #include <iostream>
 
+// Source needs to supply the accept and reject streams
+
 class Model
 {
 private:
@@ -50,13 +52,16 @@ main()
     featureList2.push_back(Feature(columns[i+10]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
-  Model aModel (featureList1, featureList2);
+  std::cout << "  -------------------------------------------------------\n";
+
+  
+  Model model (featureList1, featureList2);
+
   
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    typedef RegulatedStream< FiniteStream, Model > FS;
-    FS fs (make_finite_stream(aModel, "Test", features));
+    RegulatedStream< FiniteStream, NoModel > fs (make_finite_stream("Test", features));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
@@ -69,39 +74,35 @@ main()
       std::cout << "TEST:    Popped feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
     }
 
-    std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
-    fv[0]->set_model_results(true, 0.001);  // used in model, p-value
-    more = 7;
+    std::cout << "\n\nTEST:  Setting model results for features \n";
+    fv[0] -> set_model_results(true, 0.001);  // used in model, p-value
+    more = 10;
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
     }
   }
-  /*
+
+
   if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
-    RegulatedStream< LagStream > ls (make_lag_stream("Test", make_range(empty), features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    RegulatedStream< LagStream, NoModel > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+
     for (unsigned i=0; i<10; ++i)
-    { ls.build_next_feature();
+    { if (ls.has_feature())
+      {	FeatureVector fv (ls.pop());
+	std::cout << "   popped...  " << fv[0] << std::endl;
+      }
       ls.print_to(std::cout);
     }
-    std::cout << "\nTEST: making regulated lag stream with t-2 marked\n";
-    RegulatedStream< LagStream > lags (make_lag_stream("Test", make_range(empty), features[0], 4, 1, 2)); // max lag 4, 2 cycles
-    lags.build_next_feature(); lags.print_to(std::cout); 
-    lags.build_next_feature(); lags.print_to(std::cout); features.push_back(lags.pop()[0]);  // add t-2 to "model features"
-    for (unsigned i=0; i<10; ++i)
-    { lags.build_next_feature();
-      lags.print_to(std::cout);
-    }
   }
-  */
 
   
-  /*
-  if (false)   // test polynomial streams
-  { std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
-    RegulatedStream< PolynomialStream<FeatureVector> > strm (make_polynomial_stream("Test", features, 4));   // degree 4
+  if (true)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
+  {
+    std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
+    RegulatedStream< PolynomialStream, NoModel > strm (make_polynomial_stream("Test", features, 4));   // degree 4
     strm.print_to(std::cout);
     std::cout << "  Polynomial stream  has_feature=" << strm.has_feature() << " with " << strm.number_remaining() << " left.\n";
     while(strm.has_feature())
@@ -109,9 +110,13 @@ main()
       std::cout << "  Leading popped feature: " << fv[0] << "  ; " << strm.number_remaining() << " remain" << std::endl;
     }
     std::cout << " stream has " << strm.number_remaining() << " features remaining\n";
-  }
-  */
 
+    std::cout << "\n\n\n\nTEST: making dynamic polynomial stream\n";
+    RegulatedStream< PolynomialStream<FeatureVector>, Model > strm (make_polynomial_stream(model, "Test", features, 4));   // degree 4
+    strm.print_to(std::cout);
+
+  }
+  
   
   /*
   if (false)
