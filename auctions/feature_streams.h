@@ -113,12 +113,17 @@ public:
   {
     if (mStream.has_feature_ready())
       return true;
-    else if (mStream.can_build_more_features(mModel.accepted_features, mModel.rejected_features()))
+    else if (mStream.can_build_more_features(mModel.accepted_features(), mModel.rejected_features()))
       mStream.build_next_feature();                    // advance position using current state
     else
       debugging::debug("RGST",3) << "regulated stream '" << mStream.name() <<"' cannot build more features.\n";
     return mStream.has_feature_ready();                  // may not have been able to build one after all
   }
+
+  FeatureVector pop() { return mStream.pop(); }
+
+  int number_remaining() { return mStream.number_remaining(); }
+  
 };
 
 #else
@@ -168,8 +173,9 @@ public:
   void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
   bool           has_feature_ready()               const { return !mHead.empty(); }
 
-  virtual bool   can_build_more_features(FeatureList const& accepted, FeatureList const& rejected)  const = 0;
-  virtual void   build_next_feature()                    = 0;
+  // these are not here, but that's the idea
+  //  virtual bool   can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) = 0;
+  //  virtual void   build_next_feature()                    = 0;
   
   void           set_head(Feature const& f)              { mHead.clear(); mHead.push_back(f); }
   void           set_head(FeatureVector const& fv)       { mHead = fv; }
@@ -304,6 +310,8 @@ public:
   FitStream(Model const& model, int power, std::string s, int skip)
     : BaseStream("FitStream:" + s), mLastQ(0), mPower(power), mModel(model), mSignature(s), mFit(), mSkip(skip) {  }
   
+  int    number_remaining() const { return -1; }
+  
   bool   can_build_more_features(FeatureList const& accepted, FeatureList const&)  const;
   void   build_next_feature();
 };
@@ -325,24 +333,24 @@ class InteractionStream : public BaseStream
 {
 private:
   typedef typename Source::const_iterator Iter;
-  
-  bool                mIncludeDiagonal;
-  Ranges mFeatureRange;
-  Iter                mpDiagFeature, mpColFeature;
-  int                 mRemain;
+
+  Source const& mSource;
+  bool          mIncludeDiagonal;
+  Iter          mpDiagFeature, mpColFeature;
+  int           mRemain;
   
 public:
   
-  InteractionStream(std::string name,  FeatureRange const& accepted, Source const& src, bool useSquares)
-    : BaseStream("InteractionStream:"+name), mAccepted(accepted), mIncludeDiagonal(useSquares), mFeatureRange(Ranges::make_range(src)),
-      mpDiagFeature(Ranges::begin(src)), mpColFeature(Ranges::begin(src)), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
+  InteractionStream(std::string name, Source const& src, bool useSquares)
+    : BaseStream("InteractionStream:"+name), mIncludeDiagonal(useSquares), mSource(src),
+      mpDiagFeature(src.begin()), mpColFeature(src.end()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
   
-  int   number_remaining()           const { return mRemain; }
+  int   number_remaining()                                               const { return mRemain; }
 
-  bool  can_build_more_features ()   const { return mRemain > 0; }
+  bool  can_build_more_features (FeatureList const&, FeatureList const&) const { return (mRemain > 0) && find_next_position(); }
 
-  void  build_next_feature();
-
+  void  build_next_feature()                                                   { assert(mpColFeature != mSource.end()); set_head(Feature(*mpDiagFeature, *mpColFeature)); }
+      
 private:
   int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
   void  inc_pointers();
@@ -350,11 +358,11 @@ private:
 };
 
 
-template <class Source>
-RegulatedStream< InteractionStream<Source> >
-make_interaction_stream (std::string const& name, BaseStream::FeatureRange const& accepted, Source const& s, bool useSquares)
+template <class Source, class Model>
+RegulatedStream< InteractionStream<Source>, Model >
+make_interaction_stream (Model const& m, std::string const& name, Source const& s, bool useSquares)
 {
-  return RegulatedStream< InteractionStream<Source> >(InteractionStream<Source>(name, accepted, s, useSquares));
+  return RegulatedStream< InteractionStream<Source>, Model >(InteractionStream<Source>(name, s, useSquares), m);
 }
 
 
@@ -369,18 +377,17 @@ public:
 
 class FeatureProductStream : public BaseStream
 {
-  FeatureRange   mAccepted;
   Feature        mFeature;
   std::priority_queue<Feature, FeatureVector, BidOrder> mQueue;             // Make a priority queue out of a fixed source list of features
   
 public:
 
-  FeatureProductStream(FeatureRange const& accepted, Feature f, FeatureList const& src)
-    : BaseStream("FPStream:"+f->name()), mAccepted(accepted), mFeature(f) { initialize_queue(src);  }
+  FeatureProductStream(Feature f, FeatureList const& src)
+    : BaseStream("FPStream:"+f->name()), mFeature(f) { initialize_queue(src);  }
   
   int   number_remaining()           const { return mQueue.size(); }
   
-  bool  can_build_more_features()    const { return number_remaining() > 0; }
+  bool  can_build_more_features(FeatureList const& accepted, FeatureList const&);
 
   void  build_next_feature();
 
@@ -390,11 +397,11 @@ private:
 };
 
 
-template <class Source>
-RegulatedStream< FeatureProductStream >
-make_feature_product_stream (BaseStream::FeatureRange const& accepted, Feature f, Source const& Src)
+template <class Model>
+RegulatedStream< FeatureProductStream, Model >
+make_feature_product_stream (Model const& m, Feature f, FeatureList const& Src)
 {
-  return RegulatedStream< FeatureProductStream >(FeatureProductStream(accepted, f, Src));
+  return RegulatedStream< FeatureProductStream, Model >(FeatureProductStream(f, Src), m);
 }
 
 
@@ -413,41 +420,39 @@ make_feature_product_stream (BaseStream::FeatureRange const& accepted, Feature f
 */
   
 
-template<class Source1, class Source2>
 class CrossProductStream : public BaseStream
 {
-  typedef typename range_traits<Source1>::const_iterator Iter1;
-  typedef typename range_traits<Source2>::const_iterator Iter2;
-  
-  FeatureRange          mAccepted;
-  Ranges::range<Iter1>  mSlowRange;            // grows slowly
-  Ranges::range<Iter2>  mFastRange;            // grows faster
-  Iter1                 mSlowIterator;
-  std::vector<Iter2>    mFastIterators;        // one indexing element for each feature in the slow source
+  FeatureIterator              mSlowIterator;    // traverses accepted list
+  std::vector<FeatureIterator> mFastIterators;   // rejected list
   
 public:
     
-  CrossProductStream(std::string name, FeatureRange const& accepted, Source1 const& slow, Source2 const& fast)
-    : BaseStream("CPStream:"+name), mAccepted(accepted), mSlowRange(Ranges::make_range(slow)), mFastRange(Ranges::make_range(fast)),
-      mSlowIterator(Ranges::begin(mSlowRange)), mFastIterators(slow.size())  { init_fast_iterators(); }
+  CrossProductStream(std::string name)
+    : BaseStream("CPStream:"+name), mSlowIterator(), mFastIterators()  {  }
   
-  bool  can_build_more_features()    const { return mSlowIterator != Ranges::end(mSlowRange); }
+  int   number_remaining() const { return -1; }
+
+  bool  can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) const;
 
   void  build_next_feature();
 
 private:
-  void  init_slow_iterators()              { for (int i=0; i<mSlowIterators.size; ++i) mSlowIterators[i] = Ranges::begin(mFastRange); }
-  void  update_iterators()
+  void  update_iterators();
 };
 
 
-template <class Source1, class Source2>
-RegulatedStream< CrossProductStream<Source1, Source2> >
-make_cross_product_stream (std::string const& name, BaseStream::FeatureRange const& accepted, Source1 const& slowSrc, Source2 const& fastSrc)
+template <class Model>
+RegulatedStream< CrossProductStream, Model >
+make_cross_product_stream (Model m, std::string const& name)
 {
-  return RegulatedStream< CrossProductStream<Source1, Source2> >(CrossProductStream<Source1,Source2>(name, accepted, slowSrc, fastSrc));
+  return RegulatedStream< CrossProductStream, Model >(CrossProductStream(name), m);
 }
 
+
+//  ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID
+
+
+enum ModelStreamID {acceptedStreamID, rejectedStreamID};
 
 
 //  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
@@ -456,32 +461,32 @@ make_cross_product_stream (std::string const& name, BaseStream::FeatureRange con
 //      Canonical example of a stream that builds polynomials from rejected model features.
 
 
-template<class Source>
 class PolynomialStream : public BaseStream
 {
-  Source const&   mSource;  
-  unsigned        mPos;
+private:
+  ModelStreamID   mID;
+  FeatureIterator mIterator;
   int             mDegree;
   
 public:
     
-  PolynomialStream(std::string name, Source const& src, int degree)
-    : BaseStream("PolyStream:"+name), mSource(src), mPos(0), mDegree(degree) { }
+  PolynomialStream(std::string name, ModelStreamID id, FeatureList const& source, int degree)
+    : BaseStream("PolyStream:"+name), mID(id), mIterator(source.end()), mDegree(degree) { }
+
+  int   number_remaining() const { return -1; }
+
+  bool  can_build_more_features(FeatureList const& accepts, FeatureList const& rejects);
+
+  void  build_next_feature();
   
-  int             number_remaining()           const { return (mSource.size()-mPos); }
-
-  bool            can_build_more_features()    const { return (number_remaining() > 0); }
-
-  void            build_next_feature();
-
 };
 
 
-template <class Source>
-RegulatedStream< PolynomialStream<Source> >
-make_polynomial_stream (std::string const& name, Source const& src, int degree = 3)
+template <class Model>
+RegulatedStream< PolynomialStream, Model >
+make_polynomial_stream (Model const& m, std::string const& name, ModelStreamID id, FeatureList const& src, int degree = 3)
 {
-  return RegulatedStream< PolynomialStream<Source> >(PolynomialStream<Source>(name, src, degree));
+  return RegulatedStream< PolynomialStream, Model>(PolynomialStream(name, id, src, degree), m);
 }
 
 
@@ -495,36 +500,37 @@ make_polynomial_stream (std::string const& name, Source const& src, int degree =
 //                    std::unary_function<Feature const&, bool>                      Predicate;
 
 
-template<class Source, class Pred, class Trans>
+template<class Pred, class Trans>
 class SubspaceStream : BaseStream
 {
 public:
   
 private:
-  Source const&       mSource;  
-  int                 mPos; 
-  int                 mBundleSize;
-  Pred                mPredicate;       // is the current feature okay for use (hold this as object, not reference)
-  Trans               mTransformation;
+  ModelStreamID   mID;
+  FeatureIterator mIterator;
+  FeatureVector   mBundle;
+  int             mBundleSize;
+  Pred            mPredicate;       // is the current feature okay for use (hold this as object, not reference)
+  Trans           mTransformation;
   
 public:
-  SubspaceStream(std::string name, Source const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
-    : BaseStream("Subspace:"+name), mSource(src), mPos(0), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
+  SubspaceStream(std::string name, ModelStreamID id, FeatureList const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
+    : BaseStream("Subspace:"+name), mID(id), mIterator(src.end()), mBundle(), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
   
-  int    number_remaining()           const { return (mSource.size()-mPos); }  
-  
-  bool   can_build_more_features()    const { return number_remaining() > mBundleSize;} //too few to fill
+  int    number_remaining() const { return -1; }
+
+  bool   can_build_more_features(FeatureList const& accepted, FeatureList const& rejected);
   
   void   build_next_feature();
 
 };
 
 
-template <class Source, class Pred, class Trans>
-RegulatedStream< SubspaceStream<Source,Pred,Trans> >
-make_subspace_stream (std::string const& name, Source const& src, int bundleSize, Pred pred, Trans trans)
+template <class Pred, class Trans, class Model>
+RegulatedStream< SubspaceStream<Pred,Trans>, Model >
+make_subspace_stream (Model const& m, std::string const& name, ModelStreamID id,  FeatureList const& src, int bundleSize, Pred pred, Trans trans)
 {
-  return RegulatedStream< SubspaceStream<Source,Pred,Trans> >(SubspaceStream<Source,Pred,Trans>(name, src, bundleSize, pred, trans));
+  return RegulatedStream< SubspaceStream<Pred,Trans>, Model >(SubspaceStream<Pred,Trans>(name, id, src, bundleSize, pred, trans), m);
 }
 
 

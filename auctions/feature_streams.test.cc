@@ -14,7 +14,20 @@
 
 #include <iostream>
 
-using Ranges::make_range;
+class Model
+{
+private:
+  FeatureList mAccepted;
+  FeatureList mRejected;
+  
+public:
+  Model(FeatureList const& accept, FeatureList const& reject) : mAccepted(accept), mRejected(reject) { }
+
+  FeatureList const& accepted_features() const { return mAccepted; }
+  FeatureList const& rejected_features() const { return mRejected; }
+};
+
+
 
 int
 main()
@@ -27,32 +40,33 @@ main()
   
 
   FeatureVector features;
+  FeatureList   featureList1, featureList2;
   FeatureList   empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
   for (int i=0; i<10; ++i)
   { features.push_back(Feature(columns[i]));
+    featureList1.push_back(Feature(columns[i]));
+    featureList2.push_back(Feature(columns[i+10]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
-
+  Model aModel (featureList1, featureList2);
   
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    typedef RegulatedStream< FiniteStream > FS;
-    FS fs (make_finite_stream("Test", features));
+    typedef RegulatedStream< FiniteStream, Model > FS;
+    FS fs (make_finite_stream(aModel, "Test", features));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
     std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
-    fs.print_features_to(std::cout); std::cout << std::endl;
     
     int more (7);
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
-      fs.print_features_to(std::cout); std::cout << std::endl;
     }
 
     std::cout << "\n\nTEST:  Setting model results for fv[0] to true with p-value 0.001\n";
@@ -61,10 +75,9 @@ main()
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-      fs.print_features_to(std::cout); std::cout << std::endl;
     }
   }
-
+  /*
   if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
@@ -82,8 +95,10 @@ main()
       lags.print_to(std::cout);
     }
   }
+  */
 
-
+  
+  /*
   if (false)   // test polynomial streams
   { std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
     RegulatedStream< PolynomialStream<FeatureVector> > strm (make_polynomial_stream("Test", features, 4));   // degree 4
@@ -95,8 +110,10 @@ main()
     }
     std::cout << " stream has " << strm.number_remaining() << " features remaining\n";
   }
+  */
 
-
+  
+  /*
   if (false)
   {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
     std::cout << "\n\n\n\nTEST: making regulated neighborhood stream\n";
@@ -120,12 +137,14 @@ main()
       ns.print_to(std::cout);
     }
   }
+  */
 
   
+  /*  
   if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
-    IS is (make_interaction_stream("test", make_range(empty), features, true /* use squares */));
+    IS is (make_interaction_stream("test", make_range(empty), features, true));  // true means to use diagonal
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
     std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
@@ -139,8 +158,9 @@ main()
     }
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
   }
-  
-  
+  */
+
+  /*
   if (true)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
@@ -197,6 +217,8 @@ main()
       std::cout << "Popped feature " << fv[0] << std::endl;
     }
   }
+  */
+  
   std::cout << "\n\nDONE:\n";
   return 0;
 }

@@ -10,9 +10,9 @@ template< class Collection >
 bool
 BaseStream::found_name_among_features (std::string const& name, Collection const& features, std::string const& description) const
 {
-   if (name.size() == 0)
-     return false;
-   for (Collection>::const_iterator it = features.begin(); it != features.end(); ++it)
+  if (name.size() == 0)
+    return false;
+  for (typename Collection::const_iterator it = features.begin(); it != features.end(); ++it)
   { if (name == (*it)->name())
     { debugging::debug("FETR", 4) << "Found feature " << name << " in " << description << std::endl;
       return true; 
@@ -107,7 +107,7 @@ void
 InteractionStream<Source>::inc_pointers()
 {
   ++mpColFeature; --mRemain;
-  if (mpColFeature == Ranges::end(mFeatureRange))   // move diagonal "row" pointer
+  if (mpColFeature == mSource.end())   // move diagonal "row" pointer
   { ++mpDiagFeature;
     mpColFeature = mpDiagFeature;
     if (!mIncludeDiagonal)
@@ -141,108 +141,46 @@ InteractionStream<Source>::find_next_position()
   return true;
 }
 
-template<class Source>
-void
-InteractionStream<Source>::build_next_feature()
-{
-  assert(mRemain > 0);
-  assert(mpColFeature != Ranges::end(mFeatureRange));
-  set_head(Feature(*mpDiagFeature, *mpColFeature));
-  find_next_position();
-}
+
 
 
 
 //  Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream
 
-template<class Source1, class Source2>
-  void
-  CrossProductStream<Source1, Source2>::update_position_vector()    const         // update mutable sources
+bool
+CrossProductStream::can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) const
 {
-  while (mPos.size() < mSlowSource.size())
-    mPos.push_back(0);
+  if (accepted.size() == rejected.size())
+    return false;
+  else
+    return true;
 }
 
 
-template<class Source1, class Source2>
-  int
-  CrossProductStream<Source1, Source2>::number_remaining()          const
+
+void
+CrossProductStream::update_iterators ()
 {
-  update_position_vector();
-  int num (0);
-  for(std::vector<int>::const_iterator it=mPos.begin(); it != mPos.end(); ++it)
-    num += mFastSource.size() - *it;
-  return num;
+
 }
 
 
-template<class Source1, class Source2>
-  void
-  CrossProductStream<Source1, Source2>::build_next_feature()
+
+void
+CrossProductStream::build_next_feature()
 {
-  debugging::debug("CPST",3) << name() << " slow[" << mSlowPos << "/" << mSlowSource.size()
-			     << "] x fast[" << mPos[mSlowPos] << "/" << mFastSource.size() << "]: "
-			     << mSlowSource[0]->name() << " x " << mFastSource[0]->name() << std::endl;
-  while (number_remaining() > 0)
-  { Feature  xs (mSlowSource[mSlowPos]);
-    Feature  xf (mFastSource[mPos[mSlowPos]]);
+  /*  debugging::debug("CPST",3) << name() << std::endl;
+  while (false)
+  { Feature  xs (*mSlowIterator);
+    Feature  xf (*mFastIterators[0]);
     Feature candidate(xs,xf);
     if ( (!candidate->is_constant()) &&
-	 (!found_name_among_features(feature_name(), mAccepted, "model features")) )
+	 (!found_name_among_features(feature_name(), "model features")) )
     { set_head(candidate);
       return;
     }
-    else
-    { ++mPos[mSlowPos];  
-      mSlowPos = 0;                                 // now go back to check that list has not grown
-      update_position_vector();
-      for(std::vector<int>::const_iterator it=mPos.begin(); it!=mPos.end(); ++it)
-      { if (*it < (int) mFastSource.size())
-	  break;
-	else
-	  ++mSlowPos;
-      }
-      debugging::debug("CPST",4) << "Increment position to " << mSlowPos << " x " << mPos[mSlowPos] << std::endl;
-    }
   }
-}
-
-
-
-///  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
-
-
-template<class Source>
-void
-PolynomialStream<Source>::build_next_feature()
-{
-  while (mPos < mSource.size())
-  { std::string fname (mSource[mPos]->name());
-    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "' \n";
-    if ( (mSource[mPos]->degree()>1)                          ||       // avoid calibration variables, powers, interactions
-	 (fname.size() >= 4 && "cube" == fname.substr(0,4))   ||   
-	 (fname.size() >= 6 && "square" == fname.substr(0,6)) ||
-	 (std::string::npos != fname.find("Y_hat_") )         ||
-	 (mSource[mPos]->is_dummy())                          ||
-	 (mSource[mPos]->is_constant())      )               
-    {
-      ++mPos;
-    }
-    else // use this feature
-    { debugging::debug("PLYS",4) << "Stream " << name() << " making polynomial subspace from feature " <<  mSource[mPos]->name() << std::endl;
-      FeatureVector powers;
-      if (!mSource[mPos]->is_used_in_model())    // include X if not in model
-	powers.push_back(mSource[mPos]);
-      powers.push_back(Feature(Function_Utils::Square(), mSource[mPos]));
-      if(mDegree>2) 
-	powers.push_back(Feature(Function_Utils::Cube(), mSource[mPos]));
-      for (int j=4; j<=mDegree; ++j)
-	powers.push_back(Feature(Function_Utils::Power(j), mSource[mPos]));
-      set_head(powers);
-      ++mPos;
-      return;
-    }
-  }
+  */
 }
 
 
@@ -264,20 +202,29 @@ PolynomialStream<Source>::build_next_feature()
       else  debugging::debug("SUBS", 3) << " Non-fatal error; could not open file " << file << " to dump feature bundle.\n ";
   */
 
-template<class Source, class Pred, class Trans>
-  void
-  SubspaceStream<Source, Pred, Trans>::build_next_feature()
+
+template< class Pred, class Trans>
+  bool
+  SubspaceStream<Pred, Trans>::can_build_more_features(FeatureList const& accepts, FeatureList const& rejects) 
 {
-  debugging::debug("SUBS",4) << mName << " building bundle with " << mBundleSize << " elements.\n";
-  // read input data into a feature vector
-  FeatureVector input;
-  while (((int)input.size()<mBundleSize) && (mPos<(int)mSource.size()))
-  { if(mPredicate(mSource[mPos]))
-      input.push_back(mSource[mPos]);
-    ++mPos;
+  FeatureIterator theEnd ((mID==acceptedStreamID)?accepts.end():rejects.end());
+  while ((mIterator != theEnd) && ( (int)mBundle.size() < mBundleSize))
+  { if(mPredicate(*mIterator))
+      mBundle.push_back(*mIterator);
+    ++mIterator;
   }
-  // apply transformation to the block of variables
-  set_head(mTransformation(input));
+  return mBundleSize == mBundle.size();
+}
+
+
+template<class Pred, class Trans>
+  void
+  SubspaceStream<Pred, Trans>::build_next_feature()
+{
+  debugging::debug("SUBS",4) << mName << " building bundle with " << mBundle.size() << " elements.\n";
+   // apply transformation to the block of variables
+  set_head(mTransformation(mBundle));
+  mBundle.clear();
   debugging::debug("SUBS",4) << mName << " transformation completed.\n";  
 }
 
