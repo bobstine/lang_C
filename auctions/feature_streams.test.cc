@@ -61,7 +61,7 @@ main()
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    RegulatedStream< FiniteStream, NoModel > fs (make_finite_stream("Test", features));
+    FeatureStream< CyclicIterator<FeatureVector>, Identity > fs (make_finite_stream("Test", features));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
@@ -76,7 +76,7 @@ main()
 
     std::cout << "\n\nTEST:  Setting model results for features \n";
     fv[0] -> set_model_results(true, 0.001);  // used in model, p-value
-    more = 10;
+    more = 7;
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
@@ -84,10 +84,10 @@ main()
   }
 
 
-  if (false)
+  if (true)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
-    RegulatedStream< LagStream, NoModel > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    FeatureStream< LagIterator, Identity > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
 
     for (unsigned i=0; i<10; ++i)
     { if (ls.has_feature())
@@ -98,7 +98,7 @@ main()
     }
   }
 
-  
+  /*
   if (true)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
   {
     std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
@@ -116,7 +116,7 @@ main()
     strm.print_to(std::cout);
 
   }
-  
+  */
   
   /*
   if (false)

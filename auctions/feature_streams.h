@@ -185,6 +185,130 @@ public:
 #endif
 
 
+
+//  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
+//
+//  Context information (such as a model and predicates) must be built into the iterator
+//
+
+
+namespace FeatureStreamUtils {   // handy utilities
+  
+  bool           indicators_from_same_parent  (Feature const& f1, Feature const& f2) ;
+ 
+  std::string    last_name_in_list (FeatureList const& r) ;
+
+  template< class Collection >
+  bool found_name_among_features (std::string const& name, Collection const& features, std::string const& description) ;
+}
+
+
+template< class Iterator, class Transform >
+class FeatureStream
+{  
+private:
+  std::string      mName;
+  FeatureVector    mHead;         // holds results of most recent build; cleared by pop
+  Iterator         mIterator;
+  Transform const& mTransform;
+
+public:
+  ~FeatureStream() { }
+
+  FeatureStream (std::string name, Iterator it, Transform trans)
+    : mName(name), mHead(), mIterator(it), mTransform(trans) { }
+  
+  std::string    name()                            const { return mName; }
+  std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
+  void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
+  int            number_remaining()                const { return mIterator.number_remaining(); }
+
+  bool has_feature ()
+  {
+    if (!mHead.empty())                   return true;
+    else if (can_build_more_features())   build_next_feature();   // advance position using current state
+    else debugging::debug("RGST",3) << "regulated stream '" << name() <<"' cannot build more features.\n";
+    return (!mHead.empty());                                      // may not have been able to build one 
+  }
+  
+  bool           can_build_more_features()               { if(!mIterator.empty()) ++mIterator;  return !mIterator.empty(); }
+  void           build_next_feature()                    { mHead = mTransform(*mIterator); }
+  FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
+};
+
+
+class Identity
+{
+public:
+  FeatureVector operator()(Feature const& f) const { FeatureVector fv; fv.push_back(f); return fv; }
+  FeatureVector operator()(FeatureVector fv) const { return fv; }
+};
+
+//
+//     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators
+
+template<class Collection>
+class CyclicIterator
+{
+  typedef typename Collection::const_iterator Iterator;
+
+  Collection const& mSource;         // someone else has to maintain this
+  Iterator          mIter;
+  int               mSize;
+
+public:
+  CyclicIterator(Collection const& source) : mSource(source), mIter(source.begin()), mSize(source.size()) { }
+  
+  int   number_remaining()              const { return mSize; }             // an upper bound; may be fewer since only those marked in here
+  bool  empty()                         const { return mSource.empty(); }
+
+  CyclicIterator& operator++();
+  Feature         operator*()           const { return *mIter; }
+};
+
+class LagIterator
+{
+  const Feature   mFeature;       // construct lags of this feature
+  const int       mBlockSize;     // blocking factor used if longitudinal
+  int             mRemaining;
+  int             mLag;
+  int             mCyclesLeft;    // cycle through the lags
+  
+public:  
+  LagIterator(Feature const& f, int maxLag, int blockSize, int cycles)
+    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(0) {  }    // 1+ for initial increment
+  
+  int   number_remaining()        const   { return  mRemaining; }
+  bool  empty()                   const   { return  mRemaining == 0; }
+
+  LagIterator&  operator++();
+  Feature       operator*()       const   { return  Feature(mFeature,mLag,mBlockSize); }
+};
+
+
+  
+//
+//    make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream
+//
+
+template<class Collection>
+FeatureStream< CyclicIterator<Collection>, Identity >
+make_finite_stream (std::string const& name, Collection const& source)
+{
+  return FeatureStream< CyclicIterator<Collection>, Identity >("CyclicStream::"+name, CyclicIterator<Collection>(source), Identity());
+}
+
+
+inline
+FeatureStream< LagIterator, Identity >
+make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
+{
+  return FeatureStream< LagIterator, Identity >("LagStream::"+name, LagIterator(f, maxLag, blockSize, numberCycles), Identity());
+}
+
+
+
+
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
 
 class BaseStream
@@ -226,72 +350,9 @@ public:
 
 
 
-//  FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     FiniteStream     
-//
-//  Builds revolving deque of features from given feature vector (typically read from a file)
-//
 
-class FiniteStream:  public BaseStream
-{
-  std::deque<Feature>  mFeatures;  
   
-public:
-  
-  FiniteStream(std::string const& name, FeatureVector const& source)
-    : BaseStream("FiniteStream:" + name) { insert_features(source); }
-  
-  int   number_remaining()                   const { return mFeatures.size(); }
-  bool  can_build_more_features()            const { return number_remaining()>0; }
 
-  void  build_next_feature();
-
-  void  print_features_to (std::ostream& os) const;
-
-private:
-  void  insert_features (FeatureVector const& features);
-};
-
-
-inline
-RegulatedStream< FiniteStream, NoModel >
-make_finite_stream (std::string const& name, FeatureVector const& source)
-{
-  return RegulatedStream< FiniteStream, NoModel >(FiniteStream(name, source));
-}
-
-
-
-//  LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream     LagStream
-//
-//  Build sequence of lags from a single feature
-//
-
-class LagStream: public BaseStream
-{
-  const Feature      mFeature;       // construct lags of this feature
-  const int          mMaxLag;
-  const int          mBlockSize;     // blocking factor used if longitudinal
-  int                mLag;
-  int                mCyclesLeft;    // cycle through the lags
-  
-public:
-  
-  LagStream(std::string const& name, Feature const& f, int maxLag, int blockSize, int cycles)
-    :  BaseStream("LagStream:" + name), mFeature(f), mMaxLag(maxLag), mBlockSize(blockSize), mLag(0), mCyclesLeft(cycles-1) {  }
-  
-  int   number_remaining()        const   { return  mMaxLag - mLag + mCyclesLeft * mMaxLag; }
-  bool  can_build_more_features() const   { return  number_remaining() > 0; } 
-
-  void  build_next_feature ();
-};
-
-
-inline
-RegulatedStream< LagStream, NoModel >
-make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
-{
-  return RegulatedStream< LagStream, NoModel >(LagStream(name, f, maxLag, blockSize, numberCycles));
-}
 
 
 
@@ -485,12 +546,9 @@ make_cross_product_stream (Model m, std::string const& name)
 }
 
 
-//  ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID     ModelStreamID
+//  Stream ID
 
-
-enum ModelStreamID {acceptedStreamID, rejectedStreamID};
-
-
+enum ModelStreamID { acceptedStreamID, rejectedStreamID };
 
 //  PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream   PolynomialStream
 //
@@ -498,6 +556,7 @@ enum ModelStreamID {acceptedStreamID, rejectedStreamID};
 //      Canonical example of a stream that builds polynomials from rejected model features.
 
 // ought to have dynamic/static versions depending on whether there's a class.
+
 
 class PolynomialStream : public BaseStream
 {

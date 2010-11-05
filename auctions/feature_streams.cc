@@ -17,7 +17,6 @@ FeatureAcceptancePredicate::operator()(Feature const& f) const
 }
 
 
-
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
 
 bool
@@ -38,63 +37,16 @@ BaseStream::last_name_in_list (FeatureList const& features) const
 }
 
 
+//  LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator
 
-//  Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream     Finite Stream
-
-void
-FiniteStream::insert_features(FeatureVector const& f)
+LagIterator&
+LagIterator::operator++()
 {
-  for(FeatureVector::const_iterator it=f.begin(); it != f.end(); ++it)
-    if (! (*it)->is_constant() )
-    { std::cout << "TEST: inserting feature " << *it << std::endl;
-      mFeatures.push_back( *it );
-    }
+  ++mLag; --mRemaining;
+  if ((mLag > mMaxLag) && (mRemaining>0))
+    mLag = 1;  // go around again
+  return *this;
 }
-
-void
-FiniteStream::build_next_feature()
-{
-  // dump any features that are already in the model
-  while(!mFeatures.empty() && mFeatures.front()->is_used_in_model())
-    mFeatures.pop_front();
-  // put front into head
-  if(!mFeatures.empty())
-  { set_head(mFeatures.front());
-    // put the current feature on the back to try again later
-    mFeatures.push_back(mFeatures.front());
-    mFeatures.pop_front();
-  }  
-}
-
-void
-FiniteStream::print_features_to (std::ostream& os) const
-{
-  BaseStream::print_to(os);
-  os << std::endl;
-  for(std::deque<Feature>::const_iterator it=mFeatures.begin(); it != mFeatures.end(); ++it)
-    os << " " << *it << std::endl;
-}
-
-
-
-//  LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams      LagStreams  
-
-void
-LagStream::build_next_feature()
-{
-  ++mLag;
-  if (mLag > mMaxLag)
-  { if (mCyclesLeft>0)  // go around again
-    { --mCyclesLeft;
-      mLag = 1;
-    }
-    else return;        // cannot generate more
-  }
-  Feature lag(mFeature,mLag,mBlockSize);
-  set_head(lag);
-}
-
-
 
 ///  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream  Feature-product stream
 

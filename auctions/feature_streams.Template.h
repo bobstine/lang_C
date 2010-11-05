@@ -4,6 +4,29 @@
 #include <assert.h>
 
 
+
+
+//  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     
+
+
+template<class Collection>
+CyclicIterator<Collection>&
+CyclicIterator<Collection>::operator++()
+{
+  ++mIter;
+  if(mIter == mSource.end())
+    mIter = mSource.begin();
+  while((*mIter)->is_used_in_model() && (mSize > 0))
+  { --mSize;
+    ++mIter;
+    if (mIter == mSource.end())
+      mIter = mSource.begin();
+  }
+  return *this;
+}
+
+
+
 //  BaseStream
 
 template< class Collection >
