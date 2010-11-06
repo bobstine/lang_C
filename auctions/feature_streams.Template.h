@@ -4,19 +4,33 @@
 #include <assert.h>
 
 
+//  FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream
 
+template<class Iterator, class Trans>
+  bool
+  FeatureStream<Iterator,Trans>::has_feature ()
+{
+  if (!mHead.empty())
+    return true;
+  else if (can_build_more_features())
+    build_next_feature();                                   // advance position using current state
+  else
+    debugging::debug("RGST",3) << "FeatureStream '" << name() <<"' cannot build more features.\n";
+  return (!mHead.empty());                                      // may not have been able to build one 
+}
+  
 
 //  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     
 
 
-template<class Collection>
-CyclicIterator<Collection>&
-CyclicIterator<Collection>::operator++()
+template<class Collection, class Pred>
+  CyclicIterator<Collection, Pred>&
+  CyclicIterator<Collection, Pred>::operator++()
 {
   ++mIter;
   if(mIter == mSource.end())
     mIter = mSource.begin();
-  while((*mIter)->is_used_in_model() && (mSize > 0))
+  while(mSkipFeature(*mIter) && (mSize > 0))
   { --mSize;
     ++mIter;
     if (mIter == mSource.end())
@@ -44,36 +58,6 @@ BaseStream::found_name_among_features (std::string const& name, Collection const
   return false;
 }
 
-
-
-//  NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams      NeighborhoodStreams
-
-template<class Source>
-void
-NeighborhoodStream<Source>::build_next_feature()
-{
-  while (mRemain>0)
-  { std::string fname ((*mpFeature)->name());
-    if (
-	((*mpFeature)->is_constant())                           ||
-	((*mpFeature)->is_dummy())                              ||
-	(fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers
-	(fname.size() >= 6 && "square" == fname.substr(0,6))    ||
-	(std::string::npos != fname.find(mSignature))           ||     // includes calibration signature
-	(std::string::npos != fname.find(mIndexColumn->name())) ||     // already-indexed variable
-	(std::string::npos != fname.find("Y_hat_") )                   // calibration variable
-	)
-    { debugging::debug("NBDS",4) << name() << " rejected Building. feature from " << fname << std::endl;
-      --mRemain; ++mpFeature;
-    }
-    else  // build feature using current position
-    { debugging::debug("NBDS",4) << name() << " making neighborhood feature from " << fname << std::endl;
-      set_head(make_indexed_feature(*mpFeature,mIndexColumn));
-      --mRemain; ++mpFeature;
-      return;
-    }
-  }
-}
 
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream

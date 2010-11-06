@@ -63,7 +63,7 @@ features_with_name(std::string name, FeatureVector const& fv)
 Feature
 make_indexed_feature(Feature const& f, IntegerColumn const& i)
 {
-  debugging::debug("IDXF",3) << "Creating indexed feature with feature '" << f->name() << " with " << f->size()
+  debugging::debug("IDXF",3) << "Creating indexed feature from '" << f->name() << " with " << f->size()
 			     << " elements and " << i->size() << " indices from " << i->name() << ".\n";
   assert(i->size() == f->size());
   int n (i->size());

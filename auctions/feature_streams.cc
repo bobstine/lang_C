@@ -10,6 +10,22 @@
 #include "feature_streams.h"
 
 
+//     Predicates
+
+bool
+SkipIfDerived::operator()(Feature const& f) const
+{
+  std::string fname (f->name());
+  return   (f->is_constant())  || (f->is_dummy())           ||
+    (f->degree() > 1)                                       ||     // composition
+    (fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers
+    (fname.size() >= 6 && "square" == fname.substr(0,6))    ||
+    (f->has_attribute("neighborhood"))                      ||     // already-indexed variable
+    (std::string::npos != fname.find("Y_hat_"))                    // calibration variable
+    ;
+}
+
+
 bool 
 FeatureAcceptancePredicate::operator()(Feature const& f) const
 {
@@ -88,44 +104,6 @@ FeatureProductStream::build_next_feature()
 
 
 //   PolynomialStream     PolynomialStream     PolynomialStream     PolynomialStream     PolynomialStream     PolynomialStream     PolynomialStream     
-
-  
-bool
-PolynomialStream::can_build_more_features(FeatureList const& accepts, FeatureList const& rejects)
-{
-  FeatureIterator theEnd ((mID==acceptedStreamID)?accepts.end():rejects.end());
-  while (mIterator != theEnd)
-  { std::string fname ((*mIterator)->name());
-    debugging::debug("PLYS",4) << " Polynomial stream is considering variable '" << fname << "' \n";
-    if ( ((*mIterator)->degree()>1)                           ||       // avoid calibration variables, powers, interactions
-	 (fname.size() >= 4 && "cube" == fname.substr(0,4))   ||   
-	 (fname.size() >= 6 && "square" == fname.substr(0,6)) ||
-	 (std::string::npos != fname.find("Y_hat_") )         ||
-	 ((*mIterator)->is_dummy())                           ||
-	 ((*mIterator)->is_constant())      )               
-    {
-      ++mIterator;
-    }
-  }
-  return mIterator != theEnd;
-}
-
-void
-PolynomialStream::build_next_feature()
-{
-  debugging::debug("PLYS",4) << "Stream " << name() << " making polynomial subspace from feature " <<  (*mIterator)->name() << std::endl;
-  FeatureVector powers;
-  if (!(*mIterator)->is_used_in_model())    // include X if not in model
-    powers.push_back(*mIterator);
-  powers.push_back(Feature(Function_Utils::Square(), *mIterator));
-  if(mDegree>2) 
-    powers.push_back(Feature(Function_Utils::Cube(), *mIterator));
-  for (int j=4; j<=mDegree; ++j)
-    powers.push_back(Feature(Function_Utils::Power(j), *mIterator));
-  set_head(powers);
-  ++mIterator;
-}
-
 
 
 //  Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream    Cross-product stream

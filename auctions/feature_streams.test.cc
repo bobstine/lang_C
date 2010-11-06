@@ -34,6 +34,8 @@ public:
 int
 main()
 {
+  debugging::debug_init(std::cout,4);
+  
   // build vector of columns from file
   const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
   std::vector<Column> columns;
@@ -61,7 +63,7 @@ main()
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    FeatureStream< CyclicIterator<FeatureVector>, Identity > fs (make_finite_stream("Test", features));
+    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity > fs (make_finite_stream("Test", features, SkipNone()));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
@@ -84,7 +86,7 @@ main()
   }
 
 
-  if (true)
+  if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
     FeatureStream< LagIterator, Identity > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
@@ -98,51 +100,48 @@ main()
     }
   }
 
-  /*
-  if (true)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
-  {
-    std::cout << "\n\n\n\nTEST: making regulated polynomial stream\n";
-    RegulatedStream< PolynomialStream, NoModel > strm (make_polynomial_stream("Test", features, 4));   // degree 4
-    strm.print_to(std::cout);
-    std::cout << "  Polynomial stream  has_feature=" << strm.has_feature() << " with " << strm.number_remaining() << " left.\n";
-    while(strm.has_feature())
-    { FeatureVector fv = strm.pop();
-      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << strm.number_remaining() << " remain" << std::endl;
-    }
-    std::cout << " stream has " << strm.number_remaining() << " features remaining\n";
 
-    std::cout << "\n\n\n\nTEST: making dynamic polynomial stream\n";
-    RegulatedStream< PolynomialStream<FeatureVector>, Model > strm (make_polynomial_stream(model, "Test", features, 4));   // degree 4
-    strm.print_to(std::cout);
-
-  }
-  */
-  
-  /*
-  if (false)
+  if (true)
   {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
-    std::cout << "\n\n\n\nTEST: making regulated neighborhood stream\n";
+    std::cout << "\n\n\n\nTEST: making neighborhood stream\n";
     double *p = columns[5]->begin();
     for (int i = 0; i < columns[5]->size(); ++i)
-      *p++ = i % 10;
-    std::cout << "    : getting integer column.\n";
+      *p++ = i % 3; // 0 1 2 0 1 2 ...
+    std::cout << "    : building integer column.\n";
     IntegerColumn ic(columns[5]);
     std::cout << "      Input column is " << columns[5] << std::endl;
     std::cout << "      Integer column is " << ic << std::endl;
-    RegulatedStream< NeighborhoodStream<FeatureVector> > ns (make_neighborhood_stream("Test", features, "NBD", ic));
+    std::cout << "      Make an indexed feature externally " << make_indexed_feature(features[1],ic) << std::endl;
+    FeatureStream< DelayedIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature> ns (make_neighborhood_stream("Test", features, ic));
     std::cout << "TEST: building features for neighborhood\n";
     if (ns.has_feature())
     { FeatureVector fv (ns.pop());
       std::cout << "   feature is " << fv[0] << std::endl;
     }
     else std::cout << "    NS says it does not have a feature; its number remaining is " << ns.number_remaining() << std::endl;
-    
     for (unsigned i=0; i<2; ++i)
-    { ns.build_next_feature();
-      ns.print_to(std::cout);
+    { if (ns.has_feature())
+      { FeatureVector ff (ns.pop());
+	ff[0]->print_to(std::cout);
+      }
+      else std::cout << "TEST: neighborhood stream is empty.\n";
     }
   }
-  */
+
+
+  
+  if (true)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
+  {
+    std::cout << "\n\n\n\nTEST: making polynomial stream\n";
+    FeatureStream< DelayedIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature> ps (make_polynomial_stream("Test", features, 3));
+    ps.print_to(std::cout);
+    std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
+    while(ps.has_feature())
+    { FeatureVector fv = ps.pop();
+      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
+    }
+    std::cout << " stream has " << ps.number_remaining() << " features remaining\n";
+  }
 
   
   /*  

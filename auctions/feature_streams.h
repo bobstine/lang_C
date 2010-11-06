@@ -186,10 +186,6 @@ public:
 
 
 
-//  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
-//
-//  Context information (such as a model and predicates) must be built into the iterator
-//
 
 
 namespace FeatureStreamUtils {   // handy utilities
@@ -210,12 +206,12 @@ private:
   std::string      mName;
   FeatureVector    mHead;         // holds results of most recent build; cleared by pop
   Iterator         mIterator;
-  Transform const& mTransform;
+  Transform        mTransform;
 
 public:
   ~FeatureStream() { }
 
-  FeatureStream (std::string name, Iterator it, Transform trans)
+  FeatureStream (std::string name, Iterator it, Transform trans)             // fill the head at the start??? transform(colletion.begin)
     : mName(name), mHead(), mIterator(it), mTransform(trans) { }
   
   std::string    name()                            const { return mName; }
@@ -223,48 +219,162 @@ public:
   void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
   int            number_remaining()                const { return mIterator.number_remaining(); }
 
-  bool has_feature ()
-  {
-    if (!mHead.empty())                   return true;
-    else if (can_build_more_features())   build_next_feature();   // advance position using current state
-    else debugging::debug("RGST",3) << "regulated stream '" << name() <<"' cannot build more features.\n";
-    return (!mHead.empty());                                      // may not have been able to build one 
-  }
-  
-  bool           can_build_more_features()               { if(!mIterator.empty()) ++mIterator;  return !mIterator.empty(); }
+  bool           has_feature ();
+  bool           can_build_more_features()
+    { if(!mIterator.empty())
+	++mIterator;
+      else std::cout << "FSTR: iterator " << mIterator << " is empty.\n";
+      return !mIterator.empty();
+    }
   void           build_next_feature()                    { mHead = mTransform(*mIterator); }
+  
   FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
 };
 
 
+// -----------------------------------------------------------------------------------------------------------------------------
+//
+//     Transformations     Transformations     Transformations     Transformations     Transformations     Transformations
+//
+// -----------------------------------------------------------------------------------------------------------------------------
+
 class Identity
 {
 public:
-  FeatureVector operator()(Feature const& f) const { FeatureVector fv; fv.push_back(f); return fv; }
   FeatureVector operator()(FeatureVector fv) const { return fv; }
+  FeatureVector operator()(Feature const& f) const { FeatureVector fv; fv.push_back(f); return fv; }
 };
 
+
+class BuildNeighborhoodFeature
+{
+  IntegerColumn  mIndexColumn;   // maintained externally, not reference
+public:
+  BuildNeighborhoodFeature(IntegerColumn const& c) : mIndexColumn(c) {  }
+
+  FeatureVector operator()(Feature const& f) const
+    { FeatureVector fv;
+      fv.push_back(make_indexed_feature(f,mIndexColumn));
+      fv[0]->add_attribute("neighborhood", mIndexColumn->name());
+      return fv;
+    }
+};
+
+
+class BuildPolynomialFeature
+{
+  int mDegree;
+public:
+  BuildPolynomialFeature(int degree) : mDegree(degree) { }
+  
+  FeatureVector operator()(Feature const& f) const
+    { 
+      debugging::debug("PLYS",4) << "Making polynomial subspace from feature " <<  f->name() << std::endl;
+      FeatureVector powers;
+      if (!f->is_used_in_model())    // include X if not in model
+	powers.push_back(f);
+      powers.push_back(Feature(Function_Utils::Square(), f));
+      if(mDegree>2) 
+	powers.push_back(Feature(Function_Utils::Cube(), f));
+      for (int j=4; j<=mDegree; ++j)
+	powers.push_back(Feature(Function_Utils::Power(j), f));
+      return powers;
+    }
+};
+
+
+// -----------------------------------------------------------------------------------------------------------------------------
+//
+//     Predicates     Predicates     Predicates     Predicates     Predicates     Predicates     Predicates     Predicates
+//
+// -----------------------------------------------------------------------------------------------------------------------------
+
+
+class SkipNone
+{
+public:
+  bool operator()(Feature const&)   const     { return false; }
+};
+
+
+class SkipIfInModel
+{
+public:
+  bool operator()(Feature const& f) const     { return f->is_used_in_model(); }
+};
+
+
+class SkipIfDerived
+{
+public:
+  bool operator()(Feature const& f) const;
+};
+  
+
+// -----------------------------------------------------------------------------------------------------------------------------
 //
 //     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators     Iterators
+//
+// -----------------------------------------------------------------------------------------------------------------------------
+  
+  
+template<class Collection, class SkipPredicate>                                   // DelayedIterator    waits for source to grow
+class DelayedIterator
+{
+  typedef typename Collection::const_iterator Iterator;
 
-template<class Collection>
+  Collection const& mSource;         // someone else maintains
+  Iterator          mIter;
+  SkipPredicate     mSkipFeature;
+  
+public:
+  DelayedIterator(Collection const& source, SkipPredicate pred)
+    : mSource(source), mIter(source.begin()), mSkipFeature(pred) { }
+
+  int   number_remaining()              const { debugging::debug("FSTR",2) << "Meaningless call to number_remaining() in delayed iterator.\n"; return 0; }
+  bool  empty()                         const { return mIter == mSource.end(); }
+
+  DelayedIterator& operator++()               { ++mIter; while( (mIter != mSource.end()) && mSkipFeature(*mIter)) ++mIter; return *this; }
+
+  Feature          operator*()          const { return *mIter; }
+
+  void  print_to(std::ostream& os)      const { os << "DelayedIterator @ "; if (empty()) os << " empty "; else os << (*mIter)->name() << " "; }
+};
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, DelayedIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
+
+template<class Collection, class SkipPredicate>                                   // CyclicIterator    repeats over and over though collection
 class CyclicIterator
 {
   typedef typename Collection::const_iterator Iterator;
 
-  Collection const& mSource;         // someone else has to maintain this
+  Collection const& mSource;         // someone else maintains
   Iterator          mIter;
   int               mSize;
-
-public:
-  CyclicIterator(Collection const& source) : mSource(source), mIter(source.begin()), mSize(source.size()) { }
+  SkipPredicate     mSkipFeature;
   
-  int   number_remaining()              const { return mSize; }             // an upper bound; may be fewer since only those marked in here
-  bool  empty()                         const { return mSource.empty(); }
+public:
+  CyclicIterator(Collection const& source, SkipPredicate pred)
+    : mSource(source), mIter(source.begin()), mSize(source.size()), mSkipFeature(pred) { }
+  
+  int   number_remaining()              const { return mSize; }             // number not used in model
+  bool  empty()                         const { return mSource.empty() || (mSize == 0); }
 
   CyclicIterator& operator++();
   Feature         operator*()           const { return *mIter; }
+
+  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (empty()) os << " empty "; else os << *mIter << " "; }
 };
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, CyclicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
 
 class LagIterator
 {
@@ -272,30 +382,38 @@ class LagIterator
   const int       mBlockSize;     // blocking factor used if longitudinal
   int             mRemaining;
   int             mLag;
-  int             mCyclesLeft;    // cycle through the lags
+  int             mMaxLag;    // cycle through the lags
   
 public:  
-  LagIterator(Feature const& f, int maxLag, int blockSize, int cycles)
-    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(0) {  }    // 1+ for initial increment
+  LagIterator(Feature const& f, int maxLag, int cycles, int blockSize)
+    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(0), mMaxLag(maxLag) {  }    // 1+ for initial increment
   
   int   number_remaining()        const   { return  mRemaining; }
   bool  empty()                   const   { return  mRemaining == 0; }
 
   LagIterator&  operator++();
   Feature       operator*()       const   { return  Feature(mFeature,mLag,mBlockSize); }
+
+  void  print_to(std::ostream& os)       const { os << "LagIterator @ "; if (empty()) os << " empty "; else os << " lag " << mLag << "/" << mMaxLag << " with " << mRemaining << " left. "; }
 };
 
+inline
+std::ostream&
+operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return os; }
 
-  
+
+// -----------------------------------------------------------------------------------------------------------------------------
 //
 //    make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream     make_xxx_stream
 //
+// -----------------------------------------------------------------------------------------------------------------------------
 
-template<class Collection>
-FeatureStream< CyclicIterator<Collection>, Identity >
-make_finite_stream (std::string const& name, Collection const& source)
+template<class Collection, class Pred>
+FeatureStream< CyclicIterator<Collection, Pred>, Identity >
+make_finite_stream (std::string const& name, Collection const& source, Pred pred)
 {
-  return FeatureStream< CyclicIterator<Collection>, Identity >("CyclicStream::"+name, CyclicIterator<Collection>(source), Identity());
+  return FeatureStream< CyclicIterator<Collection, Pred>, Identity >
+    ("CyclicStream::"+name, CyclicIterator<Collection,Pred>(source, pred), Identity());
 }
 
 
@@ -303,13 +421,39 @@ inline
 FeatureStream< LagIterator, Identity >
 make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
 {
-  return FeatureStream< LagIterator, Identity >("LagStream::"+name, LagIterator(f, maxLag, blockSize, numberCycles), Identity());
+  return FeatureStream< LagIterator, Identity >("LagStream::"+name, LagIterator(f, maxLag, numberCycles, blockSize), Identity());
+}
+
+
+template <class Collection>
+FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
+make_polynomial_stream (std::string const& name, Collection const& src, int degree)
+{
+  std::cout << "TEST: make_polynomial_stream of degree " << degree << std::endl;
+  return FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
+    ("Polynomial::"+name, DelayedIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildPolynomialFeature(degree));
+}
+
+
+
+template <class Collection>
+FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+make_neighborhood_stream (std::string const& name, Collection const& src, IntegerColumn const& col)
+{
+  std::cout << "TEST: make_neighborhood_stream with indices " << col << std::endl;
+  return FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+    ("Neighborhood::"+name, DelayedIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildNeighborhoodFeature(col));
 }
 
 
 
 
+
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
+//
+//  Context information (such as a model and predicates) must be built into the iterator
+//
+
 
 class BaseStream
 {
@@ -352,43 +496,6 @@ public:
 
 
   
-
-
-
-
-//  NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream     NeighborhoodStream
-//
-//  Build 'neighboring' features to those in a given source collection
-//
-
-template<class Source>
-class NeighborhoodStream: public BaseStream
-{
-  typename Source::const_iterator mpFeature;
-  const std::string               mSignature;    // look for this in name of variable before using
-  IntegerColumn                   mIndexColumn;
-  int                             mRemain;
-  
-public:
-
-  NeighborhoodStream(std::string const& name, Source const& src, std::string sig, IntegerColumn const& indices)
-    :  BaseStream("NhoodStream:" + name), mpFeature(src.begin()), mSignature(sig), mIndexColumn(indices), mRemain(src.size()) {  }
-  
-  int   number_remaining()                                              const   { return mRemain; }
-  bool  can_build_more_features(FeatureList const&, FeatureList const&) const   { return mRemain > 0; }
-
-  void  build_next_feature();
-};
-
-
-template <class Source, class Model>
-RegulatedStream< NeighborhoodStream<Source>, Model>
-make_neighborhood_stream (Model const& m, std::string const& name, Source const& src, std::string signature, IntegerColumn const& col)
-{
-  return RegulatedStream< NeighborhoodStream<Source>, Model >(NeighborhoodStream<Source>(name, src, signature, col), m);
-}
-
-
 
 //  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
 
