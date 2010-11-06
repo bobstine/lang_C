@@ -39,64 +39,23 @@ template<class Collection, class Pred>
   return *this;
 }
 
+//  ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
 
-
-//  BaseStream
-
-template< class Collection >
+template< class Model >
 bool
-BaseStream::found_name_among_features (std::string const& name, Collection const& features, std::string const& description) const
+ModelIterator<Model>::empty()  const
 {
-  if (name.size() == 0)
-    return false;
-  for (typename Collection::const_iterator it = features.begin(); it != features.end(); ++it)
-  { if (name == (*it)->name())
-    { debugging::debug("FETR", 4) << "Found feature " << name << " in " << description << std::endl;
-      return true; 
-    }
+  if(mLastQ == mModel.q() || mModel.q()==0)
+    return true;
+  // need to check name of last accepted; dont have one if its us
+  std::string lastName (mModel.accepted_features().back()->name());
+  if (std::string::npos != lastName.find("Y_hat"))                          // npos means not found; != npos means found
+  { debugging::debug("FITS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
+    return true;
   }
   return false;
 }
 
-
-
-//  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream  FitStream
-
-template< class Model >
-bool
-FitStream<Model>::can_build_more_features(FeatureList const& accepted, FeatureList const&)  const
-{
-  if(mLastQ == accepted.size())
-    return false;
-  // need to check name of last accepted; dont have one if its us
-  std::string lastName (last_name_in_list(accepted));
-  if (std::string::npos != lastName.find(mSignature))                          // npos means not found; != npos means found
-  { debugging::debug("FITS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
-    return false;
-  }
-  return true;
-}
-
-
-template<class Model>
-void
-FitStream<Model>::build_next_feature()
-{
-  // check for logic error
-  assert(mLastQ != mModel.q());
-  std::vector<int> powers;
-  mFit = Column(feature_name().c_str(), mSkip + mModel.n_total_cases());     // grab current fit
-  double *fit (mFit->begin());
-  for(int i=0; i<mSkip; ++i)
-    *fit++ = 0;
-  mModel.fill_with_fit(mFit->begin() + mSkip);
-  mFit->update();
-  for (int j = 2; j <= mPower; ++j)
-    powers.push_back(j);
-  debugging::debug("FSTR",4) << "Fit stream constructs powers 2-" << mPower <<" of " << mFit->name() << std::endl;
-  set_head(powers_of_column_feature(mFit,powers));
-  mLastQ = mModel.q();                                                        //  empty until other predictor is added to model
-}
 
 
 ///////////////    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteraction Streams    Iteractgion Streams

@@ -19,11 +19,19 @@
 class Model
 {
 private:
+  int mQ;
+  int mCases;
   FeatureList mAccepted;
   FeatureList mRejected;
   
 public:
-  Model(FeatureList const& accept, FeatureList const& reject) : mAccepted(accept), mRejected(reject) { }
+  Model(FeatureList const& accept, FeatureList const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
+
+  int q()                       const  { return mQ; }
+  void increment_q()                   { ++ mQ; }
+  int n_total_cases()           const  { return mCases; }
+  
+  void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
 
   FeatureList const& accepted_features() const { return mAccepted; }
   FeatureList const& rejected_features() const { return mRejected; }
@@ -56,10 +64,6 @@ main()
   }
   std::cout << "  -------------------------------------------------------\n";
 
-  
-  Model model (featureList1, featureList2);
-
-  
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
@@ -101,7 +105,7 @@ main()
   }
 
 
-  if (true)
+  if (false)
   {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
     std::cout << "\n\n\n\nTEST: making neighborhood stream\n";
     double *p = columns[5]->begin();
@@ -128,9 +132,8 @@ main()
     }
   }
 
-
   
-  if (true)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
+  if (false)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
   {
     std::cout << "\n\n\n\nTEST: making polynomial stream\n";
     FeatureStream< DelayedIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature> ps (make_polynomial_stream("Test", features, 3));
@@ -142,8 +145,43 @@ main()
     }
     std::cout << " stream has " << ps.number_remaining() << " features remaining\n";
   }
+  
+
+  if (false)     // test product stream
+  {
+    std::cout << "\n\n\nTEST: making product stream\n";
+    FeatureStream< FeatureQueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features, features[0]));
+    std::cout << ps << std::endl;
+    std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
+    while(ps.has_feature())
+    { FeatureVector fv = ps.pop();
+      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
+    }
+    std::cout << " stream has " << ps.number_remaining() << " features remaining\n";
+  }
 
   
+  if (true)    // test calibration stream
+  {
+    std::cout << "\n\n\nTEST: making calibration stream\n";
+    int degree = 3;
+    int skip = 0;
+    Model model (featureList1, featureList2);
+
+    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, skip));
+    std::cout << cs << std::endl;
+    std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
+    int max = 3;
+    model.increment_q();
+    std::cout << "  After increment, stream  has_feature=" << cs.has_feature() << std::endl;
+    while(cs.has_feature() && --max)
+    { FeatureVector fv = cs.pop();
+      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
+      std::cout << "  Calibration stream " << cs << std::endl;
+      model.increment_q();
+    }
+  }
+    
   /*  
   if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
