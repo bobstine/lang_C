@@ -370,6 +370,7 @@ std::ostream&
 operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return os; }
 
 
+
 template< class Model >
 class ModelIterator
 {
@@ -391,7 +392,45 @@ template <class Model>
 std::ostream&
 operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os); return os; }
 
- 
+
+
+template< class Collection, class SkipPred >
+class BundleIterator
+{
+  typedef typename Collection::const_iterator Iterator;
+  
+  Collection const&  mSource;      // maintained by someone else
+  int                mBundleSize;
+  SkipPred           mSkipPred;
+  FeatureVector      mBundle;
+  Iterator           mIter;        // position of end of last bundle
+public:
+  BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mBundle(), mIter(mSource.end()) { }
+
+  bool     empty()      const     { std::cout << "  Checking empty; size=" << mBundle.size() << " and result is " << (mIter==mSource.end()) << std::endl; return mIter == mSource.end(); }
+
+  BundleIterator& operator++()
+    { while((int)mBundle.size() < mBundleSize && mIter != mSource.end())
+      { std::cout << " incrementing\n";
+	if (!mSkipPred(*mIter))
+	{ std::cout << " bundle grows \n";
+	  mBundle.push_back(*mIter);
+	}
+	++mIter;
+      }
+      return *this;
+    }
+  FeatureVector   operator*()     { assert((int)mBundle.size() == mBundleSize);  FeatureVector z (mBundle); mBundle.clear(); return z; }
+      
+  void print_to(std::ostream& os) const { os << "BundleIterator, sized " << mBundle.size() << "/" << mBundleSize; }
+};
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
+    
 // -----------------------------------------------------------------------------------------------------------------------------
 //
 //    make__stream     make__stream     make__stream     make__stream     make__stream     make__stream
@@ -455,9 +494,16 @@ make_calibration_stream (std::string const& name, Model const& model, int degree
 }
 
 
+template <class Collection, class Trans>
+FeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
+make_subspace_stream (std::string const& name, Collection const& src, Trans const& trans, int bundleSize)
+{
+  std::cout << "FPRS: make_subspace_stream with bundle size " << bundleSize << std::endl;
+  return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans >
+    ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
+}
+
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
-//
-//  Context information (such as a model and predicates) must be built into the iterator
 //
 
 
@@ -582,64 +628,6 @@ make_cross_product_stream (Model m, std::string const& name)
 {
   return RegulatedStream< CrossProductStream, Model >(CrossProductStream(name), m);
 }
-
-
-//  Stream ID
-
-enum ModelStreamID { acceptedStreamID, rejectedStreamID };
-
-//  Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    Subspace    
-//
-//        This stream transforms a "bundle" of features identified into some form or reduced
-//        subspace, such as PC, SVD, or RKHS. The stream accumulates a bundle of features of
-//        the indicated size that satisfies the input predicate, then applies a transformation.
-//               These classes should act like these:
-//                    std::unary_function<std::vector<Feature>,std::vector<Feature>> Transformation, as given by adapter functions
-//                    std::unary_function<Feature const&, bool>                      Predicate;
-
-
-template<class Pred, class Trans>
-class SubspaceStream : BaseStream
-{
-public:
-  
-private:
-  ModelStreamID   mID;
-  FeatureIterator mIterator;
-  FeatureVector   mBundle;
-  int             mBundleSize;
-  Pred            mPredicate;       // is the current feature okay for use (hold this as object, not reference)
-  Trans           mTransformation;
-  
-public:
-  SubspaceStream(std::string name, ModelStreamID id, FeatureList const& src, int bundleSize, Pred pred, Trans trans)  // not const ref to function classes
-    : BaseStream("Subspace:"+name), mID(id), mIterator(src.end()), mBundle(), mBundleSize(bundleSize), mPredicate(pred), mTransformation(trans) { }
-  
-  int    number_remaining() const { return -1; }
-
-  bool   can_build_more_features(FeatureList const& accepted, FeatureList const& rejected);
-  
-  void   build_next_feature();
-
-};
-
-
-template <class Pred, class Trans, class Model>
-RegulatedStream< SubspaceStream<Pred,Trans>, Model >
-make_subspace_stream (Model const& m, std::string const& name, ModelStreamID id,  FeatureList const& src, int bundleSize, Pred pred, Trans trans)
-{
-  return RegulatedStream< SubspaceStream<Pred,Trans>, Model >(SubspaceStream<Pred,Trans>(name, id, src, bundleSize, pred, trans), m);
-}
-
-
-
-//  Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate   Predicate
-
-class FeatureAcceptancePredicate : public std::unary_function<Feature const&,bool>
-{
-public:
-  bool operator()(Feature const& f) const;
-};
 
 
 

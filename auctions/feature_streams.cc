@@ -10,13 +10,6 @@
 #include "feature_streams.h"
 
 
-bool 
-FeatureAcceptancePredicate::operator()(Feature const& f) const
-{
-  return !(f->is_constant() || f->is_dummy() || (f->name() == "Basis"));
-}
-
-
 //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
 
 

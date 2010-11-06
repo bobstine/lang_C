@@ -161,7 +161,7 @@ main()
   }
 
   
-  if (true)    // test calibration stream
+  if (false)    // test calibration stream
   {
     std::cout << "\n\n\nTEST: making calibration stream\n";
     int degree = 3;
@@ -181,8 +181,26 @@ main()
       model.increment_q();
     }
   }
-    
-  /*  
+
+  if(true)    // test subspace
+  {
+    std::cout << "\n\n\nTEST: making subspace stream\n";
+    FeatureList bundle;
+    int bundleSize = 5;
+    FeatureStream< BundleIterator<FeatureList, SkipIfInBasis>, Identity> bs (make_subspace_stream("test", bundle, Identity(), bundleSize));
+    for (int i = 0; i<14; ++i)
+    { bundle.push_back(features[i%3]);
+      if (bs.has_feature())
+      { FeatureVector fv (bs.pop());
+	std::cout << "   Popping subspace stream with top element " << fv[0]->name() << " with total size " << fv.size() << std::endl;
+      }
+      else std::cout << "  Bundle stream not ready; external size is " << bundle.size() << std::endl;
+    }
+  }
+
+    /*
+
+      
   if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
