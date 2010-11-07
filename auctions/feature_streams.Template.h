@@ -15,7 +15,7 @@ template<class Iterator, class Trans>
   else if (can_build_more_features())
     build_next_feature();                                   // advance position using current state
   else
-    debugging::debug("RGST",3) << "FeatureStream '" << name() <<"' cannot build more features.\n";
+    debugging::debug("RGST",3) << "has_feature finds that stream '" << name() <<"' cannot build more features.\n";
   return (!mHead.empty());                                      // may not have been able to build one 
 }
   

@@ -89,7 +89,23 @@ main()
     }
   }
 
+  
+  if (true)         // test dynamic interator
+  {
+    std::cout << "\n\n\nTEST: delayed iterator\n";
+    FeatureList fl;
+    
+    FeatureStream< DynamicIterator<FeatureList, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fl, SkipNone(), Identity()));
+    int more = 3;
+    for (int i=0; i<more; ++i)
+      fl.push_back(features[i]);
+    while(ds.has_feature() && more--)
+    { FeatureVector fv (ds.pop());
+      std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
+    }
+  }
 
+  
   if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
@@ -116,7 +132,7 @@ main()
     std::cout << "      Input column is " << columns[5] << std::endl;
     std::cout << "      Integer column is " << ic << std::endl;
     std::cout << "      Make an indexed feature externally " << make_indexed_feature(features[1],ic) << std::endl;
-    FeatureStream< DelayedIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature> ns (make_neighborhood_stream("Test", features, ic));
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature> ns (make_neighborhood_stream("Test", features, ic));
     std::cout << "TEST: building features for neighborhood\n";
     if (ns.has_feature())
     { FeatureVector fv (ns.pop());
@@ -136,7 +152,7 @@ main()
   if (false)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
   {
     std::cout << "\n\n\n\nTEST: making polynomial stream\n";
-    FeatureStream< DelayedIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature> ps (make_polynomial_stream("Test", features, 3));
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature> ps (make_polynomial_stream("Test", features, 3));
     ps.print_to(std::cout);
     std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     while(ps.has_feature())
@@ -182,13 +198,13 @@ main()
     }
   }
 
-  if(true)    // test subspace
+  if(false)    // test subspace
   {
     std::cout << "\n\n\nTEST: making subspace stream\n";
-    FeatureList bundle;
+    FeatureVector bundle;
     int bundleSize = 5;
-    FeatureStream< BundleIterator<FeatureList, SkipIfInBasis>, Identity> bs (make_subspace_stream("test", bundle, Identity(), bundleSize));
-    for (int i = 0; i<14; ++i)
+    FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, Identity> bs (make_subspace_stream("test", bundle, Identity(), bundleSize));
+    for (int i = 0; i<20; ++i)
     { bundle.push_back(features[i%3]);
       if (bs.has_feature())
       { FeatureVector fv (bs.pop());

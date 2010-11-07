@@ -208,16 +208,9 @@ public:
   std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
   void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << " ";  }
   int            number_remaining()                const { return mIterator.number_remaining(); }
-
   bool           has_feature ();
-  bool           can_build_more_features()
-    { if(!mIterator.empty())
-	++mIterator;
-      else std::cout << "FSTR: can_build_more_feaures of " << mName << " finds iterator '" << mIterator << "' is empty.\n";
-      return !mIterator.empty();
-    }
+  bool           can_build_more_features()               { if(!mIterator.empty()) ++mIterator; return !mIterator.empty(); }
   void           build_next_feature()                    { mHead = mTransform(*mIterator); }
-  
   FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
 };
 
@@ -285,9 +278,10 @@ template<class Collection, class Pred>
 std::ostream&
 operator<< (std::ostream& os, FeatureQueueIterator<Collection,Pred> const& queue) { queue.print_to(os); return os; }
 
+
   
-template<class Collection, class SkipPredicate>                                   // DelayedIterator    waits for source to grow
-class DelayedIterator
+template<class Collection, class SkipPredicate>                                  //     waits for source to grow
+class DynamicIterator
 {
   typedef typename Collection::const_iterator Iterator;
 
@@ -296,22 +290,22 @@ class DelayedIterator
   SkipPredicate     mSkipFeature;
   
 public:
-  DelayedIterator(Collection const& source, SkipPredicate pred)
+  DynamicIterator(Collection const& source, SkipPredicate pred)
     : mSource(source), mIter(source.begin()), mSkipFeature(pred) { }
 
-  int   number_remaining()              const { debugging::debug("FSTR",2) << "Meaningless call to number_remaining() in delayed iterator.\n"; return 0; }
-  bool  empty()                         const { return mIter == mSource.end(); }
+  int   number_remaining()              const { debugging::debug("FSTR",2) << "Meaningless call to number_remaining() in dynamic iterator.\n"; return 0; }
+  bool  empty()                         const { std::cout << "   dynamic empty = " << (mIter==mSource.end()) << std::endl; return mIter == mSource.end(); }
 
-  DelayedIterator& operator++()               { ++mIter; while( (mIter != mSource.end()) && mSkipFeature(*mIter)) ++mIter; return *this; }
+  DynamicIterator& operator++()               { ++mIter; while( (mIter != mSource.end()) && mSkipFeature(*mIter)) ++mIter; return *this; }
 
   Feature          operator*()          const { return *mIter; }
 
-  void  print_to(std::ostream& os)      const { os << "DelayedIterator @ "; if (empty()) os << " empty "; else os << (*mIter)->name() << " "; }
+  void  print_to(std::ostream& os)      const { os << "DynamicIterator @ "; if (empty()) os << " empty "; else os << (*mIter)->name() << " "; }
 };
 
 template <class Collection, class Pred>
 std::ostream&
-operator<< (std::ostream& os, DelayedIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+operator<< (std::ostream& os, DynamicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
 
@@ -394,29 +388,28 @@ operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os);
 
 
 
-template< class Collection, class SkipPred >
+template< class Collection, class SkipPred >   // must be random access collection
 class BundleIterator
 {
-  typedef typename Collection::const_iterator Iterator;
-  
   Collection const&  mSource;      // maintained by someone else
   int                mBundleSize;
   SkipPred           mSkipPred;
   FeatureVector      mBundle;
-  Iterator           mIter;        // position of end of last bundle
+  unsigned int       mIndex;
 public:
-  BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mBundle(), mIter(mSource.end()) { }
+  BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mBundle(), mIndex(0) { }
 
-  bool     empty()      const     { std::cout << "  Checking empty; size=" << mBundle.size() << " and result is " << (mIter==mSource.end()) << std::endl; return mIter == mSource.end(); }
+  bool     empty()              const    {  return mIndex == mSource.size(); } 
 
   BundleIterator& operator++()
-    { while((int)mBundle.size() < mBundleSize && mIter != mSource.end())
-      { std::cout << " incrementing\n";
-	if (!mSkipPred(*mIter))
+    { std::cout << "  Operator++:  bundlesize = " << mBundle.size() << "  mIndex = " << mIndex << std::endl;
+      while((int)mBundle.size() < mBundleSize && mIndex < mSource.size())
+      { std::cout << " bundle checking feature " << mSource[mIndex]->name() << std::endl;
+	if (!mSkipPred(mSource[mIndex]))
 	{ std::cout << " bundle grows \n";
-	  mBundle.push_back(*mIter);
+	  mBundle.push_back(mSource[mIndex]);
 	}
-	++mIter;
+	++mIndex; 
       }
       return *this;
     }
@@ -446,6 +439,15 @@ make_finite_stream (std::string const& name, Collection const& source, Pred pred
 }
 
 
+template<class Collection, class Pred, class Trans>
+FeatureStream< DynamicIterator<Collection, Pred>, Trans>
+make_dynamic_stream (std::string const& name, Collection const& source, Pred pred, Trans trans)
+{
+  return FeatureStream< DynamicIterator<Collection, Pred>, Trans >
+    ("DynamicStream::"+name, DynamicIterator<Collection,Pred>(source, pred), trans);
+}
+
+
 inline
 FeatureStream< LagIterator, Identity >
 make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles)
@@ -455,22 +457,22 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int bloc
 
 
 template <class Collection>
-FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
+FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
 make_polynomial_stream (std::string const& name, Collection const& src, int degree)
 {
   std::cout << "TEST: make_polynomial_stream of degree " << degree << std::endl;
-  return FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
-    ("Polynomial::"+name, DelayedIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildPolynomialFeature(degree));
+  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeature>
+    ("Polynomial::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildPolynomialFeature(degree));
 }
 
 
 template <class Collection>
-FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
 make_neighborhood_stream (std::string const& name, Collection const& src, IntegerColumn const& col)
 {
   std::cout << "TEST: make_neighborhood_stream with indices " << col << std::endl;
-  return FeatureStream< DelayedIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
-    ("Neighborhood::"+name, DelayedIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildNeighborhoodFeature(col));
+  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+    ("Neighborhood::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildNeighborhoodFeature(col));
 }
 
 
