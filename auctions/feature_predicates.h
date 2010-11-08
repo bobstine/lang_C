@@ -46,6 +46,13 @@ public:
   bool operator()(Feature const& f) const { return FeaturePredicates::indicators_from_same_parent(mFeature, f); }
 };
 
+class SkipIfRelatedPair
+{  
+public:
+  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::indicators_from_same_parent(f, g); }
+};
+
+
 
 class SkipIfInBasis
 {

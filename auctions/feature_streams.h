@@ -201,8 +201,8 @@ private:
 public:
   ~FeatureStream() { }
 
-  FeatureStream (std::string name, Iterator it, Transform trans)             // fill the head at the start??? transform(colletion.begin)
-    : mName(name), mHead(), mIterator(it), mTransform(trans) { }
+  FeatureStream (std::string name, Iterator it, Transform trans)            
+    : mName(name), mHead(), mIterator(it), mTransform(trans) { if(!mIterator.empty()) build_next_feature(); }   // fill initial if can
   
   std::string    name()                            const { return mName; }
   std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
@@ -259,8 +259,7 @@ public:
   ~FeatureQueueIterator() { if(--mpQueue->mRefCount == 0) delete mpQueue; }
   
   FeatureQueueIterator(Collection const& c, SkipPredicate p) : mpQueue(new RefCountedQueue(c)), mSkipPred(p) { }
-
-  FeatureQueueIterator(FeatureQueueIterator const& queue) : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
+  FeatureQueueIterator(FeatureQueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
 
   int    number_remaining()             const { return mpQueue->mQueue.size(); }
   bool   empty()                        const { return mpQueue->mQueue.empty(); }
@@ -348,7 +347,7 @@ class LagIterator
   
 public:  
   LagIterator(Feature const& f, int maxLag, int cycles, int blockSize)
-    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(0), mMaxLag(maxLag) {  }    // 1+ for initial increment
+    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }    // 1+ for initial increment
   
   int   number_remaining()         const   { return  mRemaining; }
   bool  empty()                    const   { return  mRemaining == 0; }
@@ -423,7 +422,41 @@ std::ostream&
 operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
-    
+
+//    InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      
+
+template<class Collection, class SkipPred>                         // static collection
+class InteractionIterator
+{
+private:
+  typedef typename Collection::const_iterator Iter;
+
+  Collection const& mSource;
+  bool              mIncludeDiagonal;
+  SkipPred          mSkipPred;
+  Iter              mpDiagFeature, mpColFeature;
+  int               mRemain;
+  
+public:
+  
+  InteractionIterator(Collection const& src, bool useSquares, SkipPred pred)
+    : mSource(src), mIncludeDiagonal(useSquares), mSkipPred(pred),
+      mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
+  
+  int   number_remaining()           const { return mRemain; }
+
+  bool  empty ()                     const { return mRemain == 0; }
+
+  InteractionIterator& operator++();        
+  Feature              operator*()   const { assert(mpColFeature != mSource.end()); FeatureVector z; z.push_back(Feature(*mpDiagFeature, *mpColFeature)); return z; }
+  
+private:
+  int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
+  void  inc_pointers();
+};
+
+
+
 // -----------------------------------------------------------------------------------------------------------------------------
 //
 //    make__stream     make__stream     make__stream     make__stream     make__stream     make__stream
@@ -505,7 +538,18 @@ make_subspace_stream (std::string const& name, Collection const& src, Trans cons
     ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
 }
 
-//  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
+  
+template <class Collection>
+FeatureStream< BundleIterator<Collection, SkipIfRelatedPair>, Identity >
+make_interaction_stream (std::string const& name, Collection const& src, bool useSquares)
+{
+  std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
+  return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity>
+    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()));
+}
+  
+  //  
+  //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
 //
 
 
@@ -545,48 +589,6 @@ public:
   template< class Collection >
   bool found_name_among_features (std::string const& name, Collection const& features, std::string const& description) const;
 };
-
-
-
-
-//  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  InteractionStream  
-
-template<class Source>
-class InteractionStream : public BaseStream
-{
-private:
-  typedef typename Source::const_iterator Iter;
-
-  Source const& mSource;
-  bool          mIncludeDiagonal;
-  Iter          mpDiagFeature, mpColFeature;
-  int           mRemain;
-  
-public:
-  
-  InteractionStream(std::string name, Source const& src, bool useSquares)
-    : BaseStream("InteractionStream:"+name), mIncludeDiagonal(useSquares), mSource(src),
-      mpDiagFeature(src.begin()), mpColFeature(src.end()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
-  
-  int   number_remaining()                                               const { return mRemain; }
-
-  bool  can_build_more_features (FeatureList const&, FeatureList const&) const { return (mRemain > 0) && find_next_position(); }
-
-  void  build_next_feature()                                                   { assert(mpColFeature != mSource.end()); set_head(Feature(*mpDiagFeature, *mpColFeature)); }
-      
-private:
-  int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
-  void  inc_pointers();
-  bool  find_next_position();
-};
-
-
-template <class Source, class Model>
-RegulatedStream< InteractionStream<Source>, Model >
-make_interaction_stream (Model const& m, std::string const& name, Source const& s, bool useSquares)
-{
-  return RegulatedStream< InteractionStream<Source>, Model >(InteractionStream<Source>(name, s, useSquares), m);
-}
 
 
 //  CrossProductStream    CrossProductStream    CrossProductStream    CrossProductStream

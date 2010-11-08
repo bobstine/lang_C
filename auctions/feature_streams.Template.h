@@ -68,9 +68,9 @@ ModelIterator<Model>::empty()  const
 //                               mPos2 says which column; mPos1 tracks row, moving down from first row
 
 
-template<class Source>
-void
-InteractionStream<Source>::inc_pointers()
+template<class Source, class Pred>
+  void
+  InteractionIterator<Source,Pred>::inc_pointers()
 {
   ++mpColFeature; --mRemain;
   if (mpColFeature == mSource.end())   // move diagonal "row" pointer
@@ -86,25 +86,20 @@ InteractionStream<Source>::inc_pointers()
 }
 
 
-template<class Source>
-bool
-InteractionStream<Source>::find_next_position()
+template<class Source, class Pred>
+  InteractionIterator<Source,Pred>&
+  InteractionIterator<Source,Pred>::operator++()
 {
   inc_pointers();
-  if (mRemain == 0) return false;
+  if(mRemain == 0) return;
   // skip constants
   while ((*mpDiagFeature)->is_constant())
     inc_pointers();
   // need different parents
-  while(mRemain > 0 && indicators_from_same_parent(*mpDiagFeature, *mpColFeature))
-  { debugging::debug("INTS",4) << name() << " encountered features with common parent: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
+  while(mRemain > 0 && mSkipPred(*mpDiagFeature, *mpColFeature))
+  { debugging::debug("INTS",4) << " skipping pair: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
     inc_pointers();
   }
-  if (mRemain == 0)
-  { debugging::debug("INTS",4) << name() << " has run out of features.\n";
-    return false;
-  }
-  return true;
 }
 
 
