@@ -290,12 +290,13 @@ class DynamicIterator
   
 public:
   DynamicIterator(Collection const& source, SkipPredicate pred)
-    : mSource(source), mIter(source.begin()), mSkipFeature(pred) { }
+    : mSource(source), mIter(source.begin()), mSkipFeature(pred) {
+  }
 
   int   number_remaining()              const { debugging::debug("FSTR",2) << "Meaningless call to number_remaining() in dynamic iterator.\n"; return 0; }
-  bool  empty()                         const { std::cout << "   dynamic empty = " << (mIter==mSource.end()) << std::endl; return mIter == mSource.end(); }
+  bool  empty()                         const { std::cout << "   dynamic empty = " << (mIter==mSource.end()) << " size = " << mSource.size() << std::endl; return mIter == mSource.end(); }
 
-  DynamicIterator& operator++()               { ++mIter; while( (mIter != mSource.end()) && mSkipFeature(*mIter)) ++mIter; return *this; }
+  DynamicIterator& operator++()               { ++mIter; while( (mIter != mSource.end()) && mSkipFeature(*mIter)) { std::cout << "Skipping\n"; ++mIter;} return *this; }
 
   Feature          operator*()          const { return *mIter; }
 

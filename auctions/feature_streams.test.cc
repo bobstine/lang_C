@@ -93,16 +93,40 @@ main()
   if (true)         // test dynamic interator
   {
     std::cout << "\n\n\nTEST: delayed iterator\n";
-    FeatureList fl;
-    
-    FeatureStream< DynamicIterator<FeatureList, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fl, SkipNone(), Identity()));
     int more = 3;
+
+    
+    FeatureList flist;
+    for (int i=0; i<more; ++i)  flist.push_back(features[i]);           std::cout << "  " << flist.size() << "\n";
+    FeatureList::const_iterator it (flist.begin());
+    while(it != flist.end())       { std::cout << "11 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
+    for (int i=0; i<more; ++i)  flist.push_back(features[i]);           std::cout << "  " << flist.size() << "\n";
+    while(it != flist.end())       { std::cout << "22 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
+    for (int i=0; i<more; ++i)  flist.push_back(features[i+more]);      std::cout << "  " << flist.size() << "\n";
+    while(it != flist.end())       { std::cout << "33 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
+    for (int i=0; i<more; ++i)  flist.push_back(features[i+2*more]);    std::cout << "  " << flist.size() << "\n";
+    while(it != flist.end())       { std::cout << "44 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
+      
+    
+    FeatureList fl;
+    FeatureStream< DynamicIterator<FeatureList, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fl, SkipNone(), Identity()));
+    std::cout << "FL.size() " << fl.size() << std::endl;
     for (int i=0; i<more; ++i)
       fl.push_back(features[i]);
-    while(ds.has_feature() && more--)
+    std::cout << "FL.size() " << fl.size() << std::endl;
+    while(ds.has_feature())
     { FeatureVector fv (ds.pop());
       std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
     }
+    std::cout << "FL.size() " << fl.size() << std::endl;
+    for (int i=0; i<more; ++i)
+      fl.push_back(features[i]);
+    std::cout << "FL.size() " << fl.size() << std::endl;
+    while(ds.has_feature())
+    { FeatureVector fv (ds.pop());
+      std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
+    }
+    std::cout << "FL.size() " << fl.size() << std::endl;
   }
 
   
