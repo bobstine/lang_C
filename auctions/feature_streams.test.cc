@@ -53,8 +53,9 @@ main()
 
   FeatureVector features;
   FeatureVector featureVec1, featureVec2;
+  FeatureVector empty;
   FeatureList   featureList;
-  FeatureList   empty;
+
   
   std::cout << "\n\nTEST: building collection of features\n";
   for (int i=0; i<10; ++i)
@@ -69,7 +70,7 @@ main()
   if (false)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity > fs (make_finite_stream("Test", features, SkipNone()));
+    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity, FeatureVector > fs (make_finite_stream("Test", features, SkipNone(), empty));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
@@ -98,7 +99,7 @@ main()
     int more = 3;
     
     FeatureVector fv;
-    FeatureStream< DynamicIterator<FeatureVector, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fv, SkipNone(), Identity()));
+    FeatureStream< DynamicIterator<FeatureVector, SkipNone>, Identity, FeatureVector> ds (make_dynamic_stream("dyno", fv, SkipNone(), Identity(), empty));
     std::cout << "FV.size() " << fv.size() << std::endl;
     for (int i=0; i<more; ++i)
       fv.push_back(features[i]);
@@ -122,7 +123,7 @@ main()
   if (false)
   {   // test lag streams
     std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
-    FeatureStream< LagIterator, Identity > ls (make_lag_stream("Test", features[0], 4, 1, 2)); // max lag 4, 2 cycles
+    FeatureStream< LagIterator, Identity, FeatureVector > ls (make_lag_stream("Test", features[0], 4, 1, 2, empty)); // max lag 4, 2 cycles
 
     for (unsigned i=0; i<10; ++i)
     { if (ls.has_feature())
@@ -145,7 +146,7 @@ main()
     std::cout << "      Input column is " << columns[5] << std::endl;
     std::cout << "      Integer column is " << ic << std::endl;
     std::cout << "      Make an indexed feature externally " << make_indexed_feature(features[1],ic) << std::endl;
-    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature> ns (make_neighborhood_stream("Test", features, ic));
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature, FeatureVector> ns (make_neighborhood_stream("Test", features, ic, empty));
     std::cout << "TEST: building features for neighborhood\n";
     if (ns.has_feature())
     { FeatureVector fv (ns.pop());
@@ -165,7 +166,7 @@ main()
   if (false)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
   {
     std::cout << "\n\n\n\nTEST: making polynomial stream\n";
-    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature> ps (make_polynomial_stream("Test", features, 3));
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature, FeatureVector> ps (make_polynomial_stream("Test", features, 3, empty));
     ps.print_to(std::cout);
     std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     while(ps.has_feature())
@@ -179,7 +180,7 @@ main()
   if (false)     // test product stream
   {
     std::cout << "\n\n\nTEST: making product stream\n";
-    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features, features[0]));
+    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature, FeatureVector> ps (make_feature_product_stream ("test", features, features[0], empty));
     std::cout << ps << std::endl;
     std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     while(ps.has_feature())
@@ -197,7 +198,7 @@ main()
     int skip = 0;
     Model model (featureVec1, featureVec2);
 
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, skip));
+    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>, FeatureVector > cs (make_calibration_stream ("test", model, degree, skip, empty));
     std::cout << cs << std::endl;
     std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
     int max = 3;
@@ -216,7 +217,7 @@ main()
     std::cout << "\n\n\nTEST: making subspace stream\n";
     FeatureVector bundle;
     int bundleSize = 5;
-    FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, Identity> bs (make_subspace_stream("test", bundle, Identity(), bundleSize));
+    FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, Identity, FeatureVector> bs (make_subspace_stream("test", bundle, Identity(), bundleSize,empty));
     for (int i = 0; i<20; ++i)
     { bundle.push_back(features[i%3]);
       if (bs.has_feature())
@@ -230,7 +231,7 @@ main()
       
   if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
-    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
+    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity, FeatureVector> is (make_interaction_stream("test", features, false,empty));  // use squares?
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
     std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;

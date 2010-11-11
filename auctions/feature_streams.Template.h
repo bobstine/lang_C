@@ -1,3 +1,4 @@
+
 #include "adapter.h"
 #include "debug.h"
 
@@ -6,19 +7,20 @@
 
 //  FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream
 
-template<class Iterator, class Trans>
+template<class Iterator, class Trans, class Avoid>
   bool
-  FeatureStream<Iterator,Trans>::has_feature ()
+  FeatureStream<Iterator, Trans, Avoid>::has_feature ()
 {
   if (!mHead.empty())
     return true;
-  else if (mIterator.valid())
+  while (mIterator.valid())
   { mHead = mTransform(*mIterator);
+    if (mHead.size() && FeaturePredicates::found_name_among_features(mHead[0]->name(), mAvoidCollection, "avoid list") )
+      return true;
     ++mIterator;
   }
-  else
-    debugging::debug("RGST",3) << "has_feature finds that stream '" << name() <<"' cannot build more features.\n";
-  return (!mHead.empty());                                      // may not have been able to build one 
+  debugging::debug("FSTR",3) << "has_feature finds that stream '" << name() <<"' cannot build features.\n";
+  return (false);
 }
   
 
