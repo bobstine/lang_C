@@ -93,7 +93,7 @@ template<class Source, class Pred>
   InteractionIterator<Source,Pred>&
   InteractionIterator<Source,Pred>::operator++()
 {
-  if(mRemain == 0) return;
+  if(mRemain == 0) return *this;
   // skip constants
   while ((*mpDiagFeature)->is_constant())
     inc_pointers();
@@ -102,6 +102,7 @@ template<class Source, class Pred>
   { debugging::debug("INTS",4) << " skipping pair: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
     inc_pointers();
   }
+  return *this;
 }
 
 

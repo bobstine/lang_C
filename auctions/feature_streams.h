@@ -67,10 +67,7 @@
 #include "function_utils.h"
 #include "debug.h"
 
-// operator
-#include <functional>
 // for finite streams
-#include <deque>     
 #include <queue>
 #include <iostream>
 #include <sstream>
@@ -146,6 +143,8 @@ public:
 
 
 
+//     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     
+
 class FeatureQueue;
 
 class RefCountedQueue
@@ -164,33 +163,34 @@ public:
 
 
 template< class Collection, class SkipPredicate >
-class FeatureQueueIterator
+class QueueIterator
 {
   RefCountedQueue *mpQueue;
   SkipPredicate    mSkipPred;
 public:
-  ~FeatureQueueIterator() { if(--mpQueue->mRefCount == 0) delete mpQueue; }
+  ~QueueIterator() { if(--mpQueue->mRefCount == 0) delete mpQueue; }
   
-  FeatureQueueIterator(Collection const& c, SkipPredicate p) : mpQueue(new RefCountedQueue(c)), mSkipPred(p) { }
-  FeatureQueueIterator(FeatureQueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
+  QueueIterator(Collection const& c, SkipPredicate p) : mpQueue(new RefCountedQueue(c)), mSkipPred(p) { }
+  QueueIterator(QueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
 
   int    number_remaining()             const { return mpQueue->mQueue.size(); }
   bool   valid()                        const { return !mpQueue->mQueue.empty(); }
   
-  FeatureQueueIterator&   operator++()        { mpQueue->mQueue.pop(); while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop(); return *this; }
+  QueueIterator&   operator++()        { mpQueue->mQueue.pop(); while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop(); return *this; }
 
   Feature                 operator*()   const { return mpQueue->mQueue.top(); }
     
-  void print_to(std::ostream& os)       const { os << "FeatureQueueIterator: Holds " << number_remaining() << " features, with reference count " << mpQueue->mRefCount; }
+  void print_to(std::ostream& os)       const { os << "QueueIterator: Holds " << number_remaining() << " features, with reference count " << mpQueue->mRefCount; }
 
   //  RefCountedQueue::Queue *operator->()  const { return &mpQueue->mQueue; }  // others dont need access to underlying queue
 };
 
 template<class Collection, class Pred>
 std::ostream&
-operator<< (std::ostream& os, FeatureQueueIterator<Collection,Pred> const& queue) { queue.print_to(os); return os; }
+operator<< (std::ostream& os, QueueIterator<Collection,Pred> const& queue) { queue.print_to(os); return os; }
 
 
+//     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     
   
 template<class Collection, class SkipPredicate>                                  //     waits for source to grow
 class DynamicIterator
@@ -218,6 +218,7 @@ std::ostream&
 operator<< (std::ostream& os, DynamicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
+//     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator
 
 template<class Collection, class SkipPredicate>                                   // CyclicIterator    repeats over and over though collection
 class CyclicIterator
@@ -248,6 +249,8 @@ operator<< (std::ostream& os, CyclicIterator<Collection,Pred> const& it) { it.pr
 
 
 
+//     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator
+
 class LagIterator
 {
   const Feature   mFeature;       // construct lags of this feature
@@ -274,6 +277,7 @@ std::ostream&
 operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return os; }
 
 
+//     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
 
 template< class Model >
 class ModelIterator
@@ -297,6 +301,7 @@ std::ostream&
 operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os); return os; }
 
 
+//     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator
 
 template< class Collection, class SkipPred >   // must be random access collection
 class BundleIterator
@@ -333,7 +338,6 @@ std::ostream&
 operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
-
 //    InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      
 
 template<class Collection, class SkipPred>                         // static collection
@@ -358,13 +362,58 @@ public:
 
   bool  valid ()                     const { return mRemain > 0; }
 
-  InteractionIterator& operator++();        
-  Feature              operator*()   const { assert(mpColFeature != mSource.end()); FeatureVector z; z.push_back(Feature(*mpDiagFeature, *mpColFeature)); return z; }
+  InteractionIterator& operator++();
+  
+  Feature              operator*()   const { assert(mpColFeature != mSource.end()); return Feature(*mpDiagFeature, *mpColFeature); }
   
 private:
   int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
   void  inc_pointers();
 };
+
+
+//     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     
+
+/*  Combines two dynamically growing sources. You *must* guarantee
+    that the sources remain "alive" for the duration of the application.
+
+    Suppose the fast source has 4 elements.  Then
+
+    Position vector {4,2,0} indicates that
+            var 0 of the slow source has been crossed with 0,1,2,3 of fast (done with var 0 for now)
+	    var 1                    has been crossed with 0,1     of fast, next with third in fast
+	    var 2                    has not been crossed with any
+*/
+  
+
+template <class Predicate>
+class CrossProductIterator
+{
+  FeatureVector const&  mSlowSource, mFastSource;
+  unsigned int          mSlowPosition;
+  std::vector<unsigned> mFastPositions;
+  
+public:
+    
+  CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, Predicate pred)
+    : mSlowSource(slow), mFastSource(fast), mSlowPosition(), mFastPositions(fast.size()) { init_positions(); }
+  
+  int   number_remaining()          const { debugging::debug("CPST",3) << "Meaningless call to number remaining in dynamic stream.\n"; return 0; }   //  for interface only
+
+  bool  valid()                     const { return (mSlowPosition < mSlowSource.size()) && (mFastPositions[mSlowPosition] < mFastSource.size()); }
+
+  CrossProductIterator& operator++()
+  { if( (mSlowPosition < mSlowSource.size()) && (mFastPositions[mSlowPosition] < mFastSource.size()) )
+      ++mFastPositions[mSlowPosition];
+    
+
+  Feature               operator*() const { assert(valid()); return Feature(mSlowSource[mSlowPosition],mFastSource[mFastPositions[mSlowPosition]]); }
+
+private:
+  void  init_positions()  {    for(unsigned i=0; i<mFastSource.size(); ++i) mFastPositions[i] = 0;  }
+};
+
+
 
 
 
@@ -421,12 +470,12 @@ make_neighborhood_stream (std::string const& name, Collection const& src, Intege
 
 
 template <class Collection>
-FeatureStream< FeatureQueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
+FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
 make_feature_product_stream (std::string const& name, Collection const& c, Feature const& f)
 {
   std::cout << "FPRS: make_feature_product_stream from feature " << f->name() << std::endl;
-  return FeatureStream< FeatureQueueIterator<Collection,SkipIfRelated>, BuildProductFeature>
-    ("Feature-product::"+name, FeatureQueueIterator<Collection, SkipIfRelated>(c, SkipIfRelated(f)), BuildProductFeature(f));
+  return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature>
+    ("Feature-product::"+name, QueueIterator<Collection, SkipIfRelated>(c, SkipIfRelated(f)), BuildProductFeature(f));
 }
 
 
@@ -451,92 +500,13 @@ make_subspace_stream (std::string const& name, Collection const& src, Trans cons
 
   
 template <class Collection>
-FeatureStream< BundleIterator<Collection, SkipIfRelatedPair>, Identity >
+FeatureStream< InteractionIterator<Collection, SkipIfRelatedPair>, Identity >
 make_interaction_stream (std::string const& name, Collection const& src, bool useSquares)
 {
   std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
   return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity>
-    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()));
+    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()), Identity());
 }
-  
-  //  
-  //  BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream     BaseStream
-//
-
-
-class BaseStream
-{
-public:
-  typedef       FeatureList::const_iterator    FeatureIterator;
-  
-private:
-  std::string      mName;
-  FeatureVector    mHead;                            // holds results of most recent build; cleared by pop
-
-public:
-  virtual ~BaseStream() { }
-  
-  BaseStream (std::string name) : mName(name), mHead() { }
-  
-  std::string    name()                            const { return mName; }
-  std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
-  void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << std::endl;  }
-  bool           has_feature_ready()               const { return !mHead.empty(); }
-
-  // these are not here, but that's the idea
-  //  virtual bool   can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) = 0;
-  //  virtual void   build_next_feature()                    = 0;
-  
-  void           set_head(Feature const& f)              { mHead.clear(); mHead.push_back(f); }
-  void           set_head(FeatureVector const& fv)       { mHead = fv; }
-  
-  FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
-
-  // utilities used in checking features
-  bool           indicators_from_same_parent  (Feature const& f1, Feature const& f2) const;
- 
-  std::string    last_name_in_list (FeatureList const& r) const;
-
-  template< class Collection >
-  bool found_name_among_features (std::string const& name, Collection const& features, std::string const& description) const;
-};
-
-
-//  CrossProductStream    CrossProductStream    CrossProductStream    CrossProductStream
-
-/*  Allows combination of two dynamically growing sources. You *must* guarantee
-    that the sources remain "alive" for the duration of the application.
-
-    Suppose the fast source has 4 elements.  Then
-
-    Position vector {4,2,0} indicates that
-            var 0 of the slow source has been crossed with 0,1,2,3 of fast (done with var 0 for now)
-	    var 1                    has been crossed with 0,1     of fast, next with third in fast
-	    var 2                    has not been crossed with any
-*/
-  
-
-class CrossProductStream : public BaseStream
-{
-  FeatureIterator              mSlowIterator;    // traverses accepted list
-  std::vector<FeatureIterator> mFastIterators;   // rejected list
-  
-public:
-    
-  CrossProductStream(std::string name)
-    : BaseStream("CPStream:"+name), mSlowIterator(), mFastIterators()  {  }
-  
-  int   number_remaining() const { assert(false); return -1; }                                    // here for interface only
-
-  bool  can_build_more_features(FeatureList const& accepted, FeatureList const& rejected) const;
-
-  void  build_next_feature();
-
-private:
-  void  update_iterators();
-};
-
-
 
 
 

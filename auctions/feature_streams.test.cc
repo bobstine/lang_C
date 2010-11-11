@@ -179,7 +179,7 @@ main()
   if (false)     // test product stream
   {
     std::cout << "\n\n\nTEST: making product stream\n";
-    FeatureStream< FeatureQueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features, features[0]));
+    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features, features[0]));
     std::cout << ps << std::endl;
     std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     while(ps.has_feature())
@@ -227,13 +227,10 @@ main()
     }
   }
 
-    /*
-
       
   if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
-    typedef  RegulatedStream< InteractionStream< std::vector<Feature> > > IS;
-    IS is (make_interaction_stream("test", make_range(empty), features, true));  // true means to use diagonal
+    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
     std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
@@ -247,8 +244,8 @@ main()
     }
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
   }
-  */
 
+  
   /*
   if (true)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
