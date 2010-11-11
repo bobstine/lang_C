@@ -21,11 +21,11 @@ class Model
 private:
   int mQ;
   int mCases;
-  FeatureList mAccepted;
-  FeatureList mRejected;
+  FeatureVector mAccepted;
+  FeatureVector mRejected;
   
 public:
-  Model(FeatureList const& accept, FeatureList const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
+  Model(FeatureVector const& accept, FeatureVector const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
 
   int q()                       const  { return mQ; }
   void increment_q()                   { ++ mQ; }
@@ -33,8 +33,8 @@ public:
   
   void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
 
-  FeatureList const& accepted_features() const { return mAccepted; }
-  FeatureList const& rejected_features() const { return mRejected; }
+  FeatureVector const& accepted_features() const { return mAccepted; }
+  FeatureVector const& rejected_features() const { return mRejected; }
 };
 
 
@@ -52,14 +52,16 @@ main()
   
 
   FeatureVector features;
-  FeatureList   featureList1, featureList2;
+  FeatureVector featureVec1, featureVec2;
+  FeatureList   featureList;
   FeatureList   empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
   for (int i=0; i<10; ++i)
   { features.push_back(Feature(columns[i]));
-    featureList1.push_back(Feature(columns[i]));
-    featureList2.push_back(Feature(columns[i+10]));
+    featureList.push_back(Feature(columns[i]));
+    featureVec1.push_back(Feature(columns[i]));
+    featureVec2.push_back(Feature(columns[i+10]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
   std::cout << "  -------------------------------------------------------\n";
@@ -92,41 +94,28 @@ main()
   
   if (true)         // test dynamic interator
   {
-    std::cout << "\n\n\nTEST: delayed iterator\n";
+    std::cout << "\n\n\nTEST: dynamic iterator\n";
     int more = 3;
-
     
-    FeatureList flist;
-    for (int i=0; i<more; ++i)  flist.push_back(features[i]);           std::cout << "  " << flist.size() << "\n";
-    FeatureList::const_iterator it (flist.begin());
-    while(it != flist.end())       { std::cout << "11 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
-    for (int i=0; i<more; ++i)  flist.push_back(features[i]);           std::cout << "  " << flist.size() << "\n";
-    while(it != flist.end())       { std::cout << "22 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
-    for (int i=0; i<more; ++i)  flist.push_back(features[i+more]);      std::cout << "  " << flist.size() << "\n";
-    while(it != flist.end())       { std::cout << "33 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
-    for (int i=0; i<more; ++i)  flist.push_back(features[i+2*more]);    std::cout << "  " << flist.size() << "\n";
-    while(it != flist.end())       { std::cout << "44 Got feature in test: " << (*it)->name() << std::endl;      ++it;    }
-      
-    
-    FeatureList fl;
-    FeatureStream< DynamicIterator<FeatureList, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fl, SkipNone(), Identity()));
-    std::cout << "FL.size() " << fl.size() << std::endl;
+    FeatureVector fv;
+    FeatureStream< DynamicIterator<FeatureVector, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fv, SkipNone(), Identity()));
+    std::cout << "FV.size() " << fv.size() << std::endl;
     for (int i=0; i<more; ++i)
-      fl.push_back(features[i]);
-    std::cout << "FL.size() " << fl.size() << std::endl;
+      fv.push_back(features[i]);
+    std::cout << "FV.size() " << fv.size() << std::endl;
     while(ds.has_feature())
     { FeatureVector fv (ds.pop());
       std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
     }
-    std::cout << "FL.size() " << fl.size() << std::endl;
+    std::cout << "FV.size() " << fv.size() << std::endl;
     for (int i=0; i<more; ++i)
-      fl.push_back(features[i]);
-    std::cout << "FL.size() " << fl.size() << std::endl;
+      fv.push_back(features[i]);
+    std::cout << "FV.size() " << fv.size() << std::endl;
     while(ds.has_feature())
     { FeatureVector fv (ds.pop());
       std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
     }
-    std::cout << "FL.size() " << fl.size() << std::endl;
+    std::cout << "FV.size() " << fv.size() << std::endl;
   }
 
   
@@ -206,7 +195,7 @@ main()
     std::cout << "\n\n\nTEST: making calibration stream\n";
     int degree = 3;
     int skip = 0;
-    Model model (featureList1, featureList2);
+    Model model (featureVec1, featureVec2);
 
     FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, skip));
     std::cout << cs << std::endl;

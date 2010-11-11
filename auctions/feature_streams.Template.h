@@ -12,8 +12,10 @@ template<class Iterator, class Trans>
 {
   if (!mHead.empty())
     return true;
-  else if (can_build_more_features())
-    build_next_feature();                                   // advance position using current state
+  else if (mIterator.valid())
+  { mHead = mTransform(*mIterator);
+    ++mIterator;
+  }
   else
     debugging::debug("RGST",3) << "has_feature finds that stream '" << name() <<"' cannot build more features.\n";
   return (!mHead.empty());                                      // may not have been able to build one 
@@ -39,21 +41,22 @@ template<class Collection, class Pred>
   return *this;
 }
 
+
 //  ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
 
 template< class Model >
 bool
-ModelIterator<Model>::empty()  const
+ModelIterator<Model>::valid()  const
 {
-  if(mLastQ == mModel.q() || mModel.q()==0)
-    return true;
+  if(mLastQ == mModel.q())
+    return false;
   // need to check name of last accepted; dont have one if its us
   std::string lastName (mModel.accepted_features().back()->name());
   if (std::string::npos != lastName.find("Y_hat"))                          // npos means not found; != npos means found
   { debugging::debug("FITS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }
 
 
@@ -90,7 +93,6 @@ template<class Source, class Pred>
   InteractionIterator<Source,Pred>&
   InteractionIterator<Source,Pred>::operator++()
 {
-  inc_pointers();
   if(mRemain == 0) return;
   // skip constants
   while ((*mpDiagFeature)->is_constant())
