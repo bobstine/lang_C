@@ -90,18 +90,21 @@
 
 template<class Iterator, class Transform>
 class FeatureStream
-{  
+{
+  typedef Threaded<boost::shared_ptr<Transform> >   Thread;
+  //  typedef Thread_free<boost::shared_ptr<Transform> > Thread;
+
 private:
-  std::string                                mName;
-  Iterator                                   mIterator;
-  boost::shared_ptr<Transform>               mpTransform;
-  Thread_free<boost::shared_ptr<Transform> > mThread;
+  std::string                  mName;
+  Iterator                     mIterator;
+  boost::shared_ptr<Transform> mpTransform;
+  boost::shared_ptr<Thread>    mpThread;
 
 public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Transform trans)
-    : mName(name), mIterator(it), mpTransform(new Transform(trans)), mThread() { make_features(); }
+    : mName(name), mIterator(it), mpTransform(new Transform(trans)), mpThread(new Thread()) { make_features(); }
   
   std::string    name()                      const { return mName; }
   std::string    feature_name()              const { if (feature_is_ready()) return mpTransform->output_features()[0].name(); else return "empty/busy"; }
@@ -111,12 +114,12 @@ public:
   FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mpTransform->output_features()); make_features(); return fv; }
 
 private:
-  bool feature_is_ready()                    const { return mThread.done() && !mpTransform->output_features().empty(); }
+  bool feature_is_ready()                          { return mpThread->done() && !mpTransform->output_features().empty(); }
   void make_features()
     { if (mIterator.valid())
       { mpTransform->input_features(*mIterator);
 	++mIterator;
-	mThread = Thread_free<boost::shared_ptr<Transform> >(mpTransform);
+	mpThread = boost::shared_ptr<Thread>(new Thread(mpTransform));
       }
     }
 };

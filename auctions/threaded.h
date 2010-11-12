@@ -24,16 +24,15 @@ class Threaded
 {
 public:
   ~Threaded<W>();                // Waits for thread to finish 
-  Threaded<W>(W* p_worker);      // starts a new thread.
+  Threaded<W>(boost::shared_ptr<W> p_worker);      // starts a new thread.
   Threaded<W>();
-  void operator()(W* p_worker);  // starts a new thread.
+  void operator()(boost::shared_ptr<W> p_worker);  // starts a new thread.
   bool done();                   // Tells if the thread is done.
-    
 private:
-
   void set_done(bool value);
   void start_thread();
-  W* mp_worker;
+
+  boost::shared_ptr<W> mp_worker;
   boost::thread m_Thread;
   bool m_done;
   mutable boost::mutex m_lock;

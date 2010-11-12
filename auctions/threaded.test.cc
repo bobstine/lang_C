@@ -2,6 +2,7 @@
 
 
 #include "threaded.h"
+#include <boost/shared_ptr.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -51,9 +52,11 @@ int main(int, char**)
     std::cout << "main: startup" << std::endl;
 
     Worker worker(3);
+    boost::shared_ptr<Worker> wp (new Worker(3));
     {
-      Threaded<Worker> w(&worker);
+      //      Threaded<Worker> w(&worker);
       //      Thread_free<Worker> w(&worker);
+      Threaded<Worker> w(wp);
       if(w.done())
 	std::cout << "Probably running without threads." << std::endl;
       else

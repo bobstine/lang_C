@@ -70,7 +70,7 @@ main()
   if (true)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity> fs (make_finite_stream("Test", features, SkipNone()));
+    FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());

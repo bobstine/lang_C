@@ -22,7 +22,7 @@ Threaded<W>::~Threaded()
 }
     
 template<class W>
-Threaded<W>::Threaded(W* p_worker)
+Threaded<W>::Threaded(boost::shared_ptr<W> p_worker)
 : mp_worker(),
   m_Thread(),
   m_done(true), // we have no work to do in the queue and no thread running
@@ -42,7 +42,7 @@ Threaded<W>::Threaded()
 
 template<class W>
 void
-Threaded<W>::operator()(W* p_worker)
+Threaded<W>::operator()(boost::shared_ptr<W> p_worker)
 {
   assert(done());  // make sure the previous thread either doesn't exist or is done
   set_done(false);
