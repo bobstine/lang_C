@@ -67,10 +67,10 @@ main()
   }
   std::cout << "  -------------------------------------------------------\n";
 
-  if (false)
+  if (true)
   {   // test Finite streams
     std::cout << "\n\nTEST: making regulated finite stream\n";
-    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity, FeatureVector > fs (make_finite_stream("Test", features, SkipNone(), empty));
+    FeatureStream< CyclicIterator<FeatureVector,SkipNone>, Identity> fs (make_finite_stream("Test", features, SkipNone()));
 
     std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
     std::vector<Feature> fv (fs.pop());
@@ -92,7 +92,7 @@ main()
     }
   }
 
-  
+  /*  
   if (true)         // test dynamic interator
   {
     std::cout << "\n\n\nTEST: dynamic iterator\n";
@@ -247,7 +247,6 @@ main()
   }
 
   
-  /*
   if (true)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;

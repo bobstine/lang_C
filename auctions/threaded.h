@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -55,9 +56,16 @@ public:
     {
       (*p_worker)();
     }
+
+  Thread_free<W>(W p_worker)
+  {
+    (*p_worker)();
+  }
+  
   Thread_free<W>()
     {
     }
+
   void operator()(W* p_worker)
   {
     (*p_worker)();

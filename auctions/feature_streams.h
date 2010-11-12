@@ -59,9 +59,7 @@
 #include "feature_predicates.h"
 #include "feature_transformations.h"
 
-#ifdef THREADED
 #include "threaded.h"
-#endif
 
 // polynomial
 #include "function_utils.h"
@@ -71,19 +69,9 @@
 #include <queue>
 #include <iostream>
 #include <sstream>
+#include <boost/shared_ptr.hpp>
 
-
-#ifdef THREADED
-
-template<class Stream>
-class RegulatedStream: public Stream
-{  
-private:
-  Threaded< RegulatedStream<Stream> > m_thread;
-
-public:
-  RegulatedStream(Stream const& s)  : Stream(s), m_thread() { }
-  
+/*
   bool has_feature ()
   {
     if(m_thread.done() && Stream::has_feature_ready())
@@ -96,38 +84,46 @@ public:
   }
 };
 
-#endif
+*/
 
 
 
-template< class Iterator, class Transform, class AvoidCollection>
+template<class Iterator, class Transform>
 class FeatureStream
 {  
 private:
-  std::string      mName;
-  FeatureVector    mHead;         // holds results of most recent build; cleared by pop
-  Iterator         mIterator;
-  Transform        mTransform;
-  AvoidCollection const&  mAvoidCollection;
+  std::string                                mName;
+  Iterator                                   mIterator;
+  boost::shared_ptr<Transform>               mpTransform;
+  Thread_free<boost::shared_ptr<Transform> > mThread;
 
 public:
   ~FeatureStream() { }
 
-  FeatureStream (std::string name, Iterator it, Transform trans, AvoidCollection const& avoid)
-    : mName(name), mHead(), mIterator(it), mTransform(trans), mAvoidCollection(avoid) {  }
+  FeatureStream (std::string name, Iterator it, Transform trans)
+    : mName(name), mIterator(it), mpTransform(new Transform(trans)), mThread() { make_features(); }
   
-  std::string    name()                            const { return mName; }
-  std::string    feature_name()                    const { if (mHead.empty()) return std::string(""); else return mHead[0]->name(); }
-  void           print_to(std::ostream& os)        const { os <<  mName << " @ " << feature_name() << " ";  }
-  int            number_remaining()                const { return mIterator.number_remaining(); }
-  bool           has_feature ();
-  
-  FeatureVector  pop()                                   { assert (!mHead.empty()); FeatureVector z (mHead); mHead.clear(); return z; }
+  std::string    name()                      const { return mName; }
+  std::string    feature_name()              const { if (feature_is_ready()) return mpTransform->output_features()[0].name(); else return "empty/busy"; }
+  void           print_to(std::ostream& os)  const { os <<  mName << " @ " << feature_name(); }
+  int            number_remaining()          const { return mIterator.number_remaining(); }
+  bool           has_feature()                     { if(feature_is_ready()) return true; else { make_features(); return false;} }
+  FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mpTransform->output_features()); make_features(); return fv; }
+
+private:
+  bool feature_is_ready()                    const { return mThread.done() && !mpTransform->output_features().empty(); }
+  void make_features()
+    { if (mIterator.valid())
+      { mpTransform->input_features(*mIterator);
+	++mIterator;
+	mThread = Thread_free<boost::shared_ptr<Transform> >(mpTransform);
+      }
+    }
 };
 
 template<class Iterator, class Transform, class Avoid>
 std::ostream&
-operator<<(std::ostream& os, FeatureStream<Iterator,Transform,Avoid> const& s) { s.print_to(os); return os; }
+operator<<(std::ostream& os, FeatureStream<Iterator,Transform> const& s) { s.print_to(os); return os; }
 
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -431,14 +427,15 @@ private:
 //
 // -----------------------------------------------------------------------------------------------------------------------------
 
-template<class Collection, class Pred,class AvoidCollection>
-FeatureStream< CyclicIterator<Collection, Pred>, Identity, AvoidCollection >
-make_finite_stream (std::string const& name, Collection const& source, Pred pred, AvoidCollection const& avoid)
+template<class Collection, class Pred>
+FeatureStream< CyclicIterator<Collection, Pred>, Identity>
+make_finite_stream (std::string const& name, Collection const& source, Pred pred)
 {
-  return FeatureStream< CyclicIterator<Collection, Pred>, Identity, AvoidCollection >
-    ("CyclicStream::"+name, CyclicIterator<Collection,Pred>(source, pred), Identity(), avoid);
+  return FeatureStream< CyclicIterator<Collection, Pred>, Identity>
+    ("CyclicStream::"+name, CyclicIterator<Collection,Pred>(source, pred), Identity());
 }
 
+/*
 
 template<class Collection, class Pred, class Trans,class AvoidCollection>
 FeatureStream< DynamicIterator<Collection, Pred>, Trans, AvoidCollection>
@@ -525,7 +522,7 @@ make_cross_product_stream (std::string const& name, FeatureVector const& slow, F
   return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity, AvoidCollection>
     ("Interaction::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity(), avoid);
 }
-
+*/
 
 ///////////////////////////////////////////////////////////////////////
 

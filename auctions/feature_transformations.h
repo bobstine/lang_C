@@ -5,13 +5,31 @@
 #include "features.h"
 
 
+/*
+  Feature transformations are
+
+      Created with an input feature or feature vector
+
+  and
+
+      *must* produce a feature vector as the result.
+
+ */
+
+  
 class Identity
 {
+  FeatureVector mFV;
 public:
-  FeatureVector operator()(FeatureVector fv) const { return fv; }
-  FeatureVector operator()(Feature const& f) const { FeatureVector fv; fv.push_back(f); return fv; }
+  void input_features(FeatureVector const& fv) { mFV = fv; }
+  void input_features(Feature       const& f)  { mFV.clear(); mFV.push_back(f); }
+
+  void operator()()      const   {  }
+  
+  FeatureVector output_features() const { return mFV; }
 };
 
+/*
 
 class BuildNeighborhoodFeature
 {
@@ -95,6 +113,6 @@ class BuildCalibrationFeature
     return powers_of_column_feature(mFit,powers);
   }
 };
-
+*/
   
 #endif

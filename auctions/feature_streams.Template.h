@@ -6,23 +6,13 @@
 
 
 //  FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream
-
+/*
 template<class Iterator, class Trans, class Avoid>
   bool
   FeatureStream<Iterator, Trans, Avoid>::has_feature ()
 {
-  if (!mHead.empty())
-    return true;
-  while (mIterator.valid())
-  { mHead = mTransform(*mIterator);
-    if (mHead.size() && FeaturePredicates::found_name_among_features(mHead[0]->name(), mAvoidCollection, "avoid list") )
-      return true;
-    ++mIterator;
-  }
-  debugging::debug("FSTR",3) << "has_feature finds that stream '" << name() <<"' cannot build features.\n";
-  return (false);
 }
-  
+*/
 
 //  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     
 
