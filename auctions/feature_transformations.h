@@ -25,7 +25,8 @@ public:
   void input_features(Feature       const& f)  { mFV.clear(); mFV.push_back(f); }
 
   void operator()()      const   {  }
-  
+
+  bool          empty()           const { return mFV.empty(); }
   FeatureVector output_features() const { return mFV; }
 };
 

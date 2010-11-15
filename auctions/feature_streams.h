@@ -59,7 +59,7 @@
 #include "feature_predicates.h"
 #include "feature_transformations.h"
 
-#include "threaded.h"
+#include "light_threads.h"
 
 // polynomial
 #include "function_utils.h"
@@ -91,35 +91,33 @@
 template<class Iterator, class Transform>
 class FeatureStream
 {
-  typedef Threaded<boost::shared_ptr<Transform> >   Thread;
-  //  typedef Thread_free<boost::shared_ptr<Transform> > Thread;
 
 private:
-  std::string                  mName;
-  Iterator                     mIterator;
-  boost::shared_ptr<Transform> mpTransform;
-  boost::shared_ptr<Thread>    mpThread;
+  std::string             mName;
+  Iterator                mIterator;
+  Transform               mTransform;    // copy each time start a new thread
+  LightThread<Transform>  mThread;       // use -> to extract information from underlying transform
 
 public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Transform trans)
-    : mName(name), mIterator(it), mpTransform(new Transform(trans)), mpThread(new Thread()) { make_features(); }
+    : mName(name), mIterator(it), mTransform(trans), mThread() { make_features(); }
   
   std::string    name()                      const { return mName; }
-  std::string    feature_name()              const { if (feature_is_ready()) return mpTransform->output_features()[0].name(); else return "empty/busy"; }
+  std::string    feature_name()              const { if (feature_is_ready()) return mThread->output_features()[0].name(); else return "empty/busy"; }
   void           print_to(std::ostream& os)  const { os <<  mName << " @ " << feature_name(); }
   int            number_remaining()          const { return mIterator.number_remaining(); }
   bool           has_feature()                     { if(feature_is_ready()) return true; else { make_features(); return false;} }
-  FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mpTransform->output_features()); make_features(); return fv; }
+  FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mThread->output_features()); make_features(); return fv; }
 
 private:
-  bool feature_is_ready()                          { return mpThread->done() && !mpTransform->output_features().empty(); }
+  bool feature_is_ready()                          { return mThread.done() && !mThread->empty(); }
   void make_features()
     { if (mIterator.valid())
-      { mpTransform->input_features(*mIterator);
+      { mTransform.input_features(*mIterator);
 	++mIterator;
-	mpThread = boost::shared_ptr<Thread>(new Thread(mpTransform));
+	mThread(mTransform);
       }
     }
 };
