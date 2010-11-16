@@ -86,7 +86,7 @@
 
 */
 
-
+ 
 
 template<class Iterator, class Transform>
 class FeatureStream
