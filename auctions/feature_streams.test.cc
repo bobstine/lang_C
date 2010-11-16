@@ -69,14 +69,19 @@ main()
 
   if (true)
   {   // test Finite streams
-    std::cout << "\n\nTEST: making regulated finite stream\n";
+    std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
     FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
-
-    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
-    std::vector<Feature> fv (fs.pop());
-    std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    std::cout << "TEST: have created the stream.\n";
     
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    if (fs.has_feature())
+    { std::vector<Feature> fv (fs.pop());
+      std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
+      std::cout << "TEST: FS has_feature = " << fs.has_feature() << std::endl;
+    }
     int more (7);
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());
@@ -84,7 +89,7 @@ main()
     }
 
     std::cout << "\n\nTEST:  Setting model results for features \n";
-    fv[0] -> set_model_results(true, 0.001);  // used in model, p-value
+    // fv[0] -> set_model_results(true, 0.001);  // used in model, p-value
     more = 7;
     while(fs.has_feature() && more--)
     { std::vector<Feature> fv (fs.pop());

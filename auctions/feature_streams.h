@@ -108,11 +108,11 @@ public:
   std::string    feature_name()              const { if (feature_is_ready()) return mThread->output_features()[0].name(); else return "empty/busy"; }
   void           print_to(std::ostream& os)  const { os <<  mName << " @ " << feature_name(); }
   int            number_remaining()          const { return mIterator.number_remaining(); }
-  bool           has_feature()                     { if(feature_is_ready()) return true; else { make_features(); return false;} }
+  bool           has_feature()                     { if(!mThread.done()) return false; if (mThread->empty()) { make_features(); return false;} return true; }
   FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mThread->output_features()); make_features(); return fv; }
 
 private:
-  bool feature_is_ready()                          { return mThread.done() && !mThread->empty(); }
+  bool feature_is_ready()                          { if (!mThread.done()) return false; else return !mThread->empty(); }
   void make_features()
     { if (mIterator.valid())
       { mTransform.input_features(*mIterator);

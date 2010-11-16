@@ -27,6 +27,7 @@ LightThread<W>::LightThread(const W& worker)
   mp_thread(),
   mp_lock(new boost::mutex())
 {
+  std::cout << "LT: initialize with a worker.\n";
   (*mp_done) = true;
   (*this)(worker);
 }
@@ -40,6 +41,7 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
   mp_thread(rhs.mp_thread),
   mp_lock(rhs.mp_lock)
 {
+  std::cout << "LT: initialize by copy construct.\n";
 }
 
 
@@ -51,6 +53,7 @@ LightThread<W>::LightThread()
   mp_thread(),
   mp_lock(new boost::mutex())
 {
+  std::cout << "LT: initialize with no worker supplied.\n";
   (*mp_done) = true;
 }
 
@@ -58,13 +61,16 @@ template<class W>
 void
 LightThread<W>::operator()(W const& worker)
 {
+  std::cout << "LT: apply operator() to worker.\n";
+    
   assert(done());  // make sure we don't have a thread running
   set_done(false);
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
 
 #if NOTHREADS
-  // Let's wait for the thread to finish if we have been asked not to use threads.
+  // force thread to finish if we have been asked not to use threads.
+  std::cout << "LT: forcing thread to finish.\n";
   mp_thread->join();
 #endif
 }
@@ -80,6 +86,7 @@ LightThread<W>::done() const
   result = (*mp_done);
   assert((mp_worker != 0) || ((*mp_done) == true));
   mp_lock->unlock();
+  std::cout << "LT: checking done = "; if (result) std::cout << "true\n"; else std::cout << "false\n";
   return result;
 }
 
