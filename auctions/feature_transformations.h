@@ -21,10 +21,10 @@ class Identity
 {
   FeatureVector mFV;
 public:
-  void input_features(FeatureVector const& fv) { mFV = fv; }
-  void input_features(Feature       const& f)  { mFV.clear(); mFV.push_back(f); }
+  void input_features(FeatureVector fv) { mFV = fv; }
+  void input_features(Feature       f ) { mFV.clear(); mFV.push_back(f); }
 
-  void operator()()      const   {  }
+  void operator()()               const { std::cout << "TRANS: Identity applied to features[" << mFV.size() << "]; fv[0] = " << mFV[0]->name() << std::endl; }
 
   bool          empty()           const { return mFV.empty(); }
   FeatureVector output_features() const { return mFV; }

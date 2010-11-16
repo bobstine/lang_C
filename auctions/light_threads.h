@@ -34,9 +34,9 @@
 //  But clearly won't allow debugging issues with treads and locks.
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-#ifdef NDEBUG
-#define NOTHREAD
-#endif
+
+// define NOTHREADS
+
 
 
 

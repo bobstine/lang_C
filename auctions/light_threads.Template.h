@@ -68,9 +68,9 @@ LightThread<W>::operator()(W const& worker)
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
 
-#if NOTHREADS
+#ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
-  std::cout << "LT: forcing thread to finish.\n";
+  std::cout << "LT: force thread to finish.\n";
   mp_thread->join();
 #endif
 }
@@ -80,13 +80,17 @@ template<class W>
 bool
 LightThread<W>::done() const
 {
+  std::cout << "LT: done = ";
   bool result;
-  assert(mp_lock);  // make sure we actually have a non-zero pointer
-  mp_lock->lock();
-  result = (*mp_done);
-  assert((mp_worker != 0) || ((*mp_done) == true));
-  mp_lock->unlock();
-  std::cout << "LT: checking done = "; if (result) std::cout << "true\n"; else std::cout << "false\n";
+  assert(mp_lock);                              // make sure we have a non-zero pointer
+  if(mp_lock->try_lock())
+  { result = (*mp_done);
+    assert(mp_worker || ((*mp_done) == true));  // either have worker or done
+    mp_lock->unlock();
+  }
+  else result = false;
+  if (result) std::cout << "true"; else std::cout << "false";
+  if (mp_worker) std::cout << "; has worker\n"; else std::cout << "; no worker.\n";
   return result;
 }
 
@@ -107,6 +111,7 @@ template<class W>
 const W*
 LightThread<W>::operator->() const
 {
+  std::cout << "LT: const operator->\n";
   if(!done())
     mp_thread->join();
   assert(done());
@@ -119,6 +124,7 @@ template<class W>
 W*
 LightThread<W>::operator->() 
 {
+  std::cout << "LT: operator->\n";
   if(!done())
     mp_thread->join();
   assert(done());
@@ -130,6 +136,7 @@ template<class W>
 void
 LightThread<W>::set_done(bool value)
 {
+  std::cout << "LT: set_done to " << value << std::endl;
   assert(mp_lock);
   mp_lock->lock();
   assert((*mp_done) == !value);  // Checks for race condition.
@@ -141,6 +148,7 @@ template<class W>
 void
 LightThread<W>::start_thread()
 {
+  std::cout << "LT: start_thread\n";
   // DPF: We want to make sure that we haven't been asked to start a new thread
   // while we have one currently running.
   assert(!done());
