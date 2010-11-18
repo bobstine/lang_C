@@ -116,7 +116,7 @@ private:
   void make_features()
     { std::cout << "FS: make_features\n";
       if (mIterator.valid())
-      { mTransform.input_features(*mIterator);
+      { mTransform.input(*mIterator);
 	++mIterator;
 	mThread(mTransform);
       }

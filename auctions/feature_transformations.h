@@ -6,29 +6,44 @@
 
 
 /*
-  Feature transformations are
+  Feature transformations apply an operator that must product a vector of features
+  as its results.  Its input is whatever the associated iterator produces.
 
-      Created with an input feature or feature vector
-
-  and
-
-      *must* produce a feature vector as the result.
+  The supplied operator must define argument_type, as in a unary_function.
 
  */
 
-  
-class Identity
+template< class Operator >
+class FeatureTransformation
 {
+  typedef typename Operator::argument_type ArgType;
+  
+  ArgType       mInput;
   FeatureVector mFV;
-public:
-  void input_features(FeatureVector fv) { mFV = fv; }
-  void input_features(Feature       f ) { mFV.clear(); mFV.push_back(f); }
 
-  void operator()()               const { std::cout << "TRANS: Identity applied to features[" << mFV.size() << "]; fv[0] = " << mFV[0]->name() << std::endl; }
+ public:
+  void          input(ArgType x)                 { mInput = x; }
+  bool          empty()                const     { return mFV.empty(); }
+  FeatureVector output_features()      const     { return mFV; }
 
-  bool          empty()           const { return mFV.empty(); }
-  FeatureVector output_features() const { return mFV; }
+  void operator()()
+  {
+    std::cout << "TRANS: apply transformation\n";
+    mFV = Operator()(mInput);
+    std::cout << "TRANS: yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
+  }
 };
+
+
+class WrapFeature: public std::unary_function<Feature, FeatureVector>
+{
+ public:
+  FeatureVector operator()(Feature f) const { FeatureVector fv; fv.push_back(f); return fv; }
+};
+
+
+typedef FeatureTransformation<WrapFeature> Identity;
+
 
 /*
 
