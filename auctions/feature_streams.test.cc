@@ -67,40 +67,26 @@ main()
   }
   std::cout << "  -------------------------------------------------------\n";
 
+  float ms = 0.25 * 1e3;
+  boost::posix_time::milliseconds workTime(ms);
+  std::cout << "TEST: Will pause for " << ms << "ms\n";
+
   if (true)
   {   // test Finite streams
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
-    float ms = 0.25 * 1e3;
-    boost::posix_time::milliseconds workTime(ms);
-    std::cout << "TEST: Will pause for " << ms << "ms\n";
 
     FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
-    std::cout << "TEST: have created the stream.\n";
     
-    boost::this_thread::sleep(workTime);
-    std::cout << "TEST: has_feature = " << fs.has_feature() << std::endl;
-    if (fs.has_feature())
-    { std::vector<Feature> fv (fs.pop());
-      std::cout << "TEST: popped feature " << fv[0] << std::endl;
-      std::cout << "TEST: has_feature = " << fs.has_feature() << std::endl;
-    }
-
-    boost::this_thread::sleep(workTime);
-    int more (7);
-    while(fs.has_feature() && more--)
+    int more (10);
+    do
     {
+      if(!--more) break;
+      std::cout << "\nTEST: at top of loop\n";
       boost::this_thread::sleep(workTime);
       std::vector<Feature> fv (fs.pop());
       std::cout << "TEST:    Popped feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
-    }
+    } while (fs.is_busy() || fs.has_feature());
 
-    std::cout << "\n\nTEST:  Setting model results for features \n";
-    // fv[0] -> set_model_results(true, 0.001);  // used in model, p-value
-    more = 7;
-    while(fs.has_feature() && more--)
-    { std::vector<Feature> fv (fs.pop());
-      std::cout << "TEST:    Popped feature " << fv[0] << std::endl;
-    }
   }
 
   /*  

@@ -105,14 +105,14 @@ public:
     : mName(name), mIterator(it), mTransform(trans), mThread() { make_features(); }
   
   std::string    name()                      const { return mName; }
-  std::string    feature_name()              const { std::cout << "FS: retrieve name\n"; if (feature_is_ready()) return mThread->output_features()[0].name(); else return "empty/busy"; }
+  std::string    feature_name()              const { std::cout << "FS: retrieve name\n"; if (has_feature()) return mThread->output_features()[0].name(); else return "empty/busy"; }
   void           print_to(std::ostream& os)  const { os <<  mName << " @ " << feature_name(); }
   int            number_remaining()          const { return mIterator.number_remaining(); }
-  bool           has_feature()                     { std::cout << "FS: has feature?\n"; if(!mThread.done()) return false; if (mThread->empty()) { make_features(); return false;} return true; }
+  bool           is_busy()                   const { return !mThread.done(); }
+  bool           has_feature()                     { if (is_busy()) return false; else return !mThread->empty(); }
   FeatureVector  pop()                             { std::cout << "FS: pop()\n"; assert (has_feature()); FeatureVector fv (mThread->output_features()); make_features(); return fv; }
 
 private:
-  bool feature_is_ready()                          { std::cout << "FS: ready?\n"; if (!mThread.done()) return false; else return !mThread->empty(); }
   void make_features()
     { std::cout << "FS: make_features\n";
       if (mIterator.valid())
