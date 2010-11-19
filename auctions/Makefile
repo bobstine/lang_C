@@ -26,7 +26,7 @@ EXTERNAL_USES = boost_thread
 
 level_0   = featureABC.o       bidders.o  light_threads.o
 level_1   = features.o
-level_2   = feature_predicates.o
+level_2   = feature_predicates.o feature_iterators.o
 level_3   = adapter.o          feature_streams.o
 level_4   = experts.o
 level_5   = auction.o

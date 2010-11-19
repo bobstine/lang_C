@@ -1,0 +1,304 @@
+#ifndef _FEATURE_ITERATORS_H_
+#define _FEATURE_ITERATORS_H_
+
+#include "features.h"
+
+// for finite streams
+#include <queue>
+#include <iostream>
+
+
+
+class BidOrder
+{
+public:
+  bool operator()(Feature const& a, Feature const& b) const { return (a->entry_bid() < b->entry_bid()); }
+};
+
+
+
+//     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     
+
+class FeatureQueue;
+
+class RefCountedQueue
+{
+public:
+  typedef std::priority_queue<Feature, FeatureVector, BidOrder> Queue;
+  Queue   mQueue;
+  int     mRefCount;
+  
+  ~RefCountedQueue() {  }
+  
+  template<class Collection>
+  RefCountedQueue(Collection const& c): mQueue(), mRefCount(1)
+    { for (typename Collection::const_iterator it=c.begin(); it!=c.end(); ++it) if (! (*it)->is_constant() ) mQueue.push(*it); }
+};
+
+
+template< class Collection, class SkipPredicate >
+class QueueIterator
+{
+  RefCountedQueue *mpQueue;
+  SkipPredicate    mSkipPred;
+public:
+  ~QueueIterator() { if(--mpQueue->mRefCount == 0) delete mpQueue; }
+  
+  QueueIterator(Collection const& c, SkipPredicate p) : mpQueue(new RefCountedQueue(c)), mSkipPred(p) { }
+  QueueIterator(QueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
+
+  int    number_remaining()             const { return mpQueue->mQueue.size(); }
+  bool   valid()                        const { return !mpQueue->mQueue.empty(); }
+  
+  QueueIterator&   operator++()               { assert(valid()); mpQueue->mQueue.pop(); while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop(); return *this; }
+
+  Feature          operator*()          const { assert(valid()); return mpQueue->mQueue.top(); }
+    
+  void print_to(std::ostream& os)       const { os << "QueueIterator: Holds " << number_remaining() << " features, with reference count " << mpQueue->mRefCount; }
+
+  //  RefCountedQueue::Queue *operator->()  const { return &mpQueue->mQueue; }  // others dont need access to underlying queue
+};
+
+template<class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, QueueIterator<Collection,Pred> const& queue) { queue.print_to(os); return os; }
+
+
+
+//     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     DynamicIterator     
+  
+template<class Collection, class SkipPredicate>                                  //     waits for source to grow
+class DynamicIterator
+{
+  Collection const& mSource;         // someone else maintains; must be random accessible
+  unsigned int      mPosition;
+  SkipPredicate     mSkipFeature;
+  
+public:
+  DynamicIterator(Collection const& source, SkipPredicate pred)
+    : mSource(source), mPosition(0), mSkipFeature(pred) {  }
+
+  int   number_remaining()              const { return mSource.size() - mPosition; }
+  bool  valid()                         const { return mPosition < mSource.size(); }
+
+  DynamicIterator& operator++()               { assert(valid()); ++mPosition; while( (mPosition < mSource.size()) && mSkipFeature(mSource[mPosition]))  ++mPosition;  return *this;}
+
+  Feature          operator*()          const { assert(valid()); return mSource[mPosition]; }
+
+  void  print_to(std::ostream& os)      const { os << "DynamicIterator [" << mPosition << "/" << mSource.size() << "] "; }
+};
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, DynamicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
+
+//     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator
+
+template<class Collection, class SkipPredicate>                                   // CyclicIterator    repeats over and over though collection
+class CyclicIterator
+{
+  typedef typename Collection::const_iterator Iterator;
+
+  Collection const& mSource;         // someone else maintains
+  Iterator          mIter;
+  int               mSize;
+  SkipPredicate     mSkipFeature;
+  
+public:
+  CyclicIterator(Collection const& source, SkipPredicate pred)
+    : mSource(source), mIter(source.begin()), mSize(source.size()), mSkipFeature(pred) { }
+  
+  int   number_remaining()              const { return mSize; }             // number not used in model
+  bool  valid()                         const { return !mSource.empty() && (mSize > 0); }
+
+  CyclicIterator& operator++();
+  Feature         operator*()           const { return *mIter; }
+
+  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (valid()) os << *mIter << " ";  else os << " empty "; }
+};
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, CyclicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
+
+//     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator
+
+class LagIterator
+{
+  const Feature   mFeature;       // construct lags of this feature
+  const int       mBlockSize;     // blocking factor used if longitudinal
+  int             mRemaining;
+  int             mLag;
+  int             mMaxLag;    // cycle through the lags
+  
+public:  
+  LagIterator(Feature const& f, int maxLag, int cycles, int blockSize)
+    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }    // 1+ for initial increment
+  
+  int   number_remaining()         const   { return  mRemaining; }
+  bool  valid()                    const   { return  mRemaining > 0; }
+
+  LagIterator&  operator++();
+  Feature       operator*()        const   { return  Feature(mFeature,mLag,mBlockSize); }
+
+  void  print_to(std::ostream& os) const { os << "LagIterator @ " << mLag << "/" << mMaxLag << " with " << mRemaining << " left. "; }
+};
+
+inline
+std::ostream&
+operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return os; }
+
+
+
+//     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
+
+template< class Model >
+class ModelIterator
+{
+  Model const& mModel;    // maintained by someone else
+  int          mLastQ;
+public:
+  ModelIterator(Model const& m): mModel(m), mLastQ(0) {}
+
+  bool   valid()                   const;
+
+  ModelIterator&  operator++()           { return *this; }
+
+  Model const&    operator*()            { mLastQ = mModel.q(); return mModel; }
+
+  void  print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
+};
+ 
+template <class Model>
+std::ostream&
+operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os); return os; }
+
+
+
+//     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator
+
+template< class Collection, class SkipPred >   // must be random access collection
+class BundleIterator
+{
+  Collection const&  mSource;      // maintained by someone else
+  unsigned int       mBundleSize;
+  SkipPred           mSkipPred;
+  unsigned int       mLoIndex, mHiIndex;
+public:
+  BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mLoIndex(0), mHiIndex(0) { }
+
+  bool     valid()              const    { return (mSource.size()-mLoIndex) > mBundleSize; } 
+
+  BundleIterator& operator++()           { return *this; }
+
+  FeatureVector   operator*()   
+    { FeatureVector fv;
+      while(fv.size() < mBundleSize && mLoIndex < mSource.size())
+      { std::cout << " bundle checking feature " << mSource[mLoIndex]->name() << std::endl;
+	if (!mSkipPred(mSource[mLoIndex]))
+	{ std::cout << " bundle grows \n";
+	  fv.push_back(mSource[mLoIndex]);
+	}
+	++mLoIndex; 
+      }
+      return fv;
+    }
+      
+  void print_to(std::ostream& os) const { os << "BundleIterator @ [" << mLoIndex << "," << mHiIndex << "] " ; }
+};
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
+
+
+//    InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      InteractionIterator      
+
+template<class Collection, class SkipPred>                         // static collection
+class InteractionIterator
+{
+private:
+  typedef typename Collection::const_iterator Iter;
+
+  Collection const& mSource;
+  bool              mIncludeDiagonal;
+  SkipPred          mSkipPred;
+  Iter              mpDiagFeature, mpColFeature;
+  int               mRemain;
+  
+public:
+  
+  InteractionIterator(Collection const& src, bool useSquares, SkipPred pred)
+    : mSource(src), mIncludeDiagonal(useSquares), mSkipPred(pred),
+      mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
+  
+  int   number_remaining()           const { return mRemain; }
+
+  bool  valid ()                     const { return mRemain > 0; }
+
+  InteractionIterator& operator++();
+  
+  Feature              operator*()   const { assert(mpColFeature != mSource.end()); return Feature(*mpDiagFeature, *mpColFeature); }
+  
+private:
+  int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
+  void  inc_pointers();
+};
+
+
+//     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     
+
+/*  Combines two dynamically growing sources. You *must* guarantee
+    that the sources remain "alive" for the duration of the application.
+
+    Suppose the fast source has 4 elements.  Then
+
+    Position vector {4,2,0} indicates that
+            var 0 of the slow source has been crossed with 0,1,2,3 of fast (done with var 0 for now)
+	    var 1                    has been crossed with 0,1     of fast, next with third in fast
+	    var 2                    has not been crossed with any
+*/
+  
+
+template <class Predicate>
+class CrossProductIterator
+{
+  FeatureVector const&          mSlowSource, mFastSource;
+  unsigned int                  mSlowPosition;
+  mutable std::vector<unsigned> mFastPositions;   // may get zeros tacked onto end
+  
+public:
+    
+  CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, Predicate pred)
+    : mSlowSource(slow), mFastSource(fast), mSlowPosition(0), mFastPositions() { update_position_vector(); }
+  
+  int   number_remaining()          const { debugging::debug("CPST",3) << "Meaningless call to number remaining in dynamic stream.\n"; return 0; }   //  for interface only
+
+  bool  valid()                     const { update_position_vector(); return (mSlowPosition < mSlowSource.size()) && (mFastPositions[mSlowPosition] < mFastSource.size()); }
+
+  CrossProductIterator& operator++()
+    {
+      ++mFastPositions[mSlowPosition];
+      mSlowPosition = 0;                                 //  check that list has not grown                                  
+      update_position_vector();                                                                                                      
+      for(std::vector<unsigned>::const_iterator it=mFastPositions.begin(); it!=mFastPositions.end(); ++it)                                                    
+      { if (*it < mFastSource.size())                                                                                          
+	  break;                                                                                                                     
+	else                                                                                                                         
+	  ++mSlowPosition;                                                                                                                
+      }
+    }
+  Feature               operator*() const { assert(valid()); return Feature(mSlowSource[mSlowPosition],mFastSource[mFastPositions[mSlowPosition]]); }
+
+private:
+  void  update_position_vector()  { while (mFastPositions.size() < mSlowSource.size()) mFastPositions.push_back(0); }
+};
+
+#include "feature_iterators.Template.h"
+
+#endif

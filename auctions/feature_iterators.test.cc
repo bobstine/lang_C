@@ -1,42 +1,19 @@
 /*
- *  feature_streams.test.cc
+ *  feature_iterators.test.cc
  *  auctions
  *
- *  Created by Robert Stine on 6/3/10.
+ *  Created by Robert Stine on 11/17/10.
  *  Copyright 2010. All rights reserved.
  *
  */
 
+#include "debug.h"
 #include "column.h"
 #include "features.h"
-#include "feature_streams.h"
-#include "range.h"
+#include "feature_iterators.h"
+#include "feature_predicates.h"
 
 #include <iostream>
-
-// Source needs to supply the accept and reject streams
-
-class Model
-{
-private:
-  int mQ;
-  int mCases;
-  FeatureVector mAccepted;
-  FeatureVector mRejected;
-  
-public:
-  Model(FeatureVector const& accept, FeatureVector const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
-
-  int q()                       const  { return mQ; }
-  void increment_q()                   { ++ mQ; }
-  int n_total_cases()           const  { return mCases; }
-  
-  void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
-
-  FeatureVector const& accepted_features() const { return mAccepted; }
-  FeatureVector const& rejected_features() const { return mRejected; }
-};
-
 
 
 int
@@ -53,11 +30,11 @@ main()
 
   FeatureVector features;
   FeatureVector featureVec1, featureVec2;
-  FeatureVector empty;
+
   FeatureList   featureList;
 
   
-  std::cout << "\n\nTEST: building collection of features\n";
+  std::cout << "\n\nTEST: building collections of features\n";
   for (int i=0; i<10; ++i)
   { features.push_back(Feature(columns[i]));
     featureList.push_back(Feature(columns[i]));
@@ -66,65 +43,46 @@ main()
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
   std::cout << "  -------------------------------------------------------\n";
-
-  float ms = 0.005 * 1e3;
-  boost::posix_time::milliseconds workTime(ms);
-  std::cout << "TEST: Loop pauses for " << ms << "ms\n";
-  ms = 0.25 * 1e3;
-  boost::posix_time::milliseconds pause(ms);
   
 
-  if (false)         // test Finite streams
+  if (false)         // test cyclic iterator
   { 
-    std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
-    FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
+    std::cout << "\n\nTEST: making cyclic iterator over finite collection\n";
+    CyclicIterator<FeatureVector, SkipNone> it (features, SkipNone());
 
-    int nIter (50);
-    int more (nIter); 
-    int nPopped (0);
-    do
-    {
-      if(!more) break;
-      --more;
-      boost::this_thread::sleep(workTime);
-      if (fs.has_feature())
-      { std::vector<Feature> fv (fs.pop());
-	++nPopped;
-	std::cout << "TEST: feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
-      }
-    } while (fs.is_busy() || fs.has_feature());
-    boost::this_thread::sleep(pause);
-    std::cout << "TEST: exiting feature pop loop after popping " << nPopped << " features; " << more << "/" << nIter << " iterations.\n";
+    for(int i=0; i<20; ++i)
+    { if (it.valid())
+	std::cout << "TEST_cyclic: *it = " << (*it)->name() << std::endl;
+      ++it;
+    }
   }
 
 
-  if (true)         // test dynamic interator
+  if (true)         // test dynamic iterator
   {
-    std::cout << "\n\n\nTEST: dynamic iterator\n";
-    int more = 3;
-    
+    std::cout << "\n\nTEST: dynamic iterator\n";
     FeatureVector fv;
-    FeatureStream< DynamicIterator<FeatureVector, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fv, SkipNone(), Identity()));
-    for (int i=0; i<more; ++i)
+    DynamicIterator<FeatureVector, SkipNone> it (fv, SkipNone());
+
+    int nToAdd (3);
+    for (int i=0; i<nToAdd; ++i)
       fv.push_back(features[i]);
     std::cout << "TEST: FV.size() is " << fv.size() << std::endl;
-    while(ds.has_feature())
-    { std::cout << "TEST: has_feature is true\n";
-      FeatureVector fv (ds.pop());
-      std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
-      boost::this_thread::sleep(workTime);
+    while(it.valid())
+    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
+      ++it;
     }
+    for (int i=0; i<nToAdd; ++i)
+      fv.push_back(features[nToAdd + i]);
     std::cout << "FV.size() " << fv.size() << std::endl;
-    for (int i=0; i<more; ++i)
-      fv.push_back(features[i]);
-    std::cout << "FV.size() " << fv.size() << std::endl;
-    while(ds.has_feature())
-    { FeatureVector fv (ds.pop());
-      std::cout << "    popped feature[0/" << fv.size() << "] is " << fv[0]->name();
+    while(it.valid())
+    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
+      ++it;
     }
     std::cout << "FV.size() " << fv.size() << std::endl;
   }
 
+  
   
   /*
     if (false)
@@ -313,7 +271,6 @@ main()
   */
   
   std::cout << "\n\nDONE:\n";
-  boost::this_thread::sleep(pause);   // try to avoid exiting with running thread
   return 0;
 }
 
