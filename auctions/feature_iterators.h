@@ -50,11 +50,13 @@ public:
   int    number_remaining()             const { return mpQueue->mQueue.size(); }
   bool   valid()                        const { return !mpQueue->mQueue.empty(); }
   
-  QueueIterator&   operator++()               { assert(valid()); mpQueue->mQueue.pop(); while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop(); return *this; }
+  QueueIterator&   operator++()               { assert(valid()); mpQueue->mQueue.pop();
+                                                while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop();
+						return *this; }
 
   Feature          operator*()          const { assert(valid()); return mpQueue->mQueue.top(); }
     
-  void print_to(std::ostream& os)       const { os << "QueueIterator: Holds " << number_remaining() << " features, with reference count " << mpQueue->mRefCount; }
+  void print_to(std::ostream& os)       const { os << "QueueIterator: " << number_remaining() << " features remain; queue ref count " << mpQueue->mRefCount; }
 
   //  RefCountedQueue::Queue *operator->()  const { return &mpQueue->mQueue; }  // others dont need access to underlying queue
 };
@@ -132,12 +134,12 @@ class LagIterator
   const Feature   mFeature;       // construct lags of this feature
   const int       mBlockSize;     // blocking factor used if longitudinal
   int             mRemaining;
-  int             mLag;
-  int             mMaxLag;    // cycle through the lags
+  int             mLag;           // current lag
+  int             mMaxLag;        // cycle through the lags
   
 public:  
   LagIterator(Feature const& f, int maxLag, int cycles, int blockSize)
-    :  mFeature(f), mBlockSize(blockSize), mRemaining(1+maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }    // 1+ for initial increment
+    :  mFeature(f), mBlockSize(blockSize), mRemaining(maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }
   
   int   number_remaining()         const   { return  mRemaining; }
   bool  valid()                    const   { return  mRemaining > 0; }
@@ -165,11 +167,8 @@ public:
   ModelIterator(Model const& m): mModel(m), mLastQ(0) {}
 
   bool   valid()                   const;
-
   ModelIterator&  operator++()           { return *this; }
-
   Model const&    operator*()            { mLastQ = mModel.q(); return mModel; }
-
   void  print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
 };
  
@@ -198,11 +197,9 @@ public:
   FeatureVector   operator*()   
     { FeatureVector fv;
       while(fv.size() < mBundleSize && mLoIndex < mSource.size())
-      { std::cout << " bundle checking feature " << mSource[mLoIndex]->name() << std::endl;
+      { // std::cout << " bundle checking feature " << mSource[mLoIndex]->name() << std::endl;
 	if (!mSkipPred(mSource[mLoIndex]))
-	{ std::cout << " bundle grows \n";
 	  fv.push_back(mSource[mLoIndex]);
-	}
 	++mLoIndex; 
       }
       return fv;
@@ -238,17 +235,22 @@ public:
       mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
   
   int   number_remaining()           const { return mRemain; }
-
   bool  valid ()                     const { return mRemain > 0; }
-
-  InteractionIterator& operator++();
-  
+  InteractionIterator& operator++();  
   Feature              operator*()   const { assert(mpColFeature != mSource.end()); return Feature(*mpDiagFeature, *mpColFeature); }
   
+  void  print_to(std::ostream &os)   const { os << "InteractionIterator [" << mRemain << "] ";
+                                             if(valid()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name(); }
 private:
   int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
   void  inc_pointers();
 };
+
+
+template <class Collection, class Pred>
+std::ostream&
+operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+
 
 
 //     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     
@@ -265,39 +267,50 @@ private:
 */
   
 
-template <class Predicate>
+template <class Collection>
 class CrossProductIterator
 {
-  FeatureVector const&          mSlowSource, mFastSource;
+  typedef typename Collection::const_iterator Iterator;
+  
+  Collection const&             mSlowSource, mFastSource;
   unsigned int                  mSlowPosition;
-  mutable std::vector<unsigned> mFastPositions;   // may get zeros tacked onto end
+  Iterator                      mSlowIterator;
+  mutable std::vector<Iterator> mFastIterators;   // may get zeros tacked onto end
   
 public:
     
-  CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, Predicate pred)
-    : mSlowSource(slow), mFastSource(fast), mSlowPosition(0), mFastPositions() { update_position_vector(); }
+  CrossProductIterator(Collection const& slow, Collection const& fast)
+    : mSlowSource(slow), mFastSource(fast), mSlowIterator(slow.begin()), mFastIterators() { update_iterator_vector(); }
   
-  int   number_remaining()          const { debugging::debug("CPST",3) << "Meaningless call to number remaining in dynamic stream.\n"; return 0; }   //  for interface only
+  int   number_remaining()          const { std::cout << "WARNING: call to number remaining in dynamic stream.\n"; return 0; }   //  for interface only
 
-  bool  valid()                     const { update_position_vector(); return (mSlowPosition < mSlowSource.size()) && (mFastPositions[mSlowPosition] < mFastSource.size()); }
+  bool  valid()                     const { update_iterator_vector(); return (mSlowIterator != mSlowSource.end()) && (mFastIterators[mSlowPosition] != mFastSource.end()); }
 
   CrossProductIterator& operator++()
     {
-      ++mFastPositions[mSlowPosition];
-      mSlowPosition = 0;                                 //  check that list has not grown                                  
-      update_position_vector();                                                                                                      
-      for(std::vector<unsigned>::const_iterator it=mFastPositions.begin(); it!=mFastPositions.end(); ++it)                                                    
-      { if (*it < mFastSource.size())                                                                                          
-	  break;                                                                                                                     
+      ++mFastIterators[mSlowPosition];
+      mSlowPosition = 0; mSlowIterator = mSlowSource.begin(); //  check that list has not grown                                  
+      update_iterator_vector();                                                                                                      
+      for(typename std::vector<Iterator>::const_iterator it=mFastIterators.begin(); it!=mFastIterators.end(); ++it)
+      { if (*it != mFastSource.end())                         // find first available cross product 
+	  break;                                  
 	else                                                                                                                         
-	  ++mSlowPosition;                                                                                                                
+	{ ++mSlowPosition; ++mSlowIterator; }
       }
     }
-  Feature               operator*() const { assert(valid()); return Feature(mSlowSource[mSlowPosition],mFastSource[mFastPositions[mSlowPosition]]); }
+  Feature               operator*() const { assert(valid()); return Feature(*mSlowIterator,*mFastIterators[mSlowPosition]); }
 
+  void               print_to(std::ostream& os) const { os << "CrossProduct iter "; if (valid()) os << "@ " << mSlowIterator->name()
+							   << " x " << mFastIterators[mSlowPosition]->name(); else os << "empty "; }
 private:
-  void  update_position_vector()  { while (mFastPositions.size() < mSlowSource.size()) mFastPositions.push_back(0); }
+  void  update_iterator_vector() const  { while (mFastIterators.size() < mSlowSource.size()) mFastIterators.push_back(mFastSource.begin()); }
 };
+
+
+template <class Collection>
+std::ostream&
+operator<< (std::ostream& os, CrossProductIterator<Collection> const& it) { it.print_to(os); return os; }
+
 
 #include "feature_iterators.Template.h"
 

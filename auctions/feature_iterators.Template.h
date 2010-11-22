@@ -2,17 +2,9 @@
 #include "debug.h"
 
 #include <assert.h>
-//  FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream     FeatureStream
-/*
-template<class Iterator, class Trans, class Avoid>
-  bool
-  FeatureStream<Iterator, Trans, Avoid>::has_feature ()
-{
-}
-*/
 
-//  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     
 
+//  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator
 
 template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
@@ -83,6 +75,7 @@ template<class Source, class Pred>
   InteractionIterator<Source,Pred>::operator++()
 {
   if(mRemain == 0) return *this;
+  inc_pointers();
   // skip constants
   while ((*mpDiagFeature)->is_constant())
     inc_pointers();

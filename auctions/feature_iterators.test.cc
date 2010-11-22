@@ -16,6 +16,36 @@
 #include <iostream>
 
 
+//  use this model as feature source
+class Model
+{
+private:
+  int mQ;
+  int mCases;
+  FeatureList mAccepted;
+  FeatureList mRejected;
+  
+public:
+  Model(FeatureList const& accept, FeatureList const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
+
+  int q()                       const  { return mQ; }
+  void increment_q()                   { ++ mQ; }
+  int n_total_cases()           const  { return mCases; }
+  
+  void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
+
+  FeatureList const& accepted_features() const { return mAccepted; }
+  FeatureList const& rejected_features() const { return mRejected; }
+};
+
+
+std::ostream&
+operator<< (std::ostream& os, Model const& m) { os << "Model @ q = " << m.q() << " "; return os; }
+
+
+
+//   ---------------------------------
+
 int
 main()
 {
@@ -27,23 +57,40 @@ main()
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   
-
   FeatureVector features;
-  FeatureVector featureVec1, featureVec2;
-
-  FeatureList   featureList;
-
-  
+  FeatureVector featureVec1,  featureVec2;
+  FeatureList   featureList1, featureList2;
   std::cout << "\n\nTEST: building collections of features\n";
-  for (int i=0; i<10; ++i)
+  const int numberOfFeatures (10);
+  for (int i=0; i<numberOfFeatures; ++i)
   { features.push_back(Feature(columns[i]));
-    featureList.push_back(Feature(columns[i]));
+    featureList1.push_back(Feature(columns[i]));
+    featureList1.push_back(Feature(columns[i+numberOfFeatures]));
     featureVec1.push_back(Feature(columns[i]));
-    featureVec2.push_back(Feature(columns[i+10]));
+    featureVec2.push_back(Feature(columns[i+numberOfFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
   std::cout << "  -------------------------------------------------------\n";
   
+
+  
+  if (false)        // test queue iterator
+  {
+    std::cout << "\n\nTEST: queue iterator\n";
+    bool include (true);
+    for (unsigned i; i<features.size(); ++i)  // set half to be in model, with bids in reverse order
+    { include = !include;
+      features[i]->set_model_results(include, ((double)i)/10.0);
+    }
+    QueueIterator<FeatureVector, SkipIfInModel> it (features, SkipIfInModel());
+    int more (20);
+    while(it.valid() && --more)
+    { std::cout << "TEST_queue: *it = " << *it << std::endl;
+      ++it;
+    }
+    std::cout << "TEST_queue: complete, it = " << it << std::endl;
+  }
+
 
   if (false)         // test cyclic iterator
   { 
@@ -58,7 +105,7 @@ main()
   }
 
 
-  if (true)         // test dynamic iterator
+  if (false)         // test dynamic iterator
   {
     std::cout << "\n\nTEST: dynamic iterator\n";
     FeatureVector fv;
@@ -67,7 +114,6 @@ main()
     int nToAdd (3);
     for (int i=0; i<nToAdd; ++i)
       fv.push_back(features[i]);
-    std::cout << "TEST: FV.size() is " << fv.size() << std::endl;
     while(it.valid())
     { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
       ++it;
@@ -83,170 +129,97 @@ main()
   }
 
   
-  
-  /*
-    if (false)
-  {   // test lag streams
-    std::cout << "\n\n\n\nTEST: making regulated lag stream\n";
-    FeatureStream< LagIterator, Identity, FeatureVector > ls (make_lag_stream("Test", features[0], 4, 1, 2, empty)); // max lag 4, 2 cycles
-
-    for (unsigned i=0; i<10; ++i)
-    { if (ls.has_feature())
-      {	FeatureVector fv (ls.pop());
-	std::cout << "   popped...  " << fv[0] << std::endl;
-      }
-      ls.print_to(std::cout);
+  if (false)     //    test lag iterators
+  {   
+    std::cout << "\n\nTEST: making lag iterator\n";
+    LagIterator it (features[0], 4, 2, 1); // max lag 4, 2 cycles, blocksize 1
+    
+    while(it.valid())
+    { std::cout << "TEST_lag: it = " << it << "     *it = " << (*it)->name() << std::endl;
+      ++it;
     }
+    std::cout << "TEST_lag: completed, it = " << it << std::endl;
   }
 
-
-  if (false)
-  {  // test neighborhood stream; start by making a neighbor vector of integers out of a column
-    std::cout << "\n\n\n\nTEST: making neighborhood stream\n";
-    double *p = columns[5]->begin();
-    for (int i = 0; i < columns[5]->size(); ++i)
-      *p++ = i % 3; // 0 1 2 0 1 2 ...
-    std::cout << "    : building integer column.\n";
-    IntegerColumn ic(columns[5]);
-    std::cout << "      Input column is " << columns[5] << std::endl;
-    std::cout << "      Integer column is " << ic << std::endl;
-    std::cout << "      Make an indexed feature externally " << make_indexed_feature(features[1],ic) << std::endl;
-    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature, FeatureVector> ns (make_neighborhood_stream("Test", features, ic, empty));
-    std::cout << "TEST: building features for neighborhood\n";
-    if (ns.has_feature())
-    { FeatureVector fv (ns.pop());
-      std::cout << "   feature is " << fv[0] << std::endl;
-    }
-    else std::cout << "    NS says it does not have a feature; its number remaining is " << ns.number_remaining() << std::endl;
-    for (unsigned i=0; i<2; ++i)
-    { if (ns.has_feature())
-      { FeatureVector ff (ns.pop());
-	ff[0]->print_to(std::cout);
-      }
-      else std::cout << "TEST: neighborhood stream is empty.\n";
-    }
-  }
-
-  
-  if (false)   // test polynomial streams, two versions of the regulated streams (one dynamic and the other static)
+    
+  if (false)    //        test model iterator
   {
-    std::cout << "\n\n\n\nTEST: making polynomial stream\n";
-    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeature, FeatureVector> ps (make_polynomial_stream("Test", features, 3, empty));
-    ps.print_to(std::cout);
-    std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
-    while(ps.has_feature())
-    { FeatureVector fv = ps.pop();
-      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
-    }
-    std::cout << " stream has " << ps.number_remaining() << " features remaining\n";
-  }
-  
-
-  if (false)     // test product stream
-  {
-    std::cout << "\n\n\nTEST: making product stream\n";
-    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature, FeatureVector> ps (make_feature_product_stream ("test", features, features[0], empty));
-    std::cout << ps << std::endl;
-    std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
-    while(ps.has_feature())
-    { FeatureVector fv = ps.pop();
-      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
-    }
-    std::cout << " stream has " << ps.number_remaining() << " features remaining\n";
-  }
-
-  
-  if (false)    // test calibration stream
-  {
-    std::cout << "\n\n\nTEST: making calibration stream\n";
-    int degree = 3;
-    int skip = 0;
-    Model model (featureVec1, featureVec2);
-
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>, FeatureVector > cs (make_calibration_stream ("test", model, degree, skip, empty));
-    std::cout << cs << std::endl;
-    std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
-    int max = 3;
+    std::cout << "\n\nTEST:  make model iterator\n";
+    Model model (featureList1, featureList2);
+    ModelIterator<Model> it (model);
+    
+    int max (4);
     model.increment_q();
-    std::cout << "  After increment, stream  has_feature=" << cs.has_feature() << std::endl;
-    while(cs.has_feature() && --max)
-    { FeatureVector fv = cs.pop();
-      std::cout << "  Leading popped feature: " << fv[0] << "  ; " << fv.size() << " features in vector\n";
-      std::cout << "  Calibration stream " << cs << std::endl;
+    while(it.valid() && --max)
+    { 
+      std::cout << "TEST_model: popped " << *it << std::endl;
       model.increment_q();
     }
+    std::cout << "TEST_model: completed, it = " << it << std::endl;
   }
 
-  if(false)    // test subspace
+
+  if(false)           // test subspace iterator
   {
-    std::cout << "\n\n\nTEST: making subspace stream\n";
+    std::cout << "\n\nTEST: testing subspace iterator\n";
     FeatureVector bundle;
-    int bundleSize = 5;
-    FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, Identity, FeatureVector> bs (make_subspace_stream("test", bundle, Identity(), bundleSize,empty));
-    for (int i = 0; i<20; ++i)
-    { bundle.push_back(features[i%3]);
-      if (bs.has_feature())
-      { FeatureVector fv (bs.pop());
-	std::cout << "   Popping subspace stream with top element " << fv[0]->name() << " with total size " << fv.size() << std::endl;
+    int bundleSize = 3;
+    BundleIterator<FeatureVector, SkipIfInModel> it (bundle, bundleSize, SkipIfInModel());
+    for (int i = 0; i<numberOfFeatures; ++i)
+    { bundle.push_back(features[i]);
+      if (it.valid())
+      {	std::cout << "TEST_bundle: *it = " << *it << std::endl;
+	++it;
       }
-      else std::cout << "  Bundle stream not ready; external size is " << bundle.size() << std::endl;
+      else
+	std::cout << "TEST_bundle: not ready " << it << " external size is " << bundle.size() << std::endl;
     }
+    std::cout << "TEST_bundle: completed " << it << std::endl;
   }
 
-      
-  if (true)     // test interactions
-  { std::cout << "\n\nTEST:  Test of interaction stream.\n";
-    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity, FeatureVector> is (make_interaction_stream("test", features, false,empty));  // use squares?
-    std::cout << " IS has " << is.number_remaining() << " features remaining\n";
-    
-    std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
-    is.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "TEST: pop off in loop\n";
-    int count (0);
-    while(is.has_feature())
-    { FeatureVector fv = is.pop();
-      std::cout << "  Popped feature " << ++count << ": " << fv[0] << "  ====  " << is.number_remaining() << " remain" << std::endl;
+
+  if (false)     // test interaction iterator
+  { std::cout << "\n\nTEST:  Test interaction iterator.\n";
+    FeatureVector fv;
+    for (int i=0; i<4; ++i)      // small vector to check end
+      fv.push_back(features[i]);
+    InteractionIterator<FeatureVector, SkipIfRelatedPair> it (fv, false, SkipIfRelatedPair());  // use squares?
+    std::cout << "TEST_inter: has " << it.number_remaining() << " features remaining\n";
+    int more (40);
+    while(it.valid() && --more)
+    { std::cout << "TEST_inter: *it = " << *it << std::endl;
+      ++it;
     }
-    std::cout << " IS has " << is.number_remaining() << " features remaining\n";
+    std::cout << "TEST_inter: completed " << it << std::endl;
   }
 
-  
-  if (true)    // test dynamic cross-product stream
-  { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
-    typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
-    std::vector<Feature> featuresSlow, featuresFast;
-    CP cp (make_cross_product_stream("CP stream",  make_range(empty), featuresSlow, featuresFast));
+
+  if (true)    // test dynamic cross-product iterator
+  { std::cout << "\n\nTEST:  test cross-product iterator.\n";
+    FeatureList featuresSlow, featuresFast;
+    CrossProductIterator<FeatureList> it (featuresSlow, featuresFast);
+    std::cout << "TEST_cp: initial state of iterator is " << it << std::endl;
     
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "\n\nTEST: adding features\n";
     featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;
     featuresFast.push_back(Feature(columns[1]));  std::cout << "Fast <- " << columns[1]->name() << std::endl;
     featuresFast.push_back(Feature(columns[2]));  std::cout << "Fast <- " << columns[2]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "TEST: first pops\n";
-    FeatureVector blank;
-    while(!cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
+    std::cout << "TEST_cp: after adding features " << it << std::endl;
+
+    int more (10);
+    while(it.valid() && --more)
+    { std::cout << "TEST_cp: *it = " << *it << std::endl;
+      ++it;
     }
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
+    std::cout << "TEST_cp: completed " << it << std::endl;
+
 
     return 0;
     
+    /*
     std::cout << "\n\nTEST: adding features\n";
     featuresFast.push_back(Feature(columns[3]));  std::cout << "Fast <- " << columns[3]->name() << std::endl;
     featuresFast.push_back(Feature(columns[4]));  std::cout << "Fast <- " << columns[4]->name() << std::endl;
     featuresFast.push_back(Feature(columns[5]));  std::cout << "Fast <- " << columns[5]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
     
     std::cout << "\nTEST: second pops\n";
     while(cp.has_feature())
@@ -267,8 +240,9 @@ main()
     { std::vector<Feature> fv (cp.pop());
       std::cout << "Popped feature " << fv[0] << std::endl;
     }
+    */
   }
-  */
+  
   
   std::cout << "\n\nDONE:\n";
   return 0;
