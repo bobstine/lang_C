@@ -255,41 +255,35 @@ operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { 
 
 //     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     
 
-/*  Combines two dynamically growing sources. You *must* guarantee
-    that the sources remain "alive" for the duration of the application.
-
-    Suppose the fast source has 4 elements.  Then
-
-    Position vector {4,2,0} indicates that
-            var 0 of the slow source has been crossed with 0,1,2,3 of fast (done with var 0 for now)
-	    var 1                    has been crossed with 0,1     of fast, next with third in fast
-	    var 2                    has not been crossed with any
+/*
+  Combines two dynamically growing sources using iterators without references to the
+  collections themselves. In order to go forward, use reverse iterators in backwards order. Yuk.
 */
   
 
 template <class Collection>
 class CrossProductIterator
 {
-  typedef typename Collection::const_iterator Iterator;
+  typedef typename Collection::const_reverse_iterator Iterator;
   
-  Collection const&             mSlowSource, mFastSource;
-  unsigned int                  mSlowPosition;
-  Iterator                      mSlowIterator;
-  mutable std::vector<Iterator> mFastIterators;   // may get zeros tacked onto end
+  unsigned int            mSlowPosition;
+  Iterator                mSlowIterator;    // position in slow list 
+  const Iterator          mSlowEnd;         // end of slow list
+  Iterator                mFastIterator;    // use to tack on 
+  std::vector<Iterator>   mFastIterators;   // may get zeros tacked onto end; get one for each slow iterator
   
 public:
     
   CrossProductIterator(Collection const& slow, Collection const& fast)
-    : mSlowSource(slow), mFastSource(fast), mSlowIterator(slow.begin()), mFastIterators() { update_iterator_vector(); }
+    : mSlowIterator(slow.rend()), mFastIterators() { update_iterator_vector(); }
   
   int   number_remaining()          const { std::cout << "WARNING: call to number remaining in dynamic stream.\n"; return 0; }   //  for interface only
 
-  bool  valid()                     const { update_iterator_vector(); return (mSlowIterator != mSlowSource.end()) && (mFastIterators[mSlowPosition] != mFastSource.end()); }
+  bool  valid()                           { update_iterator_vector(); return (mSlowIterator != mSlowSource.end()) && (mFastIterators[mSlowPosition] != mFastSource.end()); }
 
   CrossProductIterator& operator++()
     {
       ++mFastIterators[mSlowPosition];
-      mSlowPosition = 0; mSlowIterator = mSlowSource.begin(); //  check that list has not grown                                  
       update_iterator_vector();                                                                                                      
       for(typename std::vector<Iterator>::const_iterator it=mFastIterators.begin(); it!=mFastIterators.end(); ++it)
       { if (*it != mFastSource.end())                         // find first available cross product 
@@ -297,19 +291,27 @@ public:
 	else                                                                                                                         
 	{ ++mSlowPosition; ++mSlowIterator; }
       }
+      return *this;
     }
-  Feature               operator*() const { assert(valid()); return Feature(*mSlowIterator,*mFastIterators[mSlowPosition]); }
+  
+  Feature               operator*()/*const*/     { assert(valid()); return Feature(*mSlowIterator,*mFastIterators[mSlowPosition]); }
 
-  void               print_to(std::ostream& os) const { os << "CrossProduct iter "; if (valid()) os << "@ " << mSlowIterator->name()
-							   << " x " << mFastIterators[mSlowPosition]->name(); else os << "empty "; }
+  void               print_to(std::ostream& os)  { os << "CrossProduct iter "; if (valid()) os << "@ " << (*mSlowIterator)->name()
+							   << " x " << (*mFastIterators[mSlowPosition])->name(); else os << "empty "; }
 private:
-  void  update_iterator_vector() const  { while (mFastIterators.size() < mSlowSource.size()) mFastIterators.push_back(mFastSource.begin()); }
+  void  update_iterator_vector() 
+  { while (mFastIterators.size() < mSlowSource.size())
+    { mSlowPosition = 0; mSlowIterator = mSlowSource.begin();
+      mFastIterators.push_back(mFastSource.begin());
+      std::cout << "\nadded fast iterator; slow size " << mSlowSource.size() << "-" << mFastIterators.size() << " fast " << mFastSource.size() <<"\n";
+    }
+  }
 };
 
 
 template <class Collection>
 std::ostream&
-operator<< (std::ostream& os, CrossProductIterator<Collection> const& it) { it.print_to(os); return os; }
+operator<< (std::ostream& os, CrossProductIterator<Collection>& it) { it.print_to(os); return os; }
 
 
 #include "feature_iterators.Template.h"

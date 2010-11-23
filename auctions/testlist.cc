@@ -7,11 +7,11 @@
 typedef std::list<int> Container;
 
 void
-check(Container::const_iterator it, const Container& c)
+check(Container::const_reverse_iterator it, const Container& c)
 {
   bool found = false;
   std::cout << "[";
-  for(Container::const_iterator i = c.begin(); i != c.end(); ++i)
+  for(Container::const_reverse_iterator i = c.rbegin(); i != c.rend(); ++i)
     {
       if(i == it)
 	{
@@ -19,13 +19,13 @@ check(Container::const_iterator it, const Container& c)
 	  found = true;
 	}
     }
-  Container::const_iterator previous = it;
+  Container::const_reverse_iterator previous = it;
   previous--;
   previous++;
   assert(previous == it);
   if(!found)
     std::cout << "not found";
-  if(it == c.end())
+  if(it == c.rend())
     std::cout << " (at end)";
   std::cout << "]\n";
 
@@ -36,20 +36,38 @@ int main()
   int more=3;
   
   Container aList;
+
+  if(--aList.end()==aList.begin())
+    std::cout << "--end == begin \n";
+  else
+    std::cout << "--end != begin\n";
+
+  if((++aList.end())==aList.begin())
+    std::cout << "++end == begin \n";
+  else
+    std::cout << "++end != begin\n";
+  
   for (int i=0; i<more; ++i) { aList.push_back(i); };
   std::cout << "size = " << aList.size() << std::endl;
 
-  Container::const_iterator it (aList.begin());
+  if((++aList.end())==aList.begin())
+    std::cout << "++end == begin \n";
+  else
+    std::cout << "++end != begin\n";
+  
+
+
+  Container::const_reverse_iterator it (aList.rbegin());
   check(it,aList);
 
-  while(it != aList.end()) {  std::cout << " reading " << *it << std::endl; ++it; }
+  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
   check(it,aList);
 
   for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
   check(it,aList);
-  while(it != aList.end()) {  std::cout << " reading " << *it << std::endl; ++it; }
+  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
   for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
-  while(it != aList.end()) {  std::cout << " reading " << *it << std::endl; ++it; }
+  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
   for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
 
   return 0;
