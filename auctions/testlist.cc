@@ -38,13 +38,29 @@ int main()
   int more=3;
   
   Container aList;
-  Iterator theEnd (aList.end());
-  Iterator it     (aList.begin());
+  Iterator theEnd (aList.end()); 
+  Iterator it     (aList.end());  // point to one before the item to deref
 
-  std::cout << "Initial  : " << (it == theEnd) << std::endl;
+  std::cout << "Initial  : " << (  it == theEnd) << std::endl;
+  std::cout << "     ++  : " << (++it == theEnd) << std::endl;
   
   aList.push_back(1);
-  std::cout << "Post-push: " << (it == theEnd) << std::endl;
+  std::cout << "Post-push: " << (  it == theEnd) << std::endl;
+
+  Iterator copy (it);             // need to use a copy to look ahead or else wraps
+  while(++copy != theEnd)
+  {
+    std::cout << "         *++it = " << *(++it) << std::endl;
+  }
+  std::cout << "Push 3 more\n";
+  aList.push_back(2);
+  aList.push_back(3);
+  aList.push_back(4);
+  copy = it;
+  while(++copy != theEnd)
+  {
+    std::cout << "         *++it = " << *(++it) << std::endl;
+  }
   
 
   return 0;

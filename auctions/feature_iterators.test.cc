@@ -196,51 +196,50 @@ main()
 
   if (true)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
-    FeatureList featuresSlow, featuresFast;
-    CrossProductIterator<FeatureList> it (featuresSlow, featuresFast);
+    FeatureVector featuresSlow, featuresFast;
+    CrossProductIterator it (featuresSlow, featuresFast);
     std::cout << "TEST_cp: initial state of iterator is " << it << std::endl;
     
     featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;
     featuresFast.push_back(Feature(columns[1]));  std::cout << "Fast <- " << columns[1]->name() << std::endl;
     featuresFast.push_back(Feature(columns[2]));  std::cout << "Fast <- " << columns[2]->name() << std::endl;
-    std::cout << "TEST_cp: after adding features " << it << std::endl;
-
+    std::cout << "TEST_cp: after adding features " << std::endl;
+    
     int more (10);
     while(it.valid() && --more)
     { std::cout << "TEST_cp: *it = " << *it << std::endl;
       ++it;
+      std::cout << it << std::endl;
     }
-    std::cout << "TEST_cp: completed " << it << std::endl;
 
-
-    return 0;
-    
-    /*
     std::cout << "\n\nTEST: adding features\n";
     featuresFast.push_back(Feature(columns[3]));  std::cout << "Fast <- " << columns[3]->name() << std::endl;
     featuresFast.push_back(Feature(columns[4]));  std::cout << "Fast <- " << columns[4]->name() << std::endl;
     featuresFast.push_back(Feature(columns[5]));  std::cout << "Fast <- " << columns[5]->name() << std::endl;
     
-    std::cout << "\nTEST: second pops\n";
-    while(cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
+    std::cout << "\nTEST: after adding second group of features, it = " << it << std::endl;
+    it.valid();
+    std::cout << "\nTEST:                                        it = " << it << std::endl;
+    more = 10;
+    while(it.valid() && --more)
+    { std::cout << "TEST_cp: *it = " << *it << std::endl;
+      ++it;
+      std::cout << it << std::endl;
     }
     
     std::cout << "\n\nTEST: adding features\n";
     featuresSlow.push_back(Feature(columns[6]));  std::cout << "Slow <- " << columns[6]->name() << std::endl;
-    featuresSlow.push_back(Feature(columns[7]));  std::cout << "Slow <- " << columns[7]->name() << std::endl;
     featuresFast.push_back(Feature(columns[8]));  std::cout << "Fast <- " << columns[8]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
+    featuresSlow.push_back(Feature(columns[7]));  std::cout << "Slow <- " << columns[7]->name() << std::endl;
     
     std::cout << "\nTEST: third pops\n";
-    while(!cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
+    more = 10;
+    while(it.valid() && --more)
+    { std::cout << "TEST_cp: *it = " << *it << std::endl;
+      ++it;
+      std::cout << it << std::endl;
     }
-    */
+    std::cout << "TEST_cp: completed " << it << std::endl;
   }
   
   
