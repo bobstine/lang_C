@@ -31,44 +31,21 @@ check(Container::const_reverse_iterator it, const Container& c)
 
 }
 
+typedef Container::const_iterator Iterator;
+
 int main()
 {
   int more=3;
   
   Container aList;
+  Iterator theEnd (aList.end());
+  Iterator it     (aList.begin());
 
-  if(--aList.end()==aList.begin())
-    std::cout << "--end == begin \n";
-  else
-    std::cout << "--end != begin\n";
-
-  if((++aList.end())==aList.begin())
-    std::cout << "++end == begin \n";
-  else
-    std::cout << "++end != begin\n";
+  std::cout << "Initial  : " << (it == theEnd) << std::endl;
   
-  for (int i=0; i<more; ++i) { aList.push_back(i); };
-  std::cout << "size = " << aList.size() << std::endl;
-
-  if((++aList.end())==aList.begin())
-    std::cout << "++end == begin \n";
-  else
-    std::cout << "++end != begin\n";
+  aList.push_back(1);
+  std::cout << "Post-push: " << (it == theEnd) << std::endl;
   
-
-
-  Container::const_reverse_iterator it (aList.rbegin());
-  check(it,aList);
-
-  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
-  check(it,aList);
-
-  for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
-  check(it,aList);
-  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
-  for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
-  while(it != aList.rend()) {  std::cout << " reading " << *it << std::endl; ++it; }
-  for (int i=0; i<more; ++i) { aList.push_back(i); }; std::cout << "size = " << aList.size() << std::endl;
 
   return 0;
 }
