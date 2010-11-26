@@ -57,7 +57,7 @@ public:
 class SkipIfInBasis
 {
  public:
-  bool operator()(Feature const& f) const {  return (f->is_constant() || f->is_dummy() || (f->name() == "Basis"));  }
+  bool operator()(Feature const& f) const {  return (f->is_constant()) || (f->name() == "Basis");  }
 };
 
 

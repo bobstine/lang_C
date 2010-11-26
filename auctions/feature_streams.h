@@ -195,9 +195,9 @@ make_interaction_stream (std::string const& name, Collection const& src, bool us
 }
 
 
-template <class Predicate>
+inline
 FeatureStream< CrossProductIterator, Identity >
-make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast, bool useSquares)
+make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast)
 {
   std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
   return FeatureStream< CrossProductIterator, Identity>

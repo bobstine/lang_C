@@ -196,7 +196,7 @@ main()
   }
 
 
-  if(true)    // test subspace ... why so few????
+  if(false)    // test subspace 
   {
     std::cout << "\n\nTEST: making subspace stream\n";
     FeatureVector bundle;
@@ -205,83 +205,25 @@ main()
     drain_features(bs,15);
   }
 
-  /*
     
-  if (true)     // test interactions
+  if (false)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
-    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity, FeatureVector> is (make_interaction_stream("test", features, false,empty));  // use squares?
+    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
     std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
     is.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "TEST: pop off in loop\n";
-    int count (0);
-    while(is.has_feature())
-    { FeatureVector fv = is.pop();
-      std::cout << "  Popped feature " << ++count << ": " << fv[0] << "  ====  " << is.number_remaining() << " remain" << std::endl;
-    }
-    std::cout << " IS has " << is.number_remaining() << " features remaining\n";
+    drain_features(is,10);
   }
 
   
   if (true)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
-    typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
-    std::vector<Feature> featuresSlow, featuresFast;
-    CP cp (make_cross_product_stream("CP stream",  make_range(empty), featuresSlow, featuresFast));
-    
+    FeatureStream< CrossProductIterator, Identity > cp (make_cross_product_stream("test", featureVec1, featureVec2));
     std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "\n\nTEST: adding features\n";
-    featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;
-    featuresFast.push_back(Feature(columns[1]));  std::cout << "Fast <- " << columns[1]->name() << std::endl;
-    featuresFast.push_back(Feature(columns[2]));  std::cout << "Fast <- " << columns[2]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "TEST: first pops\n";
-    FeatureVector blank;
-    while(!cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
-    }
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-
-    return 0;
-    
-    std::cout << "\n\nTEST: adding features\n";
-    featuresFast.push_back(Feature(columns[3]));  std::cout << "Fast <- " << columns[3]->name() << std::endl;
-    featuresFast.push_back(Feature(columns[4]));  std::cout << "Fast <- " << columns[4]->name() << std::endl;
-    featuresFast.push_back(Feature(columns[5]));  std::cout << "Fast <- " << columns[5]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "\nTEST: second pops\n";
-    while(cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
-    }
-    
-    std::cout << "\n\nTEST: adding features\n";
-    featuresSlow.push_back(Feature(columns[6]));  std::cout << "Slow <- " << columns[6]->name() << std::endl;
-    featuresSlow.push_back(Feature(columns[7]));  std::cout << "Slow <- " << columns[7]->name() << std::endl;
-    featuresFast.push_back(Feature(columns[8]));  std::cout << "Fast <- " << columns[8]->name() << std::endl;
-    
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
-    cp.print_to(std::cout); std::cout << std::endl;
-    
-    std::cout << "\nTEST: third pops\n";
-    while(!cp.has_feature())
-    { std::vector<Feature> fv (cp.pop());
-      std::cout << "Popped feature " << fv[0] << std::endl;
-    }
+    drain_features(cp,10);
   }
-  */
+
   
   float ms = 0.5 * 1e3;
   boost::posix_time::milliseconds delay(ms);
