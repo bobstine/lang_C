@@ -90,6 +90,13 @@ LightThread<W>::done() const
 }
 
 template<class W>
+bool
+LightThread<W>::has_worker() const
+{
+  return (mp_worker != 0);
+}
+
+template<class W>
 const W&
 LightThread<W>::operator()() const
 {
@@ -109,6 +116,7 @@ LightThread<W>::operator->() const
   if(!done())
     mp_thread->join();
   assert(done());
+  assert(has_worker());
   return mp_worker.get();
 }
 
@@ -121,6 +129,7 @@ LightThread<W>::operator->()
   if(!done())
     mp_thread->join();
   assert(done());
+  assert(has_worker());
   return mp_worker.get();
 }
 
@@ -143,6 +152,7 @@ LightThread<W>::start_thread()
   // DPF: We want to make sure that we haven't been asked to start a new thread
   // while we have one currently running.
   assert(!done());
+  assert(has_worker());
   (*mp_worker)();
   set_done(true);
 }

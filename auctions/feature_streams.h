@@ -50,8 +50,6 @@
     Lag              lags of a given feature
     Polynomial       bundle of several powers at once
     Subspace         several variables as a bundle
-
-
   
 */
 
@@ -61,38 +59,17 @@
 #include "feature_transformations.h"
 
 #include "light_threads.h"
-
-// polynomial
-#include "function_utils.h"
 #include "debug.h"
 
-// for finite streams
-#include <queue>
 #include <iostream>
-#include <sstream>
-#include <boost/shared_ptr.hpp>
 
-/*
-  bool has_feature ()
-  {
-    if(m_thread.done() && Stream::has_feature_ready())
-      return true;
-    else if (Stream::can_build_more_features())
-      m_thread( boost::bind( &Stream::build_next_feature, this ) );
-    else
-      debugging::debug("RGST",3) << "threaded, regulated stream '" << Stream::name() <<"' cannot build more features.\n";
-    return false;
-  }
-};
 
-*/
 
- 
-
-template<class Iterator, class Transform>
+template<class Iterator, class Op>
 class FeatureStream
 {
-
+  typedef FeatureTransformation<Op> Transform;
+  
 private:
   std::string             mName;
   Iterator                mIterator;
@@ -102,40 +79,28 @@ private:
 public:
   ~FeatureStream() { }
 
-  FeatureStream (std::string name, Iterator it, Transform trans)
-    : mName(name), mIterator(it), mTransform(trans), mThread() { make_features(); }
+  FeatureStream (std::string name, Iterator it, Op op)
+    : mName(name), mIterator(it), mTransform(op), mThread() { make_features(); }
   
-  std::string    name()                      const { return mName; }
-  std::string    feature_name()              const { std::cout << "FS: retrieve name\n"; if (has_feature()) return mThread->output_features()[0].name(); else return "empty/busy"; }
-  void           print_to(std::ostream& os)  const { os <<  mName << " @ " << feature_name(); }
+  std::string    name()                      const;
+  std::string    feature_name()              const;
+  void           print_to(std::ostream& os)  const;
 
-  int            number_remaining()          const { return mIterator.number_remaining(); }
+  int            number_remaining()          const;
 
-  bool           is_busy()                   const { return !mThread.done(); }
-  bool           has_feature()                     { if (is_busy()) return false; if (mThread->empty()) { make_features(); return false; } else return true; }
-  FeatureVector  pop()                             { assert (has_feature()); FeatureVector fv (mThread->output_features()); make_features(); return fv; }
+  bool           is_busy()                   const;
+  bool           is_empty()                  const;
+  bool           has_feature();
+  FeatureVector  pop();
 
 private:
-  void make_features()
-    { std::cout << "FS: make_features\n";
-      if (mIterator.valid())
-      { // load up the transform operator
-	mTransform.input(*mIterator);
-	// advance the iterator
-	++mIterator;
-	// start thread on transformation
-	mThread(mTransform);
-      }
-    }
+  void make_features();
+  bool const_has_feature()                   const;
 };
 
-template<class Iterator, class Transform, class Avoid>
+template<class Iterator, class Transform>
 std::ostream&
 operator<<(std::ostream& os, FeatureStream<Iterator,Transform> const& s) { s.print_to(os); return os; }
-
-
-
-
 
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -153,94 +118,92 @@ make_finite_stream (std::string const& name, Collection const& source, Pred pred
 }
 
 
-
 template<class Collection, class Pred, class Operator>
-FeatureStream< DynamicIterator<Collection, Pred>, Operator>
+FeatureStream<DynamicIterator<Collection, Pred>, Operator>
 make_dynamic_stream (std::string const& name, Collection const& source, Pred pred, Operator op)
 {
   return FeatureStream< DynamicIterator<Collection, Pred>, Operator >
     ("DynamicStream::"+name, DynamicIterator<Collection,Pred>(source, pred), op);
 }
 
-/*
-  
-template< class AvoidCollection >
-FeatureStream< LagIterator, Identity, AvoidCollection>
-make_lag_stream (std::string const& name, Feature const& f, int maxLag, int blockSize, int numberCycles, AvoidCollection const& avoid)
+
+inline  
+FeatureStream<LagIterator, Identity>
+make_lag_stream (std::string const& name, Feature const& f, int maxLag, int numberCycles, int blockSize)
 {
-  return FeatureStream< LagIterator, Identity, AvoidCollection>
-    ("LagStream::"+name, LagIterator(f, maxLag, numberCycles, blockSize), Identity(), avoid);
+  return FeatureStream<LagIterator, Identity>
+    ("LagStream::"+name, LagIterator(f, maxLag, numberCycles, blockSize), Identity());
 }
 
 
-template <class Collection, class AvoidCollection>
-FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeature, AvoidCollection>
-make_polynomial_stream (std::string const& name, Collection const& src, int degree, AvoidCollection const& avoid)
+template <class Collection>
+FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
+make_polynomial_stream (std::string const& name, Collection const& src, BuildPolynomialFeatures op)
 {
-  std::cout << "TEST: make_polynomial_stream of degree " << degree << std::endl;
-  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeature, AvoidCollection>
-    ("Polynomial::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildPolynomialFeature(degree), avoid);
+  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
+    ("Polynomial::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), op);
 }
 
 
-template <class Collection,  class AvoidCollection>
-FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature, AvoidCollection>
-make_neighborhood_stream (std::string const& name, Collection const& src, IntegerColumn const& col, AvoidCollection const& avoid)
+template <class Collection>
+FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+make_neighborhood_stream (std::string const& name, Collection const& src, IntegerColumn const& col)
 {
-  std::cout << "TEST: make_neighborhood_stream with indices " << col << std::endl;
-  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature, AvoidCollection>
-    ("Neighborhood::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildNeighborhoodFeature(col), avoid);
+  return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
+    ("Neighborhood::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildNeighborhoodFeature(col));
 }
 
 
-template <class Collection,  class AvoidCollection>
-FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature,AvoidCollection>
-make_feature_product_stream (std::string const& name, Collection const& c, Feature const& f, AvoidCollection const& avoid)
+template <class Collection>
+FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
+make_feature_product_stream (std::string const& name, Collection const& c, Feature const& f)
 {
   std::cout << "FPRS: make_feature_product_stream from feature " << f->name() << std::endl;
-  return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature, AvoidCollection>
-    ("Feature-product::"+name, QueueIterator<Collection, SkipIfRelated>(c, SkipIfRelated(f)), BuildProductFeature(f), avoid);
+  return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature>
+    ("Feature-product::"+name, QueueIterator<Collection, SkipIfRelated>(c, SkipIfRelated(f)), BuildProductFeature(f));
 }
 
 
-template <class Model,  class AvoidCollection>
-FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>,AvoidCollection >
-make_calibration_stream (std::string const& name, Model const& model, int degree, int skip, AvoidCollection const& avoid)
+template <class Model>
+FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>>
+make_calibration_stream (std::string const& name, Model const& model, int degree, int skip)
 {
   std::cout << "FPRS: make_calibration_stream of degree " << degree << " with initial skip of " << skip << " cases.\n";
-  return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>, AvoidCollection >
-    ("Calibration::"+name, ModelIterator<Model>(model), BuildCalibrationFeature<Model>(degree,skip), avoid);
+  return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
+    ("Calibration::"+name, ModelIterator<Model>(model), BuildCalibrationFeature<Model>(degree,skip));
 }
 
 
-template <class Collection, class Trans,  class AvoidCollection>
-FeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans,AvoidCollection >
-make_subspace_stream (std::string const& name, Collection const& src, Trans const& trans, int bundleSize, AvoidCollection const& avoid)
+
+template <class Collection, class Trans>
+FeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
+make_subspace_stream (std::string const& name, Collection const& src, Trans const& trans, int bundleSize)
 {
   std::cout << "FPRS: make_subspace_stream with bundle size " << bundleSize << std::endl;
-  return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans, AvoidCollection >
-    ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans, avoid);
+  return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
+    ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
 }
 
-template <class Collection,  class AvoidCollection>
-FeatureStream< InteractionIterator<Collection, SkipIfRelatedPair>, Identity, AvoidCollection >
-make_interaction_stream (std::string const& name, Collection const& src, bool useSquares, AvoidCollection const& avoid)
+
+template <class Collection>
+FeatureStream< InteractionIterator<Collection, SkipIfRelatedPair>, Identity>
+make_interaction_stream (std::string const& name, Collection const& src, bool useSquares)
 {
   std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
-  return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity, AvoidCollection>
-    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()), Identity(), avoid);
+  return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity>
+    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()), Identity());
 }
 
 
-template <class Predicate, class AvoidCollection>
-FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity, AvoidCollection >
-make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast, bool useSquares, AvoidCollection const& avoid)
+template <class Predicate>
+FeatureStream< CrossProductIterator, Identity >
+make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast, bool useSquares)
 {
   std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
-  return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity, AvoidCollection>
-    ("Interaction::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity(), avoid);
+  return FeatureStream< CrossProductIterator, Identity>
+    ("Interaction::"+name, CrossProductIterator(slow, fast), Identity());
 }
-*/
+
 
 ///////////////////////////////////////////////////////////////////////
 

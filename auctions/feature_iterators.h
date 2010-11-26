@@ -167,6 +167,7 @@ public:
   ModelIterator(Model const& m): mModel(m), mLastQ(0) {}
 
   bool   valid()                   const;
+  int    number_remaining ()       const { if (valid()) return 1; else return 0; }
   ModelIterator&  operator++()           { return *this; }
   Model const&    operator*()            { mLastQ = mModel.q(); return mModel; }
   void  print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
@@ -191,7 +192,7 @@ public:
   BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mLoIndex(0), mHiIndex(0) { }
 
   bool     valid()              const    { return (mSource.size()-mLoIndex) > mBundleSize; } 
-
+  int  number_remaining ()      const    { if (valid()) return 1; else return 0; }
   BundleIterator& operator++()           { return *this; }
 
   FeatureVector   operator*()   

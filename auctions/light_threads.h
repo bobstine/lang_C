@@ -35,7 +35,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-//define NOTHREADS
+//#define NOTHREADS
 
 
 
@@ -55,9 +55,10 @@ public:
   LightThread<W>(const LightThread<W>&);       // "copy" a new thread via default
   LightThread<W>();
   
-  void     operator()(const W& worker);             // starts a new thread (waits for old to finish)
-  bool     done() const;                            // Tells if the thread is done.
-  const W& operator()() const;                  // will wait for thread to finish if not done()
+  void     operator()(const W& worker);        // starts a new thread (waits for old to finish)
+  bool     done() const;                       // Tells if the thread is done.
+  bool     has_worker() const;                 // confirm that worker is there
+  const W& operator()() const;                 // will wait for thread to finish if not done()
   
   const W* operator->() const;     // will wait for thread to finish if not done()
         W* operator->();           // who needs const anyway???

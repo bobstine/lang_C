@@ -3,6 +3,7 @@
 
 #include "column.h"
 #include "features.h"
+#include "function_utils.h"
 
 
 /*
@@ -18,36 +19,72 @@ class FeatureTransformation
 {
   typedef typename Operator::argument_type ArgType;
   
+ private:
   ArgType       mInput;
+  Operator      mOp;
   FeatureVector mFV;
-
+  
  public:
-  void          input(ArgType x)                 { mInput = x; }
-  bool          empty()                const     { return mFV.empty(); }
-  FeatureVector output_features()      const     { return mFV; }
-
-  void operator()()
+  
+ FeatureTransformation(Operator op)   : mOp(op) { }
+  
+  void          input(ArgType x)               { mInput = x; }
+  bool          empty()                const   { return mFV.empty(); }
+  std::string   first_output_name()    const   { assert(!mFV.empty()); return mFV[0]->name(); }
+  FeatureVector output_features()              { FeatureVector fv(mFV); mFV.clear(); return fv; }   // empty the result; want to appear stateless
+  
+  void operator()()         
   {
-    std::cout << "TRANS: apply transformation\n";
-    mFV = Operator()(mInput);
-    std::cout << "TRANS: yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
+    std::cout << "TRANS: apply feature transformation operator \n";
+    mFV = mOp(mInput);
+    std::cout << "TRANS: operator yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
   }
 };
 
 
-class WrapFeature: public std::unary_function<Feature, FeatureVector>
+
+//     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     
+class Identity: public std::unary_function<Feature, FeatureVector>
 {
  public:
-  FeatureVector operator()(Feature f) const { FeatureVector fv; fv.push_back(f); return fv; }
+  FeatureVector operator()(Feature f)        const { FeatureVector fv; fv.push_back(f); return fv; }
+};
+
+class VIdentity: public std::unary_function<FeatureVector, FeatureVector>
+{
+ public:
+  FeatureVector operator()(FeatureVector fv) const {                                    return fv; }
 };
 
 
-typedef FeatureTransformation<WrapFeature> Identity;
+//     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     
 
 
-/*
+class BuildPolynomialFeatures: public std::unary_function<Feature, FeatureVector>
+{
+ unsigned mDegree;
 
-class BuildNeighborhoodFeature
+ public:
+
+ BuildPolynomialFeatures(int degree) : mDegree(degree) { }
+ 
+ FeatureVector operator()(Feature const& f) const
+    { 
+      debugging::debug("PLYS",4) << "BuildPolynomialFeature subspace from feature " <<  f->name() << std::endl;
+      FeatureVector powers;
+      if (!f->is_used_in_model())    // include X if not in model
+	powers.push_back(f);
+      powers.push_back(Feature(Function_Utils::Square(), f));
+      if(mDegree>2) 
+	powers.push_back(Feature(Function_Utils::Cube(), f));
+      for (unsigned j=4; j<=mDegree; ++j)
+	powers.push_back(Feature(Function_Utils::Power(j), f));
+      return powers;
+    }
+};
+
+
+class BuildNeighborhoodFeature: public std::unary_function<Feature, FeatureVector>
 {
   IntegerColumn  mIndexColumn;   // maintained externally, not reference
 public:
@@ -64,29 +101,7 @@ public:
 };
 
 
-class BuildPolynomialFeature
-{
-  int mDegree;
-public:
-  BuildPolynomialFeature(int degree) : mDegree(degree) { }
-  
-  FeatureVector operator()(Feature const& f) const
-    { 
-      debugging::debug("PLYS",4) << "BuildPolynomialFeature subspace from feature " <<  f->name() << std::endl;
-      FeatureVector powers;
-      if (!f->is_used_in_model())    // include X if not in model
-	powers.push_back(f);
-      powers.push_back(Feature(Function_Utils::Square(), f));
-      if(mDegree>2) 
-	powers.push_back(Feature(Function_Utils::Cube(), f));
-      for (int j=4; j<=mDegree; ++j)
-	powers.push_back(Feature(Function_Utils::Power(j), f));
-      return powers;
-    }
-};
-
-
-class BuildProductFeature
+class BuildProductFeature: public std::unary_function<Feature,FeatureVector>
 {
   Feature mFeature;
 public:
@@ -103,7 +118,7 @@ public:
 
 
 template< class Model >
-class BuildCalibrationFeature
+class BuildCalibrationFeature: public std::unary_function<Model,FeatureVector>
 {
   int mDegree;
   int mSkip; // offset for features
@@ -129,6 +144,6 @@ class BuildCalibrationFeature
     return powers_of_column_feature(mFit,powers);
   }
 };
-*/
+
   
 #endif

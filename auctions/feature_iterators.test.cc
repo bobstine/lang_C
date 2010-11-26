@@ -105,7 +105,7 @@ main()
   }
 
 
-  if (false)         // test dynamic iterator
+  if (true)         // test dynamic iterator
   {
     std::cout << "\n\nTEST: dynamic iterator\n";
     FeatureVector fv;
@@ -125,7 +125,7 @@ main()
     { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
       ++it;
     }
-    std::cout << "FV.size() " << fv.size() << std::endl;
+    std::cout << "FV.size() " << fv.size() << " and iterator valid=" << it.valid() << std::endl;
   }
 
   
@@ -194,7 +194,7 @@ main()
   }
 
 
-  if (true)    // test dynamic cross-product iterator
+  if (false)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
     FeatureVector featuresSlow, featuresFast;
     CrossProductIterator it (featuresSlow, featuresFast);
