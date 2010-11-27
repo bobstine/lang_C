@@ -66,8 +66,7 @@ public:
     :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w)
-    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
-  
+    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
 
   bool      is_wls()                 const   { return mWeights.size() > 1; }
   bool      is_ols()                 const   { return mWeights.size() == 1; }
@@ -85,6 +84,8 @@ public:
 
   Vector    beta()                   const;
   Vector    se_beta()                const;
+  
+  std::vector<std::string>   predictor_names() const { return mXNames; }
 
   template <class Iter> void fill_with_predictions   (Matrix const& x, Iter begin) const;
   template <class Iter> void fill_with_fitted_values (Iter begin)                  const;
@@ -144,11 +145,13 @@ public:
   double goodness_of_fit() const  { return mModel.r_squared(); }
   int q()                  const  { return mModel.q(); }
   int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
+
+  std::vector<std::string> predictor_names() const { return mModel.predictor_names(); }
   
   int n_total_cases()      const  { return mLength; }
   int n_validation_cases() const  { return mLength - mN; }
   int n_estimation_cases() const  { return mN; }
-
+  
   double estimation_ss()   const  { return mModel.residual_ss(); }
   double validation_ss()   const;
 

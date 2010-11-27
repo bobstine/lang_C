@@ -138,10 +138,10 @@ make_lag_stream (std::string const& name, Feature const& f, int maxLag, int numb
 
 template <class Collection>
 FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
-make_polynomial_stream (std::string const& name, Collection const& src, BuildPolynomialFeatures op)
+make_polynomial_stream (std::string const& name, Collection const& src, int degree)
 {
   return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
-    ("Polynomial::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), op);
+    ("Polynomial::"+name, DynamicIterator<Collection,SkipIfDerived>(src, SkipIfDerived()), BuildPolynomialFeatures(degree));
 }
 
 
@@ -156,7 +156,7 @@ make_neighborhood_stream (std::string const& name, Collection const& src, Intege
 
 template <class Collection>
 FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
-make_feature_product_stream (std::string const& name, Collection const& c, Feature const& f)
+make_feature_product_stream (std::string const& name, Feature const& f, Collection const& c)
 {
   std::cout << "FPRS: make_feature_product_stream from feature " << f->name() << std::endl;
   return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature>

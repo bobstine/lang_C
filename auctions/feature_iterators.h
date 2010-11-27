@@ -166,11 +166,11 @@ class ModelIterator
 public:
   ModelIterator(Model const& m): mModel(m), mLastQ(0) {}
 
-  bool   valid()                   const;
-  int    number_remaining ()       const { if (valid()) return 1; else return 0; }
-  ModelIterator&  operator++()           { return *this; }
-  Model const&    operator*()            { mLastQ = mModel.q(); return mModel; }
-  void  print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
+  bool            valid()                    const;
+  int             number_remaining ()        const { if (valid()) return 1; else return 0; }
+  ModelIterator&  operator++()                     { return *this; }
+  Model const&    operator*()                      { mLastQ = mModel.q(); return mModel; }
+  void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
 };
  
 template <class Model>

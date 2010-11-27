@@ -20,13 +20,13 @@ class FeatureTransformation
   typedef typename Operator::argument_type ArgType;
   
  private:
-  ArgType       mInput;
   Operator      mOp;
+  ArgType       mInput;
   FeatureVector mFV;
   
  public:
   
- FeatureTransformation(Operator op)   : mOp(op) { }
+ FeatureTransformation(Operator op)   : mOp(op), mInput(), mFV() { }
   
   void          input(ArgType x)               { mInput = x; }
   bool          empty()                const   { return mFV.empty(); }
@@ -44,6 +44,7 @@ class FeatureTransformation
 
 
 //     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     
+
 class Identity: public std::unary_function<Feature, FeatureVector>
 {
  public:
@@ -57,8 +58,8 @@ class VIdentity: public std::unary_function<FeatureVector, FeatureVector>
 };
 
 
-//     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     
 
+//     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial
 
 class BuildPolynomialFeatures: public std::unary_function<Feature, FeatureVector>
 {
@@ -84,6 +85,8 @@ class BuildPolynomialFeatures: public std::unary_function<Feature, FeatureVector
 };
 
 
+//     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood
+
 class BuildNeighborhoodFeature: public std::unary_function<Feature, FeatureVector>
 {
   IntegerColumn  mIndexColumn;   // maintained externally, not reference
@@ -101,13 +104,15 @@ public:
 };
 
 
+//     Product     Product     Product     Product     Product     Product     Product     Product     Product     Product
+
 class BuildProductFeature: public std::unary_function<Feature,FeatureVector>
 {
   Feature mFeature;
 public:
   BuildProductFeature(Feature const& f) : mFeature(f) {}
 
-  FeatureVector operator()(Feature const& f) const
+  FeatureVector operator()(Feature f) const
     {
       debugging::debug("FPRS",4) << "BuildProductFeature from " << mFeature->name() << " x " << f->name() << std::endl;
       FeatureVector fv;
@@ -117,15 +122,17 @@ public:
 };
 
 
+//     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration
+
 template< class Model >
-class BuildCalibrationFeature: public std::unary_function<Model,FeatureVector>
+class BuildCalibrationFeature: public std::unary_function<Model const&, FeatureVector>
 {
   int mDegree;
-  int mSkip; // offset for features
-
+  int mSkip; // possible offset to allow for lag features
+  
  public:
   BuildCalibrationFeature (int degree,int skip) : mDegree(degree), mSkip (skip) { } 
-
+  
   FeatureVector operator()(Model const& model) const
   {
     // construct name for features as 'Y_hat_x'

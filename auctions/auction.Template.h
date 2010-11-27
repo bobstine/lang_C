@@ -170,7 +170,7 @@ namespace {
     BiddingHistory mHistory;
   public:
     Empty(BiddingHistory const& h) : mHistory(h) { }
-    bool operator()(Expert & e) { return e->finished(mHistory); }
+    bool operator()(Expert & e) { return e->finished(); }
   };
 }
 
@@ -287,6 +287,8 @@ template<class ModelClass>
 double
 Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& features)
 {
+  typedef FeatureStream<LagIterator, Identity>                                              LagStream;
+  typedef FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature>  ProductStream;
   double tax = mPayoffTaxRate * mPayoff;
   expert->payoff(mPayoff-tax);
   if (expert->role() != calibrate)
@@ -308,20 +310,20 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	if (fv.size() > 0)
 	  if((*f)->degree() == 1)                                                        // only cross simple features with stream
 	    spawned.push_back(Expert("Spawn["+(*f)->name()+"_"+*s.begin()+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
-				     UniversalBidder< RegulatedStream< FeatureProductStream > >(),
-				     make_feature_product_stream(*f, fv)  ));
+				     UniversalBidder< ProductStream >(),
+				     make_feature_product_stream("interactor", *f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
       { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
-	int maxLag (*lagSet.begin());                                                     // only one
+	int maxLag (*lagSet.begin());                                                                          // only one
 	spawned.push_back(Expert("Lag_"+(*f)->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
-				 UniversalBoundedBidder< RegulatedStream< LagStream > >(),
-				 make_lag_stream("Lag stream", *f, maxLag, mBlockSize, 2) ));  // 2 cycles over lags
+				 UniversalBoundedBidder< LagStream >(),
+				 make_lag_stream("Lag stream", *f, maxLag, 2, mBlockSize) ));                  // 2 cycles over lags
       }
       // interact winning feature with rest of model stream
       spawned.push_back(Expert("Cross["+(*f)->name()+",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
-			       UniversalBoundedBidder< RegulatedStream< FeatureProductStream > >(),
-			       make_feature_product_stream(*f, without_calibration_features(model_features()))  ));
+			       UniversalBoundedBidder< ProductStream >(),
+			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/(1+spawned.size());                                      // save share for global interaction expert
       if(mExperts[0]->name() == "In/In")
       { debugging::debug("AUCT", 3) << "Assigning alpha " << alpha << " to In/In interaction expert and " << spawned.size() << " spawned experts.\n";

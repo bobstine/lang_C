@@ -35,19 +35,20 @@ main()
   }
   std::cout << "TEST: Initialization converted " << columns.size() << " columns into features.\n";
   
-  // make regulated streams
-  typedef  RegulatedStream< FiniteStream  >                                   FS;
-  typedef  RegulatedStream< InteractionStream < std::vector<Feature> > >      IS;
-  typedef  RegulatedStream< CrossProductStream< std::vector<Feature>,std::vector<Feature> > > CP;
-  FS finiteStream (make_finite_stream("Columns", features));   
-  IS interStream  (make_interaction_stream("Col interactions", features, true));  // use squares 
-
+  // construct streams
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> InteractionStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>               FiniteStream;
+  typedef FeatureStream< CrossProductIterator, Identity >                                 CrossProductStream;
+  FiniteStream       finiteStream (make_finite_stream("Columns", features, SkipNone()));   
+  InteractionStream  interStream  (make_interaction_stream("Col interactions", features, true));  // use squares 
+  CrossProductStream cpStream     (make_cross_product_stream("cp", features, features));
+  
   // build several experts
   double alpha (0.05);
   std::vector<Expert> theExperts;
-  theExperts.push_back(Expert(source, 0, alpha, FiniteBidder<FS>(), finiteStream));
-  theExperts.push_back(Expert(source, 0, alpha, UniversalBidder<IS>(), interStream));
-  theExperts.push_back(Expert(parasite, 0, alpha, UniversalBidder<CP>(), make_cross_product_stream("cp", features, features)));
+  theExperts.push_back(Expert("finite",        source,   0, alpha, FiniteBidder<FiniteStream>(),          finiteStream));
+  theExperts.push_back(Expert("interactions",  source,   0, alpha, UniversalBidder<InteractionStream>(),  interStream));
+  theExperts.push_back(Expert("cross product", parasite, 0, alpha, UniversalBidder<CrossProductStream>(), cpStream));
   std::cout << "TEST: the experts are :\n" << theExperts << std::endl;
 
   // history defined in bidder.h
@@ -67,7 +68,7 @@ main()
   for (int j=0; j <= 10; ++j)
   { BiddingHistory hist(history, accepted, rejected);
     std::cout << "\nTEST: Printing expert before bid " << j << ":   " << e << std::endl;
-    if (!e->has_feature(hist))
+    if (!e->has_feature())
     { std::cout << "Empty...\n";
       break;
     }

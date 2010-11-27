@@ -6,7 +6,7 @@ double
   StreamExpert<Bidder,Stream>::place_bid (BiddingHistory const& state)
 {
   debugging::debug("XPRT",4) << name() << " gets bid: mAlpha=" << mAlpha << std::endl;
-  if ( (mAlpha>0.0) && has_feature(state) )
+  if ( (mAlpha>0.0) && has_feature() )
   { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, state)); 
     double m (max_bid()); 
     mCurrentBid = (b<m) ? b:m;

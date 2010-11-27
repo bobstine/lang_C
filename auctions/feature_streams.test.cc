@@ -145,7 +145,7 @@ main()
   if (false)   // test polynomial stream
   {
     std::cout << "\n\nTEST: making polynomial stream\n";
-    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures > ps (make_polynomial_stream("Test", features, BuildPolynomialFeatures(3)));
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures > ps (make_polynomial_stream("Test", features, 3));
     std::cout << ps << std::endl;
     std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     drain_features(ps, 10); // does not apply to dummy inputs
@@ -173,7 +173,7 @@ main()
   if (false)     // test product stream
   {
     std::cout << "\n\nTEST: making product stream\n";
-    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features, features[0]));
+    FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features[0], features));
     std::cout << ps << std::endl;
     std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
     drain_features(ps,10);

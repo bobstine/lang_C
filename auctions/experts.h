@@ -8,26 +8,26 @@
  *
 
  Experts combine the features of a bidder with those of a stream.  The
-expert serves as a host class, enforcing certain procedural rules.
-It's up to the user to make sure that the bidder and stream are
-compatible.
+ expert serves as a host class, enforcing certain procedural rules.
+ It's up to the user to make sure that the bidder and stream are
+ compatible.
 
-The auction only 'sees' the experts and does not interact with the
-bidder or stream of features directly.
+ The auction only 'sees' the experts and does not interact with the
+ bidder or stream of features directly.
 
-A bidder assigns a bid to the output of a stream of candidate features
-that can be used as explanatory variables in the auction.  Each stream
-includes a typedef of its result type.  Some will be features, some
-will be collections of features.  The expert never holds the features
-explicitly.  It leaves them in the stream until a bid is accepted and
-then it pops the feature off of the stream.
+ A bidder assigns a bid to the output of a stream of candidate features
+ that can be used as explanatory variables in the auction.  Each stream
+ includes a typedef of its result type.  Some will be features, some
+ will be collections of features.  The expert never holds the features
+ explicitly.  It leaves them in the stream until a bid is accepted and
+ then it pops the feature off of the stream.
 
   3 Mar 2010 ... Move to having a wrapper class with a ref counted pointer.
   
   
 */
 
-#ifndef _EXPERTS_H_
+#ifndef _EXPERTS_H
 #define _EXPERTS_H_
 
 #include "debug.h"
@@ -80,8 +80,7 @@ public:
   int                    skip()                             const { return mSkip; }
   double                 alpha()                            const { return mAlpha; }
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
-  bool                   finished(BiddingHistory const& h)        { if(mRole!=custom) return false;
-                                                                    return ((mAlpha <= 0.0) || !has_feature(h));}
+  bool                   finished()                               { if(mRole!=custom) return false;  return ((mAlpha <= 0.0) || !has_feature());}
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
 
@@ -100,9 +99,8 @@ public:
 
   virtual void           print_to(std::ostream& os) const;
 
- protected:
   double                 max_bid      ()     const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
-  virtual bool           has_feature(BiddingHistory const& state) = 0;
+  virtual bool           has_feature() = 0;
 
 private:
   std::string            role_string() const;
@@ -137,8 +135,7 @@ public:
 
   virtual void        print_to(std::ostream& os) const;
 
-protected:
-  bool                has_feature(BiddingHistory const& state){ return mStream.has_feature(state.accepted_features(), state.rejected_features()); }
+  bool                has_feature()                           { return mStream.has_feature(); }
 
 };
 

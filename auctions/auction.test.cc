@@ -12,7 +12,7 @@
 	-p  level of protection              (default is level 3)
 	-c  calibration df                   (default is no calibration)
 
-
+  27 Nov 10 ... New stream types, with threads.
   21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
    2 Mar 10 ... Look at 'dynamically' funding experts via tax on bids and earnings
   22 Mar 09 ... Remove validation option by recognizing file pattern; add debugging from Dean
@@ -30,6 +30,7 @@
 #include "range.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
+#include "feature_streams.h"
 
 // for constant iterator 
 #include "iterators.h"
@@ -225,22 +226,24 @@ main(int argc, char** argv)
   // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef  CrossProductStream<FeatureVector,FeatureVector> CPStream;
-  typedef  FiniteStream                                    FStream;
-  typedef  InteractionStream < FeatureVector >             IStream;
-
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>         InteractionStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>                       FiniteStream;
+  typedef FeatureStream< CrossProductIterator, Identity >                                         CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures > PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>  NeighborhoodStream;
+  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
+  
   // parasitic experts
   theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,
-			       UniversalBidder<IStream>(),
+			       UniversalBidder<InteractionStream>(),
 			       make_interaction_stream("Interact within accept", theAuction.model_features(), true)));    // include quad terms
     
   theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
-			       UniversalBidder<CPStream>(),
-			       make_cross_product_stream("Interact accept x reject",
-							 theAuction.model_features(), theAuction.rejected_features()) ));
+			       UniversalBidder<CrossProductStream>(),
+			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
-			       UniversalBidder< PolynomialStream<FeatureVector> >(),
+			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
 
@@ -252,8 +255,8 @@ main(int argc, char** argv)
     { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
       IntegerColumn indices(cColumns[i]);
       theAuction.add_expert(Expert("Neighborhood", parasite, nContextCases, 0,
-				   UniversalBidder< NeighborhoodStream<FeatureVector> >(),
-				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), ".county", indices)
+				   UniversalBidder< NeighborhoodStream >(),
+				   make_neighborhood_stream("Neighborhood", theAuction.rejected_features(), indices)
 				   ));
     }
   }
@@ -278,10 +281,10 @@ main(int argc, char** argv)
   { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
     featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // priority, alpha
-				 UniversalBidder<FStream>(), 
-				 make_finite_stream(streamNames[s],featureStreams[s])));
+				 UniversalBidder<FiniteStream>(), 
+				 make_finite_stream(streamNames[s],featureStreams[s], SkipNone())));
     theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
-				 UniversalBoundedBidder<IStream>(),
+				 UniversalBoundedBidder<InteractionStream>(),
 				 make_interaction_stream("Interactions within " + streamNames[s],
 							 featureStreams[s], true)                             // include squared terms
 				 ));
@@ -292,9 +295,8 @@ main(int argc, char** argv)
   { 
     theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_fit_stream(theRegr, splineDF, calibrationSignature, nContextCases)));
+				 make_calibration_stream("fitted_values", theRegr, splineDF, nContextCases)));
   }
-  
     
 
   //   Principle component type features
