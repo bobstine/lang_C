@@ -14,7 +14,7 @@
 #include "feature_predicates.h"
 
 #include <iostream>
-
+#include <algorithm>
 
 //  use this model as feature source
 class Model
@@ -69,6 +69,20 @@ main()
     featureVec2.push_back(Feature(columns[i+numberOfFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
+  // make a constant feature
+  int n (columns[0]->size());
+  double x[n];
+  for (int i=0; i<n; ++i)
+    x[i] = 7;
+  Column conCol1 ("constant_1", "constant column", n, x);
+  Feature constantFeature1(conCol1);
+  Column conCol2 ("constant_2", "constant column", n, x);
+  Feature constantFeature2(conCol2);
+  // make two dummys share common parent  Month7=0, Month7=1
+  features[2]->add_attribute("parent", "Month7");
+  features[3]->add_attribute("parent", "Month7");
+  features[2]->add_attribute("category", "0");
+  features[3]->add_attribute("category", "1");
   std::cout << "  -------------------------------------------------------\n";
   
 
@@ -104,7 +118,7 @@ main()
   }
 
 
-  if (true)         // test dynamic iterator
+  if (false)         // test dynamic iterator
   {
     std::cout << "\n\nTEST: dynamic iterator\n";
     FeatureVector fv;
@@ -141,7 +155,7 @@ main()
   }
 
     
-  if (true)    //        test model iterator
+  if (false)    //        test model iterator
   {
     std::cout << "\n\nTEST:  make model iterator\n";
     Model model (featureList1, featureList2);
@@ -177,13 +191,17 @@ main()
   }
 
 
-  if (false)     // test interaction iterator
-  { std::cout << "\n\nTEST:  Test interaction iterator.\n";
+
+  if (true)     // test interaction iterator
+  { std::cout << "\n\nTEST:  Test interaction iterator with vector features:\n";
     FeatureVector fv;
-    for (int i=0; i<4; ++i)      // small vector to check end
+    fv.push_back(constantFeature1);
+    for (int i=0; i<4; ++i)                   // small vector to check end
       fv.push_back(features[i]);
-    InteractionIterator<FeatureVector, SkipIfRelatedPair> it (fv, false, SkipIfRelatedPair());  // use squares?
-    std::cout << "TEST_inter: has " << it.number_remaining() << " features remaining\n";
+    fv.push_back(constantFeature2);
+    std::for_each(fv.begin(), fv.end(), [](Feature const& f) {std::cout << "     " << f->name() << std::endl; });
+    InteractionIterator<FeatureVector, SkipIfRelatedPair> it (fv, true, SkipIfRelatedPair());  // use squares?
+    std::cout << "TEST_inter: initially interaction stream has " << it.number_remaining() << " features remaining\n";
     int more (40);
     while(it.valid() && --more)
     { std::cout << "TEST_inter: *it = " << *it << std::endl;
@@ -192,6 +210,7 @@ main()
     std::cout << "TEST_inter: completed " << it << std::endl;
   }
 
+  
 
   if (false)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";

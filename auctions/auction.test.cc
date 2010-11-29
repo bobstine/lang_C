@@ -234,10 +234,6 @@ main(int argc, char** argv)
   typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
   
   // parasitic experts
-  theAuction.add_expert(Expert("In/In",parasite, nContextCases, 0,
-			       UniversalBidder<InteractionStream>(),
-			       make_interaction_stream("Interact within accept", theAuction.model_features(), true)));    // include quad terms
-    
   theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));

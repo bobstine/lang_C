@@ -54,19 +54,67 @@ ModelIterator<Model>::valid()  const
 
 template<class Source, class Pred>
   void
+  InteractionIterator<Source,Pred>::initialize()
+{
+  if(!mIncludeDiagonal) ++mpColFeature;
+  while(skip_current_pair() && mRemain)
+    inc_pointers();
+}
+
+
+template<class Source, class Pred>
+  int
+  InteractionIterator<Source,Pred>::initial_count(int k)         const
+{
+  return (k*k-k)/2 + (mIncludeDiagonal?k:0);
+}
+
+
+template<class Source, class Pred>
+  Feature
+  InteractionIterator<Source,Pred>::operator*()   const
+{
+  assert(mpColFeature != mSource.end());
+  assert(mRemain >= 0);
+  return Feature(*mpDiagFeature, *mpColFeature);
+}
+
+
+template<class Source, class Pred>
+  void
   InteractionIterator<Source,Pred>::inc_pointers()
 {
-  ++mpColFeature; --mRemain;
-  if (mpColFeature == mSource.end())   // move diagonal "row" pointer
+  // knocks number remaining down by 1; only uses count as set initially based on diagonal of array
+  //  std::cout << "                enter inc-pointers: " << (*mpDiagFeature)->name() << "  " << (*mpColFeature)->name()
+  //            << " with " << mRemain << " remaining " <<std::endl;
+  if(!--mRemain) return;
+  ++mpColFeature; 
+  if (mpColFeature == mSource.end())      // move diagonal "row" pointer
   { ++mpDiagFeature;
     mpColFeature = mpDiagFeature;
     if (!mIncludeDiagonal)
       ++mpColFeature;
-    else if ((*mpDiagFeature)->is_dummy())  // dont square a dummy
-    { ++mpColFeature;
-      -- mRemain;
-    }
   }
+}
+
+
+
+template<class Source, class Pred>
+ bool
+ InteractionIterator<Source,Pred>::skip_current_pair() const
+{
+  // skip constants
+  if((*mpColFeature)->is_constant() || (*mpDiagFeature)->is_constant())
+    return true;
+  // dont square diagonal
+  if((mpDiagFeature == mpColFeature) && (*mpDiagFeature)->is_dummy())
+    return true;
+  // apply external criterion
+  if(mSkipPred(*mpDiagFeature, *mpColFeature))
+  { debugging::debug("INTS",4) << " skipping pair: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
+    return true;
+  }
+  return false;
 }
 
 
@@ -74,17 +122,21 @@ template<class Source, class Pred>
   InteractionIterator<Source,Pred>&
   InteractionIterator<Source,Pred>::operator++()
 {
-  if(mRemain == 0) return *this;
+  assert (mRemain > 0);        // starting condition
   inc_pointers();
-  // skip constants
-  while ((*mpDiagFeature)->is_constant())
-    inc_pointers();
-  // need different parents
-  while(mRemain > 0 && mSkipPred(*mpDiagFeature, *mpColFeature))
-  { debugging::debug("INTS",4) << " skipping pair: " << (*mpDiagFeature)->name() << " & " << (*mpColFeature)->name() << std::endl;
-    inc_pointers();
-  }
+  while(skip_current_pair() && mRemain)
+   inc_pointers();
   return *this;
 }
+
+
+template<class Source, class Pred>
+  void
+  InteractionIterator<Source,Pred>::print_to(std::ostream &os)   const
+{
+  os << "InteractionIterator [" << mRemain << "] ";
+  if(valid()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name();
+}
+
 
 

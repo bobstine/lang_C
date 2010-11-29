@@ -233,17 +233,20 @@ public:
   
   InteractionIterator(Collection const& src, bool useSquares, SkipPred pred)
     : mSource(src), mIncludeDiagonal(useSquares), mSkipPred(pred),
-      mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { if(!mIncludeDiagonal) ++mpColFeature;  }
+      mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { initialize(); }
   
   int   number_remaining()           const { return mRemain; }
   bool  valid ()                     const { return mRemain > 0; }
+
   InteractionIterator& operator++();  
-  Feature              operator*()   const { assert(mpColFeature != mSource.end()); return Feature(*mpDiagFeature, *mpColFeature); }
-  
-  void  print_to(std::ostream &os)   const { os << "InteractionIterator [" << mRemain << "] ";
-                                             if(valid()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name(); }
-private:
-  int   initial_count(int k)         const { return (k*k-k)/2 + (mIncludeDiagonal?k:0); }
+  Feature              operator*()   const;  
+
+  void  print_to(std::ostream &os)   const;
+
+ private:
+  bool  skip_current_pair()          const;
+  int   initial_count(int k)         const;
+  void  initialize();
   void  inc_pointers();
 };
 
