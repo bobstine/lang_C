@@ -9,7 +9,6 @@ template<class Iterator, class Trans>
   std::string
   FeatureStream<Iterator,Trans>::feature_name()              const
 {
-  std::cout << "FS: retrieve name\n";
   if (const_has_feature())
     return mThread->first_output_name();
   return "empty/busy";
@@ -56,9 +55,7 @@ template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator,Trans>::const_has_feature()       const
 {
-  if (is_busy())
-    return false;
-  else if (is_empty())  // does not try to make feature
+  if (is_busy() || is_empty())  // does not try to make feature
     return false;
   else
     return true;
@@ -71,14 +68,12 @@ template<class Iterator, class Trans>
 {
   if (is_busy())
     return false;
-  else if (is_empty())
+  else if (is_empty())          // start to make next
   { make_features();
     return false;
   }
   else
-  { 
     return true;
-  }
 }
 
 

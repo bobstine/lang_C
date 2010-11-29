@@ -34,8 +34,7 @@ public:
   
   void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
 
-  FeatureList const& accepted_features() const { return mAccepted; }
-  FeatureList const& rejected_features() const { return mRejected; }
+  std::vector<std::string> predictor_names() const { std::vector<std::string> names; names.push_back("test"); return names; }
 };
 
 
@@ -142,7 +141,7 @@ main()
   }
 
     
-  if (false)    //        test model iterator
+  if (true)    //        test model iterator
   {
     std::cout << "\n\nTEST:  make model iterator\n";
     Model model (featureList1, featureList2);
@@ -152,7 +151,7 @@ main()
     model.increment_q();
     while(it.valid() && --max)
     { 
-      std::cout << "TEST_model: popped " << *it << std::endl;
+      std::cout << "TEST_model: popped " << *(*it) << std::endl;       // iterator returns a pointer to the model
       model.increment_q();
     }
     std::cout << "TEST_model: completed, it = " << it << std::endl;

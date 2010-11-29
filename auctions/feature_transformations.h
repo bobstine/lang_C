@@ -125,7 +125,7 @@ public:
 //     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration
 
 template< class Model >
-class BuildCalibrationFeature: public std::unary_function<Model const&, FeatureVector>
+class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureVector>
 {
   int mDegree;
   int mSkip; // possible offset to allow for lag features
@@ -133,16 +133,16 @@ class BuildCalibrationFeature: public std::unary_function<Model const&, FeatureV
  public:
   BuildCalibrationFeature (int degree,int skip) : mDegree(degree), mSkip (skip) { } 
   
-  FeatureVector operator()(Model const& model) const
+  FeatureVector operator()(Model const* pModel) const
   {
     // construct name for features as 'Y_hat_x'
     std::ostringstream oss;
-    oss << "Y_hat_" << model.q();
-    Column mFit = Column(oss.str().c_str(), mSkip + model.n_total_cases());     // grab current fit
+    oss << "Y_hat_" << pModel->q();
+    Column mFit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
     double *fit (mFit->begin());
     for(int i=0; i<mSkip; ++i)
       *fit++ = 0;
-    model.fill_with_fit(mFit->begin() + mSkip);
+    pModel->fill_with_fit(mFit->begin() + mSkip);
     mFit->update();
     std::vector<int> powers;
     for (int j = 2; j <= mDegree; ++j)

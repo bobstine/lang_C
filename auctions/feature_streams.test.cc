@@ -36,9 +36,8 @@ public:
   int n_total_cases()           const  { return mCases; }
   
   void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
-
-  FeatureVector const& accepted_features() const { return mAccepted; }
-  FeatureVector const& rejected_features() const { return mRejected; }
+  
+  std::vector<std::string> predictor_names() const { std::vector<std::string> names; names.push_back("test"); return names; }
 };
 
 
