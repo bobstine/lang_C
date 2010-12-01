@@ -63,9 +63,11 @@ LightThread<W>::operator()(W const& worker)
 {
   assert(done());  // make sure we don't have a thread running
   set_done(false);
+  // RAS should these be done under control of the lock???
+  mp_lock->lock();
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-
+  mp_lock->unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
   std::cout << "LT: force thread to finish.\n";
