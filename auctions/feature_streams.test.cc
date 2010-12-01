@@ -71,7 +71,7 @@ void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
   }
   boost::this_thread::sleep(pause);
   std::cout << "TEST_drain: exiting feature pop loop after popping " << nPopped << " features with " << nIdle << " idle cycles; more = " << loopLimit 
-	    << " iterations left with busy=" << busy << " and has_feature=" << has << std::endl;
+	    << " iterations left with  busy=" << busy << "  and  has_feature=" << has << std::endl;
   std::cout << "TEST_drain: popped features are: \n";
   std::for_each(saved.begin(), saved.end(), [](Feature const& f) { std::cout << "       " << f->name() << std::endl; });
   std::cout << " ------- drain ended.\n\n";
@@ -91,25 +91,24 @@ main()
   FeatureVector features;
   FeatureVector featureVec1, featureVec2;
   FeatureVector empty;
-  FeatureList   featureList;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  for (int i=0; i<10; ++i)
+  const int numFeatures (20);
+  for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
-    featureList.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
-    featureVec2.push_back(Feature(columns[i+10]));
+    featureVec2.push_back(Feature(columns[i+numFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
-  std::cout << "  -------------------------------------------------------\n";
+  std::cout << "  -------------------------------------------------------\n\n";
 
 
 
-  if (false)         // test Finite streams
+  if (false)         // test cyclic streams
   { 
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
     FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
-    drain_features(fs, 10);
+    drain_features(fs, 30);
   }
 
   
@@ -205,14 +204,14 @@ main()
   }
 
     
-  if (false)     // test interactions
+  if (true)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
     
     std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
     is.print_to(std::cout); std::cout << std::endl;
-    drain_features(is,10);
+    drain_features(is,30);
   }
 
   

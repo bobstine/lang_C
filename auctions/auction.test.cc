@@ -244,7 +244,7 @@ main(int argc, char** argv)
 			       ));
 
 
-  // find neighborhood feature
+  // if find neighborhood index, then build a neighborhood stream
   IntegerColumn indices();
   for(unsigned int i=0; i<cColumns.size(); ++i)
   { if (cColumns[i]->name() == "Pop_Neighbor")
@@ -258,6 +258,7 @@ main(int argc, char** argv)
   }
 
   // add a source and interaction expert for each stream with role=x
+  // first, avoid locked streams 
   std::vector<std::string> streamNames (featureSrc.stream_names());
   for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
   { if (*it == "LOCKED")
@@ -267,16 +268,13 @@ main(int argc, char** argv)
     }
   }
   debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
-
-  // allocate alpha over input source streams
-  //     this version uses precedence   FiniteCauchyShare alphaShare (totalAlphaToSpend, streamNames.size()); and replace alphaShare -> alphaShare(s)
+  // allocate alpha for main and interaction input source streams
   double   alphaShare (totalAlphaToSpend/streamNames.size());
-  // interaction streams need a reference (since source may be dynamic)
   std::vector< FeatureVector> featureStreams(streamNames.size());
   for (int s=0; s < (int)streamNames.size(); ++s)
   { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
     featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
-    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // priority, alpha
+    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // alpha
 				 UniversalBidder<FiniteStream>(), 
 				 make_finite_stream(streamNames[s],featureStreams[s], SkipNone())));
     theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
