@@ -89,7 +89,7 @@ LightThread<W>::operator()(W const& worker)
   (*mp_done) = false;
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-mp_lock->unlock();
+  mp_lock->unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
   std::cout << "LT: force thread to finish.\n";

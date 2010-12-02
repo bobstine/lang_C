@@ -324,13 +324,19 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       spawned.push_back(Expert("Cross["+(*f)->name()+",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
 			       UniversalBoundedBidder< ProductStream >(),
 			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
-      double alpha = taxForEach/(1+spawned.size());                                      // save share for global interaction expert
-      if(mExperts[0]->name() == "In/In")
-      { debugging::debug("AUCT", 3) << "Assigning alpha " << alpha << " to In/In interaction expert and " << spawned.size() << " spawned experts.\n";
-	mExperts[0]->increment_alpha(alpha);                                             // global expert in first slot
-      }
-      else
-	std::cerr << "ERROR: Interaction error not located at head of expert vector in auction.\n";
+      double alpha = taxForEach/spawned.size();
+      /*  used to have a global "in model/in model" interaction expert.  That's now replaced by these for each variable...
+	  the new interaction stream does not allow dynamic growth, which is needed for this
+	  Do we need both "individual" expert as well as the global expert for smoothing this out???
+	  
+	  double alpha = taxForEach/(1+spawned.size());
+	  if(mExperts[0]->name() == "In/In")
+	  { debugging::debug("AUCT", 3) << "Assigning alpha " << alpha << " to In/In interaction expert and " << spawned.size() << " spawned experts.\n";
+	  mExperts[0]->increment_alpha(alpha);                                             // global expert in first slot
+	  }
+	  else
+	  std::cerr << "ERROR: Interaction error not located at head of expert vector in auction.\n";
+      */
       for(std::vector<Expert>::const_iterator eit=spawned.begin(); eit != spawned.end(); ++eit)
       { (*eit)->increment_alpha(alpha);
 	add_expert(*eit);
