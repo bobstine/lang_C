@@ -42,7 +42,8 @@ LightThread<W>::LightThread(const W& worker)
 : mp_done(new bool), // we have no work to do in the queue and no thread running
   mp_worker(),
   mp_thread(),
-  mp_lock(new boost::mutex())
+  mp_thread_lock(new boost::mutex()),
+  m_object_lock()
 {
   std::cout << "LT: initialize with a worker.\n";
   (*mp_done) = true;
@@ -53,16 +54,23 @@ LightThread<W>::LightThread(const W& worker)
 // copy constructor operates by default via smart pointers
 template<class W>
 LightThread<W>::LightThread(const LightThread<W>& rhs)
-: mp_done(rhs.mp_done), // we have no work to do in the queue and no thread running
+: mp_done(),
   mp_worker(),
   mp_thread(),
-  mp_lock(rhs.mp_lock)
+  mp_thread_lock(),
+  m_object_lock()
 {
-  mp_lock->lock();
+  // lock down both objects
+  m_object_lock.lock();
+  rhs.m_object_lock.lock();
+  // set pointer since both locked
+  mp_done   = rhs.mp_done;
   mp_worker = rhs.mp_worker;
+  mp_thread_lock = rhs.mp_thread_lock;
   mp_thread = rhs.mp_thread;
-  mp_lock->unlock();
-
+  // unlock
+  rhs.m_object_lock.unlock();
+  m_object_lock.unlock();
   std::cout << "LT: initialize by copy construct.\n";
 }
 
@@ -70,26 +78,31 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
 // default constructor
 template<class W>
 LightThread<W>::LightThread()
-: mp_done(new bool),
+: mp_done(),
   mp_worker(),
   mp_thread(),
-  mp_lock(new boost::mutex())
+  mp_thread_lock(),
+  m_object_lock()
 {
   std::cout << "LT: initialize with no worker supplied.\n";
-  (*mp_done) = true;
 }
 
 template<class W>
 void
 LightThread<W>::operator()(W const& worker)
 {
-  assert(done());  // make sure we don't have a thread running
-  // THe following should all be changed "atomically"
-  mp_lock->lock();
+  // make sure we don't have a thread running
+  assert(done());  
+  // the following should all be changed "atomically"
+  m_object_lock.lock();
+  mp_thread_lock = boost::shared_ptr<boost::mutex> (new boost::mutex);
+  mp_thread_lock->lock();
+  mp_done = boost::shared_ptr<bool> (new bool);
   (*mp_done) = false;
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-  mp_lock->unlock();
+  mp_thread_lock->unlock();
+  m_object_lock.unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
   std::cout << "LT: force thread to finish.\n";
@@ -102,54 +115,52 @@ template<class W>
 bool
 LightThread<W>::done() const
 {
-  bool result;
-  assert(mp_lock);                              // make sure we have a non-zero pointer
-  mp_lock->lock();
-  result = (*mp_done); 
-  assert(mp_worker || ((*mp_done) == true));  // either have worker or done 
-  mp_lock->unlock(); 
-
-//   if(mp_lock->try_lock())  // cute hack!  If someone has the lock--clearly we aren't done!
-//   { result = (*mp_done);
-//     assert(mp_worker || ((*mp_done) == true));  // either have worker or done
-//     mp_lock->unlock();
-//   }
-//   else
-//     result = false;
-
-
-  return result;
+  m_object_lock.lock();
+  if (mp_done == 0)                              // make sure we have a non-zero pointer
+  { m_object_lock.unlock();
+    return true;
+  }
+  if(!mp_thread_lock->try_lock())
+  { m_object_lock.unlock();
+    return false;
+  }
+  else  // we have the thread lock
+  { bool result = (*mp_done);
+    mp_thread_lock->unlock();
+    m_object_lock.unlock();
+    return result;
+  }
 }
+
 
 template<class W>
 bool
 LightThread<W>::has_worker() const
 {
-  return (mp_worker != 0);
+  m_object_lock.lock();
+  bool result  (mp_worker != 0);
+  m_object_lock.unlock();
+  return result;
 }
 
-template<class W>
-const W&
-LightThread<W>::operator()() const
-{
-  if(!done())
-    {
-      mp_thread->join();
-      assert(done());
-    }
-  return *mp_worker;
-}
 
 
 template<class W>
 const W*
 LightThread<W>::operator->() const
 {
-  if(!done())
+  m_object_lock.lock();
+  assert(mp_worker);
+  mp_thread_lock->lock();
+  if(!*mp_done)
+  { m_object_lock.unlock();   // Do we need to do this to allow thread to alter object???
     mp_thread->join();
-  assert(done());
-  assert(has_worker());
-  return mp_worker.get();
+    m_object_lock.lock();
+  }
+  const W* pWorker (mp_worker.get());
+  mp_thread_lock->unlock();
+  m_object_lock.unlock();
+  return pWorker;
 }
 
 
@@ -158,24 +169,19 @@ template<class W>
 W*
 LightThread<W>::operator->() 
 {
-  if(!done())
+  m_object_lock.lock();
+  assert(mp_worker);
+  mp_thread_lock->lock();
+  if(!*mp_done)
+  { m_object_lock.unlock();   // Do we need to do this to allow thread to alter object???
     mp_thread->join();
-  assert(done());
-  assert(has_worker());
-  return mp_worker.get();
+    m_object_lock.lock();
+  }
+  W* pWorker (mp_worker.get());
+  mp_thread_lock->unlock();
+  m_object_lock.unlock();
+  return pWorker;
 }
-
-
-template<class W>
-void
-LightThread<W>::set_done(bool value)
-{
-  assert(mp_lock);
-  mp_lock->lock();
-  assert((*mp_done) != value);  // Checks for race condition.
-  (*mp_done) = value;
-  mp_lock->unlock();
-};
 
 
 // This is the function that is run entirely within a separate thread
@@ -183,11 +189,15 @@ template<class W>
 void
 LightThread<W>::start_thread()
 {
-  // DPF: We want to make sure that we haven't been asked to start a new thread
-  // while we have one currently running.
-  assert(!done());
-  assert(has_worker());
-  (*mp_worker)();
-  set_done(true);  
+  m_object_lock.lock();
+  assert(mp_done != 0);
+  assert(mp_worker != 0);
+  boost::shared_ptr<W> pLocalWorker = mp_worker;
+  boost::shared_ptr<bool> pLocalDone = mp_done;
+  m_object_lock.unlock();
+  mp_thread_lock->lock();
+  (*pLocalWorker)();
+  (*pLocalDone) = true;
+  mp_thread_lock->unlock();
 }
 
