@@ -15,6 +15,23 @@
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//
+//              L O C K I N G      L O G I C
+//
+//   This class manipulates pointers and the value of a boolean.  So
+//   both of these are protected by the lock.  Ideally, we would take a
+//   hit on speed and make the pointers point to other pointers--then
+//   the semantics would be simplier.  But as a speed hack, we allow the
+//   pointers themselves to be changed.  (YIKES!  IS THIS A LOGIC ERROR?)
+//
+//
+//   So anytime a pointer is written or read, the lock should be grabbed.
+//   Any time the value of the bool is written or read, the lock should be
+//   grabbed.
+//
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 template<class W>
 LightThread<W>::~LightThread() 
 {
@@ -37,10 +54,15 @@ LightThread<W>::LightThread(const W& worker)
 template<class W>
 LightThread<W>::LightThread(const LightThread<W>& rhs)
 : mp_done(rhs.mp_done), // we have no work to do in the queue and no thread running
-  mp_worker(rhs.mp_worker),
-  mp_thread(rhs.mp_thread),
+  mp_worker(),
+  mp_thread(),
   mp_lock(rhs.mp_lock)
 {
+  mp_lock->lock();
+  mp_worker = rhs.mp_worker;
+  mp_thread = rhs.mp_thread;
+  mp_lock->unlock();
+
   std::cout << "LT: initialize by copy construct.\n";
 }
 
@@ -62,12 +84,12 @@ void
 LightThread<W>::operator()(W const& worker)
 {
   assert(done());  // make sure we don't have a thread running
-  set_done(false);
-  // RAS Should these be done under control of the lock???  I don't think so since the operator()() might finish while locked?
-  //  mp_lock->lock();
+  // THe following should all be changed "atomically"
+  mp_lock->lock();
+  (*mp_done) = false;
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-  //  mp_lock->unlock();
+mp_lock->unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
   std::cout << "LT: force thread to finish.\n";
@@ -82,7 +104,7 @@ LightThread<W>::done() const
 {
   bool result;
   assert(mp_lock);                              // make sure we have a non-zero pointer
-  if(mp_lock->try_lock())
+  if(mp_lock->try_lock())  // cute hack!  If someone has the lock--clearly we aren't done!
   { result = (*mp_done);
     assert(mp_worker || ((*mp_done) == true));  // either have worker or done
     mp_lock->unlock();
