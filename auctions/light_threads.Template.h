@@ -1,4 +1,4 @@
-//  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out
+//  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out   -*- c++ -*- 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -104,13 +104,20 @@ LightThread<W>::done() const
 {
   bool result;
   assert(mp_lock);                              // make sure we have a non-zero pointer
-  if(mp_lock->try_lock())  // cute hack!  If someone has the lock--clearly we aren't done!
-  { result = (*mp_done);
-    assert(mp_worker || ((*mp_done) == true));  // either have worker or done
-    mp_lock->unlock();
-  }
-  else
-    result = false;
+  mp_lock->lock();
+  result = (*mp_done); 
+  assert(mp_worker || ((*mp_done) == true));  // either have worker or done 
+  mp_lock->unlock(); 
+
+//   if(mp_lock->try_lock())  // cute hack!  If someone has the lock--clearly we aren't done!
+//   { result = (*mp_done);
+//     assert(mp_worker || ((*mp_done) == true));  // either have worker or done
+//     mp_lock->unlock();
+//   }
+//   else
+//     result = false;
+
+
   return result;
 }
 
