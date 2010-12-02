@@ -66,7 +66,6 @@ public:
 private:
   void set_done(bool value);
   void start_thread();
-
 };
 
 #include "light_threads.Template.h"
