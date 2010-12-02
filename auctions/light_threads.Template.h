@@ -63,11 +63,11 @@ LightThread<W>::operator()(W const& worker)
 {
   assert(done());  // make sure we don't have a thread running
   set_done(false);
-  // RAS should these be done under control of the lock???
-  mp_lock->lock();
+  // RAS Should these be done under control of the lock???  I don't think so since the operator()() might finish while locked?
+  //  mp_lock->lock();
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-  mp_lock->unlock();
+  //  mp_lock->unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
   std::cout << "LT: force thread to finish.\n";
@@ -75,7 +75,7 @@ LightThread<W>::operator()(W const& worker)
 #endif
 }
 
-
+ 
 template<class W>
 bool
 LightThread<W>::done() const
@@ -87,7 +87,8 @@ LightThread<W>::done() const
     assert(mp_worker || ((*mp_done) == true));  // either have worker or done
     mp_lock->unlock();
   }
-  else result = false;
+  else
+    result = false;
   return result;
 }
 
@@ -142,11 +143,13 @@ LightThread<W>::set_done(bool value)
 {
   assert(mp_lock);
   mp_lock->lock();
-  assert((*mp_done) == !value);  // Checks for race condition.
+  assert((*mp_done) != value);  // Checks for race condition.
   (*mp_done) = value;
   mp_lock->unlock();
 };
 
+
+// This is the function that is run entirely within a separate thread
 template<class W>
 void
 LightThread<W>::start_thread()
@@ -156,6 +159,6 @@ LightThread<W>::start_thread()
   assert(!done());
   assert(has_worker());
   (*mp_worker)();
-  set_done(true);
+  set_done(true);  
 }
 
