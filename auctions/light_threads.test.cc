@@ -51,8 +51,10 @@ int main(int, char**)
 	std::cout << "Probably running with threads." << std::endl;
 	
       std::cout << "main: waiting for thread" << std::endl;
+
       // get information from threaded worker via ->
-      std::cout << "RESULTS:" << w2->results() << std::endl;
+      std::cout << "Results from W2:" << w2->results() << std::endl;
+      std::cout << "             W3:" << w3->results() << std::endl;
     } 
 
     std::cout << "DONE." << std::endl;

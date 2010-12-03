@@ -170,9 +170,11 @@ LightThread<W>::operator->()
   assert(mp_worker);
   mp_thread_mutex->lock();
   if(!*mp_done)
-  { m_object_mutex.unlock();   // We need this so "done" can be written by the thread
+  { mp_thread_mutex->unlock();
+    m_object_mutex.unlock();   // We need this so "done" can be written by the thread
     mp_thread->join();
     m_object_mutex.lock();
+    mp_thread_mutex->lock();
   }
   W* pWorker (mp_worker.get());
   mp_thread_mutex->unlock();
