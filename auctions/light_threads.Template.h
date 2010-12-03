@@ -170,7 +170,7 @@ LightThread<W>::operator->()
   assert(mp_worker);
   mp_thread_mutex->lock();
   if(!*mp_done)
-  { m_object_mutex.unlock();   // Do we need to do this to allow thread to alter object???
+  { m_object_mutex.unlock();   // We need this so "done" can be written by the thread
     mp_thread->join();
     m_object_mutex.lock();
   }
