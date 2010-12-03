@@ -150,9 +150,11 @@ LightThread<W>::operator->() const
   assert(mp_worker);
   mp_thread_mutex->lock();
   if(!*mp_done)
-  { m_object_mutex.unlock();   // Do we need to do this to allow thread to alter object???
+  { mp_thread_mutex->unlock();
+    m_object_mutex.unlock();   // Do we need to do this to allow thread to alter object???
     mp_thread->join();
     m_object_mutex.lock();
+    mp_thread_mutex->lock();
   }
   const W* pWorker (mp_worker.get());
   mp_thread_mutex->unlock();
