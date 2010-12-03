@@ -67,7 +67,6 @@ short_credit_test: auction.test
 credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/data      -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 
-
 short_credit_%: auction.test short_cv%.data
 	./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 400 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 	cd $(resultpath); rm -f short_ss$*.csv; cp progress.csv short_ss$*.csv

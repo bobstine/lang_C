@@ -68,20 +68,21 @@
 template<class Iterator, class Op>
 class FeatureStream
 {
-  typedef FeatureTransformation<Op> Transform;
+  typedef FeatureTransformation<Op>                   Transform;
+  typedef boost::shared_ptr< LightThread<Transform> > ThreadPointer;
   
 private:
-  std::string             mName;
-  Iterator                mIterator;
-  Transform               mTransform;    // copy each time start a new thread
-  LightThread<Transform>  mThread;       // use -> to extract information from underlying transform
+  std::string     mName;
+  Iterator        mIterator;
+  Transform       mTransform;    // copy each time start a new thread
+  ThreadPointer   mpThread;    
 
 public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Op op)
-    : mName(name), mIterator(it), mTransform(op), mThread() { make_features(); }
-  
+    : mName(name), mIterator(it), mTransform(op), mpThread(new LightThread<Transform>())  { make_features(); }
+
   std::string    name()                      const;
   std::string    feature_name()              const;
   void           print_to(std::ostream& os)  const;

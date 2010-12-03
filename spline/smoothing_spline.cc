@@ -224,7 +224,8 @@ SmoothingSpline::compute_smooth(int df)
     return;
   }
   double  lambda (1.0);
-  double  dParms[4] = {1.0, df, 1.0, lambda};
+  double  dDF (df);
+  double  dParms[4] = {1.0, dDF, 1.0, lambda};
   int     iParms[6] = {mNUnique, mNCoef, 0, 4, 1, 0};
   int     iCrit[2]  = {3,0};
   /*

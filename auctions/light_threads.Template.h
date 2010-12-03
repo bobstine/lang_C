@@ -57,18 +57,18 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
   mp_thread_mutex(),
   m_object_mutex()
 {
+  std::cout << "LT: initialize by copy construct.\n";
   // lock down both objects
   m_object_mutex.lock();
   rhs.m_object_mutex.lock();
-  // set pointer since both locked
+  // copy pointers
   mp_done   = rhs.mp_done;
   mp_worker = rhs.mp_worker;
-  mp_thread_mutex = rhs.mp_thread_mutex;
   mp_thread = rhs.mp_thread;
+  mp_thread_mutex = rhs.mp_thread_mutex;
   // unlock
   rhs.m_object_mutex.unlock();
   m_object_mutex.unlock();
-  std::cout << "LT: initialize by copy construct.\n";
 }
 
 
@@ -90,15 +90,14 @@ LightThread<W>::operator()(W const& worker)
 {
   // make sure we don't have a thread running
   assert(done());  
-  // the following should all be changed "atomically"
+  // lock object, but not thread since we are about to launch it
   m_object_mutex.lock();
+  // the following should all be changed "atomically"
   mp_thread_mutex = boost::shared_ptr<boost::mutex> (new boost::mutex);
-  //  mp_thread_mutex->lock();
   mp_done = boost::shared_ptr<bool> (new bool);
   (*mp_done) = false;
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
-  //  mp_thread_mutex->unlock();
   m_object_mutex.unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
@@ -150,8 +149,8 @@ LightThread<W>::operator->() const
   assert(mp_worker);
   mp_thread_mutex->lock();
   if(!*mp_done)
-  { mp_thread_mutex->unlock();
-    m_object_mutex.unlock();   // Do we need to do this to allow thread to alter object???
+  { mp_thread_mutex->unlock(); // Unlock mutexes so that running thread
+    m_object_mutex.unlock();   // can set things, such as done
     mp_thread->join();
     m_object_mutex.lock();
     mp_thread_mutex->lock();
@@ -173,7 +172,7 @@ LightThread<W>::operator->()
   mp_thread_mutex->lock();
   if(!*mp_done)
   { mp_thread_mutex->unlock();
-    m_object_mutex.unlock();   // We need this so "done" can be written by the thread
+    m_object_mutex.unlock();
     mp_thread->join();
     m_object_mutex.lock();
     mp_thread_mutex->lock();
@@ -185,7 +184,7 @@ LightThread<W>::operator->()
 }
 
 
-// This is the function that is run entirely within a separate thread
+// This function runs entirely within a separate thread
 template<class W>
 void
 LightThread<W>::start_thread()

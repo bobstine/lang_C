@@ -104,6 +104,12 @@ main()
       }
     }
   }
+  { // pause to allow threads to complete...
+    float ms = 1 * 1e3;
+    boost::posix_time::milliseconds pause(ms);
+    std::cout << "TEST: paused for " << ms << "ms.\n";
+    boost::this_thread::sleep(pause);
+  }
   std::cout << "TEST:  Done, with features...\n";
   unsigned k (0);
   for (unsigned i=0; i<=10; ++i)

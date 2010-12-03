@@ -125,7 +125,6 @@ main(int argc, char** argv)
 		  numberRounds, totalAlphaToSpend,
 		  splineDF, prefixCases, debugLevel);
 
-   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
@@ -173,11 +172,12 @@ main(int argc, char** argv)
   std::vector<Column> yColumns;  insertMap.insert(std::make_pair("y",      std::back_inserter(yColumns)));
   std::vector<Column> xColumns;  insertMap.insert(std::make_pair("x",      std::back_inserter(xColumns)));
   std::vector<Column> cColumns;  insertMap.insert(std::make_pair("context",std::back_inserter(cColumns))); 
-  
+
   if (inputName.empty())
     insert_columns_from_stream(std::cin, insertMap);
   else
-  { std::ifstream inputFileStream(inputName.c_str());
+  { debug("AUCT",3) << "Preparing to read columns from input file stream " << inputName << std::endl;
+    std::ifstream inputFileStream(inputName.c_str());
     if (!inputFileStream)
     { std::clog << "Error: No input supplied; cannot open " << inputName << std::endl;
       return 2;

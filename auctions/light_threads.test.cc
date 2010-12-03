@@ -44,7 +44,7 @@ int main(int, char**)
       LightThread<Worker> w3;
       w3(Worker(3));
       LightThread<Worker> w2(Worker(2));
-
+      LightThread<Worker> w4(w3);
       if(w2.done())
 	std::cout << "Probably running without threads." << std::endl;
       else
@@ -55,6 +55,16 @@ int main(int, char**)
       // get information from threaded worker via ->
       std::cout << "Results from W2:" << w2->results() << std::endl;
       std::cout << "             W3:" << w3->results() << std::endl;
+      std::cout << "             W4:" << w4->results() << std::endl;
+
+      // put them into a list
+      /*
+	std::vector< LightThread<Worker> > workers;
+      workers.push_back(LightThread<Worker>( Worker(1) ) );
+      
+      std::cout << "main: waiting for threads in vector" << std::endl;
+      std::cout << "     vector[0]: " << workers[0]->results() << std::endl;
+      */
     } 
 
     std::cout << "DONE." << std::endl;

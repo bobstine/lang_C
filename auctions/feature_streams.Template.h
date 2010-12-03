@@ -10,7 +10,7 @@ template<class Iterator, class Trans>
   FeatureStream<Iterator,Trans>::feature_name()              const
 {
   if (const_has_feature())
-    return mThread->first_output_name();
+    return (*mpThread)->first_output_name();
   return "empty/busy";
 }
 
@@ -35,7 +35,7 @@ template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator, Trans>::is_busy()                   const
 {
-  return !mThread.done();
+  return !mpThread->done();
 }
 
 
@@ -43,10 +43,10 @@ template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator,Trans>::is_empty()                  const
 {
-  if (!mThread.has_worker())
+  if (!mpThread->has_worker())
     return true;
   else
-    return (mThread->empty());
+    return (*mpThread)->empty();
 }
 
 
@@ -82,7 +82,7 @@ template<class Iterator, class Trans>
   FeatureStream<Iterator,Trans>::pop()
 {
   assert (has_feature());
-  FeatureVector fv (mThread->output_features());
+  FeatureVector fv ((*mpThread)->output_features());
   make_features();
   return fv;
 }
@@ -98,6 +98,6 @@ template<class Iterator, class Trans>
     // advance the iterator
     ++mIterator;
     // start thread on transformation
-    mThread(mTransform);
+    (*mpThread)(mTransform);
   }
 }
