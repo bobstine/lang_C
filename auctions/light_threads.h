@@ -44,9 +44,9 @@ template<class W>
 class LightThread
 {
 private:
-  boost::shared_ptr<bool>                 mp_done;
+  boost::shared_ptr<bool>                 mp_done;          // we are only done if the lock isn't grabbed and this is true
   boost::shared_ptr<W>                    mp_worker;
-  boost::shared_ptr<boost::thread>        mp_thread;
+  boost::shared_ptr<boost::thread>        mp_thread;        // acutally--we don't need this
   boost::shared_ptr<boost::mutex>         mp_thread_lock;   // thread lock controls read/write values of pointers
   mutable boost::mutex                    m_object_lock;    // object lock controls read/write pointers
   
