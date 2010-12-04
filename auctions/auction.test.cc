@@ -95,7 +95,7 @@ parse_arguments(int argc, char** argv,
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
 
-ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os);
+ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, std::ostream& os);
 int                  parse_column_format(std::string const& dataFileName, std::ostream&);
 Column               identify_cv_indicator(std::vector<Column> const& columns, int prefixCases);
 void                 round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
@@ -135,7 +135,7 @@ main(int argc, char** argv)
 #endif
   
   // echo startup options to log file
-  debug("AUCT",0) << "Arguments    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
+  debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << prefixCases
 		  << std::endl;
@@ -219,7 +219,7 @@ main(int argc, char** argv)
 
   // --- build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
-  ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, debug("MAIN",2));
+  ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
   
   
@@ -528,7 +528,7 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 
 // reads in response, initialized data object
 ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os)
+build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, std::ostream& os)
 {
   bool                      useSubset    (0 != inOut->size());
   constant_iterator<double> equalWeights (1.0);
@@ -537,11 +537,11 @@ build_regression_model(Column y, Column inOut, int prefixRows, std::ostream& os)
   os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y << std::endl;
   if (useSubset)
   { os << "        Validation cases identified by " << inOut << std::endl;
-    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows);
+    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);
   } 
   else
   { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
-    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows);  
+    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);  
   } 
 }

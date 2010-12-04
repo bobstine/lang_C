@@ -62,7 +62,7 @@ crash_test: auction.test
 #	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 50 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 #
 short_credit_test: auction.test
-	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 50 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
+	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 50 -a 0.5 -p 3 -b 1443 -c 3 -x 20202 -d 3
 
 credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/data      -o data/credit/ -r 500 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
