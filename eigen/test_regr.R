@@ -4,10 +4,21 @@ Data <- read.table("~/C/eigen/test.dat")
 n <- dim(Data)[1]
 p <- 3
 
-# --- initial regression with 3 predictors
+# --- initial regression with 3 predictors (xcollection)
 regr.3 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4])
 summary(regr.3)
 e <- residuals(regr.3);   e[1:5]
+
+
+# --- white test of block of 3 new predictors together
+xx <- cbind(Data[,2]-mean(Data[,2]), Data[,3]-mean(Data[,3]), Data[,4]-mean(Data[,4]))
+xxi <- solve(t(xx) %*% xx)
+
+y <- Data[,1]-mean(Data[,1])
+b <- solve(t(xx) %*% xx, t(xx) %*% y)
+#     white F test of Z, block size 1
+t(b) %*% xxi %*% t(xx) %*% diag(y*y) %*% xx %*% xxi %*% b
+
 
 
 # --- regr with 4 predictors
@@ -24,13 +35,22 @@ g <- (z %*% e)/(z %*% z)
 #     White test of Z[0] with blocksize 1
 g^2/(((z * e)%*%(z * e))/(z %*% z)^2)
 
-# --- regr with 6 predictors (add 3 at once)
+#     White scalar F stat as if block of variables
+z <- cbind(residuals(z5.regr))
+zzi <- solve(t(z) %*% z)
+g <- solve(t(z) %*% z, t(z) %*% e)
+#     compare vector to scalar result
+t(g) %*% solve(zzi %*% t(z) %*% diag(e*e) %*% z %*% zzi) %*% g
+
+
+# --- regr with 6 predictors (add 3 at once, zcollection)
 regr.6 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4] + Data[,5]+Data[,6]+Data[,7])
 summary(regr.6)
 #     F test of Z (3 df)
 anova(regr.3, regr.6 )
 
-# --- white test of block of 3 new predictors together
+
+# --- white test of block of 3 additional predictors together
 z6.regr <- lm(Data[,6] ~ Data[,2]+Data[,3]+Data[,4])
 z7.regr <- lm(Data[,7] ~ Data[,2]+Data[,3]+Data[,4])
 z <- cbind(residuals(z5.regr), residuals(z6.regr), residuals(z7.regr))
@@ -38,8 +58,12 @@ zzi <- solve(t(z) %*% z)
 
 g <- solve(t(z) %*% z, t(z) %*% e)
 #     white F test of Z, block size 1
-t(g) %*% zzi %*% t(z) %*% diag(e*e) %*% z %*% zzi %*% g
+t(g) %*% solve(zzi %*% t(z) %*% diag(e*e) %*% z %*% zzi) %*% g
 
+#     use the QR expression
+qrz <- qr(z); Q <- qr.Q(qrz)
+Qe <- t(Q) %*% e
+t(Qe) %*% solve(t(Q) %*% diag(e*e) %*% Q) %*% Qe
 
 # --- with blockSize greater than 1; m holds the blocked matrix of residuals
 bs <- 5
@@ -56,7 +80,7 @@ g^2 /((t(z) %*% m %*% z)/(z %*% z)^2)
 #     White test of Z, b=5
 z <- cbind(residuals(z5.regr), residuals(z6.regr), residuals(z7.regr))
 g <- solve(t(z) %*% z, t(z) %*% e)
-t(g) %*% zzi %*% t(z) %*% m %*% z %*% zzi %*% g
+t(g) %*% solve(zzi %*% t(z) %*% m %*% z %*% zzi) %*% g
 
 
 

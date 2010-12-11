@@ -100,17 +100,44 @@ int main(int, char **)
       { xPtr[2*i] = Z(i,j); xPtr[2*i+1] = Z(i,j); }
       zcollection.push_back(make_pair(xNames[j],xPtr));
     }
-    ValidatedRegression vregr("Y", yPtr, cv, 2*nRows);
-    std::cout << vregr << std::endl;
-    vregr.add_predictors_if_useful (xcollection, 1.0);
-    std::cout << vregr << std::endl;
-    vregr.add_predictors_if_useful (zcollection, 1.0);
-    std::cout << vregr << std::endl;
+    { // test validated regression, standard F test
+      std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
+      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows);
+      std::cout << vregr << std::endl;
+      std::pair<double,double> result;
+      result = vregr.add_predictors_if_useful (xcollection, 1.0);
+      std::cout << "TEST: test of adding xcollection gives " << result << std::endl << vregr << std::endl;
+      {
+	std::vector<std::pair<std::string, double*> > collect1;
+	collect1.push_back(zcollection[0]);
+	result = vregr.add_predictors_if_useful (collect1,0.00001);
+      }
+      std::cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << std::endl << vregr << std::endl;
+      result = vregr.add_predictors_if_useful (zcollection, 1.0);
+      std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
+    }
+    { // test validated regression, white tests
+      const int blockSize (5);
+      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize);
+      std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
+      std::cout << vregr << std::endl;
+      std::pair<double,double> result;
+      result = vregr.add_predictors_if_useful (xcollection, 1.0);
+      std::cout << "TEST: test of adding xcollection gives " << result << std::endl << vregr << std::endl;
+      {
+	std::vector<std::pair<std::string, double*> > collect1;
+	collect1.push_back(zcollection[0]);
+	result = vregr.add_predictors_if_useful (collect1,0.00001);
+      }
+      std::cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << std::endl << vregr << std::endl;
+      result = vregr.add_predictors_if_useful (zcollection, 1.0);
+      std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
+    }
   }
   
   // weighted regression
   {
-    std::cout << "TEST: build 3 predictor WLS fit\n";
+    std::cout << "\n\nTEST: build 3 predictor WLS fit\n";
     clock_t start;
     start = clock();     LinearRegression regr("y",y,w);     print_time(start);
     start = clock();     regr.add_predictors(xNames,X);      print_time(start);
@@ -123,6 +150,7 @@ int main(int, char **)
   }
   // build a regression; no shrinkage for initial variables
   {
+    std::cout << "\n\n---------------------------------------------------------------------------------\nTEST: test of white regression\n";
     clock_t start;
     start = clock();     LinearRegression regr("y",y);       print_time(start);
     start = clock();     regr.add_predictors(xNames,X);      print_time(start);
@@ -136,16 +164,23 @@ int main(int, char **)
     
     // test the test routines
     std::cout << "\nStarting of the timing routines for testing/adding predictors\n";
+    
     start = clock(); std::cout << "Test of X[2]   : " << regr.f_test_predictor(X.col(2))   << std::endl; print_time(start);
     start = clock(); std::cout << "Test of col z  : " << regr.f_test_predictor(z)          << std::endl; print_time(start);
     start = clock(); std::cout << "Test 'matrix' z: " << regr.f_test_predictors(z)         << std::endl; print_time(start); std::cout << std::endl;
     
-    start = clock(); std::cout << "Test of Z[0]   : " << regr.f_test_predictor(Z.col(0))   << std::endl; print_time(start);
-    start = clock(); std::cout << "White   Z[0]   : " << regr.f_test_predictor(Z.col(0),1) << std::endl; print_time(start);
-    start = clock(); std::cout << "White Z[0],b=5 : " << regr.f_test_predictor(Z.col(0),5) << std::endl; print_time(start); std::cout << std::endl;
+    std::cout << "\n       Z[0] = " << Z.col(0).start(5).transpose() << " ... " << std::endl;
+    start = clock(); std::cout << "Test of Z[0]     : " << regr.f_test_predictor (Z.col(0))   << std::endl; print_time(start);
+    start = clock(); std::cout << "Test of Z[0] (s) : " << regr.f_test_predictors(Z.col(0))   << std::endl; print_time(start);
+
+    start = clock(); std::cout << "White Z[0],b=1    : " << regr.f_test_predictor (Z.col(0),1) << std::endl; print_time(start);
+    start = clock(); std::cout << "White Z[0],b=1 (s): " << regr.f_test_predictors(Z.col(0),1) << std::endl; print_time(start);
+
+    start = clock(); std::cout << "White Z[0],b=5    : " << regr.f_test_predictor (Z.col(0),5) << std::endl; print_time(start);
+    start = clock(); std::cout << "White Z[0],b=5 (s): " << regr.f_test_predictors(Z.col(0),5) << std::endl; print_time(start); std::cout << std::endl;     // do this one as vector
     
     start = clock(); std::cout << "Test of Z      : " << regr.f_test_predictors(Z)         << std::endl; print_time(start);
-    start = clock(); std::cout << "White   Z      : " << regr.f_test_predictors(Z, 1)      << std::endl; print_time(start);
+    start = clock(); std::cout << "White Z, b=1   : " << regr.f_test_predictors(Z, 1)      << std::endl; print_time(start);
     start = clock(); std::cout << "White Z, b=5   : " << regr.f_test_predictors(Z, 5)      << std::endl; print_time(start);
     
     start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictor("z", z);                      print_time(start);  std::cout << regr << std::endl;

@@ -118,16 +118,16 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   Vector zRes;
   if (is_wls())
   { Vector wz (z.cwise() * mSqrtWeights);
-    Vector zRes (wz - mQ * (mQ.transpose() * wz));
+    zRes = wz - mQ * (mQ.transpose() * wz);
   }
   else
-    Vector zRes (z - mQ * (mQ.transpose() * z));
+    zRes = z - mQ * (mQ.transpose() * z);
   double ssz  (zRes.squaredNorm());
   assert (ssz >= 0.0);
   int residualDF (mN-2-q());
   assert(residualDF > 0);
   if(ssz < epsilon)                                 // predictor is singular
-  { debugging::debug("LINM",2) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
+  { debugging::debug("LINM",3) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
   }
   Vector sszVec(1); sszVec[0] = ssz;
@@ -167,11 +167,11 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
-  Matrix R    (qr.matrixR());
   Matrix Q    (qr.matrixQ());
+  Matrix R    (qr.matrixR());
   for (int j=0; j<z.cols(); ++j)
   { if(abs(R(j,j)) < epsilon)                             // predictor j is singular
-    { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, diag of R = " << abs(R(j,j)) << std::endl;
+    { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R(j,j) = " << abs(R(j,j)) << std::endl;
       return FStatistic();
     }
   }
@@ -181,17 +181,15 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
     return FStatistic(regrss, z.cols(), mResidualSS-regrss, residualDF, zResSS);
   }
   else
-  { Matrix Ri     (R.inverse());
-    Vector rGamma (Ri.transpose() * Ri * Qe);
+  { 
+    int p (z.cols());
+    Matrix QeeQ(p,p); QeeQ.setZero();
     if (blockSize == 1)
-    { Matrix eQ = mResiduals.asDiagonal() * Q;
-      Vector eQRg   (eQ * rGamma); 
-      return FStatistic(eQRg.squaredNorm(), z.cols(), residualDF, zResSS);
+    { Matrix eQ (mResiduals.asDiagonal() * Q);
+      Matrix QeeQ = (eQ.transpose() * eQ);
     }
-    else // blocksize > 1
+    else     // blocksize > 1
     { assert(0 == mN % blockSize);
-      int p (z.cols());
-      Matrix QeeQ(p,p); QeeQ.setZero();
       int row (0);
       Vector eQ(p);
       for(int block = 0; block<mN/blockSize; ++block)
@@ -199,8 +197,9 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
 	QeeQ += eQ * eQ.transpose();
 	row += blockSize;
       }
-      return FStatistic(rGamma.dot(QeeQ * rGamma), z.cols(), residualDF, zResSS);
     }
+    double regrSS = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
+    return FStatistic(regrSS, z.cols(), residualDF, zResSS);
   }
 }
 
