@@ -34,11 +34,15 @@ template <class Iter>
 std::pair<double,double>
 ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
 {
-  int k (c.size());
+  int k (c.size());                                                                  // k denotes the number of added variables
   LinearRegression::Matrix preds(mLength,k);
   for(int j=0; j<k; ++j)
     preds.col(j) = split_iterator(c[j].second);
-  FStatistic f (mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k),mBlockSize));    // block size determines if use white
+  FStatistic f;
+  if (k == 1)
+    f = mModel.f_test_predictors(preds.col(0).start(mN),mBlockSize);                 // block size determines if use white
+  else
+    f =  mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k),mBlockSize);   
   debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << mBlockSize << std::endl;
   if (f.p_value() > pToEnter)
     return std::make_pair(f.f_stat(), f.p_value());

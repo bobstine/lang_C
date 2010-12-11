@@ -35,9 +35,9 @@ class FeatureTransformation
   
   void operator()()         
   {
-    std::cout << "TRANS: apply feature transformation operator \n";
+    // std::cout << "TRANS: apply feature transformation operator \n";
     mFV = mOp(mInput);
-    std::cout << "TRANS: operator yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
+    // std::cout << "TRANS: operator yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
   }
 };
 

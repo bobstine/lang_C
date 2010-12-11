@@ -168,38 +168,39 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   assert(residualDF > 0);
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
   Matrix Q    (qr.matrixQ());
-  Matrix R    (qr.matrixR());
-  for (int j=0; j<z.cols(); ++j)
-  { if(abs(R(j,j)) < epsilon)                             // predictor j is singular
-    { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R(j,j) = " << abs(R(j,j)) << std::endl;
-      return FStatistic();
+  { // use R matrix only for checking rank conditions
+    Matrix R    (qr.matrixR());
+    for (int j=0; j<z.cols(); ++j)
+    { if(abs(R(j,j)) < epsilon)
+      { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R(j,j) = " << abs(R(j,j)) << std::endl;
+	return FStatistic();
+      }
     }
   }
   Vector Qe  (Q.transpose() * mResiduals);                // projection into space of new variables
+  int p (z.cols());
   if (blockSize==0)
   { double regrss (Qe.squaredNorm());
-    return FStatistic(regrss, z.cols(), mResidualSS-regrss, residualDF, zResSS);
+    return FStatistic(regrss, p, mResidualSS-regrss, residualDF, zResSS);
   }
   else
-  { 
-    int p (z.cols());
-    Matrix QeeQ(p,p); QeeQ.setZero();
+  { Matrix QeeQ(p,p);                                    // Q'ee'Q 
+    QeeQ.setZero();
     if (blockSize == 1)
-    { Matrix eQ (mResiduals.asDiagonal() * Q);
-      Matrix QeeQ = (eQ.transpose() * eQ);
+    { Matrix eQ (mResiduals.asDiagonal() * Q);  
+      QeeQ = (eQ.transpose() * eQ);
     }
     else     // blocksize > 1
     { assert(0 == mN % blockSize);
-      int row (0);
       Vector eQ(p);
-      for(int block = 0; block<mN/blockSize; ++block)
+      for(int block = 0, row = 0; block<mN/blockSize; ++block)
       {	eQ = mResiduals.segment(row,blockSize).transpose() * Q.block(row,0,blockSize,p);
 	QeeQ += eQ * eQ.transpose();
 	row += blockSize;
       }
     }
     double regrSS = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
-    return FStatistic(regrSS, z.cols(), residualDF, zResSS);
+    return FStatistic(regrSS, p, residualDF, zResSS);
   }
 }
 
