@@ -1,5 +1,8 @@
 Next... 
 
+	Columns don't seem to know about those prefix rows used for things
+	like lags, so summary stats (eg, average) are messed up.
+
 	Lock in initial variables so that these appear in the "used" queue.
 
 	Segmented time model requires block of variable and constant shift.

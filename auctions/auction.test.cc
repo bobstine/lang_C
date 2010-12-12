@@ -23,7 +23,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-   
+
 #include "auction.h"
      
 // from ranges
@@ -289,7 +289,7 @@ main(int argc, char** argv)
   { 
     theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, splineDF, nContextCases)));
+				 make_calibration_stream("fitted_values", theRegr, splineDF, calibrationSignature, nContextCases)));
   }
     
 

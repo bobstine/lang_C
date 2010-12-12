@@ -127,28 +127,47 @@ public:
 template< class Model >
 class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureVector>
 {
-  int mDegree;
-  int mSkip; // possible offset to allow for lag features
+  int         mDegree;
+  std::string mSignature;  // identifying variable name
+  int         mSkip;       // possible offset to allow for lag features
   
  public:
-  BuildCalibrationFeature (int degree,int skip) : mDegree(degree), mSkip (skip) { } 
+  BuildCalibrationFeature (int degree, std::string s, int skip) : mDegree(degree), mSignature(s), mSkip (skip) { } 
   
   FeatureVector operator()(Model const* pModel) const
   {
     // construct name for features as 'Y_hat_x'
     std::ostringstream oss;
-    oss << "Y_hat_" << pModel->q();
-    Column mFit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
-    double *fit (mFit->begin());
-    for(int i=0; i<mSkip; ++i)
-      *fit++ = 0;
-    pModel->fill_with_fit(mFit->begin() + mSkip);
-    mFit->update();
+    oss << mSignature << pModel->q();
+    Column fit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
+    { // fill leading values with 0
+      double *pFit (fit->begin());
+      for(int i=0; i<mSkip; ++i)
+	*pFit++ = 0;
+    }
+    pModel->fill_with_fit(fit->begin() + mSkip);
+    fit->update();
+
+    std::cout << "TEST: initial fitted values in BuildCalibrationFeature (with mean fit = " << fit->average() << ") are ";
+    std::for_each(fit->begin()+mSkip, fit->begin()+mSkip+10, [](double x) { std::cout << " " << x; });
+    std::cout << std::endl;
+    
     std::vector<int> powers;
     for (int j = 2; j <= mDegree; ++j)
       powers.push_back(j);
-    debugging::debug("FSTR",4) << "BuildCalibrationFeature constructs powers 2-" << mDegree <<" of " << mFit->name() << std::endl;
-    return powers_of_column_feature(mFit,powers);
+    debugging::debug("FSTR",4) << "BuildCalibrationFeature constructs powers 2-" << mDegree <<" of " << fit->name() << std::endl;
+    FeatureVector fv (powers_of_column(fit,powers));
+
+
+    std::cout << "TEST: powers of fitted values in BuildCalibrationFeature are:\n ";
+    for(int j=0; j <= mDegree-2; ++j)
+    { std::cout << "     (power " << j+2 << ") ";
+      std::for_each(fv[j]->begin()+mSkip, fv[j]->begin()+mSkip+10, [](double x) { std::cout << " " << x; });
+      std::cout << std::endl;
+    }
+
+    
+    return fv;
   }
 };
 

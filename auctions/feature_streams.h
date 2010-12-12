@@ -166,12 +166,12 @@ make_feature_product_stream (std::string const& name, Feature const& f, Collecti
 
 
 template <class Model>
-FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model>>
-make_calibration_stream (std::string const& name, Model const& model, int degree, int skip)
+FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
+make_calibration_stream (std::string const& name, Model const& model, int degree, std::string signature, int skip)
 {
   std::cout << "FPRS: make_calibration_stream of degree " << degree << " with initial skip of " << skip << " cases.\n";
   return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model), BuildCalibrationFeature<Model>(degree,skip));
+    ("Calibration::"+name, ModelIterator<Model>(model), BuildCalibrationFeature<Model>(degree,signature,skip));
 }
 
 

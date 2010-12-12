@@ -145,7 +145,7 @@ InteractionFeature::write_to (std::ostream& os) const
 // Unary feature
 
 std::vector<Feature>
-powers_of_column_feature (Column const& col, std::vector<int> const& powers)
+powers_of_column (Column const& col, std::vector<int> const& powers)
 {
   std::vector<Feature> fv;
   Feature  base(col);

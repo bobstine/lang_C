@@ -40,7 +40,7 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
     preds.col(j) = split_iterator(c[j].second);
   FStatistic f;
   if (k == 1)
-    f = mModel.f_test_predictors(preds.col(0).start(mN),mBlockSize);                 // block size determines if use white
+    f = mModel.f_test_predictor(preds.col(0).start(mN),mBlockSize);                  // block size determines if use white
   else
     f =  mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k),mBlockSize);   
   debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << mBlockSize << std::endl;

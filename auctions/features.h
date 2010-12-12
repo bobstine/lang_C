@@ -109,7 +109,7 @@ FeatureVector
 features_with_name(std::string name, FeatureVector const& fv);
 
 FeatureVector
-powers_of_column_feature (Column const& col, std::vector<int> const& powers);
+powers_of_column (Column const& col, std::vector<int> const& powers);
   
 Feature
 make_indexed_feature (Feature const& f, IntegerColumn const& i);

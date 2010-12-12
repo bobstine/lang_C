@@ -173,6 +173,12 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
     for (int j=0; j<z.cols(); ++j)
     { if(abs(R(j,j)) < epsilon)
       { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R(j,j) = " << abs(R(j,j)) << std::endl;
+
+	std::cout << "TEST: collinear predictors in f_test_predictors are \n:";
+	std::cout << z.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
+	std::cout << "TEST: predictors in f_test_predictors after sweeping are \n:";
+	std::cout << zRes.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
+	
 	return FStatistic();
       }
     }
