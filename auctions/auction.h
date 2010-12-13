@@ -95,7 +95,7 @@ private:
   bool                     is_calibration_feature(Feature const& f)                      const;
   FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
-  void                     print_features(FeatureVector const& fv, std::ostream&)        const;
+
 };
 
 

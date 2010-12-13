@@ -1,7 +1,7 @@
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
-  
+     
           auction.test -f filename -o path -r rounds -c calibration_df -v
 
   where
@@ -25,9 +25,9 @@
 */
 
 #include "auction.h"
-     
+      
 // from ranges
-#include "range.h"
+#include "range.h" 
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 #include "feature_streams.h"

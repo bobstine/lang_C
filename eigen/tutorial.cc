@@ -9,35 +9,46 @@ int main(int argc, char *argv[])
 {
   std::cout.precision(2);
 
+  typedef Eigen::VectorXd Vector;
+  typedef Eigen::MatrixXd Matrix;
+  
   // ras... element by element insertion
   {
     const int dim (10);
     std::vector<float> sv;
     for(int i = 0; i<dim; ++i)
-      sv.push_back(i);
+      sv.push_back(-i);
 
     // insert columns into matrix
-    Eigen::VectorXf vec (dim);
+    Vector vec (dim);
     for(int i = 0; i<dim; ++i)
       vec[i] = sv[i];
-    Eigen::MatrixXf mat (dim,3);
+
+    std::cout << "TEST: vec[1] = " << vec(1) << "   abs val = " << abs(vec(1)) << std::endl;
+
+
+    Matrix mat (dim,3);
     mat.col(0) = vec;
     mat.col(1) = vec; // odd that this does not work ... vec + 3... need vec.cwise() + scalar
     mat.col(2) = vec * 3;
+
+    std::cout << "TEST: mat[1,1] = " << mat(1,1) << "   abs val = " << abs(mat(1,1)) << std::endl;
+
     std::cout << "\nElement by element assignment:\n" << vec << "\nmat\n" <<  mat << std::endl;
 
+    
     // dot products
     std::cout << "v'v = " << vec.squaredNorm() <<  "  v'M = " << vec.transpose() * mat << std::endl;
     // generates compile error
     // std::cout << " not conformable " <<     mat * mat << std::endl;
 
     // try centering and scaling the matrix
-    Eigen::VectorXf mean (mat.colwise().sum());
+    Vector mean (mat.colwise().sum());
     mean = mean / mat.rows();
     for (int j=0; j<mat.cols(); ++j)
       mat.col(j) = mat.col(j).cwise() - mean(j);
     std::cout << "Matrix after centering \n" << mat << std::endl;
-    Eigen::VectorXf ss (mat.colwise().squaredNorm());
+    Vector ss (mat.colwise().squaredNorm());
     ss = ss / (mat.rows() - 1);
     for (int j=0; j<mat.cols(); ++j)
     { double sd (sqrt(ss(j)));
@@ -47,9 +58,9 @@ int main(int argc, char *argv[])
     std::cout << "Sqrt(SS) -- not div by n -- of first column is " << mat.col(0).norm() << std::endl;
     
     // SVD operations
-    Eigen::SVD<Eigen::MatrixXf> svd(mat);
-    Eigen::MatrixXf u (svd.matrixU());
-    Eigen::MatrixXf v (svd.matrixV());
+    Eigen::SVD<Matrix> svd(mat);
+    Matrix u (svd.matrixU());
+    Matrix v (svd.matrixV());
 
     std::cout << "Matrix U is \n" << u << std::endl;
     std::cout << "Singular values \n" << svd.singularValues().transpose() << std::endl;

@@ -116,18 +116,16 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream) mProgressStream << std::endl;
     return false;
   } 
-  // extract chosen features
+  // extract chosen features, optionally print name of first
   FeatureVector features (expert->feature_vector());
   if (features.empty())
   { debug("AUCT",-1) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
     if (mProgressStream) mProgressStream << std::endl;
     return false;
   }
-  else
-  { debug("AUCT",3) << "Winning expert " << expert->name()
-		    << " bid $" << bid << "(net " << afterTaxBid <<  ")  on ";
-    print_features(features, debug());
-  }
+  else 
+    debug("AUCT",3) << "Winning expert " << expert->name() << " bid $" << bid << "(net " << afterTaxBid <<  ")  on [" << features.size()
+		    << "] " << features[0]->name() << std::endl;
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
@@ -141,7 +139,7 @@ Auction<ModelClass>::auction_next_feature ()
     if (newFeature || accepted)
       features[j]->set_model_results(accepted, afterTaxBid);                // save attributes only from first attempt in auction or when accepted
     else
-      debugging::debug("AUCT",4) << "Old feature " << features[j]->name() << " tested in auction.\n";
+      debug("AUCT",4) << "Old feature " << features[j]->name() << " tested in auction.\n";
     if (accepted) 
     { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
@@ -409,22 +407,6 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
   return f;
 }
 
-
-template <class ModelClass>
-void
-Auction<ModelClass>::print_features(FeatureVector const& features, std::ostream &os)   const
-{
-  size_t nFeatures (features.size());
-  
-  if (1==nFeatures) 
-    os << "one feature: " << features[0]->name();
-  else 
-  { os << nFeatures << " features: "; 
-    for (size_t j=0; j<nFeatures; ++j)  
-      os << features[j]->name() << ", ";
-  }
-  os << std::endl;
-}
 
 template <class ModelClass>
 void

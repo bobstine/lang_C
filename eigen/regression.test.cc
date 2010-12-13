@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 #include <time.h>
 
@@ -35,7 +36,7 @@ int main(int, char **)
   //      20                 2.6        1.6                 0.15      0.30        
   //      40                            5.2           
   //      80                           21 
-  const int nRows   (10000);   
+  const int nRows   (100);   
   const int nCols     (3);
   const int nAdd      (3);
   
@@ -110,6 +111,11 @@ int main(int, char **)
       std::pair<double,double> result;
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
       std::cout << "TEST: test of adding xcollection gives " << result << std::endl << vregr << std::endl;
+      double *pFit  (new double[2*nRows]);
+      vregr.fill_with_fit(pFit);
+      std::cout << "TEST: First 10 fitted values from model with 3 X's are   ";
+      std::for_each(pFit, pFit+10, [](double x){ std::cout << x << "  ";});
+      std::cout << std::endl;
       {
 	std::vector<std::pair<std::string, double*> > collect1;
 	collect1.push_back(zcollection[0]);

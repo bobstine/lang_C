@@ -9,6 +9,8 @@
 
 const double epsilon (1.0e-50);          // used to detect singularlity
 
+double abs_val(double x) { if (x < 0.0) return -x; else return x; }
+
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
 LinearRegression::Matrix
@@ -57,7 +59,7 @@ LinearRegression::initialize()
     mY = mY.cwise() * mSqrtWeights;
   double yBar (mY.dot(mX.col(0).start(mN))/mX.col(0).squaredNorm());
   mTotalSS = (mY.cwise() - yBar).squaredNorm();
-  std::cout << "******  yBar = " << yBar << "   TSS = " << mTotalSS << std::endl;
+  // std::cout << "******  yBar = " << yBar << "   TSS = " << mTotalSS << std::endl;
   assert(mTotalSS>0);
   build_QR_and_residuals();
 }
@@ -171,9 +173,11 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   { // use R matrix only for checking rank conditions
     Matrix R    (qr.matrixR());
     for (int j=0; j<z.cols(); ++j)
-    { if(abs(R(j,j)) < epsilon)
-      { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R(j,j) = " << abs(R(j,j)) << std::endl;
+    { if(abs_val(R(j,j)) < epsilon)
+      { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R("
+				   << j << "," << j << ") = " << abs_val(R(j,j)) << "  " << R(j,j) << std::endl;
 
+	std::cout << "TEST: R matrix is\n " << R << std::endl;
 	std::cout << "TEST: collinear predictors in f_test_predictors are \n:";
 	std::cout << z.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
 	std::cout << "TEST: predictors in f_test_predictors after sweeping are \n:";

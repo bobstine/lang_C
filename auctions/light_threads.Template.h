@@ -42,7 +42,7 @@ LightThread<W>::LightThread(const W& worker)
   mp_thread_mutex(new boost::mutex()),
   m_object_mutex()
 {
-  std::cout << "LT: initialize with a worker.\n";
+  //  std::cout << "LT: initialize with a worker.\n";
   (*mp_done) = true;
   (*this)(worker);
 }
@@ -57,7 +57,7 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
   mp_thread_mutex(),
   m_object_mutex()
 {
-  std::cout << "LT: initialize by copy construct.\n";
+  // std::cout << "LT: initialize by copy construct.\n";
   // lock down both objects
   m_object_mutex.lock();
   rhs.m_object_mutex.lock();
@@ -81,7 +81,7 @@ LightThread<W>::LightThread()
   mp_thread_mutex(),
   m_object_mutex()
 {
-  std::cout << "LT: initialize with no worker supplied.\n";
+  // std::cout << "LT: initialize with no worker supplied.\n";
 }
 
 template<class W>

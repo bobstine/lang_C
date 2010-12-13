@@ -140,33 +140,19 @@ class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureV
     std::ostringstream oss;
     oss << mSignature << pModel->q();
     Column fit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
-    { // fill leading values with 0
+    { // fill leading values with mean of response
       double *pFit (fit->begin());
+      double ybar (pModel->y_bar());
       for(int i=0; i<mSkip; ++i)
-	*pFit++ = 0;
+	*pFit++ = ybar;
     }
     pModel->fill_with_fit(fit->begin() + mSkip);
     fit->update();
-
-    std::cout << "TEST: initial fitted values in BuildCalibrationFeature (with mean fit = " << fit->average() << ") are ";
-    std::for_each(fit->begin()+mSkip, fit->begin()+mSkip+10, [](double x) { std::cout << " " << x; });
-    std::cout << std::endl;
-    
     std::vector<int> powers;
     for (int j = 2; j <= mDegree; ++j)
       powers.push_back(j);
     debugging::debug("FSTR",4) << "BuildCalibrationFeature constructs powers 2-" << mDegree <<" of " << fit->name() << std::endl;
     FeatureVector fv (powers_of_column(fit,powers));
-
-
-    std::cout << "TEST: powers of fitted values in BuildCalibrationFeature are:\n ";
-    for(int j=0; j <= mDegree-2; ++j)
-    { std::cout << "     (power " << j+2 << ") ";
-      std::for_each(fv[j]->begin()+mSkip, fv[j]->begin()+mSkip+10, [](double x) { std::cout << " " << x; });
-      std::cout << std::endl;
-    }
-
-    
     return fv;
   }
 };

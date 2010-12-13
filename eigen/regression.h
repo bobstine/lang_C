@@ -11,6 +11,12 @@
 #include <vector>
 
 /*
+
+  A LinearRegression object knows only about its data, and it uses
+  all of the data to fit the model.  A ValidatedRegression understands
+  the concept that some data will be reserved for validation purposes.
+
+  
   14 Oct 2010 ... Split out fstatistic, using boost in place of gsl.
   30 Sep 2010 ... Playing with how to do shrinkage reasonably.
   24 Sep 2010 ... Created to start removing GSL components
@@ -38,6 +44,7 @@ private:
   Vector                   mSqrtWeights;
   std::string              mYName; 
   Vector                   mY;
+  double                   mYBar;
   Matrix                   mX;           // padded for shrinkage; shrinkage elements on diagonal of bottom rows
   std::vector<std::string> mXNames; 
   Matrix                   mQ;           // decomp of X, without the added rows from shrinkage
@@ -50,23 +57,25 @@ public:
   ~LinearRegression () { }
 
   LinearRegression ()
-    :  mN(0) { }
+    :  mN(0), mYBar(0.0) { }
 
   
   // OLS
   LinearRegression (std::string yName, Vector const& y)
-    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
   
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
-    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
+    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
 
   
   // WLS: if weighted, all things held are weighted by W
   LinearRegression (std::string yName, Vector const& y, Vector const& w)
-    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
+       mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w)
-    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()), mYName(yName), mY(y), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
+    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
+       mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
 
   bool      is_wls()                 const   { return mWeights.size() > 1; }
   bool      is_ols()                 const   { return mWeights.size() == 1; }
@@ -79,9 +88,11 @@ public:
 
   Vector    residuals()              const   { return mResiduals; }
   Vector    fitted_values()          const   { return mY - mResiduals; }
+  Vector    x_row(int i)             const   { return mX.row(i); }
   Vector    raw_residuals()          const   { if (is_ols()) return mResiduals; else return mResiduals.cwise()/mSqrtWeights; } 
   Vector    predict(Matrix const& x) const;
 
+  double    y_bar()                  const   { return mYBar; }
   Vector    beta()                   const;
   Vector    se_beta()                const;
   
@@ -160,6 +171,7 @@ public:
   // iterators must include both the estimation and validation cases, as identified at creation
   template <class Iter> std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
+  double                     y_bar()                const  { return mModel.y_bar(); }
   template <class Iter> void fill_with_fit(Iter it) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;

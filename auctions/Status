@@ -1,5 +1,17 @@
 Next... 
 
+	Cross experts seem messed up when bidding;  output shows VALM3 call
+	without seeing the variable offered.  Not ready?
+
+	Also check that cross-experts are skipping enough terms.
+	
+	Use LVALUE for return to avoid unneeded copy of value returned by
+	a function (as in BuildRegression - make const slot) in auction.test.
+
+	What about shrinkage (see call to add_predictor(s) using f)?
+
+
+
 	Columns don't seem to know about those prefix rows used for things
 	like lags, so summary stats (eg, average) are messed up.
 
@@ -81,10 +93,7 @@ Need to
 
      Logistic regression
 
-     	Get the cross-validation to run for least squares and logistic regression.
-        Leave out subset works, but it is not plugged into any further.
-
-        Need to implement protection levels in logistic regression.
+     	Need to implement this in Eigen.
 
         Figure out how to use calibration for logistic regression.
      
@@ -120,6 +129,18 @@ Need to
 	"length" items held in both training and test data.
 
 
+
+
+------------------------------------------------------------------------------
+12 Dec 10
+       
+       Regressions refuses to add fitted values; says the array is singular.
+       Fixed. Error was due to using abs(R(j,j)); compiler put in the integer
+       abs function that rounded to zero.
+
+       Predicted variables seem correct, though centering is wrong
+       since columns don't know to ignore skipped initial cases. Should fill
+       with mean of those that are present rather than 0.
 
 
 ------------------------------------------------------------------------------
