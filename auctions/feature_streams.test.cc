@@ -34,6 +34,7 @@ public:
   int q()                       const  { return mQ; }
   void increment_q()                   { ++ mQ; }
   int n_total_cases()           const  { return mCases; }
+  double y_bar()                const  { return 0.0; }
   
   void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
   
@@ -93,7 +94,7 @@ main()
   FeatureVector empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  const int numFeatures (20);
+  const int numFeatures (100);
   for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
@@ -112,22 +113,22 @@ main()
   }
 
   
-  if (false)         // test dynamic stream
+  if (true)         // test dynamic stream
   {
     std::cout << "\n\nTEST: dynamic stream\n";
     FeatureVector fv;
-    FeatureStream< DynamicIterator<FeatureVector, SkipNone>, Identity> ds (make_dynamic_stream("dyno", fv, SkipNone(), Identity()));
-    int more (3);
+    FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, Identity> ds (make_dynamic_stream("dyno", fv, SkipIfDerived(), Identity()));
+    int more (25);
     for (int i=0; i<more; ++i)
       fv.push_back(features[i]);
     std::cout << "TEST: Added features; FV.size() = " << fv.size() << std::endl;
     // this drain will not empty any since the test 'has_feature' is late getting all started; that's okay
-    drain_features(ds, 5);
+    drain_features(ds, more+2);
     std::cout << "TEST: After first drain, FV.size() = " << fv.size() << std::endl;
     for (int i=0; i<more; ++i)
       fv.push_back(features[i+more]);
     std::cout << "TEST: Added more; FV.size() = " << fv.size() << std::endl;
-    drain_features(ds, 10);
+    drain_features(ds, 2*more);
     std::cout << "TEST: at end, FV.size() " << fv.size() << std::endl;
   }
 
@@ -185,7 +186,7 @@ main()
     int skip = 0;
     Model model (featureVec1, featureVec2);
 
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, skip));
+    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, "Y_hat_", skip));
     std::cout << cs << std::endl;
     std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
     model.increment_q();
@@ -204,7 +205,7 @@ main()
   }
 
     
-  if (true)     // test interactions
+  if (false)     // test interactions
   { std::cout << "\n\nTEST:  Test of interaction stream.\n";
     FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
@@ -215,7 +216,7 @@ main()
   }
 
   
-  if (true)    // test dynamic cross-product stream
+  if (false)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     FeatureStream< CrossProductIterator, Identity > cp (make_cross_product_stream("test", featureVec1, featureVec2));
     std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;

@@ -14,9 +14,16 @@ bool
 SkipIfDerived::operator()(Feature const& f) const
 {
   std::string fname (f->name());
-  std::cout << "TEST: checking whether " << fname << " is derived; is_dummy = " << f->is_dummy() << "   is_constant = " << f->is_constant() << std::endl;
-  return   (f->is_constant())  || (f->is_dummy())           ||
-    (f->degree() > 1)                                       ||     // composition
+  bool b1 (    (f->is_constant())       || (f->is_dummy()));
+  bool b2 (    (f->degree() > 2)  );
+  bool b3 (     (fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     
+		(fname.size() >= 6 && "square" == fname.substr(0,6))   );
+  bool b4 (    (f->has_attribute("neighborhood"))                      ||    
+	       (std::string::npos != fname.find("Y_hat_"))  );
+  std::cout << "TEST: checking whether " << fname << " is derived;  [" << b1 << b2 << b3 << b4 << "]\n";
+  return
+    (f->is_constant())       || (f->is_dummy())             ||
+    (f->degree() > 2)                                       ||     // composition
     (fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers
     (fname.size() >= 6 && "square" == fname.substr(0,6))    ||
     (f->has_attribute("neighborhood"))                      ||     // already-indexed variable

@@ -1,12 +1,12 @@
 Next... 
 
-	Polynomial stream picking up things it should not; derived test seems
-	to work, but Polynomial Stream picks up Period60 and adds with square
-	and cube.  Suprising also that regression code does not pick up the
-	singularity; due to shrinkage?
+	Suprising also that regression code does not pick up the
+	singularity when powers of boolean were added; due to shrinkage?
 
+	School system finds MAIN bidding on variable lag_poverty.county after
+	already in the model.
 
-	Do PCAs work again?
+	Do PCAs work correctly now?
 
 
 	Also check that cross-experts are skipping enough terms.
@@ -130,8 +130,13 @@ Need to
 
 
 ------------------------------------------------------------------------------
-12 Dec 10
+14 Dec 10
        
+       Polynomial stream was picking up binary vars; derived test works, but 
+       Polynomial Stream picks up Period60 and adds with square and cube.  
+       Problem was caused by dynamic string: it did not check the first feature
+       or the first after the source added more.  Fixed now.
+
        Regressions refuses to add fitted values; says the array is singular.
        Fixed. Error was due to using abs(R(j,j)); compiler put in the integer
        abs function that rounded to zero.

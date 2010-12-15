@@ -72,8 +72,7 @@ template<class Iterator, class Trans>
   { make_features();
     return false;
   }
-  else
-    return true;
+  else return true;
 }
 
 

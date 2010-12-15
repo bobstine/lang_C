@@ -57,8 +57,7 @@ public:
   Feature          operator*()          const { assert(valid()); return mpQueue->mQueue.top(); }
     
   void print_to(std::ostream& os)       const { os << "QueueIterator: " << number_remaining() << " features remain; queue ref count " << mpQueue->mRefCount; }
-
-  //  RefCountedQueue::Queue *operator->()  const { return &mpQueue->mQueue; }  // others dont need access to underlying queue
+  
 };
 
 template<class Collection, class Pred>
@@ -74,20 +73,24 @@ class DynamicIterator
 {
   Collection const& mSource;         // someone else maintains; must be random accessible
   unsigned int      mPosition;
+  bool              mNeedToCheck;
   SkipPredicate     mSkipFeature;
   
 public:
   DynamicIterator(Collection const& source, SkipPredicate pred)
-    : mSource(source), mPosition(0), mSkipFeature(pred) {  }
+    : mSource(source), mPosition(0), mNeedToCheck(true), mSkipFeature(pred) { advance_position(); }
 
   int   number_remaining()              const { return mSource.size() - mPosition; }
-  bool  valid()                         const { return mPosition < mSource.size(); }
+  bool  valid()                               { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
 
-  DynamicIterator& operator++()               { assert(valid()); ++mPosition; while( (mPosition < mSource.size()) && mSkipFeature(mSource[mPosition]))  ++mPosition;  return *this;}
+  DynamicIterator& operator++()               { assert(mPosition < mSource.size()); ++mPosition; advance_position(); return *this;}
 
-  Feature          operator*()          const { assert(valid()); return mSource[mPosition]; }
+  Feature          operator*()          const { assert(mPosition < mSource.size()); return mSource[mPosition]; }
 
   void  print_to(std::ostream& os)      const { os << "DynamicIterator [" << mPosition << "/" << mSource.size() << "] "; }
+  
+ private:
+  void advance_position()                     { while((mPosition < mSource.size()) && mSkipFeature(mSource[mPosition]))  ++mPosition; mNeedToCheck = (mPosition == mSource.size()); }
 };
 
 template <class Collection, class Pred>
