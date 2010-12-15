@@ -226,12 +226,13 @@ main(int argc, char** argv)
   // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>         InteractionStream;
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>                       FiniteStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                         CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures > PolynomialStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>  NeighborhoodStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>                                 FiniteStream;
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
+  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
   typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
   
   // parasitic experts
   theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
@@ -275,7 +276,7 @@ main(int argc, char** argv)
   { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
     featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // alpha
-				 UniversalBidder<FiniteStream>(), 
+				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream(streamNames[s],featureStreams[s], SkipNone())));
     theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
 				 UniversalBoundedBidder<InteractionStream>(),
@@ -294,18 +295,14 @@ main(int argc, char** argv)
     
 
   //   Principle component type features
-
-  /*
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<pca> > SS_SVD;
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,         // kludge alpha share... RAS??? control streams via external file
-			       UniversalBidder<SS_SVD>(),
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                             // kludge alpha share
+			       UniversalBoundedBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    59,                                    // bundle size
-						    FeatureAcceptancePredicate(),          //      0=use rule, true=standardize
-						    Eigen_adapter<pca>(pca(0, true), nContextCases)
-						    )));
+						    EigenAdapter<PCA>(PCA(0, true), nContextCases),
+						    30))) ;                                                   // bundle size
 
+  /*
   typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
   theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<SS_RKHS>(),

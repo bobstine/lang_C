@@ -14,6 +14,7 @@ bool
 SkipIfDerived::operator()(Feature const& f) const
 {
   std::string fname (f->name());
+  std::cout << "TEST: checking whether " << fname << " is derived; is_dummy = " << f->is_dummy() << "   is_constant = " << f->is_constant() << std::endl;
   return   (f->is_constant())  || (f->is_dummy())           ||
     (f->degree() > 1)                                       ||     // composition
     (fname.size() >= 4 && "cube" == fname.substr(0,4))      ||     // avoid powers

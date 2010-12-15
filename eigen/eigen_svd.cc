@@ -73,7 +73,7 @@ SVD::random_linear_combinations (int k, Eigen::MatrixXd const& data)
 //    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    
 
 Eigen::MatrixXd
-pca::operator()(Eigen::MatrixXd const& data) const
+PCA::operator()(Eigen::MatrixXd const& data) const
 {
   // form m >= max(5, num components)
   int m (floor(sqrt(data.cols())));

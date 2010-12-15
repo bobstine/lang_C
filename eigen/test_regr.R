@@ -10,14 +10,14 @@ summary(regr.3)
 e <- residuals(regr.3);   e[1:5]
 
 
+
 # --- white test of block of 3 new predictors together
 xx <- cbind(Data[,2]-mean(Data[,2]), Data[,3]-mean(Data[,3]), Data[,4]-mean(Data[,4]))
 xxi <- solve(t(xx) %*% xx)
-
 y <- Data[,1]-mean(Data[,1])
 b <- solve(t(xx) %*% xx, t(xx) %*% y)
 #     white F test of Z, block size 1
-t(b) %*% xxi %*% t(xx) %*% diag(y*y) %*% xx %*% xxi %*% b
+t(b) %*% solve(xxi %*% t(xx) %*% diag(y*y) %*% xx %*% xxi) %*% b
 
 
 
@@ -65,7 +65,9 @@ qrz <- qr(z); Q <- qr.Q(qrz)
 Qe <- t(Q) %*% e
 t(Qe) %*% solve(t(Q) %*% diag(e*e) %*% Q) %*% Qe
 
-# --- with blockSize greater than 1; m holds the blocked matrix of residuals
+
+
+# --- White with blockSize greater than 1; m holds the blocked matrix of residuals
 bs <- 5
 m <- matrix(0,n,n)
 for(b in 1:(n/bs)) { r <- 1+bs*(b-1); i<- r:(r+bs-1); m[i,i] <- outer(e[i],e[i]) }

@@ -34,7 +34,7 @@ namespace Convert
 // Template class
 
 template <class OP>
-class Eigen_adapter
+class EigenAdapter: public std::unary_function<FeatureVector, FeatureVector>
 {
  private:
   OP mOp;
@@ -43,7 +43,7 @@ class Eigen_adapter
  public:
   typedef  std::vector<Feature> FeatureVector;
 
-  Eigen_adapter (OP op, int rows) : mOp(op), mContextRows(rows) { }
+  EigenAdapter (OP op, int rows) : mOp(op), mContextRows(rows) { }
   
   FeatureVector operator()(FeatureVector const& fv)
     {

@@ -1,7 +1,13 @@
 Next... 
 
-	Cross experts seem messed up when bidding;  output shows VALM3 call
-	without seeing the variable offered.  Not ready?
+	Polynomial stream picking up things it should not; derived test seems
+	to work, but Polynomial Stream picks up Period60 and adds with square
+	and cube.  Suprising also that regression code does not pick up the
+	singularity; due to shrinkage?
+
+
+	Do PCAs work again?
+
 
 	Also check that cross-experts are skipping enough terms.
 	
@@ -15,21 +21,13 @@ Next...
 	Columns don't seem to know about those prefix rows used for things
 	like lags, so summary stats (eg, average) are messed up.
 
-	Lock in initial variables so that these appear in the "used" queue.
-
 	Segmented time model requires block of variable and constant shift.
 
 
 
-	Lag iterator/neighborhood type.
-
 	More types of variables: differences, regional dummy vars, pop density
 
 	Spatial context variables: exp smooth of past, national/state vars
-
-	FeatureProductStream should only count down to the origin, starting
-	with the squared term and then terminate.  Like others, should not
-	square an indicator.  This is done?
 
 
 Need to 

@@ -40,13 +40,13 @@ namespace SVD
 
 //  PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    
 
-class pca: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
+class PCA: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
 {
   int         mNumComponents;
   bool        mStandardize;
   
 public:
-  pca(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
+  PCA(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
   
   int number_of_components() const { return mNumComponents; }
    

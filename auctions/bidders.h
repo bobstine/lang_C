@@ -235,9 +235,7 @@ public:
     int n (stream.number_remaining());
     if (n>0)
     { double fixedBid=1.0/(double)n;
-      double bid = alpha * max( fixedBid,
-				universalPDF(1+history.number_bids_since_last_success())
-				);
+      double bid = alpha * max( fixedBid, universalPDF(1+history.number_bids_since_last_success()) );
       return (bid < maxbid) ? bid : maxbid;
     }
     else
