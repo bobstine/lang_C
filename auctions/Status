@@ -1,5 +1,10 @@
 Next... 
 
+	Calibration adjustments seem weird.  Need to figure out what sort of 
+	criterion (p-value) is being used.  Plus, it never tries to add the
+	next level... Perhaps its not getting the chance since that stream is
+	not ready soon enough.  May have to hold and add without going back?
+
 	Suprising also that regression code does not pick up the
 	singularity when powers of boolean were added; due to shrinkage?
 
@@ -132,6 +137,11 @@ Need to
 ------------------------------------------------------------------------------
 14 Dec 10
        
+       MAIN stream was adding a variable that is already in the model. Problem
+       because the call to make the stream
+	    make_finite_stream with CyclicIterator, SkipNone
+       Should use the predicate SkipIfInModel instead.  Fixed.
+
        Polynomial stream was picking up binary vars; derived test works, but 
        Polynomial Stream picks up Period60 and adds with square and cube.  
        Problem was caused by dynamic string: it did not check the first feature

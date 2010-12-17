@@ -226,7 +226,7 @@ main(int argc, char** argv)
   // --- create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>                                 FiniteStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;
   typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
   typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
   typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
@@ -277,7 +277,7 @@ main(int argc, char** argv)
     featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // alpha
 				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream(streamNames[s],featureStreams[s], SkipNone())));
+				 make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
     theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
 				 UniversalBoundedBidder<InteractionStream>(),
 				 make_interaction_stream("Interactions within " + streamNames[s],
