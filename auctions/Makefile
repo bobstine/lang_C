@@ -56,11 +56,18 @@ crash_test: auction.test
 
 # ---  credit models  -----------------------------------------------------------------------------
 
-# options to auction:  -r rounds   -p protection from overfitting   -c calibration   -x initial exclude   -b block size  -d debug output level
-#
-#   can also run from a pipe like this
+# Set options to auction: -r rounds  -p protection from overfitting  -c calibration   -x initial exclude   -b block size  -d debug output level
+#   block size (-b) is the number of eligible counties in credit
+#   exclude (-x) is a multiple of the number of eligible counties (eg, 7 times)
+# Build can use a pre-build data file constructed like this
+#	 sh index.sh > data
+#   or read data from a pipe like this if the expanded data file (constructed from manifest) is compressed
 #	 gunzip -c data/credit/auction.data/short.gz | ./auction.test -o data/credit/ -r 50 -a 0.5 -p 3 -b 3000 -c 0 -x 9000
 #
+
+penn_credit_test: auction.test
+	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r 1000 -a 0.5 -p 3 -b 67 -c 3 -x 469 -d 3
+
 short_credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
 

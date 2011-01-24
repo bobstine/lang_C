@@ -4,7 +4,7 @@
 
 template<class K>
 Eigen::MatrixXd
-rkhs<K>::operator()(Eigen::MatrixXd const& input) const
+RKHS<K>::operator()(Eigen::MatrixXd const& input) const
 {
   using debugging::debug;
   
@@ -77,7 +77,7 @@ rkhs<K>::operator()(Eigen::MatrixXd const& input) const
     evectors.col(j) = ev.col(ev.cols()-1-j);
   Eigen::MatrixXd pc;
   pc = aDist * evectors;
-  debug("EIGN",4) << "Basis for rkhs with dim " << pc.rows() << "x" << pc.cols()
+  debug("EIGN",4) << "Basis for RKHS with dim " << pc.rows() << "x" << pc.cols()
 			     << "; SD of RKHS basis elements are ";
   for(int j=0; j<nPC; ++j)
     debug() << SVD::standard_deviation(pc.col(j)) << " ";

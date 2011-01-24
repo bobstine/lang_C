@@ -22,5 +22,7 @@ void
   StreamExpert<Bidder,Stream>::print_to(std::ostream& os) const
 {
   ExpertABC::print_to(os);
-  // os << " -- ";  mStream.print_to(os);  // thought this was too much
+  // the rest might be too much
+  os << " -- ";
+  mStream.print_to(os);
 }

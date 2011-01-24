@@ -103,13 +103,13 @@ namespace Kernel
  
 
 template <class K>
-class rkhs: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
+class RKHS: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>
 {
   int     mNumComponents;
   bool    mStandardize;
   
 public:
-  rkhs(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
+  RKHS(int k, bool standardize) : mNumComponents(k), mStandardize(standardize) { }
   
   int number_of_components() const { return mNumComponents; }
    

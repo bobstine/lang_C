@@ -18,7 +18,7 @@ template<class Iterator, class Trans>
   void
   FeatureStream<Iterator, Trans>::print_to(std::ostream& os) const
 {
-  os <<  mName << " @ " << feature_name();
+  os <<  mName << " @ " << feature_name() << " [" << number_remaining() << " left]";
 }
 
 

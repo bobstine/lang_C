@@ -227,7 +227,7 @@ class UniversalBoundedBidder
 public:
   UniversalBoundedBidder () {}    
   
-  std::string name() const { return "Univ bd bidder"; }
+  std::string name() const { return "Univ Bd Bidder"; }
   
   double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {

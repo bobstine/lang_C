@@ -27,7 +27,7 @@ namespace Convert
     features_into_eigen_matrix(std::vector<Feature> const& fv, int skipContextRows);
   
   std::vector<Feature>
-    eigen_matrix_into_features(Eigen::MatrixXd const& mat, int addContextRows);
+    eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string namePrefix, int addContextRows);
 }
 
 
@@ -37,19 +37,20 @@ template <class OP>
 class EigenAdapter: public std::unary_function<FeatureVector, FeatureVector>
 {
  private:
-  OP mOp;
-  int mContextRows;
+  OP          mOp;
+  std::string mNamePrefix;
+  int         mContextRows;
   
  public:
   typedef  std::vector<Feature> FeatureVector;
 
-  EigenAdapter (OP op, int rows) : mOp(op), mContextRows(rows) { }
+  EigenAdapter (OP op, std::string prefix, int rows) : mOp(op), mNamePrefix(prefix), mContextRows(rows) { }
   
   FeatureVector operator()(FeatureVector const& fv)
     {
       Eigen::MatrixXd  in  = Convert::features_into_eigen_matrix(fv, mContextRows);
       Eigen::MatrixXd  out = mOp(in);
-      FeatureVector result = Convert::eigen_matrix_into_features(out, mContextRows);
+      FeatureVector result = Convert::eigen_matrix_into_features(out, mNamePrefix, mContextRows);
       return result;
     }
 };		    

@@ -72,14 +72,14 @@ Convert::features_into_eigen_matrix(std::vector<Feature> const& fv, int skipCont
 
 
 std::vector<Feature>
-Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, int addContextRows)
+Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string namePrefix, int addContextRows)
 {
   std::vector<Feature> result;
 
   int nRows (mat.rows() + addContextRows);
   for (int j=0; j<mat.cols(); ++j)
   { std::ostringstream name;
-    name << "Eigen[" << j << "]";
+    name << namePrefix << "[" << j << "]";
     Column col(name.str().c_str(), nRows);
     double *boundary (col->begin()+addContextRows);
     std::fill(col->begin(), boundary, 0.0);

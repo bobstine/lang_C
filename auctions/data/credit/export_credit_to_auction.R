@@ -9,29 +9,45 @@
 source("/Users/bob/work/papers/credit-unemp/initialize.R")
 source("functions_build.R")
 
+
 # --- time domain
 y.quarters     <- 2:n.time        # skip first for all of those initial lagged variables
 x.quarters     <- 1:(n.time-1)
 
+# --- modify selection of eligible counties here if subsetting for specific state
+names(County)
+pa <- which(County$state == "Pennsylvania"); length(pa)   # 67 for pennsylvania
+sum(pa %in% eligible.counties)                            # all are eligible for penn
+
+one.state <- TRUE
+eligible.counties <- pa; n.eligible.counties <- length(eligible.counties)
+
 
 #-----------------------------------------------------------------------------------
-#      Output regression data to auction/C++
+#      Output regression data to C++ code for auction
 #      Response is at time t, but all others are lagged 1 quarter.
-#		All data goes into the named directory: 
+#		All data goes into "the.directory" 
 #             add lines to index.sh and 
 #				build file with data under the [unique] name varname
 #-----------------------------------------------------------------------------------
 
 write.the.data <- function() {
+	
 	dims           <- dim(County$REPB60M[eligible.counties,])
+
+	if (one.state) { # for a specific state; the directory must exist
+	the.directory  <- "/Users/bob/C/auctions/data/credit/auction_pa.data/"
+	the.manifest   <- "/Users/bob/C/auctions/data/credit/auction_pa.data/index.sh"
+	cat(length(eligible.counties), file="/Users/bob/C/auctions/data/credit/counties.per.state")
+	} else {         # for the continental us
 	the.directory  <- "/Users/bob/C/auctions/data/credit/auction.data/"
 	the.manifest   <- "/Users/bob/C/auctions/data/credit/auction.data/index.sh"
-
-	cat("n=",n <- dims[1]*dims[2],"\n")   # 204,906
-
-# --- write a file to expand state level variables
+	# --- write a file to expand state level variables
 	counties.per.state <- sapply(State$name, function(n) sum(County$state[eligible.counties]==n))
 	cat(counties.per.state, file="/Users/bob/C/auctions/data/credit/counties.per.state")
+	}
+	cat("n=",n <- dims[1]*dims[2],"\n")   # 204,906 if US, 4757 for PA
+
 
 # --------------------------------------------
 #  write of county level data starts here 
@@ -53,13 +69,13 @@ write.the.data <- function() {
 
 	# write cv indicator, population to data directory
 	cat("# cross-validation indicator\n",file=the.manifest, append=TRUE)
-	in.out <- matrix(0,nrow=dims[1],ncol=dims[2]); 
+	in.out <- matrix(0,nrow=dims[1],ncol=dims[2]);   # N x T
 	in.out[,t.include] <- 1;
-	write.var("cv.indicator", role = "context", in.out[,y.quarters]) 
+	write.var("cv.indicator[in]", role = "context", in.out[,y.quarters]) 
 	# check the sum
 	sum(in.out)  == n.eligible.counties * length(t.fit)  # check number used in estimating   161616
 
-	write.var("population", role="context", County$population[,x.quarters])
+	write.var("population", role="context", County$population[eligible.counties,x.quarters])
 	
 # --- write the response  (71-1 x n.eligible.counties)
 	cat("# response variable\n",file=the.manifest, append=TRUE)
@@ -87,13 +103,13 @@ write.the.data <- function() {
 #  		mean(xv)
 
 
-# --- 6 spatial variables
+# --- 6 spatial variables; write.county.var handles eligible county selection
 	temp <- as.data.frame(lapply(cLog(County$REAU), spatial.variable))
-	write.county.var(   "S_REAU",temp,interact.with=c("quarter","period","division"))
+	write.county.var(   "S_REAU",   temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$unemployment), 2, spatial.variable))
-	write.county.var(  "S_UNEMP",temp,interact.with=c("quarter","period","division"))
+	write.county.var(   "S_UNEMP",  temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(apply(cLog(County$poverty)     , 2, spatial.variable))
-	write.county.var("S_Poverty",temp,interact.with=c("quarter","period","division"))
+	write.county.var(   "S_Poverty",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$INPB60M), spatial.variable))
 	write.county.var(   "S_INPB60M",temp,interact.with=c("quarter","period","division"))
 	temp <- as.data.frame(lapply(cLog(County$MTPB60M), spatial.variable))
@@ -145,15 +161,14 @@ write.the.data <- function() {
 
 
 # --------------------------------------------------------------------------------
-#  write national time series out in streaming format into separate
+#  can write national time series out in streaming format into separate
 #  file that can be concatenated onto the file produced by other commands.
 #
-#       Should not need to repeat this!
+#       Should not need to repeat this!  Relevant even if 1 state since national differs from state series
 #
 # --------------------------------------------------------------------------------
 
-
-# --- use only those variables that go back to the initial 1992 quarter
+# --- use only those variables that go back to the initial 1992 quarter; function handles eligible list
 	use.cols <- names(Nation)[c(3:10,11:15,3,32,35,36,38,47,48,52:54,64,65,71:74,98,99,104:106,117,118,
                             124:127,133,136:138,140:149,153,155:156,159:162,164:165,168:169,171:173,
                              179:182,185:186,188:192,194:199)]
@@ -171,6 +186,7 @@ write.the.data <- function() {
 #  file that can be concatenated onto the file produced by other commands.
 #                  *** Needs file counties.per.state produced above for counts
 #                      of times to repeat each value.
+#
 # --------------------------------------------------------------------------------
 
 # --- use only TrenData variables that go back to the initial 1992 quarter
@@ -208,21 +224,23 @@ write.the.data <- function() {
 	x <- outer(temp-1, n.eligible.counties*(0:(length(y.quarters)-1)),FUN="+")
 	write.var("Pop_Neighbor",x,role="context") 
 	
-	# --- write the census division indicators
+	# --- write the census division indicators; not used if one state
+	if(one.state == FALSE) {
 	division <- County$division[eligible.counties]
 	for(d in unique(division)) {
 		name <- paste("Division_",d,sep="")
 		x <- matrix(as.numeric(division==d), nrow=n.eligible.counties,ncol=length(y.quarters), byrow=FALSE)
 		write.var(name,x,role="x",attr.str=paste("stream geography parent division category", d)) 
-	}
+	}}
 	
-	# --- write the population neighborhood indicators for 50 most populous counties
+	# --- write the population neighborhood indicators for most populous counties
+	if(one.state) n.used <- 5 else n.used <- 50;
 	pop <- County$population[eligible.counties,71]
-	id <- order(-pop)[1:50]
+	id <- order(-pop)[1:n.used]
 	nbd <- lapply(eligible.counties[id], function(i) {c(i, County$neighbors[[i]], County$cousins[[i]])})
 	# --- map of locations
 	# map("county", col="gray"); 
-	# for(i in 1:50) draw.county(County$name[nbd[[i]]], col="yellow")
+	# for(i in 1:n.used) draw.county(County$name[nbd[[i]]], col="yellow")
 	# map("county", tolower(County$name[eligible.counties[id]]), exact=TRUE, add=TRUE, fill=TRUE, col="cyan")
 	for(i in 1:length(nbd)) {
 		n <- nbd[[i]];
@@ -236,14 +254,11 @@ write.the.data <- function() {
 	
 	# --- build indicators for sparse regions
 	nbd <- lapply(eligible.counties, function(i) {c(i, County$neighbors[[i]], County$cousins[[i]])})
-	#     got to have at least 15
-	nbd <- nbd[sapply(nbd,length)>15]
-	#     sort on pop
-	nbd.pop <- sapply(nbd, function(n) sum(County$population[n,70]))
-	nbd <- nbd[order(nbd.pop)]; nbd.pop <- sort(nbd.pop)
-	#     save and remove those with too much overlap
-	save <- vector("list",50)
-	save[1] <- list(nbd[[1]]); nbd <- nbd[-1]; nbd.pop <- nbd.pop[-1]
+	nbd <- nbd[sapply(nbd,length)>15]                                 #     got to have at least 15
+	nbd.pop <- sapply(nbd, function(n) sum(County$population[n,70]))  #     sort on pop 
+	nbd <- nbd[order(nbd.pop)]; nbd.pop <- sort(nbd.pop)            
+	save <- vector("list",n.used)
+	save[1] <- list(nbd[[1]]); nbd <- nbd[-1]; nbd.pop <- nbd.pop[-1] #     remove if too much overlap 
 	j <- 2;
 	while(j<=length(save)) {
 		all <- unique(unlist(save))

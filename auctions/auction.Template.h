@@ -124,7 +124,7 @@ Auction<ModelClass>::auction_next_feature ()
     return false;
   }
   else 
-    debug("AUCT",3) << "Winning expert " << expert->name() << " bid $" << bid << "(net " << afterTaxBid <<  ")  on [" << features.size()
+    debug("AUCT",3) << "Winning expert " << expert << " bid $" << bid << "(net " << afterTaxBid <<  ")  on [" << features.size()
 		    << "] " << features[0]->name() << std::endl;
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
@@ -293,7 +293,9 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   { const double taxForEach = tax/features.size();
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)       // add expert for interaction with other added features
     {
+      // each added feature can potentially add several experts to the auction
       std::vector<Expert> spawned;
+      // iteract feature with those that have indicated parent
       if ((*f)->has_attribute("interact_with_parent"))
       { std::set<std::string> s ((*f)->attribute_str_value("interact_with_parent"));
 	FeatureVector fv;

@@ -23,7 +23,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-
+ 
 #include "auction.h"
       
 // from ranges
@@ -233,17 +233,19 @@ main(int argc, char** argv)
   typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
   typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
   theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
+  /*
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
-
+  */
 
   // if find neighborhood index, then build a neighborhood stream
   IntegerColumn indices();
@@ -296,23 +298,19 @@ main(int argc, char** argv)
 
   //   Principle component type features
   theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                             // kludge alpha share
-			       UniversalBoundedBidder<PCAStream>(),
+			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), nContextCases),
+						    EigenAdapter<PCA>(PCA(3, true), "PCA", nContextCases),    // number components, standardize?
 						    30))) ;                                                   // bundle size
 
-  /*
-  typedef SubspaceStream<FeatureVector, FeatureAcceptancePredicate, Eigen_adapter<rkhs<Kernel::Radial> > > SS_RKHS;
+  //   RKHS stream
   theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
-			       UniversalBidder<SS_RKHS>(),
+			       UniversalBidder<RKHSStream>(),
 			       make_subspace_stream("RKHS", 
-						    theAuction.rejected_features(), 
-						    31,                                    // bundle size
-						    FeatureAcceptancePredicate(),          // num components (0 means use rule), standardize,
-						    Eigen_adapter<rkhs<Kernel::Radial> >(rkhs<Kernel::Radial>(3, true),nContextCases)    
-						    )));
-  */
+						    theAuction.rejected_features(),
+						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(3, true), "RKHS", nContextCases),
+						    30)));
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;

@@ -128,8 +128,17 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   assert (ssz >= 0.0);
   int residualDF (mN-2-q());
   assert(residualDF > 0);
+  debugging::debug("REGR",3) << "SD of predictor after sweep is " << sqrt(ssz/residualDF) << std::endl;
+  if(std::isnan(ssz))
+  { debugging::debug("REGR",1) << " *** Error: Predictor generates NaN in regression." << std::endl;
+    return FStatistic();
+  }
+  if(std::isinf(ssz))
+  { debugging::debug("REGR",1) << " *** Error: Predictor generates Inf in regression." << std::endl;
+    return FStatistic();
+  }
   if(ssz < epsilon)                                 // predictor is singular
-  { debugging::debug("LINM",3) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
+  { debugging::debug("REGR",1) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
   }
   Vector sszVec(1); sszVec[0] = ssz;
@@ -168,6 +177,8 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   Vector zResSS (squared_norm(zRes));
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
+  for(int j=0; j<z.cols(); ++j)
+    debugging::debug("REGR",3) << "SD of predictor " << j << " after sweep is " << sqrt(zResSS[j]/residualDF) << std::endl;
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
   Matrix Q    (qr.matrixQ());
   { // use R matrix only for checking rank conditions
