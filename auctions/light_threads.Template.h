@@ -32,6 +32,11 @@
 template<class W>
 LightThread<W>::~LightThread() 
 {
+  if (mp_thread.unique() && !*mp_done)
+  {  mp_thread->join();
+     std::cout << "ERROR: attempt to delete working thread you dummy!" << std::endl;
+  }
+  assert(!mp_thread.unique() || *mp_done);
 }
 
 template<class W>
