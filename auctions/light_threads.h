@@ -44,20 +44,21 @@ template<class W>
 class LightThread
 {
 private:
-  boost::shared_ptr<bool>                 mp_done;          // we are only done if the lock isn't grabbed and this is true
+  std::string                             mName;             // use to identify if there's a problem
+  boost::shared_ptr<bool>                 mp_done;           // we are only done if the lock isn't grabbed and this is true
   boost::shared_ptr<W>                    mp_worker;
   boost::shared_ptr<boost::thread>        mp_thread;
   boost::shared_ptr<boost::mutex>         mp_thread_mutex;   // thread lock controls read/write values of pointers
   mutable boost::mutex                    m_object_mutex;    // object lock controls read/write pointers
   
 public:
-  ~LightThread<W>();                           // Waits for thread to finish 
-  LightThread<W>(const W& worker);             // starts a new thread.
-  LightThread<W>(const LightThread<W>&);       // "copy" a new thread via default
-  LightThread<W>();
+  ~LightThread<W>();                                         // Waits for thread to finish 
+  LightThread<W>(std::string name, const W& worker);         // starts a new thread.
+  LightThread<W>(const LightThread<W>&);                     // "copy" a new thread via default
+  LightThread<W>(std::string name);
   
   void     operator()(const W& worker);        // starts a new thread (waits for old to finish)
-  bool     done() const;                       // Tells if the thread is done.
+  bool     done() const;                       // indicates whether the thread is done
   bool     has_worker() const;                 // confirm that worker is there
   const W& operator()() const;                 // will wait for thread to finish if not done()
   

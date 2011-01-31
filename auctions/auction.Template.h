@@ -101,8 +101,8 @@ bool
 Auction<ModelClass>::auction_next_feature ()
 {
   ++mRound;
-  debug("AUCT",2) << "Beginning auction round #" << mRound << std::endl;
-  // reap empty custom experts
+  debug("AUCT",2) << "\n\nBeginning auction round #" << mRound << std::endl; 
+  // reap empty custom experts 
   purge_empty_experts();
   // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
   std::pair<Expert,double> winner (collect_bids());  

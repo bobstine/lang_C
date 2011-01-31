@@ -11,7 +11,7 @@ private:
   double   mF;
   int      mNumDF, mDenDF;
   double   mPValue;
-  Vector   mSSx;             // length mNumDF
+  Vector   mSSx;             // length mNumDF; used to decorate printed output
   
 public:
   ~ FStatistic() {}

@@ -135,6 +135,16 @@ Need to
 
 
 ------------------------------------------------------------------------------
+31 Jan 11
+
+       Inject a name into the light-threads in order to find which of these is
+       dying because it fails to join properly.  Seems to be the RKHS and PCA that
+       hit this at the close (not a problem at home).
+
+       Convert the RKHS code to single precision for distances to run faster.
+       
+
+
 14 Dec 10
        
        MAIN stream was adding a variable that is already in the model. Problem

@@ -301,7 +301,7 @@ main(int argc, char** argv)
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(3, true), "PCA", nContextCases),    // number components, standardize?
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),    // number components, standardize? (0 means use sing values)
 						    30))) ;                                                   // bundle size
 
   //   RKHS stream
@@ -309,7 +309,7 @@ main(int argc, char** argv)
 			       UniversalBidder<RKHSStream>(),
 			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(3, true), "RKHS", nContextCases),
+						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
 						    30)));
   
   // ----------------------   run the auction with output to file  ---------------------------------

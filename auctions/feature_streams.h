@@ -81,7 +81,7 @@ public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Op op)
-    : mName(name), mIterator(it), mTransform(op), mpThread(new LightThread<Transform>())  { make_features(); }
+    : mName(name), mIterator(it), mTransform(op), mpThread(new LightThread<Transform>(name))  { make_features(); }
 
   std::string    name()                      const;
   std::string    feature_name()              const;

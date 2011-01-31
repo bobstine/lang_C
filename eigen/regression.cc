@@ -128,7 +128,6 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   assert (ssz >= 0.0);
   int residualDF (mN-2-q());
   assert(residualDF > 0);
-  debugging::debug("REGR",3) << "SD of predictor after sweep is " << sqrt(ssz/residualDF) << std::endl;
   if(std::isnan(ssz))
   { debugging::debug("REGR",1) << " *** Error: Predictor generates NaN in regression." << std::endl;
     return FStatistic();
@@ -158,6 +157,7 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 	zeez += ezi * ezi;
       }
     }
+    debugging::debug("REGR",3) << "F-stat components ze = " << ze << "  zeez = " << zeez << std::endl;
     return FStatistic(ze*ze/zeez, 1, residualDF, sszVec);
   }
 }
@@ -177,8 +177,6 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   Vector zResSS (squared_norm(zRes));
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
-  for(int j=0; j<z.cols(); ++j)
-    debugging::debug("REGR",3) << "SD of predictor " << j << " after sweep is " << sqrt(zResSS[j]/residualDF) << std::endl;
   Eigen::QR<Eigen::MatrixXd> qr(zRes);
   Matrix Q    (qr.matrixQ());
   { // use R matrix only for checking rank conditions
@@ -188,10 +186,10 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
       { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R("
 				   << j << "," << j << ") = " << abs_val(R(j,j)) << "  " << R(j,j) << std::endl;
 
-	std::cout << "TEST: R matrix is\n " << R << std::endl;
-	std::cout << "TEST: collinear predictors in f_test_predictors are \n:";
+	std::cout << "       R matrix is\n " << R << std::endl;
+	std::cout << "       Collinear predictors in f_test_predictors are \n:";
 	std::cout << z.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
-	std::cout << "TEST: predictors in f_test_predictors after sweeping are \n:";
+	std::cout << "       Predictors in f_test_predictors after sweeping are \n:";
 	std::cout << zRes.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
 	
 	return FStatistic();
@@ -202,6 +200,7 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   int p (z.cols());
   if (blockSize==0)
   { double regrss (Qe.squaredNorm());
+    debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << p << ")/(" << mResidualSS-regrss << "/" << residualDF << std::endl;
     return FStatistic(regrss, p, mResidualSS-regrss, residualDF, zResSS);
   }
   else
@@ -221,6 +220,7 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
       }
     }
     double regrSS = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
+    debugging::debug("REGR",3) << "F-stat = (" << regrSS << "/" << p << ") with " << residualDF << " residual DF." << std::endl;
     return FStatistic(regrSS, p, residualDF, zResSS);
   }
 }

@@ -34,18 +34,19 @@ LightThread<W>::~LightThread()
 {
   if (mp_thread.unique() && !*mp_done)
   {  mp_thread->join();
-     std::cout << "ERROR: attempt to delete working thread you dummy!" << std::endl;
+    std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
   }
   assert(!mp_thread.unique() || *mp_done);
 }
 
 template<class W>
-LightThread<W>::LightThread(const W& worker)
-: mp_done(new bool), // we have no work to do in the queue and no thread running
-  mp_worker(),
-  mp_thread(),
-  mp_thread_mutex(new boost::mutex()),
-  m_object_mutex()
+LightThread<W>::LightThread(std::string name, const W& worker)
+  : mName(name),
+    mp_done(new bool), // we have no work to do in the queue and no thread running
+    mp_worker(),
+    mp_thread(),
+    mp_thread_mutex(new boost::mutex()),
+    m_object_mutex()
 {
   //  std::cout << "LT: initialize with a worker.\n";
   (*mp_done) = true;
@@ -56,11 +57,12 @@ LightThread<W>::LightThread(const W& worker)
 // copy constructor operates by default via smart pointers
 template<class W>
 LightThread<W>::LightThread(const LightThread<W>& rhs)
-: mp_done(),
-  mp_worker(),
-  mp_thread(),
-  mp_thread_mutex(),
-  m_object_mutex()
+  : mName(rhs.name),
+    mp_done(),
+    mp_worker(),
+    mp_thread(),
+    mp_thread_mutex(),
+    m_object_mutex()
 {
   // std::cout << "LT: initialize by copy construct.\n";
   // lock down both objects
@@ -79,12 +81,13 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
 
 // default constructor
 template<class W>
-LightThread<W>::LightThread()
-: mp_done(),
-  mp_worker(),
-  mp_thread(),
-  mp_thread_mutex(),
-  m_object_mutex()
+LightThread<W>::LightThread(std::string name)
+  : mName(name),
+    mp_done(),
+    mp_worker(),
+    mp_thread(),
+    mp_thread_mutex(),
+    m_object_mutex()
 {
   // std::cout << "LT: initialize with no worker supplied.\n";
 }

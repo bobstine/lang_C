@@ -7,7 +7,8 @@
  *  Copyright 2008. All rights reserved.
 
  Uses Eigen matrices, methods to build a random projection SVD
- of columns.
+ of columns.  To select based on the relative size of the
+ found eigenvalues, indicate that by selecting k=0 components.
 
  Protocol:
            Class creator has 2 arguments (int, bool)
@@ -22,19 +23,31 @@
 
 namespace SVD
 {
-  double
-    mean (Eigen::VectorXd const& x);
-  double
-    standard_deviation (Eigen::VectorXd const& x);
+  template<class EigenVec>
+    typename EigenVec::Scalar
+    mean (EigenVec const& x);
+
+  template<class EigenVec>
+    typename EigenVec::Scalar
+    standard_deviation (EigenVec const& x);
   
-  Eigen::MatrixXd
-    standardize_columns (Eigen::MatrixXd const& data, bool useSD=true);                  // if orthogonal, norms so X'X = 1
 
-  Eigen::MatrixXd
-    sample_rows (Eigen::MatrixXd const& data, int nRows);
+  template<class EigenMatrix>
+    EigenMatrix
+    standardize_columns (EigenMatrix const& data, bool useSD=true);                  // if orthogonal, norms so X'X = 1
 
-  Eigen::MatrixXd
-    random_linear_combinations (int k, Eigen::MatrixXd const& data);
+  template<class EigenMatrix>
+    void
+    standardize_columns_in_place (EigenMatrix& data, bool useSD=true);               
+
+  
+  template<class EigenMatrix>
+    EigenMatrix
+    sample_rows (EigenMatrix const& data, int nRows);
+
+  template<class EigenMatrix>
+    EigenMatrix
+    random_linear_combinations (EigenMatrix const& data, int k);
 }
 
 
@@ -59,17 +72,18 @@ public:
 
 namespace Kernel
 {
-  class Radial
+  class Radial                                                                           // implement in single precision for faster distance calc
   {
     static std::string classname;
-    float mScale2;  // sigma^2
+    float mScale2;                     // sigma^2
   public:
     
   Radial(float const& scale) : mScale2(scale*scale) {};   
-
+    
     std::string const& name() const { return classname; }
-    double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
+    float operator()(Eigen::VectorXf const& a, Eigen::VectorXf const& b) const;
   };
+
   
   class WeightedRadial
   {
@@ -100,7 +114,8 @@ namespace Kernel
     double operator()(Eigen::VectorXd const& a, Eigen::VectorXd const& b) const;
   };
 }
- 
+
+
 
 template <class K>
 class RKHS: public std::unary_function<Eigen::MatrixXd const&, Eigen::MatrixXd>

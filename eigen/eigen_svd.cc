@@ -7,75 +7,12 @@
 
 using debugging::debug;
 
-//   SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     
-
-double
-SVD::mean (Eigen::VectorXd const& x)
-{
-  return x.sum()/x.size();
-}
-
-double
-SVD::standard_deviation (Eigen::VectorXd const& x)
-{
-  Eigen::VectorXd centered (x.cwise() - mean(x));
-  return sqrt(centered.squaredNorm()/(x.size()-1));
-}
-
-
-Eigen::MatrixXd
-SVD::sample_rows(Eigen::MatrixXd const& m, int nRows)
-{
-  Eigen::MatrixXd result (nRows,m.cols());
-  int slotsLeft (nRows);
-  int rowsLeft  (m.rows());
-  while (rowsLeft && slotsLeft)
-  {
-    if ( ((double)(rand())/RAND_MAX) <  (((double)slotsLeft) / rowsLeft)  )
-    { result.row(nRows-slotsLeft) = m.row(rowsLeft-1);
-      --slotsLeft;
-    }
-    --rowsLeft;
-  }
-  return result;
-}
-
-
-Eigen::MatrixXd
-SVD::standardize_columns (Eigen::MatrixXd const& data, bool useSD)
-{
-  Eigen::MatrixXd result (data.rows(), data.cols());
-  // center cols, moving into result
-  Eigen::VectorXd mean (data.colwise().sum()/data.rows());
-  for (int j=0; j<data.cols(); ++j)
-    result.col(j) = data.col(j).cwise() - mean(j);
-  // scale
-  Eigen::VectorXd ss (data.colwise().squaredNorm());
-  for (int j=0; j<data.cols(); ++j)
-  { double s = ss(j);
-    if (useSD) s /= data.rows()-1;  // sample var
-    result.col(j) = result.col(j) / sqrt(s);
-  }
-  return result;
-}
-
-
-Eigen::MatrixXd
-SVD::random_linear_combinations (int k, Eigen::MatrixXd const& data)
-{
-  Eigen::MatrixXd linComb (data.rows(),k);
-  Eigen::MatrixXd rand (Eigen::MatrixXd::Random(data.cols(), k));
-  linComb = data * rand;
-  return linComb;
-}
-
-
 //    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    PCA    
 
 Eigen::MatrixXd
 PCA::operator()(Eigen::MatrixXd const& data) const
 {
-  // form m >= max(5, num components)
+  // m controls the number of random projections: at least 5 or number requested
   int m (floor(sqrt(data.cols())));
   m = (m > mNumComponents) ? m : mNumComponents;  
   m = (m > 5) ? m : 5;
@@ -83,16 +20,16 @@ PCA::operator()(Eigen::MatrixXd const& data) const
   Eigen::MatrixXd linComb;
   if (mStandardize)
   { Eigen::MatrixXd sData (SVD::standardize_columns(data, false));  // norm so x'x=1
-    linComb = SVD::random_linear_combinations(m,sData);
+    linComb = SVD::random_linear_combinations(sData,m);
   }
   else
-    linComb = SVD::random_linear_combinations(m,data);
+    linComb = SVD::random_linear_combinations(data,m);
   // compute svd
   Eigen::SVD<Eigen::MatrixXd> svd(linComb);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
-  debug("EIGN",3) << "Singular values are {" << s.transpose() << "}\n";
-  // return those with sing value > 0 (at least 1) or desired number
+  debug("EIGN",3) << "Singular values are {" << s.transpose() << "}" << std::endl;
+  // return those with decent singular value (at least 1) if numComponents = 0 or desired number if positive
   int k (mNumComponents);
   if (0 == k)
   { k = 1;
@@ -126,10 +63,10 @@ Kernel::Quadratic::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y
 }
 
 
-double
-Kernel::Radial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
+float
+Kernel::Radial::operator()(Eigen::VectorXf const& x, Eigen::VectorXf const& y) const
 {
-  Eigen::VectorXd diff (x - y);
+  Eigen::VectorXf diff (x - y);
   return exp(-0.5 * diff.squaredNorm()/mScale2);
 }
 
