@@ -202,9 +202,6 @@ main(int argc, char** argv)
   // check the cross validation indicator
   Column inOut = identify_cv_indicator(cColumns, prefixCases); 
 
-  // initialize data object held in underlying model [y and optional selector]
-  //  gslData *theData (build_model_data(yColumns[0], inOut, prefixCases, debug("MAIN",2)));
-  
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, prefixCases);
   featureSrc.print_summary(debug("MAIN",1));
@@ -217,13 +214,13 @@ main(int argc, char** argv)
       return -1;
     }
 
-  // --- build model and initialize auction with csv stream for tracking progress
+  // build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
   
   
-  // --- create the experts that control bidding in the auction
+  // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
   typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;

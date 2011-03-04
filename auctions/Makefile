@@ -57,7 +57,7 @@ crash_test: auction.test
 # ---  credit models  -----------------------------------------------------------------------------
 
 # Set options to auction: -r rounds  -p protection from overfitting  -c calibration   -x initial exclude   -b block size  -d debug output level
-#   block size (-b) is the number of eligible counties in credit
+#   block size (-b) is the number of eligible counties in credit (0 means use ols estimates, 1 implies white, larger means corr blocked)
 #   exclude (-x) is a multiple of the number of eligible counties (eg, 7 times)
 # Build can use a pre-build data file constructed like this
 #	 sh index.sh > data
@@ -107,7 +107,6 @@ short_cv%.data:
 	cd $(datapath); rm -f short.dat; ./short.sh > short.dat
 
 
-
 # ---  ann arbor models  -----------------------------------------------------------------------------
 
 anes_run: auction.test
@@ -115,12 +114,17 @@ anes_run: auction.test
 
 
 
-# ---  dean models  ---------------------------------------------------------------------------------
+# ---  dean text data models  ----------------------------------------------------------------------
 #                         Note: run the index file to put results into a file named "data"
 #
 
 theher_run: auction.test
 	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
+
+
+text_run: auction.test
+	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 100 -a 0.5 -p 3 -c 3 -d 3 -b 1
+
 
 
 

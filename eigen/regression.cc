@@ -129,11 +129,11 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   int residualDF (mN-2-q());
   assert(residualDF > 0);
   if(std::isnan(ssz))
-  { debugging::debug("REGR",1) << " *** Error: Predictor generates NaN in regression." << std::endl;
+  { debugging::debug("REGR",1) << " *** Error: Predictor swept SS = NaN in regression." << std::endl;
     return FStatistic();
   }
   if(std::isinf(ssz))
-  { debugging::debug("REGR",1) << " *** Error: Predictor generates Inf in regression." << std::endl;
+  { debugging::debug("REGR",1) << " *** Error: Predictor swept SS = Inf in regression." << std::endl;
     return FStatistic();
   }
   if(ssz < epsilon)                                 // predictor is singular
