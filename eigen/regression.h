@@ -40,6 +40,7 @@ public:
   
 private:
   int                      mN;           // number of actual obs without pseudo-rows used for shrinkage
+  int                      mBlockSize;   // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
   Vector                   mWeights;     // Var(y_i) = 1/W_ii; weight vector is length 1 if not supplied (ie, for ols, weight vector is a scalar)
   Vector                   mSqrtWeights;
   std::string              mYName; 
@@ -61,25 +62,25 @@ public:
 
   
   // OLS
-  LinearRegression (std::string yName, Vector const& y)
-    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+  LinearRegression (std::string yName, Vector const& y, int blockSize)
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
   
-  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x)
-    :  mN(y.size()), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
+  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
 
   
   // WLS: if weighted, all things held are weighted by W
-  LinearRegression (std::string yName, Vector const& y, Vector const& w)
-    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
+  LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
        mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
-  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w)
-    :  mN(y.size()), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
+  LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
        mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
 
   bool      is_wls()                 const   { return mWeights.size() > 1; }
   bool      is_ols()                 const   { return mWeights.size() == 1; }
-  
+  int       block_size()             const   { return mBlockSize; }
   int       n()                      const   { return mN; };
   int       q()                      const   { return mX.cols()-1; }                      // -1 for intercept 
   double    rmse()                   const   { return sqrt(mResidualSS/(mN-mX.cols())); }  
@@ -94,6 +95,7 @@ public:
 
   double    y_bar()                  const   { return mYBar; }
   Vector    beta()                   const;
+  Vector    se_beta_ols()            const;
   Vector    se_beta()                const;
   
   std::vector<std::string>   predictor_names() const { return mXNames; }
@@ -102,8 +104,8 @@ public:
   template <class Iter> void fill_with_fitted_values (Iter begin)                  const;
   template <class Iter> void fill_with_beta          (Iter begin)                  const;
 
-  FStat     f_test_predictor  (Vector const& z, int blockSize = 0) const;                // <f,pval>  f == 0 implies singular; blocksize>0 for white
-  FStat     f_test_predictors (Matrix const& z, int blockSize = 0) const; 
+  FStat     f_test_predictor  (Vector const& z) const;                // <f,pval>  f == 0 implies singular
+  FStat     f_test_predictors (Matrix const& z) const; 
 
   void      add_predictor  (std::string name, Vector const& z)                               { add_predictors(name_vec(name), z, FStatistic()); } // no shrinkage
   void      add_predictor  (std::string name, Vector const& z, FStat const& fstat)           { add_predictors(name_vec(name), z, fstat); }
@@ -137,7 +139,6 @@ public:
   
 private:
   const int        mLength;         // total length estimation + validation
-  int              mBlockSize;
   int              mN;              // number of estimation rows as identified on start
   std::vector<int> mPermute;        // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
   Vector           mValidationY;
@@ -147,13 +148,14 @@ private:
 public:
   ~ValidatedRegression () {  }
   
-  ValidatedRegression() : mLength(0), mBlockSize(0), mN(0), mPermute() { }
+  ValidatedRegression() : mLength(0), mN(0), mPermute() { }
   
   template<class Iter, class BIter>
   ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize = 0)
-    :  mLength(len), mBlockSize(blockSize), mN(0), mPermute(len)    { initialize(yName, Y, B); }
+    :  mLength(len), mN(0), mPermute(len)    { initialize(yName, Y, B, blockSize); }
 
   double goodness_of_fit() const  { return mModel.r_squared(); }
+  int block_size()         const  { return mModel.block_size(); }
   int q()                  const  { return mModel.q(); }
   int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
 
@@ -180,7 +182,7 @@ public:
 private:
   
   template<class Iter, class BIter>
-  void initialize(std::string yName, Iter Y, BIter B);
+  void initialize(std::string yName, Iter Y, BIter B, int blockSize);
   
   template<class Iter>
   LinearRegression::Vector split_iterator(Iter it) const;

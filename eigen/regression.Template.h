@@ -40,10 +40,10 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
     preds.col(j) = split_iterator(c[j].second);
   FStatistic f;
   if (k == 1)
-    f = mModel.f_test_predictor(preds.col(0).start(mN),mBlockSize);                  // block size determines if use white
+    f = mModel.f_test_predictor(preds.col(0).start(mN));
   else
-    f = mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k),mBlockSize);   
-  debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << mBlockSize << std::endl;
+    f = mModel.f_test_predictors(preds.corner(Eigen::TopRight,mN,k));
+  debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << block_size() << std::endl;
   if (f.p_value() > pToEnter)
     return std::make_pair(f.f_stat(), f.p_value());
   debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
@@ -65,7 +65,7 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
 
 template<class Iter, class BIter>
 void
-ValidatedRegression::initialize(std::string yName, Iter Y, BIter B)
+  ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, int blockSize)
 { 
   Eigen::VectorXd y(mLength);
   int k (mLength);
@@ -75,10 +75,10 @@ ValidatedRegression::initialize(std::string yName, Iter Y, BIter B)
     else
     { --k; y[k] = *Y; mPermute[i]=k; }
   }
-  if (mBlockSize != 0) assert(mN % mBlockSize == 0);
+  if (blockSize != 0) assert(mN % blockSize == 0);
   mValidationY = y.end(mLength-mN);
   debugging::debug("VALM",3) << "Initializing validation model, Estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = LinearRegression(yName, y.start(mN));
+  mModel = LinearRegression(yName, y.start(mN), blockSize);
 }
 
 

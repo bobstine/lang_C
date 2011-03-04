@@ -517,7 +517,7 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
   return indicator;
 }
 
-
+ 
 // reads in response, initialized data object
 ValidatedRegression
 build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, std::ostream& os)
@@ -537,3 +537,4 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, st
     return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);  
   } 
 }
+    

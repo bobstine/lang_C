@@ -88,13 +88,38 @@ LinearRegression::beta() const
 }
 
 LinearRegression::Vector
-LinearRegression::se_beta() const
+LinearRegression::se_beta_ols() const
 {
   Matrix Ri (mR.inverse());
   Vector diag (Ri.rows());
   for (int i=0; i<diag.size(); ++i)
     diag(i) = Ri.row(i).squaredNorm();
   return rmse() * diag.cwise().sqrt();
+}
+
+LinearRegression::Vector
+LinearRegression::se_beta() const
+{
+  if (mBlockSize==0)
+    return se_beta_ols();
+  else // compute sandwich estimates        // Note: these will be larger than entry F since residuals are updated once added
+  { int nCols (mX.cols());
+    Vector se2 (nCols);
+    if (mBlockSize==1)
+    { Matrix EQRi (mResiduals.asDiagonal() * mQ * mR.inverse().transpose());
+      for(int j=0; j < nCols; ++j)
+	se2[j] = EQRi.col(j).squaredNorm();
+    }
+    else // larger blocks, just diagonal
+    { Matrix QRi (mQ * mR.inverse().transpose());
+      se2.setZero();
+      for(int row = 0; row <mN; row+=mBlockSize)
+      {	Vector eQRi = mResiduals.segment(row,mBlockSize).transpose() * QRi.block(row,0,mBlockSize,nCols);
+	se2 += eQRi.cwise() * eQRi;
+      }
+    }
+    return se2.cwise().sqrt();
+  }
 }
 
 LinearRegression::Vector
@@ -112,7 +137,7 @@ LinearRegression::predict(Matrix const& x) const
 //     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests
 
 FStatistic
-LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
+LinearRegression::f_test_predictor (Vector const& z) const
 {
   // order matters, do not form the big projection matrix
   // note that Q is held only with the top n rows
@@ -142,18 +167,18 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
   }
   Vector sszVec(1); sszVec[0] = ssz;
   double ze  (zRes.dot(mResiduals));     // slope of added var is  gamma (epz/zRes.squaredNorm);
-  if (blockSize==0)
+  if (mBlockSize==0)
   { double regrss ((ze * ze)/ssz);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, sszVec);
   }
   else                                              // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
   { double zeez (0.0);
-    if (blockSize == 1)
+    if (mBlockSize == 1)
       zeez = (zRes.cwise() * mResiduals).squaredNorm();
     else
-    { assert (0 == mN % blockSize);
-      for(int row=0; row<mN; row +=blockSize)
-      { double ezi (mResiduals.segment(row,blockSize).dot(zRes.segment(row,blockSize)));
+    { assert (0 == mN % mBlockSize);
+      for(int row=0; row<mN; row +=mBlockSize)
+      { double ezi (mResiduals.segment(row,mBlockSize).dot(zRes.segment(row,mBlockSize)));
 	zeez += ezi * ezi;
       }
     }
@@ -164,7 +189,7 @@ LinearRegression::f_test_predictor (Vector const& z, int blockSize) const
 
 
 FStatistic
-LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
+LinearRegression::f_test_predictors (Matrix const& z) const
 {
   // note that Q is held only with the top n rows
   Matrix zRes;
@@ -185,20 +210,18 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
     { if(abs_val(R(j,j)) < epsilon)
       { debugging::debug("LINM",2) << "Predictors appear near singular; after sweeping, R("
 				   << j << "," << j << ") = " << abs_val(R(j,j)) << "  " << R(j,j) << std::endl;
-
 	std::cout << "       R matrix is\n " << R << std::endl;
 	std::cout << "       Collinear predictors in f_test_predictors are \n:";
 	std::cout << z.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
 	std::cout << "       Predictors in f_test_predictors after sweeping are \n:";
 	std::cout << zRes.corner(Eigen::TopLeft, 10, z.cols()).transpose() << std::endl;
-	
 	return FStatistic();
       }
     }
   }
   Vector Qe  (Q.transpose() * mResiduals);                // projection into space of new variables
   int p (z.cols());
-  if (blockSize==0)
+  if (mBlockSize==0)
   { double regrss (Qe.squaredNorm());
     debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << p << ")/(" << mResidualSS-regrss << "/" << residualDF << std::endl;
     return FStatistic(regrss, p, mResidualSS-regrss, residualDF, zResSS);
@@ -206,17 +229,17 @@ LinearRegression::f_test_predictors (Matrix const& z, int blockSize) const
   else
   { Matrix QeeQ(p,p);                                    // Q'ee'Q 
     QeeQ.setZero();
-    if (blockSize == 1)
+    if (mBlockSize == 1)
     { Matrix eQ (mResiduals.asDiagonal() * Q);  
-      QeeQ = (eQ.transpose() * eQ);
+      QeeQ = eQ.transpose() * eQ;
     }
     else     // blocksize > 1
-    { assert(0 == mN % blockSize);
+    { assert(0 == mN % mBlockSize);
       Vector eQ(p);
-      for(int block = 0, row = 0; block<mN/blockSize; ++block)
-      {	eQ = mResiduals.segment(row,blockSize).transpose() * Q.block(row,0,blockSize,p);
+      for(int block = 0, row = 0; block<mN/mBlockSize; ++block)
+      {	eQ = mResiduals.segment(row,mBlockSize).transpose() * Q.block(row,0,mBlockSize,p);
 	QeeQ += eQ * eQ.transpose();
-	row += blockSize;
+	row += mBlockSize;
       }
     }
     double regrSS = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
@@ -272,8 +295,16 @@ LinearRegression::print_to (std::ostream& os) const
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
-  for (int j = 0; j<mX.cols(); ++j)
-    os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  " << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+  if (mBlockSize == 1)
+    for (int j = 0; j<mX.cols(); ++j)
+      os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
+	 << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+  else // show ols and sandwich se
+  { Vector olsSE (se_beta_ols());
+    for (int j = 0; j<mX.cols(); ++j)
+      os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
+	 << std::setw(9) << olsSE[j] << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+  }
 }
 
 
@@ -325,8 +356,8 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 {
   os.precision(6);
   os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
-  if(mBlockSize > 0)
-    os << " with White SE(b=" << mBlockSize << ")";
+  if(block_size() > 0)
+    os << " with White SE(b=" << block_size() << ")";
   os << std::endl
      << "            Validation SS = " << validation_ss() << std::endl
      << mModel;
