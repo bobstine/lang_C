@@ -537,4 +537,4 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, st
     return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);  
   } 
 }
-    
+
