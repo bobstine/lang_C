@@ -295,7 +295,7 @@ LinearRegression::print_to (std::ostream& os) const
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
-  if (mBlockSize == 1)
+  if (mBlockSize == 0)
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
 	 << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
