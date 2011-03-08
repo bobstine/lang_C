@@ -233,20 +233,22 @@ LinearCombinationFeature::write_to (std::ostream& os) const
 
 void
 FeatureSource::initialize (std::vector<Column> cols)
-{ mStreams.push_back("MAIN");       // default
-  StringSet streams;
-  streams.insert("MAIN");
+{ 
+  StringSet streams;                // set to track unique names
+  // mStreams.push_back("MAIN");       
+  // streams.insert("MAIN");
   for (std::vector<Column>::const_iterator it = cols.begin(); it != cols.end(); ++it)
-  { Feature f(*it);
+  { Feature f(*it);                 // convert column to feature 
     StringSet streamSet (f->attribute_str_value("stream"));
     if (streamSet.empty())          // assign to default stream
-      f->add_attribute("stream", "MAIN");
-    else                            // check for new stream
-      for(StringSet::const_iterator it=streamSet.begin(); it!=streamSet.end(); ++it)
-	if(streams.find(*it) == streams.end())
-	{ streams.insert(*it);
-	  mStreams.push_back(*it);  // add new stream name to ordered list of names
-	}
+    { f->add_attribute("stream", "MAIN");
+      streamSet.insert("MAIN");
+    }
+    for(StringSet::const_iterator it=streamSet.begin(); it!=streamSet.end(); ++it)
+      if(streams.find(*it) == streams.end())
+      { streams.insert(*it);
+	mStreams.push_back(*it);    // add new stream name to ordered list of names
+      }
     mFeatures.push_back(f);
   }
 }
