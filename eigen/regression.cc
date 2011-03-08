@@ -296,14 +296,16 @@ LinearRegression::print_to (std::ostream& os) const
   Vector se (se_beta());
   os.precision(3);
   if (mBlockSize == 0)
+  { os << "  Variable Name                                      Estimate      OLS SE           t" << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
 	 << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
+    os << "  Variable Name                                      Estimate      Sandwich SE  (OLS)         t" << std::endl
     for (int j = 0; j<mX.cols(); ++j)
-      os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
-	 << std::setw(9) << olsSE[j] << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+      os << std::setw(50) << mXNames[j]  << "  " << std::setw(12) << b[j] << "  "
+	 << std::setw(12) << se[j] << std::setw(12) << "(" << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::endl;
   }
 }
 
