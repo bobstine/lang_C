@@ -9,13 +9,16 @@ const double epsilon (1.0e-50);          // used to detect singularlity
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 
+bool close (double a, double b) { return abs_val(a-b) < epsilon; }
+
+
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
 bool
 LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
-    if( (y[i] != 0) || (y[i] != 1) )
+    if( (y[i] != 0) && (y[i] != 1) )
     { debugging::debug("REGR",2) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
