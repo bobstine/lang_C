@@ -122,8 +122,8 @@ public:
 
  private:
   std::vector<std::string> name_vec(std::string name) const;          // inits a vector with one string
-  Matrix init_x_matrix()                const;                        // takes on the constant, terms for shrinkage
-  Matrix init_x_matrix(Matrix const& m) const;                        // stuffs a 1 as first column
+  Matrix init_x_matrix()                    const;                    // takes on the constant, terms for shrinkage
+  Matrix init_x_matrix(Matrix const& m)     const;                    // stuffs a 1 as first column
   bool   is_binary_vector(Vector const& y)  const;
   void   initialize();                                                // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                    // does the QR and finds residuals

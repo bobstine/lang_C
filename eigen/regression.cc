@@ -15,7 +15,11 @@ bool
 LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
-    if( (y[i] != 0.0) || (y[i] != 1.0) ) return false;
+    if( (y[i] != 0.0) || (y[i] != 1.0) )
+    { debugging::debug("REGR",2) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
+      return false;
+    }
+  debugging::debug("REGR",2) << "Vector is binary" << std::endl;
   return true;
 }
 
@@ -204,7 +208,7 @@ LinearRegression::f_test_predictor (Vector const& z) const
 	  zeez += ezi * ezi;
 	}
       }
-      debugging::debug("REGR",3) << "F-stat components ze = " << ze << "  zeez = " << zeez << std::endl;
+      debugging::debug("REGR",4) << "F-stat components ze = " << ze << "  zeez = " << zeez << std::endl;
       return FStatistic(ze*ze/zeez, 1, residualDF, sszVec);
     }
   }
