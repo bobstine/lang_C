@@ -136,11 +136,11 @@ class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureV
   
   FeatureVector operator()(Model const* pModel) const
   {
-    // construct name for features as 'Y_hat_x'
+    // construct name for features as 'Y_hat_(number of vars)'
     std::ostringstream oss;
     oss << mSignature << pModel->q();
     Column fit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
-    { // fill leading values with mean of response
+    { // fill skipped values with mean of response
       double *pFit (fit->begin());
       double ybar (pModel->y_bar());
       for(int i=0; i<mSkip; ++i)

@@ -123,7 +123,7 @@ LinearRegression::se_beta() const
 }
 
 LinearRegression::Vector
-LinearRegression::predict(Matrix const& x) const
+LinearRegression::predictions(Matrix const& x) const
 {
   assert(q() == x.cols());
   Vector b (beta());
@@ -280,6 +280,7 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
 }
 
 
+
 //     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     
 void
 LinearRegression::print_to (std::ostream& os) const
@@ -300,9 +301,10 @@ LinearRegression::print_to (std::ostream& os) const
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
 	 << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
+  }
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
-    os << "  Variable Name                                      Estimate      Sandwich SE  (OLS)         t" << std::endl
+    os << "  Variable Name                                      Estimate      Sandwich SE  (OLS)         t" << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(12) << b[j] << "  "
 	 << std::setw(12) << se[j] << std::setw(12) << "(" << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::endl;
@@ -347,7 +349,7 @@ ValidatedRegression::validation_ss() const
       return (mValidationY.cwise() - mModel.beta()(0)).squaredNorm();
     }
     else
-      return (mValidationY - mModel.predict(mValidationX)).squaredNorm();
+      return (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
   }
   else
     return 0.0;
@@ -368,8 +370,9 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 void
 ValidatedRegression::write_data_to(std::ostream& os) const
 {
+  // these are in the order after sorting (not permuted to the original order)
   mModel.write_data_to(os);
-  Vector preds (mModel.predict(mValidationX));
+  Vector preds (mModel.predictions(mValidationX));
   for(int i=0; i<mValidationX.rows(); ++i)
   { os << "val\t" << preds[i] << "\t" << mValidationY[i]-preds[i] << "\t" << mValidationY[i] << "\t";
     for (int j=0; j<mValidationX.cols()-1; ++j) 

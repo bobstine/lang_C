@@ -88,24 +88,23 @@ public:
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
   Vector    residuals()              const   { return mResiduals; }
-  Vector    fitted_values()          const   { return mY - mResiduals; }
   Vector    x_row(int i)             const   { return mX.row(i); }
   Vector    raw_residuals()          const   { if (is_ols()) return mResiduals; else return mResiduals.cwise()/mSqrtWeights; } 
-  Vector    predict(Matrix const& x) const;
 
   double    y_bar()                  const   { return mYBar; }
   Vector    beta()                   const;
   Vector    se_beta_ols()            const;
   Vector    se_beta()                const;
+
+  template <class Iter> void fill_with_beta (Iter begin) const;
   
-  std::vector<std::string>   predictor_names() const { return mXNames; }
+  std::vector<std::string>   predictor_names()   const { return mXNames; }
 
-  template <class Iter> void fill_with_predictions   (Matrix const& x, Iter begin) const;
-  template <class Iter> void fill_with_fitted_values (Iter begin)                  const;
-  template <class Iter> void fill_with_beta          (Iter begin)                  const;
+  Vector    predictions  (Matrix const& matrix)  const;
+  Vector    fitted_values()                      const   { return mY - mResiduals; }
 
-  FStat     f_test_predictor  (Vector const& z) const;                // <f,pval>  f == 0 implies singular
-  FStat     f_test_predictors (Matrix const& z) const; 
+  FStat     f_test_predictor  (Vector const& z)  const;                // <f,pval>  f == 0 implies singular
+  FStat     f_test_predictors (Matrix const& z)  const; 
 
   void      add_predictor  (std::string name, Vector const& z)                               { add_predictors(name_vec(name), z, FStatistic()); } // no shrinkage
   void      add_predictor  (std::string name, Vector const& z, FStat const& fstat)           { add_predictors(name_vec(name), z, fstat); }
@@ -185,7 +184,7 @@ private:
   void initialize(std::string yName, Iter Y, BIter B, int blockSize);
   
   template<class Iter>
-  LinearRegression::Vector split_iterator(Iter it) const;
+  LinearRegression::Vector permuted_vector_from_iterator(Iter it) const;
   
 };
 
