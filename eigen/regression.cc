@@ -15,7 +15,7 @@ bool
 LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
-    if( (y[i] != 0.0) || (y[i] != 1.0) )
+    if( (y[i] != 0) || (y[i] != 1) )
     { debugging::debug("REGR",2) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
