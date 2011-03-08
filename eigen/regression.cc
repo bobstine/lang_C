@@ -1,9 +1,7 @@
 #include "regression.h"
 
-//#include <gsl/gsl_math.h>
-//#include <gsl/gsl_cdf.h>
-
 #include <iomanip>
+#include <bennett.h>
 
 #include <Eigen/LU>
 
@@ -12,6 +10,14 @@ const double epsilon (1.0e-50);          // used to detect singularlity
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
+
+bool
+LinearRegression::is_binary_vector(Vector const& y)  const
+{
+  for(int i=0; i<y.size(); ++i)
+    if( (y[i] != 0.0) || (y[i] != 1.0) ) return false;
+  return true;
+}
 
 LinearRegression::Matrix
 LinearRegression::init_x_matrix() const
@@ -77,6 +83,16 @@ LinearRegression::build_QR_and_residuals()
     mTotalSS = mResidualSS;
 }
 
+LinearRegression::Vector
+LinearRegression::fitted_values(double lo, double hi) const
+{
+  Vector fit = fitted_values();
+  for (int i=0; i<fit.size(); ++i)
+  { if (fit[i] < lo)      fit[i] = lo;
+    else if (fit[i] > hi) fit[i] = hi;
+  }
+  return fit;
+}
 
 
 //     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes
@@ -161,29 +177,36 @@ LinearRegression::f_test_predictor (Vector const& z) const
   { debugging::debug("REGR",1) << " *** Error: Predictor swept SS = Inf in regression." << std::endl;
     return FStatistic();
   }
-  if(ssz < epsilon)                                 // predictor is singular
+  if(ssz < epsilon)                                  // predictor is singular
   { debugging::debug("REGR",1) << "Predictor appears near singular; after sweeping, residual SS is " << ssz << std::endl;
     return FStatistic();
   }
   Vector sszVec(1); sszVec[0] = ssz;
-  double ze  (zRes.dot(mResiduals));     // slope of added var is  gamma (epz/zRes.squaredNorm);
+  double ze  (zRes.dot(mResiduals));                 // slope of added var is  gamma (epz/zRes.squaredNorm);
   if (mBlockSize==0)
   { double regrss ((ze * ze)/ssz);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, sszVec);
   }
-  else                                              // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
-  { double zeez (0.0);
-    if (mBlockSize == 1)
-      zeez = (zRes.cwise() * mResiduals).squaredNorm();
-    else
-    { assert (0 == mN % mBlockSize);
-      for(int row=0; row<mN; row +=mBlockSize)
-      { double ezi (mResiduals.segment(row,mBlockSize).dot(zRes.segment(row,mBlockSize)));
-	zeez += ezi * ezi;
-      }
+  else                                              
+  { if (is_binary() && (mBlockSize == 1))            // use Bennett with faked F stat from squaring bennett t stat
+    { std::pair<double,double> test (bennett_evaluation(z));
+      debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
+      return FStatistic(test.first*test.first, test.second, mN-q());
     }
-    debugging::debug("REGR",3) << "F-stat components ze = " << ze << "  zeez = " << zeez << std::endl;
-    return FStatistic(ze*ze/zeez, 1, residualDF, sszVec);
+    else                                             // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
+    { double zeez (0.0);
+      if (mBlockSize == 1)
+	zeez = (zRes.cwise() * mResiduals).squaredNorm();
+      else
+      { assert (0 == mN % mBlockSize);
+	for(int row=0; row<mN; row +=mBlockSize)
+	{ double ezi (mResiduals.segment(row,mBlockSize).dot(zRes.segment(row,mBlockSize)));
+	  zeez += ezi * ezi;
+	}
+      }
+      debugging::debug("REGR",3) << "F-stat components ze = " << ze << "  zeez = " << zeez << std::endl;
+      return FStatistic(ze*ze/zeez, 1, residualDF, sszVec);
+    }
   }
 }
 
@@ -248,6 +271,45 @@ LinearRegression::f_test_predictors (Matrix const& z) const
   }
 }
 
+
+////////////////////////////////////////////////////////  Bennett
+
+
+namespace {
+  double
+  abs_value(double x)
+  {
+    return (x >= 0.0) ? x : -x;
+  }
+  
+  double
+  max_abs(double x, double y)
+  {
+    double ax = abs_value(x);
+    double ay = abs_value(y);
+    if (ax >= ay) return ax; else return ay;
+  }
+}
+
+std::pair<double,double>
+LinearRegression::bennett_evaluation (Vector const& z) const
+{ const double epsilon (1.0E-10);
+  Vector mu      (fitted_values(epsilon, 1.0-epsilon));    // think of fit as E(Y), constrained to [eps,1-eps] interval
+  Vector var     (Vector::Ones(mN));  var = mu.cwise() * (var - mu);
+  Vector dev     (mY - mu);                                // would match residuals IF other fit is bounded
+  double num     (dev.dot(z));                             // z'(y-y^)
+  double rootZDZ (sqrt (var.dot(z.cwise() * z)));          // sqrt(z'Dz)
+  double maxA    (0.0);
+  for (int i=0; i<mN; ++i)
+  { double absZ (abs_value(z[i]) * max_abs(mu[i], 1.0-mu[i]));   // largest possible error for this case
+    if (absZ > maxA) maxA = absZ;                              // largest?
+  }
+  double Mz      (maxA/rootZDZ);
+  double tz      (abs_val(num)/rootZDZ);                    // num = get(mZE,0)
+  return std::make_pair(tz, bennett_p_value(tz,Mz));
+}
+
+
 //     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor
 
 void
@@ -290,21 +352,23 @@ LinearRegression::print_to (std::ostream& os) const
     os << "Linear Regression          ";
   else
     os << "Weighted Linear Regression ";
-  os << "    y = " << mYName << std::endl
+  if (is_binary())
+    os << "   Binary response";
+  os << "  y = " << mYName << std::endl
      << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
      << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl;
   Vector b  (beta());
   Vector se (se_beta());
   os.precision(3);
   if (mBlockSize == 0)
-  { os << "  Variable Name                                      Estimate      OLS SE           t" << std::endl;
+  { os << "              Variable Name                          Estimate        OLS SE       t" << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(9) << b[j] << "  "
 	 << std::setw(9) << se[j] << "  " << std::setw(8) << b[j]/se[j] << std::endl;
   }
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
-    os << "      Variable Name                                      Estimate        Sandwich SE     (OLS)           t" << std::endl;
+    os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t" << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(12) << b[j] << "  "
 	 << std::setw(12) << se[j] << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::endl;
@@ -358,6 +422,8 @@ ValidatedRegression::validation_ss() const
 void
 ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 {
+  if(useHTML)
+    os << "Cannot do HTML version at this point" << std::endl;
   os.precision(6);
   os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
   if(block_size() > 0)

@@ -45,6 +45,7 @@ private:
   Vector                   mSqrtWeights;
   std::string              mYName; 
   Vector                   mY;
+  bool                     mBinary;      // y is in {0,1}
   double                   mYBar;
   Matrix                   mX;           // padded for shrinkage; shrinkage elements on diagonal of bottom rows
   std::vector<std::string> mXNames; 
@@ -63,21 +64,24 @@ public:
   
   // OLS
   LinearRegression (std::string yName, Vector const& y, int blockSize)
-    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mBinary(is_binary_vector(y)), mYBar(y.sum()/mN),
+       mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
   
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
-    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mYBar(y.sum()/mN), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
+    :  mN(y.size()), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mY(y), mBinary(is_binary_vector(y)), mYBar(y.sum()/mN),
+       mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }
 
   
   // WLS: if weighted, all things held are weighted by W
   LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
     :  mN(y.size()), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
-       mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
+       mYName(yName), mY(y), mBinary(is_binary_vector(y)), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix()), mXNames(name_vec("Intercept")) { initialize(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
     :  mN(y.size()), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.cwise().sqrt()),
-       mYName(yName), mY(y), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
+       mYName(yName), mY(y), mBinary(is_binary_vector(y)), mYBar(y.dot(w)/w.sum()), mX(init_x_matrix(x)), mXNames(xNames) { initialize(); }  
 
+  bool      is_binary()              const   { return mBinary; }
   bool      is_wls()                 const   { return mWeights.size() > 1; }
   bool      is_ols()                 const   { return mWeights.size() == 1; }
   int       block_size()             const   { return mBlockSize; }
@@ -102,8 +106,9 @@ public:
 
   Vector    predictions  (Matrix const& matrix)  const;
   Vector    fitted_values()                      const   { return mY - mResiduals; }
+  Vector    fitted_values(double lo, double hi)  const;                                     // truncated to indicated range
 
-  FStat     f_test_predictor  (Vector const& z)  const;                // <f,pval>  f == 0 implies singular
+  FStat     f_test_predictor  (Vector const& z)  const;                                     // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (Matrix const& z)  const; 
 
   void      add_predictor  (std::string name, Vector const& z)                               { add_predictors(name_vec(name), z, FStatistic()); } // no shrinkage
@@ -113,14 +118,17 @@ public:
 
   
   void print_to      (std::ostream& os) const;
-  void write_data_to (std::ostream& os) const;                                           // JMP style, with y followed by X columns (tab delimited)
+  void write_data_to (std::ostream& os) const;                                              // JMP style, with y followed by X columns (tab delimited)
 
  private:
   std::vector<std::string> name_vec(std::string name) const;          // inits a vector with one string
   Matrix init_x_matrix()                const;                        // takes on the constant, terms for shrinkage
   Matrix init_x_matrix(Matrix const& m) const;                        // stuffs a 1 as first column
+  bool   is_binary_vector(Vector const& y)  const;
   void   initialize();                                                // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                    // does the QR and finds residuals
+  
+  std::pair<double,double> bennett_evaluation (Vector const& z) const;// 0/1 response only
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.cwise() * a).colwise().sum()); } // diagonal of a'a
