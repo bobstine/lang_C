@@ -304,10 +304,10 @@ LinearRegression::print_to (std::ostream& os) const
   }
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
-    os << "  Variable Name                                      Estimate      Sandwich SE  (OLS)         t" << std::endl;
+    os << "      Variable Name                                      Estimate        Sandwich SE     (OLS)           t" << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(50) << mXNames[j]  << "  " << std::setw(12) << b[j] << "  "
-	 << std::setw(12) << se[j] << std::setw(12) << "(" << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::endl;
+	 << std::setw(12) << se[j] << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::endl;
   }
 }
 
