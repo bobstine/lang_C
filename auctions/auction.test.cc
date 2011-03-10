@@ -52,7 +52,7 @@
 #include <getopt.h>
 #include <time.h> 
 #include <assert.h>
- 
+  
 
 class FiniteCauchyShare
 {

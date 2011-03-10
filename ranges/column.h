@@ -125,7 +125,7 @@ class Column
     double *x (mData->mBegin);  
     while(n-- && is >> *x)
       ++x;
-    ++n;
+    ++n;  // why increment???
     if(n)
       debugging::debug("CLMN",-1) << "Error. Incomplete column read of column '" << name << "'. Expecting " << expect << " but read " << expect-n << std::endl;
     std::string rest;
