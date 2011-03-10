@@ -221,7 +221,7 @@ LinearRegression::f_test_predictor (Vector const& z) const
   { if (is_binary() && (mBlockSize == 1))            // use Bennett with faked F stat from squaring bennett t stat
     { std::pair<double,double> test (bennett_evaluation(z));
       debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
-      return FStatistic(test.first*test.first, test.second, mN-q());
+      return FStatistic(test.first*test.first, test.second, mN-q(), sszVec);
     }
     else                                             // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
     { double zeez (0.0);
@@ -295,9 +295,9 @@ LinearRegression::f_test_predictors (Matrix const& z) const
 	row += mBlockSize;
       }
     }
-    double regrSS = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
-    debugging::debug("REGR",3) << "F-stat = (" << regrSS << "/" << p << ") with " << residualDF << " residual DF." << std::endl;
-    return FStatistic(regrSS, p, residualDF, zResSS);
+    double ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
+    debugging::debug("REGR",3) << "F-stat = " << ss << "/" << p << " with " << residualDF << " residual DF." << std::endl;
+    return FStatistic(ss/p, p, residualDF, zResSS);
   }
 }
 

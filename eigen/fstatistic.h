@@ -19,9 +19,6 @@ public:
   FStatistic()                                            // use empty version to signal singular
     : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx(Vector::Zero(1)) { }
   
- FStatistic(double f, double p, int df)                   // use to return Bennett results
-    : mF(f), mNumDF(1), mDenDF(df), mPValue(p), mSSx(Vector::Zero(1)) { }
-  
   FStatistic(double f, int numDF, int denDF, Vector const& ssx)
     : mF(f), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
   
