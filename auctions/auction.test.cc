@@ -12,6 +12,7 @@
 	-p  level of protection              (default is level 3)
 	-c  calibration df                   (default is no calibration)
 
+  10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
   21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
    2 Mar 10 ... Look at 'dynamically' funding experts via tax on bids and earnings
@@ -23,7 +24,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
- 
+  
 #include "auction.h"
       
 // from ranges
@@ -51,7 +52,7 @@
 #include <getopt.h>
 #include <time.h> 
 #include <assert.h>
-
+ 
 
 class FiniteCauchyShare
 {
@@ -88,14 +89,14 @@ void
 parse_arguments(int argc, char** argv,
 		std::string& inputDataFile, 
 		std::string& outputPath,
-		int &protection, int &blockSize,
-		int &nRounds, double &totalAlpha,
-		int &gap, int &prefixCases, int &debugLevel);
+		int &protection, bool &useShrinkage,
+		int &blockSize, int &nRounds, double &totalAlpha,
+		int &calibrationGap, int &prefixCases, int &debugLevel);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
 
-ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, std::ostream& os);
+ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool shrink, std::ostream& os);
 int                  parse_column_format(std::string const& dataFileName, std::ostream&);
 Column               identify_cv_indicator(std::vector<Column> const& columns, int prefixCases);
 void                 round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
@@ -114,18 +115,21 @@ main(int argc, char** argv)
   std::string   inputName            ("");                                  // empty implies cin
   std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
   int           protection           (3);
+  bool          useShrinkage         (false);
+  int           shrink               (0);
   int           blockSize            (0);                                   // no blocking implies standard testing
   int           numberRounds         (200); 
   // int           splineDF             (0);
-  int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap
+  int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
   int           debugLevel           (3);
-    
+     
 
-  parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
-		  numberRounds, totalAlphaToSpend,
+  parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
+		  blockSize, numberRounds, totalAlphaToSpend,
 		  calibrationGap, prefixCases, debugLevel);
-
+  if(useShrinkage) shrink = 1;
+  
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
@@ -137,7 +141,7 @@ main(int argc, char** argv)
   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
-		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
+		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
 		  << " --alpha=" << totalAlphaToSpend << " --calibration-gap=" << calibrationGap << " --extra-cases=" << prefixCases
 		  << std::endl;
   
@@ -217,7 +221,7 @@ main(int argc, char** argv)
 
   // build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
-  ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, debug("MAIN",2));
+  ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   
@@ -385,6 +389,7 @@ parse_arguments(int argc, char** argv,
 		std::string& inputFile,
 		std::string& outputPath,
 		int    &protection,
+		bool   &shrink,
 		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
@@ -398,18 +403,19 @@ parse_arguments(int argc, char** argv,
       int option_index = 0;
       static struct option long_options[] = {
 	  {"alpha",             1, 0, 'a'},  // has arg,
+	  {"blocksize",         1, 0, 'b'},  // has arg,
 	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
-	  {"blocksize",         1, 0, 'b'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
+	  {"shrinkage",         1, 0, 's'},  // has arg
 	  {"extra-cases",       1, 0, 'x'},  // has arg
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:c:d:f:o:p:b:r:x:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:b:c:d:f:o:p:r:s:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -418,6 +424,11 @@ parse_arguments(int argc, char** argv,
 	  case 'a' : 
 	    {
 	      totalAlpha = read_utils::lexical_cast<double>(optarg);
+	      break;
+	    }
+	  case 'b' :
+	    {
+	      blockSize = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'c' : 
@@ -446,14 +457,16 @@ parse_arguments(int argc, char** argv,
 	      protection = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
-	  case 'b' :
-	    {
-	      blockSize = read_utils::lexical_cast<int>(optarg);
-	      break;
-	    }
 	  case 'r' :
 	    {
 	      nRounds = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
+	  case 's' :
+	    {
+	      int shk;
+	      shk = read_utils::lexical_cast<int>(optarg);
+	      if (shk) shrink = true; else shrink = false;
 	      break;
 	    }
 	  case 'x' :
@@ -477,6 +490,8 @@ parse_arguments(int argc, char** argv,
 	      std::cout << "      --rounds=#               maximum number of rounds of auction" << std::endl;
 	      std::cout << "      -r#" << std::endl << std::endl;
 	      std::cout << "      --extra-cases=#          extra cases used in building features" << std::endl;
+	      std::cout << "      -s#" << std::endl << std::endl;
+	      std::cout << "      --shrinkage=#            nonzero value means to use shrinkage" << std::endl;
 	      std::cout << "      -x#" << std::endl << std::endl;
 	      std::cout << "      --debug-level=#          0 for little, 5 for copious" << std::endl;
 	      std::cout << "      -d#" << std::endl << std::endl;
@@ -521,21 +536,25 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
  
 // reads in response, initialized data object
 ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, std::ostream& os)
+build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
 {
   bool                      useSubset    (0 != inOut->size());
   constant_iterator<double> equalWeights (1.0);
   int                       nRows        ((int)y->size()-prefixRows);
   
-  os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y << std::endl;
+  os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y;
+  if (useShrinkage)
+    os << " with shrinkage." << std::endl;
+  else
+    os << " without shrinkage." << std::endl;
   if (useSubset)
   { os << "        Validation cases identified by " << inOut << std::endl;
-    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);
+    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);
   } 
   else
   { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
-    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize);  
+    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);  
   } 
 }
 

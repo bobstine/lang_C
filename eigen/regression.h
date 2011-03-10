@@ -97,6 +97,7 @@ public:
 
   double    y_bar()                  const   { return mYBar; }
   Vector    beta()                   const;
+  Vector    shrinkage_lambda()       const;
   Vector    se_beta_ols()            const;
   Vector    se_beta()                const;
 
@@ -122,9 +123,10 @@ public:
 
  private:
   std::vector<std::string> name_vec(std::string name) const;          // inits a vector with one string
-  Matrix init_x_matrix()                    const;                    // takes on the constant, terms for shrinkage
-  Matrix init_x_matrix(Matrix const& m)     const;                    // stuffs a 1 as first column
+  Matrix init_x_matrix()                    const;                    // tacks on the constant, terms for shrinkage
+  Matrix init_x_matrix(Matrix const& m)     const;                    // stuffs a 1 as first column, appends shrinkage rows
   bool   is_binary_vector(Vector const& y)  const;
+  bool   is_invalid_ss (double ss)          const;                    // checks for nan, neg, inf
   void   initialize();                                                // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                    // does the QR and finds residuals
   
@@ -146,6 +148,7 @@ public:
   
 private:
   const int        mLength;         // total length estimation + validation
+  const bool       mShrink;        
   int              mN;              // number of estimation rows as identified on start
   std::vector<int> mPermute;        // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
   Vector           mValidationY;
@@ -155,11 +158,11 @@ private:
 public:
   ~ValidatedRegression () {  }
   
-  ValidatedRegression() : mLength(0), mN(0), mPermute() { }
+  ValidatedRegression() : mLength(0), mShrink(false), mN(0), mPermute() { }
   
   template<class Iter, class BIter>
-  ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize = 0)
-    :  mLength(len), mN(0), mPermute(len)    { initialize(yName, Y, B, blockSize); }
+  ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize, bool shrink)
+    :  mLength(len), mShrink(shrink), mN(0), mPermute(len)    { initialize(yName, Y, B, blockSize); }
 
   double goodness_of_fit() const  { return mModel.r_squared(); }
   int block_size()         const  { return mModel.block_size(); }
