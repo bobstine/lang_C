@@ -16,14 +16,17 @@ private:
 public:
   ~ FStatistic() {}
   
-  FStatistic()                                            // use empty version to signal singular
-    : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx(Vector::Zero(1)) { }
+ FStatistic()                                                              // use empty version to signal singular
+   : mF(0.0), mNumDF(0), mDenDF(0), mPValue(1.0), mSSx(Vector::Zero(1)) { }
   
-  FStatistic(double f, int numDF, int denDF, Vector const& ssx)
-    : mF(f), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
+ FStatistic(double f, double p, int numDF, int denDF, Vector const& ssx)   // use to return Bennett p-value
+   : mF(f), mNumDF(numDF), mDenDF(denDF), mPValue( p ), mSSx(ssx) { assert(ssx.size()==numDF); }
   
-  FStatistic(double numSS, int numDF, double denSS, int denDF, Vector ssx)
-    : mF((numSS/(double)numDF)/(denSS/(double)denDF)), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
+ FStatistic(double f, int numDF, int denDF, Vector const& ssx)
+   : mF(f), mNumDF(numDF), mDenDF(denDF), mPValue(0.0), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
+  
+ FStatistic(double numSS, int numDF, double denSS, int denDF, Vector ssx)
+   : mF((numSS/(double)numDF)/(denSS/(double)denDF)), mNumDF(numDF), mDenDF(denDF), mSSx(ssx) { assert(ssx.size()==numDF); calc_p_value(); }
   
   double f_stat()                   const { return mF; }
   double p_value()                  const { return mPValue; }
