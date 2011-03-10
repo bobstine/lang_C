@@ -29,7 +29,7 @@ template< class Model >
 bool
 ModelIterator<Model>::valid()  const
 {
-  if(mLastQ == mModel.q())
+  if(mModel.q() <= (mLastQ + mSeparation))
     return false;
   // need to check name of last accepted; dont have one if its us
   std::string lastName (mModel.predictor_names().back());

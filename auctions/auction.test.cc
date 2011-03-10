@@ -90,7 +90,7 @@ parse_arguments(int argc, char** argv,
 		std::string& outputPath,
 		int &protection, int &blockSize,
 		int &nRounds, double &totalAlpha,
-		int &df, int &prefixCases, int &debugLevel);
+		int &gap, int &prefixCases, int &debugLevel);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
@@ -116,14 +116,15 @@ main(int argc, char** argv)
   int           protection           (3);
   int           blockSize            (0);                                   // no blocking implies standard testing
   int           numberRounds         (200); 
-  int           splineDF             (0);
-  int           prefixCases           (0);
+  // int           splineDF             (0);
+  int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap
+  int           prefixCases          (0);
   int           debugLevel           (3);
     
 
   parse_arguments(argc,argv, inputName, outputPath, protection, blockSize,
 		  numberRounds, totalAlphaToSpend,
-		  splineDF, prefixCases, debugLevel);
+		  calibrationGap, prefixCases, debugLevel);
 
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
@@ -137,7 +138,7 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --blocksize=" << blockSize << " --rounds=" << numberRounds
-		  << " --alpha=" << totalAlphaToSpend << " --calibrator-df=" << splineDF << " --extra-cases=" << prefixCases
+		  << " --alpha=" << totalAlphaToSpend << " --calibration-gap=" << calibrationGap << " --extra-cases=" << prefixCases
 		  << std::endl;
   
   // open additional files for output
@@ -217,7 +218,7 @@ main(int argc, char** argv)
   // build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, debug("MAIN",2));
-  Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, splineDF, calibrationSignature, blockSize, progressStream);
+  Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   
   // create the experts that control bidding in the auction
@@ -285,11 +286,11 @@ main(int argc, char** argv)
   }
 
   //  Calibration expert
-  if(splineDF > 0)
+  if(calibrationGap > 0)
   { 
     theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, splineDF, calibrationSignature, nContextCases)));
+				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature, nContextCases)));
   }
     
 
@@ -387,7 +388,7 @@ parse_arguments(int argc, char** argv,
 		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
-		int    &nDF,
+		int    &gap,
 		int    &prefixCases,
 		int    &debugLevel)
 {
@@ -397,7 +398,7 @@ parse_arguments(int argc, char** argv,
       int option_index = 0;
       static struct option long_options[] = {
 	  {"alpha",             1, 0, 'a'},  // has arg,
-	  {"calibrator-df",     1, 0, 'c'},  // has arg,
+	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
 	  {"output-path",       1, 0, 'o'},  // has arg,
@@ -421,7 +422,7 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'c' : 
 	    {
-	      nDF = read_utils::lexical_cast<int>(optarg);
+	      gap = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'd' : 
@@ -463,7 +464,7 @@ parse_arguments(int argc, char** argv,
 	  case 'h' :
 	    {
 	      std::cout << "switches:" << std::endl << std::endl;
-	      std::cout << "      --calibrator-df=#        degrees of freedom in spline calibrator" << std::endl;
+	      std::cout << "      --calibration-gap=#      gap between calibration attempts" << std::endl;
 	      std::cout << "      -c4" << std::endl <<  std::endl;
 	      std::cout << "      --input-file=foo         input file" << std::endl;
 	      std::cout << "      -ifoo" << std::endl << std::endl;

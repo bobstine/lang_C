@@ -159,21 +159,22 @@ operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return o
 
 
 
-//     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
+//     ModelIterator    ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
 
 template< class Model >
 class ModelIterator
 {
-  Model const& mModel;    // maintained by someone else
-  int          mLastQ;
-public:
-  ModelIterator(Model const& m): mModel(m), mLastQ(0) {}
-
+  Model const& mModel;       // maintained by someone else
+  int          mLastQ;       // q of last model built predictors for
+  int          mSeparation;  // gap between models that are valid
+ public:
+ ModelIterator(Model const& m, int gap): mModel(m), mLastQ(0), mSeparation(gap) {}
+  
   bool            valid()                    const;
   int             number_remaining ()        const { if (valid()) return 1; else return 0; }
   ModelIterator&  operator++()                     { return *this; }
   Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
-  void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " "; }
+  void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " with separation " << mSeparation; }
 };
  
 template <class Model>
