@@ -48,7 +48,8 @@ private:
   bool                     mBinary;      // y is in {0,1}
   double                   mYBar;
   Matrix                   mX;           // padded for shrinkage; shrinkage elements on diagonal of bottom rows
-  std::vector<std::string> mXNames; 
+  std::vector<std::string> mXNames;
+  std::vector<double>      mEntryFStats; // save F stats obtained by variables as added to the model; record of shrinkage
   Matrix                   mQ;           // decomp of X, without the added rows from shrinkage
   Matrix                   mR;
   Vector                   mResiduals;
@@ -97,7 +98,7 @@ public:
 
   double    y_bar()                  const   { return mYBar; }
   Vector    beta()                   const;
-  Vector    shrinkage_lambda()       const;
+  Vector    shrinkage_diagonal()     const;
   Vector    se_beta_ols()            const;
   Vector    se_beta()                const;
 
