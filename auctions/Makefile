@@ -111,7 +111,7 @@ short_cv%.data:
 # ---  ann arbor models  -----------------------------------------------------------------------------
 
 anes_run: auction.test
-	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0
+	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0 -s 1
 
 
 
@@ -167,6 +167,13 @@ model/auction.model model/test.dat: auction.test.exec
 c45_parser:
 	-rm -f c45_parser
 	cp ../seq_regr/c45_syntax.test.exec c45_parser
+
+quicktest.o: quicktest.cc
+	$(GCC) $(CFLAGS) -c quicktest.cc -o $@
+
+quicktest: quicktest.o
+	$(GCC) $^ $(LDLIBS) -o  $@
+	./quicktest
 
 expander.o: expander.cc
 	$(GCC) $(CFLAGS) -c expander.cc -o $@

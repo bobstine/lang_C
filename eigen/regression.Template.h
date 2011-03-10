@@ -16,11 +16,11 @@ template <class Iter>
 std::pair<double,double>
 ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
 {
+  FStatistic f;
   int k (c.size());                                                                  // k denotes the number of added variables
   LinearRegression::Matrix predictors(mLength,k);
   for(int j=0; j<k; ++j)
     predictors.col(j) = permuted_vector_from_iterator(c[j].second);
-  FStatistic f;
   if (k == 1)
   { f = mModel.f_test_predictor(predictors.col(0).start(mN));
     debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << block_size() << std::endl;
@@ -42,7 +42,10 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
   std::vector<std::string> xNames;
   for(int j=0; j<k; ++j)
     xNames.push_back(c[j].first);
-  mModel.add_predictors(xNames, predictors.corner(Eigen::TopRight,mN,k));
+  if(mShrink)
+    mModel.add_predictors(xNames, predictors.corner(Eigen::TopRight,mN,k), f);
+  else                  // omit f-stat to omit shrinkage
+    mModel.add_predictors(xNames, predictors.corner(Eigen::TopRight,mN,k));
   return std::make_pair(f.f_stat(), f.p_value());
 }
 
