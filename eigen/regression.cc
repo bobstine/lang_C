@@ -345,6 +345,7 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
     X.corner(Eigen::TopRight, mN, z.cols()) = mSqrtWeights.asDiagonal() * z;
   X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
   // shrinkage only occurs if the entry f-stat is non-trivial
+  std::cout << "TEST:  F-stat for this variable is " << fstat << std::endl;
   if (fstat.f_stat() > 0) 
   { Vector diag = fstat.sum_of_squares() / fstat.f_stat();
     X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();

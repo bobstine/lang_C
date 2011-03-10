@@ -3,7 +3,7 @@
   Then execute code as
           
           auction.test -f filename -o path -r rounds -c calibration_df -v
-
+ 
   where
         -r  number of rounds for the auction (default is 50)
         -f  path for input data              (default is est.dat)
