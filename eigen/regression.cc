@@ -345,9 +345,20 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
     X.corner(Eigen::TopRight, mN, z.cols()) = mSqrtWeights.asDiagonal() * z;
   X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
   // shrinkage only occurs if the entry f-stat is non-trivial
+<<<<<<< HEAD
   std::cout << "TEST:  F-stat for this variable is " << fstat << std::endl;
   if (fstat.f_stat() > 0) 
   { Vector diag = fstat.sum_of_squares() / fstat.f_stat();
+=======
+  { double F (fstat.f_stat());
+    Vector diag = fstat.sum_of_squares();
+    if (F > 1)
+      diag /= (F - 1);
+    else
+    { std::cout << "REGR: Warning... Cannot shrink estimates as desired because F-stat (" << fstat.f_stat() << ") is too small." << std::endl;
+      diag /= F;
+    }
+>>>>>>> 8b307948494902f3d2d3a175d6ceed1c48459a21
     X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();
   }
   mX = X;
@@ -395,7 +406,7 @@ LinearRegression::print_to (std::ostream& os) const
     os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t       Lambda " << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(12) << b[j] << "  " << std::setw(12) << se[j]
-	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << std::setw(8) << lam[j] << std::endl;
+	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << "  " << std::setw(8) << lam[j] << std::endl;
   }
 }
 
