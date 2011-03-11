@@ -345,11 +345,6 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
     X.corner(Eigen::TopRight, mN, z.cols()) = mSqrtWeights.asDiagonal() * z;
   X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
   // shrinkage only occurs if the entry f-stat is non-trivial
-<<<<<<< HEAD
-  std::cout << "TEST:  F-stat for this variable is " << fstat << std::endl;
-  if (fstat.f_stat() > 0) 
-  { Vector diag = fstat.sum_of_squares() / fstat.f_stat();
-=======
   { double F (fstat.f_stat());
     Vector diag = fstat.sum_of_squares();
     if (F > 1)
@@ -358,7 +353,6 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
     { std::cout << "REGR: Warning... Cannot shrink estimates as desired because F-stat (" << fstat.f_stat() << ") is too small." << std::endl;
       diag /= F;
     }
->>>>>>> 8b307948494902f3d2d3a175d6ceed1c48459a21
     X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();
   }
   mX = X;
