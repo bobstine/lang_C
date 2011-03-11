@@ -73,11 +73,12 @@ LinearRegression::name_vec(std::string name) const
 void
 LinearRegression::initialize()
 {
+  for (int j=0; j<mX.cols(); ++j)
+    mEntryFStats.push_back(0.0);
   if(is_wls())
     mY = mY.cwise() * mSqrtWeights;
   double yBar (mY.dot(mX.col(0).start(mN))/mX.col(0).squaredNorm());
   mTotalSS = (mY.cwise() - yBar).squaredNorm();
-  // std::cout << "******  yBar = " << yBar << "   TSS = " << mTotalSS << std::endl;
   assert(mTotalSS>0);
   build_QR_and_residuals();
 }
@@ -116,7 +117,7 @@ LinearRegression::beta() const
 }
 
 LinearRegression::Vector
-LinearRegression::shrinkage_lambda()       const
+LinearRegression::shrinkage_diagonal()       const
 {
   int d (mX.cols());
   return mX.corner(Eigen::BottomLeft, d,d).diagonal();
@@ -346,14 +347,18 @@ LinearRegression::add_predictors  (std::vector<std::string> const& names, Matrix
   X.corner(Eigen::BottomRight, X.cols(), z.cols()).setZero();
   // shrinkage only occurs if the entry f-stat is non-trivial
   { double F (fstat.f_stat());
-    Vector diag = fstat.sum_of_squares();
-    if (F > 1)
-      diag /= (F - 1);
-    else
-    { std::cout << "REGR: Warning... Cannot shrink estimates as desired because F-stat (" << fstat.f_stat() << ") is too small." << std::endl;
-      diag /= F;
+    for (int j=0; j<z.cols(); ++j)
+      mEntryFStats.push_back(F);
+    if (F > 0) // skip those with F == 0
+    { Vector diag = fstat.sum_of_squares();
+      if (F > 1)
+	diag /= (F - 1);
+      else
+      { std::cout << "REGR: Warning... Cannot shrink estimates as desired because F-stat (" << fstat.f_stat() << ") is too small." << std::endl;
+	diag /= F;
+      }
+      X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();
     }
-    X.corner(Eigen::BottomRight, z.cols(), z.cols()).diagonal() = diag.cwise().sqrt();
   }
   mX = X;
   build_QR_and_residuals();
@@ -387,20 +392,19 @@ LinearRegression::print_to (std::ostream& os) const
      << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl << std::endl;
   Vector b   (beta());
   Vector se  (se_beta());
-  Vector lam (shrinkage_lambda());
   os.precision(3);
   if (mBlockSize == 0)
-  { os << "                        Variable Name                Estimate     OLS SE       t      Lambda " << std::endl;
+  { os << "                        Variable Name                Estimate     OLS SE       t      Entering F " << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(9) << b[j] << "  " << std::setw(9) << se[j] << "  "
-	 << std::setw(8) << b[j]/se[j] << std::setw(8) << lam[j] << std::endl;
+	 << std::setw(8) << b[j]/se[j] << std::setw(8) << mEntryFStats[j] << std::endl;
   }
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
-    os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t       Lambda " << std::endl;
+    os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t       Entering F " << std::endl;
     for (int j = 0; j<mX.cols(); ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(12) << b[j] << "  " << std::setw(12) << se[j]
-	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << "  " << std::setw(8) << lam[j] << std::endl;
+	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << "  " << std::setw(8) << mEntryFStats[j] << std::endl;
   }
 }
 
