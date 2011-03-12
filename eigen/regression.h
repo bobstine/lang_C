@@ -117,7 +117,6 @@ public:
   void      add_predictor  (std::string name, Vector const& z, FStat const& fstat)           { add_predictors(name_vec(name), z, fstat); }
   void      add_predictors (std::vector<std::string> const& names, Matrix const& z)          { add_predictors(names, z, FStatistic()); }          // no shrinkage
   void      add_predictors (std::vector<std::string> const& names, Matrix const& z, FStat const& fstat);
-
   
   void print_to      (std::ostream& os) const;
   void write_data_to (std::ostream& os) const;                                              // JMP style, with y followed by X columns (tab delimited)
@@ -126,7 +125,7 @@ public:
   std::vector<std::string> name_vec(std::string name) const;          // inits a vector with one string
   Matrix init_x_matrix()                    const;                    // tacks on the constant, terms for shrinkage
   Matrix init_x_matrix(Matrix const& m)     const;                    // stuffs a 1 as first column, appends shrinkage rows
-  bool   is_binary_vector(Vector const& y)  const;
+  bool   is_binary_vector(Vector const& y)  const;                    // used to determine whether to use Bennett bounds
   bool   is_invalid_ss (double ss)          const;                    // checks for nan, neg, inf
   void   initialize();                                                // sets initial SS, calls orthgonalize
   void   build_QR_and_residuals();                                    // does the QR and finds residuals
