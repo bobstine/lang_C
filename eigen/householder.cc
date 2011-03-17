@@ -7,13 +7,10 @@
 void
 Householder::allocate()
 {
-  mVPtr = new StorageType[mRows*mCols];
-  mRPtr = new StorageType[mCols*mCols];
+  mVRPtr = new StorageType[mRows*mCols];
   // zero space
   for (int i = 0; i < mRows*mCols; ++i)
     mVPtr[i] = 0.0;
-  for (int i = 0; i < mCols*mCols; ++i)
-    mRPtr[i] = 0.0;
 }
 
 //     access     access     access     access     access     
@@ -21,8 +18,8 @@ Householder::allocate()
 Householder::Matrix
 Householder::R() const
 {
-  Matrix R = Matrix::Map(mRPtr,mCols,mCols);
-  return R;
+  Matrix VR = Matrix::Map(mVRPtr,mCols,mCols);
+  return VR.corner(Eigen::TopLeft, mXNumCols, mXNumCols);
 }
 
 //     calculation       calculation       calculation       calculation
@@ -31,14 +28,16 @@ double
 Householder::house(int j)       //  rotate V[,j] into {0,0,1,0,0,0...0} vector
 {
   std::cout << "HHDR: Computing rotation using vector V[" << j << "]" << std::endl;
-  Eigen::Map<Matrix> V (mVPtr,mRows,mCols);
+  Eigen::Map<Matrix> V (mVRPtr,mRows,mCols);
   double      partialNorm2 = V.col(j).end(mRows-j-1).squaredNorm();
   StorageType v0           = V(j,j);
   double      norm2        = partialNorm2 + v0*v0;
   if (norm2 == 0.0)
     return 0.0;
   V(j,j) = (v0 < 0.0) ? (v0 - norm2) : ((-partialNorm2)/(v0+sqrt(norm2)));
-  mVtV[j] = V(j,j)*V(j,j) + partialNorm2;            // store squared norm of v
+  double Vjj2 (V(j,j)*V(j,j));
+  mBeta[j] = 2 * Vjj2/(partialNorm2 + Vjj2);
+  
   std::cout << "TEST:  j=" << j << "   v0=" << v0 << "  partial norm " << partialNorm2  << "   norm " << norm2 <<  std::endl;
   return v0*v0 + partialNorm2;                       // returns squared norm of input column
 }

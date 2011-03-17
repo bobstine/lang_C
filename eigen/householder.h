@@ -25,9 +25,8 @@ class Householder
   const int mRows;      // number of rows -- never changes
   int mCols;            // number of columns -- can increase
   int mXNumCols;        // current number of columns in the factorization
-  Vector mVtV;          // squared norms of v rotation vectors
-  Ptr mVPtr;            // space used to store householder vectors v_j
-  Ptr mRPtr;            //                                 upper triangular R
+  Vector mBeta;         // used to form householder outer product
+  Ptr mVRPtr;           // space used to store householder vectors v_j in style of Golub
 
  public:
   Householder()
