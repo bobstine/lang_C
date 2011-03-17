@@ -19,7 +19,7 @@ USES = random utils
 #
 ###########################################################################
 
-level_0   =  fstatistic.o
+level_0   =  fstatistic.o householder.o
 level_1   =  eigen_svd.o  regression.o
 
 ############################################################################
