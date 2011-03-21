@@ -116,7 +116,7 @@ public:
   FStat     f_test_predictor  (std::string name, Vector const& z)                      const; // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;
   
-  void      add_predictors  ()                                                                { add_predictors(FStatistic()); }           // no shrinkage
+  void      add_predictors ()                                                                { add_predictors(FStatistic()); }           // no shrinkage
   void      add_predictors (StringVec const& names, Matrix const& x);                                                 // adds with no testing
   void      add_predictors (FStat const& fstat);
   
@@ -124,12 +124,12 @@ public:
   void      write_data_to (std::ostream& os) const;                                                // JMP style, with y followed by X columns (tab delimited)
 
  private:
-  StringVec name_vec(std::string name) const;          // inits a vector with one string
+  StringVec name_vec(std::string name) const;                         // inits a vector with one string
   void      allocate_memory();
   void      add_constant();
-  bool      is_binary_vector(Vector const& y)  const;                    // used to determine whether to use Bennett bounds
-  bool      is_invalid_ss (double ss)          const;                    // checks for nan, neg, inf
-  double    sweep_Q_from_column(int col);
+  bool      is_binary_vector(Vector const& y)  const;                 // used to determine whether to use Bennett bounds
+  bool      is_invalid_ss (double ss)          const;                 // checks for nan, neg, inf
+  double    sweep_Q_from_column(int col)       const;                 // only affect Q, R past those of current fit
   void      update_fit(StringVec xNames);
   std::pair<double,double> bennett_evaluation () const;               // 0/1 response only; operates on column mK (one past those in use)
 

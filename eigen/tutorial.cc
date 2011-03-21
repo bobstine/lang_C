@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 
-#include <Eigen/Array>
+#include <Eigen/Core>
 #include <Eigen/SVD>
 
 

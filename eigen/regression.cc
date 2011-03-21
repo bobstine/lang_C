@@ -1,5 +1,7 @@
 #include "regression.h"
 
+#include <Eigen/Eigen>
+
 #include <iomanip>
 #include <bennett.h>
 
@@ -16,7 +18,7 @@ bool   close (double a, double b) { return abs_val(a-b) < epsilon; }
 
 #define QQ()      (mQ.topLeftCorner(mN, mK))
 #define RR()      (mR.triangularView<Eigen::Upper>.topLeftCorner(mK, mK))
-#define RINV()    (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse())
+#define RINV()    (mR.topLeftCorner(mK,mK).inverse())     // ought to use the triangular part
 #define RSOLVE(X) (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().solve(X))
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
@@ -123,15 +125,15 @@ LinearRegression::se_beta() const
   { Vector se2 (mK);
     if (mBlockSize==1)
     { Matrix EQRi (mResiduals.asDiagonal() * mQ * RINV().transpose());
-      for(int j=0; j < nCols; ++j)
+      for(int j=0; j < mK; ++j)
 	se2[j] = EQRi.col(j).squaredNorm();
     }
     else // larger blocks, just diagonal
-    { Matrix QRi (mQ * RR().inverse().transpose());
+    { Matrix QRi (mQ * RINV().transpose());
       se2.setZero();
       for(int row = 0; row <mN; row+=mBlockSize)
-      {	Vector eQRi = mResiduals.segment(row,mBlockSize).transpose() * QRi.block(row,0,mBlockSize,nCols);
-	se2 += eQRi.array() * eQRi;
+      {	Vector eQRi = mResiduals.segment(row,mBlockSize).transpose() * QRi.block(row,0,mBlockSize,mK);
+	se2.array() += eQRi.array() * eQRi.array();
       }
     }
     return se2.array().sqrt();
@@ -175,14 +177,14 @@ LinearRegression::is_invalid_ss (double ss)          const
 }
 
 double
-LinearRegression::sweep_Q_from_column(int col)
+LinearRegression::sweep_Q_from_column(int col) const
 {
   Vector delta  (QQ().transpose() * mQ.col(col));
   mQ.col(col) = mQ.col(col) - QQ() * delta;
   double ssz  (mQ.col(col).squaredNorm());
   if (is_invalid_ss (ssz)) return 0.0;
   mQ.col(col) /= sqrt(ssz);
-  mR.col(col).start(col-1) = delta;
+  mR.col(col).head(col-1) = delta;
   mR(col,col) = sqrt(ssz);
   return ssz;
 }
@@ -194,7 +196,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   mTempNames = name_vec(xName);
   mTempK     = 1;
   if (is_wls())
-    mQ.col(mK) = z.array() * mSqrtWeights;
+    mQ.col(mK) = z.array() * mSqrtWeights.array();
   else
     mQ.col(mK) = z;
   if (0.0 == sweep_Q_from_column(mK))
@@ -208,18 +210,20 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   }
   else                                              
   { if (is_binary() && (mBlockSize == 1))            // use Bennett and fake F stat from squaring bennett t stat
-    { std::pair<double,double> test (bennett_evaluation(z));
+    { std::pair<double,double> test (bennett_evaluation());
       debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
-      return FStatistic(test.first*test.first, test.second, 1, mN-q(), 1.0);
+      return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
     }
     else                                             // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
     { double zeez (0.0);
       if (mBlockSize == 1)
-	zeez = (mQ.col(mK).cwise() * mResiduals).squaredNorm();
+      { Vector temp (mQ.col(mK).array() * mResiduals.array());
+	zeez = temp.squaredNorm();
+      }
       else
       { assert (0 == mN % mBlockSize);
 	for(int row=0; row<mN; row +=mBlockSize)
-	{ double ezi (mResiduals.segment(row,mBlockSize).dot(zRes.segment(row,mBlockSize)));
+	{ double ezi (mResiduals.segment(row,mBlockSize).dot(mQ.col(mK).segment(row,mBlockSize)));
 	  zeez += ezi * ezi;
 	}
       }
@@ -239,12 +243,12 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
     mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
   else
     mQ.block(0,mK,mN,z.cols()) = z;
-  for(k = 0; k<z.cols(); ++k)
+  for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column(mK+k))
       return FStatistic();
   int residualDF (mN-1-q()-z.cols());
   assert(residualDF > 0);
-  Vector Qe  (mQ.topLeftCorner(mN,mK+z.cols()).transpose * mResiduals);                // projection into space of new variables
+  Vector Qe  (mQ.topLeftCorner(mN,mK+z.cols()).transpose() * mResiduals);                // projection into space of new variables
   if (mBlockSize==0)
   { double regrss (Qe.squaredNorm());
     debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << std::endl;
@@ -254,21 +258,21 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
   { Matrix QeeQ(mTempK,mTempK);                                    // Q'ee'Q 
     QeeQ.setZero();
     if (mBlockSize == 1)
-    { Matrix eQ (mResiduals.asDiagonal() * Q);  
+    { Matrix eQ (mResiduals.asDiagonal() * QQ());  
       QeeQ = eQ.transpose() * eQ;
     }
     else     // blocksize > 1
     { assert(0 == mN % mBlockSize);
       Vector eQ(mTempK);
       for(int block = 0, row = 0; block<mN/mBlockSize; ++block)
-      {	eQ = mResiduals.segment(row,mBlockSize).transpose() * Q.block(row,0,mBlockSize,mTempK);
+      {	eQ = mResiduals.segment(row,mBlockSize).transpose() * QQ().block(row,0,mBlockSize,mTempK);
 	QeeQ += eQ * eQ.transpose();
 	row += mBlockSize;
       }
     }
     double ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
     debugging::debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
-    return FStatistic(ss/mTempK, mTempK, residualDF, zResSS);
+    return FStatistic(ss/mTempK, mTempK, residualDF, Vector::Ones(z.cols()));
   }
 }
 
@@ -279,13 +283,13 @@ LinearRegression::bennett_evaluation () const
 {
   const double epsilon (1.0E-10);
   Vector mu      (fitted_values(epsilon, 1.0-epsilon));                      // think of fit as E(Y), constrained to [eps,1-eps] interval
-  Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu);
+  Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                  // would match residuals IF other fit is bounded
   double num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)
-  double rootZDZ (sqrt (var.dot(mQ.col(mK).array() * mQ.col(mK))));          // sqrt(z'Dz)
+  double rootZDZ (sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));      // sqrt(z'Dz)
   double maxA    (0.0);
   for (int i=0; i<mN; ++i)
-  { double absZ (abs_val(mQ.(i,mK) * max_abs(mu[i], 1.0-mu[i])));             // largest possible error for this case
+  { double absZ (abs_val(mQ(i,mK) * max_abs(mu[i], 1.0-mu[i])));             // largest possible error for this case
     if (absZ > maxA) maxA = absZ;                                            // largest?
   }
   double Mz      (maxA/rootZDZ);
@@ -299,23 +303,23 @@ LinearRegression::bennett_evaluation () const
 void
 LinearRegression::update_fit(StringVec xNames)
 {
-  mXNames.push_back(xNames(k));
+  for(unsigned int j=0; j<xNames.size(); ++j)
+    mXNames.push_back(xNames[j]);
   mK += (int) xNames.size();
-  mGamma     = QQ().transpose() * mY;
-  mGamma    /= mShrinkage;
+  mGamma     = (QQ().transpose() * mY).cwiseQuotient(mShrinkage);
   mResiduals = mY - QQ() * mGamma;
 }
 
 void
-LinearRegression::add_predictors (StringVec xNames, Matrix const& x)
+LinearRegression::add_predictors (StringVec const& xNames, Matrix const& x)
 {
   assert(x.rows() == mN);
-  assert((int)xNames.size() == z.cols());
+  assert((int)xNames.size() == x.cols());
   if (is_wls())
-    mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * x;
+    mQ.block(0,mK,mN,x.cols()) =  mSqrtWeights.asDiagonal() * x;
   else
-    mQ.block(0,mK,mN,z.cols()) = x;
-  for(k = 0; k<x.cols(); ++k)
+    mQ.block(0,mK,mN,x.cols()) = x;
+  for(int k = 0; k<x.cols(); ++k)
   { if(0.0 == sweep_Q_from_column(mK+k))
     { std::cout << "REGR: Column " << k << " of added predictors is collinear." << std::endl;
       return;
@@ -339,8 +343,9 @@ LinearRegression::add_predictors  (FStatistic const& fstat)
       shrinkage /= F;
     }
   }
-  for (unsigned int j=0; j<names.size(); ++j)
+  for (unsigned int j=0; j<mTempNames.size(); ++j)
     mShrinkage[mK+j] = shrinkage;
+  assert( mTempK == (int)mTempNames.size() );
   update_fit(mTempNames);
 }
 
@@ -374,17 +379,17 @@ LinearRegression::print_to (std::ostream& os) const
   Vector se  (se_beta());
   os.precision(3);
   if (mBlockSize == 0)
-  { os << "                        Variable Name                Estimate     OLS SE       t      Entering F " << std::endl;
-    for (int j = 0; j<mX.cols(); ++j)
+  { os << "                        Variable Name                Estimate     OLS SE       t       Shrinkage " << std::endl;
+    for (int j = 0; j<mK; ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(9) << b[j] << "  " << std::setw(9) << se[j] << "  "
-	 << std::setw(8) << b[j]/se[j] << std::setw(8) << mEntryFStats[j] << std::endl;
+	 << std::setw(8) << b[j]/se[j] << std::setw(8) << mShrinkage[j] << std::endl;
   }
   else // show ols and sandwich se
   { Vector olsSE (se_beta_ols());
-    os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t       Entering F " << std::endl;
-    for (int j = 0; j<mX.cols(); ++j)
+    os << "                  Variable Name                          Estimate      Sandwich SE     (OLS)        t       Shrinkage " << std::endl;
+    for (int j = 0; j<mK; ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(12) << b[j] << "  " << std::setw(12) << se[j]
-	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << "  " << std::setw(8) << mEntryFStats[j] << std::endl;
+	 << "(" << std::setw(12) << olsSE[j] << ")  " << std::setw(8) << b[j]/se[j] << "  " << std::setw(8) << mShrinkage[j] << std::endl;
   }
 }
 
@@ -392,24 +397,23 @@ LinearRegression::print_to (std::ostream& os) const
 void
 LinearRegression::write_data_to (std::ostream& os) const
 {
-  int k (mX.cols());
   // prefix line with var names
   os << "Role\tFit\tResidual\t" << mYName;
-  for(int j=1; j<k; ++j)
+  for(int j=1; j<mK; ++j)
     os << "\t" << mXNames[j];
   os << std::endl;
   // now put the data in external coordinate system
-  Vector y    (is_ols() ? mY : mY.cwise()/mSqrtWeights);
+  Vector y    (is_ols() ? mY : mY.cwiseQuotient(mSqrtWeights));
   Vector res  (raw_residuals());
   Vector fit  (is_ols() ? fitted_values() : y - res);
   for(int i=0; i<mN; ++i)
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
-    Vector row (mX.row(i));
+    Vector row (mQ.row(i).head(mK));
     if (is_wls())
       row = row / mSqrtWeights[i];
-    for (int j=1; j<k-1; ++j)  // skip intercept
+    for (int j=1; j<mK-1; ++j)  // skip intercept
       os << row[j] << "\t";
-    os << row[k-1] << std::endl;
+    os << row[mK-1] << std::endl;
   }
 }
 
@@ -420,16 +424,16 @@ LinearRegression::write_data_to (std::ostream& os) const
 double
 ValidatedRegression::validation_ss() const
 {
+  double ss (0.0);
   if (n_validation_cases()>0)
   { if (q()==0)     // handle differently for initial case to avoid empty matrix
-    { // Vector b (mModel.beta());
-      return (mValidationY.cwise() - mModel.beta()(0)).squaredNorm();
+    { double mean (mModel.y_bar());
+      ss =  mValidationY.unaryExpr([mean](double x)->double { return x-mean; }).squaredNorm();
     }
     else
-      return (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
+      ss = (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
   }
-  else
-    return 0.0;
+  return ss;
 }
 
 void
