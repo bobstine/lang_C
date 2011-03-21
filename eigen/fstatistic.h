@@ -1,7 +1,7 @@
 #ifndef _F_STATISTIC_
 #define _F_STATISTIC_
 
-#include <Eigen/Array>
+#include <Eigen/Core>
 
 class FStatistic
 {
