@@ -1,6 +1,6 @@
 #include "regression.h"
 
-#include <Eigen/Eigen>
+#include <Eigen/LU>
 
 #include <iomanip>
 #include <bennett.h>
@@ -18,7 +18,7 @@ bool   close (double a, double b) { return abs_val(a-b) < epsilon; }
 
 #define QQ()      (mQ.topLeftCorner(mN, mK))
 #define RR()      (mR.triangularView<Eigen::Upper>.topLeftCorner(mK, mK))
-#define RINV()    (mR.topLeftCorner(mK,mK).inverse())     // ought to use the triangular part
+#define RINV()    (mR.topLeftCorner(mK,mK).inverse())                               // should use triangular: mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse()
 #define RSOLVE(X) (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().solve(X))
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
@@ -124,12 +124,14 @@ LinearRegression::se_beta() const
   else // compute sandwich estimates        // Note: these will be larger than entry F since residuals are updated once added
   { Vector se2 (mK);
     if (mBlockSize==1)
-    { Matrix EQRi (mResiduals.asDiagonal() * mQ * RINV().transpose());
+    { Matrix Ri (RINV());
+      Matrix EQRi (mResiduals.asDiagonal() * mQ * Ri.transpose());
       for(int j=0; j < mK; ++j)
 	se2[j] = EQRi.col(j).squaredNorm();
     }
     else // larger blocks, just diagonal
-    { Matrix QRi (mQ * RINV().transpose());
+    { Matrix Ri (RINV());
+      Matrix QRi (mQ * Ri.transpose());
       se2.setZero();
       for(int row = 0; row <mN; row+=mBlockSize)
       {	Vector eQRi = mResiduals.segment(row,mBlockSize).transpose() * QRi.block(row,0,mBlockSize,mK);
@@ -184,7 +186,7 @@ LinearRegression::sweep_Q_from_column(int col) const
   double ssz  (mQ.col(col).squaredNorm());
   if (is_invalid_ss (ssz)) return 0.0;
   mQ.col(col) /= sqrt(ssz);
-  mR.col(col).head(col-1) = delta;
+  mR.col(col).head(col) = delta;
   mR(col,col) = sqrt(ssz);
   return ssz;
 }

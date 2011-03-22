@@ -27,6 +27,7 @@ void print_time(time_t const& start)
 
 int main(int, char **)
 {
+  clock_t start;
   debugging::debug_init(std::cout,0);
   std::cout.precision(2);  std::cout << "TEST:  Test of regression begins...\n\n";
 
@@ -79,7 +80,7 @@ int main(int, char **)
   }
 
   // check validation model (dup validation and estimation cases)
-  clock_t start;
+  /*  
   if (true) {
     std::cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
@@ -160,6 +161,7 @@ int main(int, char **)
       std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
     }
   }
+  */
   
   // weighted regression
   /* {
