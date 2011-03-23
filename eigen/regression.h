@@ -99,6 +99,7 @@ public:
   Vector    raw_residuals()          const;
 
   double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
+  Vector    gamma()                  const   { return mGamma.head(mK); }
   Vector    beta()                   const;
   Vector    shrinkage_weights()      const   { return mShrinkage.head(mK); }
   Vector    se_beta_ols()            const;

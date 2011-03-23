@@ -19,18 +19,17 @@ bool   close (double a, double b) { return abs_val(a-b) < epsilon; }
 #define QQ()      (mQ.topLeftCorner(mN, mK))
 #define RR()      (mR.triangularView<Eigen::Upper>.topLeftCorner(mK, mK))
 #define RINV()    (mR.topLeftCorner(mK,mK).inverse())                               // should use triangular: mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse()
-#define RSOLVE(X) (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().solve(X))
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
 void
 LinearRegression::allocate_memory()
 {
-  mQ = Matrix(mN, numberOfAllocatedColumns);
-  mR = Matrix(numberOfAllocatedColumns,numberOfAllocatedColumns);
+  mResiduals = Vector(mN);
+  mQ         = Matrix(mN, numberOfAllocatedColumns);
+  mR         = Matrix(numberOfAllocatedColumns,numberOfAllocatedColumns);
   mShrinkage = Vector(numberOfAllocatedColumns);
   mGamma     = Vector(numberOfAllocatedColumns);
-  mResiduals    = Vector(mN);
 }
 
 
@@ -50,7 +49,8 @@ LinearRegression::add_constant()
   }
   mGamma[0]     = mQ.col(0).dot(mY);
   mShrinkage[0] = 0.0;
-  mResiduals = mY.array() - sqrt(mN) * mGamma(0);
+  mResiduals    = mY.array() -  mGamma(0)/mR(0,0);
+  mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 
 
@@ -102,7 +102,8 @@ LinearRegression::fitted_values(double lo, double hi) const
 LinearRegression::Vector
 LinearRegression::beta() const
 {
-  return RSOLVE(mGamma.head(mK));
+  std::cout << "TEST: solving, R matrix " << std::endl << mR.topLeftCorner(mK,mK) << std::endl << "       gamma = " << mGamma.head(mK).transpose() << std::endl;
+  return mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().solve(mGamma.head(mK));
 }
 
 
@@ -182,12 +183,15 @@ double
 LinearRegression::sweep_Q_from_column(int col) const
 {
   Vector delta  (QQ().transpose() * mQ.col(col));
+  std::cout << "TEST: sweeping Q from col " << col << " gives " << delta.transpose() << std::endl;
   mQ.col(col) = mQ.col(col) - QQ() * delta;
   double ssz  (mQ.col(col).squaredNorm());
   if (is_invalid_ss (ssz)) return 0.0;
   mQ.col(col) /= sqrt(ssz);
   mR.col(col).head(col) = delta;
   mR(col,col) = sqrt(ssz);
+  std::cout << "TEST: R matrix after sweeping Q is " << std::endl << mR.topLeftCorner(col+1,col+1) << std::endl;
+  std::cout << "TEST: Q matrix is " << std::endl << mQ.topLeftCorner(5,col+1) << " ...." << std::endl;
   return ssz;
 }
   
@@ -305,12 +309,15 @@ LinearRegression::bennett_evaluation () const
 void
 LinearRegression::update_fit(StringVec xNames)
 {
+  std::cout << "TEST: updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
   for(unsigned int j=0; j<xNames.size(); ++j)
     mXNames.push_back(xNames[j]);
   mK += (int) xNames.size();
-  mGamma     = (QQ().transpose() * mY).cwiseQuotient(mShrinkage.head(mK));
-  mResiduals = mY - QQ() * mGamma;
+  mGamma.head(mK)  = (QQ().transpose() * mY).cwiseQuotient(mShrinkage.head(mK));    // RAS  Need to only change the last updated columns, not all
+  mResiduals = mY - QQ() * mGamma.head(mK);
+  std::cout << "TEST: after update, gamma = " << mGamma.head(mK).transpose() << " with shrinkage " << mShrinkage.head(mK).transpose() << std::endl;
 }
+
 
 void
 LinearRegression::add_predictors (StringVec const& xNames, Matrix const& x)
@@ -369,19 +376,19 @@ LinearRegression::print_to (std::ostream& os) const
 {
   os.precision(6);
   if (is_ols())
-    os << "Linear Regression          ";
+    os << "Linear Regression";
   else
-    os << "Weighted Linear Regression ";
+    os << "Weighted Linear Regression";
   if (is_binary())
     os << "   Binary response";
-  os << "  y = " << mYName << std::endl
+  os << "  y = " << mYName << "    (n=" << mN << ",k=" << mK << ") " << std::endl
      << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
      << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl << std::endl;
   Vector b   (beta());
   Vector se  (se_beta());
   os.precision(3);
   if (mBlockSize == 0)
-  { os << "                        Variable Name                Estimate     OLS SE       t       Shrinkage " << std::endl;
+  { os << "                        Variable Name                   Beta      OLS SE       t       Shrinkage " << std::endl;
     for (int j = 0; j<mK; ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "  " << std::setw(9) << b[j] << "  " << std::setw(9) << se[j] << "  "
 	 << std::setw(8) << b[j]/se[j] << std::setw(8) << mShrinkage[j] << std::endl;

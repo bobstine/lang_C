@@ -27,9 +27,10 @@ void print_time(time_t const& start)
 
 int main(int, char **)
 {
-  clock_t start;
+  std::cout << "TEST:  Test of regression begins...\n\n";
+  //    clock_t start;
   debugging::debug_init(std::cout,0);
-  std::cout.precision(2);  std::cout << "TEST:  Test of regression begins...\n\n";
+  std::cout.precision(4);  
 
   // Timing to build regr with n = 400,000 rows    Time to test adding a 1 or 3 vars to a model with 30 predictors
   //                          13"        17"                 13"       13"
@@ -51,11 +52,24 @@ int main(int, char **)
   Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
 
 
-  LinearRegression regr("yyy", y, 0);
-  std::cout << regr.f_test_predictor("zzz", z);
-  regr.add_predictors();
-  std::cout << regr << std::endl;
+  { // most basic test of regression
+    double mean (y.sum()/y.size());
+    std::cout << "TEST:  y-bar is " << mean << std::endl;
+    std::cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << std::endl;
+    std::cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << std::endl;
 
+    LinearRegression regr("yyy", y, 0);
+    std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
+    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    
+    std::cout << "TEST: F test of zzz " << regr.f_test_predictor("zzz", z) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding zzz " << std::endl << regr << std::endl;
+    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    
+  }
   /*
   
   // define the weight vector
@@ -87,6 +101,7 @@ int main(int, char **)
     output.precision(7);
     output << data << std::endl;
   }
+
 
   // check validation model (dup validation and estimation cases)
   /*  

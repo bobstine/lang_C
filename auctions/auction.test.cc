@@ -108,8 +108,6 @@ main(int argc, char** argv)
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
 
-  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
-
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
@@ -138,6 +136,7 @@ main(int argc, char** argv)
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
+  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
