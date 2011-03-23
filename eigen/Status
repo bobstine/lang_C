@@ -1,0 +1,5 @@
+Status of Eigen code
+
+***  Why does it not detect singularity in test 1 when add variable twice?
+
+***  Need to check/debug the weighted LS things.

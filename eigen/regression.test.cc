@@ -28,50 +28,27 @@ void print_time(time_t const& start)
 int main(int, char **)
 {
   std::cout << "TEST:  Test of regression begins...\n\n";
-  //    clock_t start;
-  debugging::debug_init(std::cout,0);
+  debugging::debug_init(std::cout,3);
   std::cout.precision(4);  
 
-  // Timing to build regr with n = 400,000 rows    Time to test adding a 1 or 3 vars to a model with 30 predictors
-  //                          13"        17"                 13"       13"
-  //   p = 3 predictors      0.19 sec ; 0.12               Test Z[1]  Test Z[1:3]
-  //      20                 2.6        1.6                 0.15      0.30        
-  //      40                            5.2           
-  //      80                           21 
-  const int nRows   (100);   
-  const int nCols     (3);
-  const int nAdd      (3);
-  
-  //  std::cin >> nRows;  std::cout << "Testing regression code with nRows = " << nRows << std::endl;
+  // Timing to build regr with n = 200,000 rows  (O4)        Add 3 to initial p
+  //                          13"     13/GS(b=1)  17"           13/GS
+  //   p = 3 predictors      0.09 s   0.02       0.06            0.10
+  //      20                 1.3      0.04       0.8             0.23
+  //      40                          0.06       2.6             0.40
+  //      80                          0.10      10.5             0.78
+
+  const int nRows   (200000);   
+  const int nCols     (80);
+  const int nAdd      ( 3);
   
   // form random matrix for response and predictors
-  Eigen::VectorXd y (Eigen::VectorXd::Random(nRows));
-  Eigen::VectorXd z (Eigen::VectorXd::Random(nRows));
-  Eigen::VectorXd w (Eigen::VectorXd::Zero  (nRows));
-  Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
-  Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
+  Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
+  Eigen::VectorXd z  (Eigen::VectorXd::Random(nRows));
+  Eigen::VectorXd w  (Eigen::VectorXd::Zero  (nRows));
+  Eigen::MatrixXd X  (Eigen::MatrixXd::Random(nRows,nCols));
+  Eigen::MatrixXd Z  (Eigen::MatrixXd::Random(nRows,nAdd));
 
-
-  { // most basic test of regression
-    double mean (y.sum()/y.size());
-    std::cout << "TEST:  y-bar is " << mean << std::endl;
-    std::cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << std::endl;
-    std::cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << std::endl;
-
-    LinearRegression regr("yyy", y, 0);
-    std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
-    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-    
-    std::cout << "TEST: F test of zzz " << regr.f_test_predictor("zzz", z) << std::endl;
-    regr.add_predictors();
-    std::cout << "TEST: regression after adding zzz " << std::endl << regr << std::endl;
-    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-    
-  }
-  /*
-  
   // define the weight vector
   for (int i=0; i<nRows; ++i)
     w[i] = 1.0 + i % 4;
@@ -90,12 +67,12 @@ int main(int, char **)
     oss << "Z" << i;
     zNames.push_back(oss.str());
   }
-  */
-  
+
   //  write data so that can check in JMP/R
   if (nRows < 1000)
   { Eigen::MatrixXd data(nRows,1+2*nCols);
     data << y , X , Z;
+    std::cout << "TEST:  Writing data, first two rows are\n" << data.topRows(2) << std::endl;
     std::string fileName ("test.dat");
     std::ofstream output(fileName.c_str());
     output.precision(7);
@@ -103,9 +80,64 @@ int main(int, char **)
   }
 
 
-  // check validation model (dup validation and estimation cases)
-  /*  
-  if (true) {
+  
+  if (false)  // basic test, adding variables one at a time
+  {
+    double mean (y.sum()/y.size());
+    std::cout << "TEST:  y-bar is " << mean << std::endl;
+    std::cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << std::endl;
+    std::cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << std::endl;
+
+    LinearRegression regr("yyy", y, 0);
+    std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
+    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    
+    std::cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[0] " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[1] " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: Several rows of X" << std::endl;
+    for (int i=0; i<10; ++i)
+      std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
+
+    std::cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << std::endl;               // ??? Why does it not detect singularity
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+  }
+
+
+  if (false)  // second test, adding 3 at once
+  {
+    LinearRegression regr("yyy", y, 0);
+    std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
+    
+    std::cout << "TEST: F test of X " << regr.f_test_predictors(xNames, X) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "      SE    = " << regr.se_beta_ols().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: Several rows of X" << std::endl;
+    for (int i=0; i<10; ++i)
+      std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
+  }
+
+
+  if (true)   // check validation model (dup validation and estimation cases)
+  { clock_t start;
+    // assemble data
     std::cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
     double yPtr[nRows*2];
@@ -127,13 +159,15 @@ int main(int, char **)
     { double *xPtr = new double [nRows*2];
       for(int i=0; i<nRows; ++i)
       { xPtr[2*i] = Z(i,j); xPtr[2*i+1] = Z(i,j); }
-      zcollection.push_back(make_pair(xNames[j],xPtr));
+      zcollection.push_back(make_pair(zNames[j],xPtr));
     }
-    { // test validated regression, standard F test
-      std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
+
+    if(false) //  validated regression, standard F test
+    { std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, 0, true);
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
+      // force to add by setting p-value threshold to 1
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
       std::cout << "TEST: test of adding xcollection gives " << result << std::endl << vregr << std::endl;
       double *pFit  (new double[2*nRows]);
@@ -141,18 +175,20 @@ int main(int, char **)
       std::cout << "TEST: First 10 fitted values from model with 3 X's are   ";
       std::for_each(pFit, pFit+10, [](double x){ std::cout << x << "  ";});
       std::cout << std::endl;
-      {
-	std::vector<std::pair<std::string, double*> > collect1;
-	collect1.push_back(zcollection[0]);
-	start = clock(); result = vregr.add_predictors_if_useful (collect1,0.00001); print_time(start);
-      }
-      std::cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << std::endl << vregr << std::endl; 
+      // test where does not add
+      std::vector<std::pair<std::string, double*> > collect1;
+      collect1.push_back(zcollection[0]);
+      start = clock(); result = vregr.add_predictors_if_useful (collect1,0.0000001); print_time(start);
+      std::cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << std::endl << vregr << std::endl;      
+      // force to add all Z's
       start = clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
       std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
     }
-    { // test validated regression, white tests
+
+    if(true) // validated regression, white tests
+    { bool shrink (false);
       const int blockSize (1);
-      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, true);
+      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
       std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
@@ -167,9 +203,11 @@ int main(int, char **)
       start=clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
       std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
     }
-    { // test validated regression, white tests
+
+    if(false)    // test validated regression, white tests
+    { bool shrink (false);
       const int blockSize (5);
-      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, true);
+      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
       std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
@@ -185,7 +223,6 @@ int main(int, char **)
       std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
     }
   }
-  */
   
   // weighted regression
   /* {
@@ -238,29 +275,6 @@ int main(int, char **)
 
   */
 
-  // test shrinkage
-  /*
-    {
-    std::cout << "\nTest: shrinkage in regression; refit models with shrinkage in place.\n";
-    LinearRegression sregr("y", y);
-    sregr.add_predictors(xNames, X);
-    std::cout << "Shrinking 1 pred  : ";
-    sregr.add_predictor("Z[0]", Z.col(0),sregr.f_test_predictor(Z.col(0)));    std::cout << sregr << std::endl;
-    std::cout << "Shrinking 2 pred  : ";
-    std::vector<std::string> twoNames; twoNames.push_back("Z[1]"); twoNames.push_back("Z[2]");
-    sregr.add_predictors(twoNames, Z.block(0,1,Z.rows(),Z.cols()-1),sregr.f_test_predictors(Z.block(0,1,Z.rows(),Z.cols()-1)));  std::cout << sregr << std::endl;
-  }
-  */
-  
-  // tail end of a vector; this one gets you the last 4
-  //  std::cout << y.end(4).transpose() << std::endl;
 
-  /* element access
-  std::cout << y.coeff(1) << std::endl;
-  y.coeffRef(1) = 44;
-  std::cout << y.coeff(1) << std::endl;
-  */
-
-  // allows one to change without violating constness... const_cast_derived()
   return 0;
 }

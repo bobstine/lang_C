@@ -50,7 +50,7 @@ private:
   StringVec                mXNames;
   Vector                   mY;             // original response
   bool                     mBinary;        // y is in {0,1}
-  Vector                   mShrinkage;
+  Vector                   mLambda;
   Vector                   mGamma;         // coefficients of the orthogonal regression
   Vector                   mResiduals;
   mutable Matrix           mQ, mR;         // only changes are in the latter columns past Kth
@@ -95,15 +95,18 @@ public:
   double    residual_ss()            const   { return mResidualSS; }
   double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
+  Vector    x_row(int i)             const; 
   Vector    residuals()              const   { return mResiduals; }
   Vector    raw_residuals()          const;
 
   double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
   Vector    gamma()                  const   { return mGamma.head(mK); }
+  Vector    se_gamma_ols()           const;
+  Vector    se_gamma()               const;
   Vector    beta()                   const;
-  Vector    shrinkage_weights()      const   { return mShrinkage.head(mK); }
   Vector    se_beta_ols()            const;
   Vector    se_beta()                const;
+  Vector    shrinkage_weights()      const   { return mLambda.head(mK); }
 
   template <class Iter>
   void      fill_with_beta (Iter begin) const;
@@ -121,8 +124,10 @@ public:
   void      add_predictors (StringVec const& names, Matrix const& x);                                                 // adds with no testing
   void      add_predictors (FStat const& fstat);
   
-  void      print_to      (std::ostream& os) const;
-  void      write_data_to (std::ostream& os) const;                                                // JMP style, with y followed by X columns (tab delimited)
+  void      print_to       (std::ostream& os) const;
+  void      print_gamma_to (std::ostream& os) const;
+  void      print_beta_to  (std::ostream& os) const;
+  void      write_data_to  (std::ostream& os) const;                                                // JMP style, with y followed by X columns (tab delimited)
 
  private:
   StringVec name_vec(std::string name) const;                         // inits a vector with one string
