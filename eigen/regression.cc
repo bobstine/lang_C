@@ -308,7 +308,7 @@ LinearRegression::update_fit(StringVec xNames)
   for(unsigned int j=0; j<xNames.size(); ++j)
     mXNames.push_back(xNames[j]);
   mK += (int) xNames.size();
-  mGamma     = (QQ().transpose() * mY).cwiseQuotient(mShrinkage);
+  mGamma     = (QQ().transpose() * mY).cwiseQuotient(mShrinkage.head(mK));
   mResiduals = mY - QQ() * mGamma;
 }
 

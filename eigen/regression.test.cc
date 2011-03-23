@@ -50,6 +50,14 @@ int main(int, char **)
   Eigen::MatrixXd X (Eigen::MatrixXd::Random(nRows,nCols));
   Eigen::MatrixXd Z (Eigen::MatrixXd::Random(nRows,nAdd));
 
+
+  LinearRegression regr("yyy", y, 0);
+  std::cout << regr.f_test_predictor("zzz", z);
+  regr.add_predictors();
+  std::cout << regr << std::endl;
+
+  /*
+  
   // define the weight vector
   for (int i=0; i<nRows; ++i)
     w[i] = 1.0 + i % 4;
@@ -68,6 +76,7 @@ int main(int, char **)
     oss << "Z" << i;
     zNames.push_back(oss.str());
   }
+  */
   
   //  write data so that can check in JMP/R
   if (nRows < 1000)
@@ -177,7 +186,8 @@ int main(int, char **)
   }
   */
   // build a regression; no shrinkage for initial variables
-  {
+  /*
+    {
     std::cout << "\n\n---------------------------------------------------------------------------------\nTEST: test of white regression\n";
     const int blockSize (0);
     start = clock();     LinearRegression regr("y",y,blockSize);       print_time(start);
@@ -210,6 +220,9 @@ int main(int, char **)
     start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictors(names, z);             print_time(start);  std::cout << regr << std::endl;
     start = clock(); std::cout << "Adding k preds : ";  regr.add_predictors(zNames, Z);            print_time(start);  std::cout << regr << std::endl;
   }
+
+  */
+
   // test shrinkage
   /*
     {
