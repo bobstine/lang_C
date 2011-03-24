@@ -1,7 +1,7 @@
 #include "debug.h"
 
-#include <Eigen/QR>
-
+// #include <Eigen/QR>
+#include <Eigen/Eigenvalues>
 
 
 //   SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     SVD namespace     
@@ -19,7 +19,7 @@ typename EigenVec::Scalar
 SVD::standard_deviation (EigenVec const& x)
 {
   typename EigenVec::Scalar m (mean(x));
-  return sqrt( (x.cwise()-m).squaredNorm()/(x.size()-1) );
+  return sqrt( (x.array()-m).matrix().squaredNorm()/(x.size()-1) );
 }
 
 
@@ -50,7 +50,7 @@ SVD::standardize_columns (EigenMatrix const& data, bool useSD)
   // center cols, moving into result
   EigenMatrix mean (data.colwise().sum()/data.rows());   // vector
   for (int j=0; j<data.cols(); ++j)
-    result.col(j) = data.col(j).cwise() - mean(j);
+    result.col(j) = data.col(j).array() - mean(j);
   // scale
   EigenMatrix ss (data.colwise().squaredNorm());         // vector
   for (int j=0; j<data.cols(); ++j)
@@ -69,7 +69,7 @@ SVD::standardize_columns_in_place (EigenMatrix& data, bool useSD)
   // center cols
   EigenMatrix mean (data.colwise().sum()/data.rows());   // vector
   for (int j=0; j<data.cols(); ++j)
-    data.col(j) = data.col(j).cwise() - mean(j);
+    data.col(j) = data.col(j).array() - mean(j);
   // scale
   EigenMatrix ss (data.colwise().squaredNorm());         // vector
   for (int j=0; j<data.cols(); ++j)

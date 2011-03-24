@@ -4,8 +4,8 @@
 
 
 #include <iostream>
-#include <gsl/gsl_matrix.h>
-#include <Eigen/Array>
+// #include <gsl/gsl_matrix.h>
+#include <Eigen/Dense>
 
 
 

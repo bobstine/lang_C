@@ -11,7 +11,7 @@
 
 #include "features.h"
 
-#include <Eigen/Array>
+#include <Eigen/Dense>
 
 #include <functional>
 
