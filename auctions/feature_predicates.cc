@@ -20,7 +20,7 @@ SkipIfDerived::operator()(Feature const& f) const
 		(fname.size() >= 6 && "square" == fname.substr(0,6))   );
   bool b4 (    (f->has_attribute("neighborhood"))                      ||    
 	       (std::string::npos != fname.find("Y_hat_"))  );
-  std::cout << "TEST: checking whether " << fname << " is derived;  [" << b1 << b2 << b3 << b4 << "]\n";
+  debugging::debug("FPRD",4) << "Checking whether " << fname << " is derived;  [" << b1 << b2 << b3 << b4 << "]\n";
   return
     (f->is_constant())       || (f->is_dummy())             ||
     (f->degree() > 2)                                       ||     // composition

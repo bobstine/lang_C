@@ -123,9 +123,12 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream) mProgressStream << std::endl;
     return false;
   }
-  else 
-    debug("AUCT",3) << "Winning expert " << expert << " bid $" << bid << "(net " << afterTaxBid <<  ")  on [" << features.size()
-		    << "] " << features[0]->name() << std::endl;
+  else
+  { const unsigned int len (40);
+    debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid
+		    << " on " << features.size() << " features, led by " << features[0]->name() << std::endl;
+    debug("AUCT",3) << "Winning expert " << expert << std::endl;
+  }
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";

@@ -319,7 +319,7 @@ main(int argc, char** argv)
     FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
     if(lockIn.size() > 0)
     { theAuction.add_initial_features(lockIn);
-      debug("AUCT",3) << theAuction << std::endl << std::endl;
+      debug("AUCT",1) << theAuction << std::endl << std::endl;
     }
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
@@ -330,15 +330,13 @@ main(int argc, char** argv)
       clock_t start;
       start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
-	debug("AUCT",3) << theAuction << std::endl << std::endl;
-      }
+      	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
       debug("AUCT",2) << "Time for round " << round <<  " was " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds
+    debug("AUCT",1) << "\n      -------  Auction ends after " << round << "/" << numberRounds
 		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
   }
   

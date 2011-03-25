@@ -75,6 +75,7 @@ public:
       mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   std::string            name()                             const { return mName; }
+  std::string            name(unsigned int maxlen)          const { if(mName.size()<maxlen) return mName; else return mName.substr(0,maxlen); } 
   int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
   ExpertRole             role()                             const { return mRole; }
   int                    skip()                             const { return mSkip; }
