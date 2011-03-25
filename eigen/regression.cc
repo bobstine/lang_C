@@ -1,17 +1,19 @@
 #include "regression.h"
 
+// #define  _CLASSICAL_GS_
+
 #include <Eigen/LU>
+#include <Eigen/QR>
 
 #include <iomanip>
 #include <bennett.h>
 
-const    double    epsilon (1.0e-50);          // used to detect singularlity
-const unsigned int maxNameLen (50);            // max length shown when print model
+const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(400);   
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
-bool   close (double a, double b) { return abs_val(a-b) < epsilon; }
+bool   close (double a, double b) { return abs_val(a-b) < 1.0e-50; }
 
 
 //   Macros      Macros      Macros      Macros      Macros
@@ -22,6 +24,21 @@ bool   close (double a, double b) { return abs_val(a-b) < epsilon; }
 
 
 //    Utils      Utils      Utils      Utils      Utils      Utils      Utils      Utils
+
+double
+LinearRegression::approximate_ss(Vector const& x) const
+{
+  double sum (x[0]);
+  double ss   (0.0);
+
+  for (int i=1; i<x.size(); ++i)
+  { sum += x[i];
+    double dev = x[i]-(sum/i);
+    ss += dev*dev;
+  }
+  return ss;
+}
+
 
 bool
 LinearRegression::is_binary_vector(Vector const& y)  const
@@ -44,6 +61,14 @@ LinearRegression::name_vec(std::string name) const
   return vec;
 }
 
+
+LinearRegression::Matrix
+LinearRegression::check_orthogonality_matrix () const
+{
+  Eigen::HouseholderQR<Matrix> qr(QQ());
+  return qr.matrixQR().topRows(mK).triangularView<Eigen::Upper>();
+}
+    
 
 //   Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize    Initialize
 
@@ -207,22 +232,24 @@ LinearRegression::predictions(Matrix const& x) const
 //     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests
 
 bool
-LinearRegression::is_invalid_ss (double ss)          const
+LinearRegression::is_invalid_ss (double ss, double ssz)          const
 {
-  if (ss <= 0.0)
-  { debugging::debug("REGR",1) << " *** Error: SS <= 0.0 in regression." << std::endl;
+  const    double    epsilon (1.0e-5);
+  debugging::debug("REGR",4) << "Initial SSz = " << ss << " becomes " << ssz << " after sweeping." << std::endl; 
+  if (ssz <= 0.0)
+  { debugging::debug("REGR",1) << " *** Error: SSz <= 0.0 in regresszion." << std::endl;
     return true;
   }
-  if(std::isnan(ss))
-  { debugging::debug("REGR",1) << " *** Error: SS = NaN in regression." << std::endl;
+  if(std::isnan(ssz))
+  { debugging::debug("REGR",1) << " *** Error: SSz = NaN in regresszion." << std::endl;
     return true;
   }
-  if(std::isinf(ss))
-  { debugging::debug("REGR",1) << " *** Error: SS = Inf in regression." << std::endl;
+  if(std::isinf(ssz))
+  { debugging::debug("REGR",1) << " *** Error: SSz = Inf in regresszion." << std::endl;
     return true;
   }
-  if(ss < epsilon)
-  { debugging::debug("REGR",1) << "SS indicates near singular;  SS = " << ss << std::endl;
+  if(ssz/ss < epsilon)
+  { debugging::debug("REGR",1) << "SSZ indicates near singular;  SSZ = " << ssz << std::endl;
     return true;
   }
   return false;
@@ -231,13 +258,23 @@ LinearRegression::is_invalid_ss (double ss)          const
 double
 LinearRegression::sweep_Q_from_column(int col) const
 {
+  // all at once, classical GS
+  double ss (approximate_ss(mQ.col(col)));
+  #ifdef _CLASSICAL_GS_
   Vector delta  (mQ.leftCols(col).transpose() * mQ.col(col));
-  debugging::debug("REGR",4) << "Sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
+  debugging::debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
   mQ.col(col) = mQ.col(col) - mQ.leftCols(col) * delta;
-  double ssz  (mQ.col(col).squaredNorm());
-  if (is_invalid_ss (ssz)) return 0.0;
-  mQ.col(col) /= sqrt(ssz);
   mR.col(col).head(col) = delta;
+  #else
+  //residual from each first, modified GS
+  for(int j=0; j<col; ++j)
+  { mR(j,col) = mQ.col(j).dot(mQ.col(col));
+    mQ.col(col) -= mQ.col(j) * mR(j,col);
+  }
+  #endif
+  double ssz  (mQ.col(col).squaredNorm());
+  if (is_invalid_ss (ss, ssz)) return 0.0;
+  mQ.col(col) /= sqrt(ssz);
   mR(col,col) = sqrt(ssz);
   // std::cout << "TEST: R matrix after sweeping Q is " << std::endl << mR.topLeftCorner(col+1,col+1) << std::endl;
   // std::cout << "TEST: Q matrix is " << std::endl << mQ.topLeftCorner(5,col+1) << " ...." << std::endl;

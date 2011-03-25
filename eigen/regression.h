@@ -98,6 +98,8 @@ public:
   Vector    x_row(int i)             const; 
   Vector    residuals()              const   { return mResiduals; }
   Vector    raw_residuals()          const;
+  Vector    fitted_values()          const   { return mY - mResiduals; }
+  Vector    fitted_values(double lo, double hi)  const;                            // truncated to indicated range
 
   double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
   Vector    gamma()                  const   { return mGamma.head(mK); }
@@ -112,10 +114,7 @@ public:
   void      fill_with_beta (Iter begin) const;
   
   StringVec predictor_names()   const   { return mXNames; }
-
   Vector    predictions  (Matrix const& matrix)  const;
-  Vector    fitted_values()                      const   { return mY - mResiduals; }
-  Vector    fitted_values(double lo, double hi)  const;                                       // truncated to indicated range
 
   FStat     f_test_predictor  (std::string name, Vector const& z)                      const; // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;
@@ -124,20 +123,23 @@ public:
   void      add_predictors (StringVec const& names, Matrix const& x);                                                 // adds with no testing
   void      add_predictors (FStat const& fstat);
   
-  void      print_to       (std::ostream& os) const;
-  void      print_gamma_to (std::ostream& os) const;
-  void      print_beta_to  (std::ostream& os) const;
-  void      write_data_to  (std::ostream& os) const;                                                // JMP style, with y followed by X columns (tab delimited)
+  void      print_to       (std::ostream& os)      const;
+  void      print_gamma_to (std::ostream& os)      const;
+  void      print_beta_to  (std::ostream& os)      const;
+  void      write_data_to  (std::ostream& os)      const;            // JMP style, with y followed by X columns (tab delimited)
 
+  Matrix    check_orthogonality_matrix ()          const;            // returns r matrix from householder QR of internal G-S Q matrix
+  
  private:
-  StringVec name_vec(std::string name) const;                         // inits a vector with one string
   void      allocate_memory();
   void      add_constant();
-  bool      is_binary_vector(Vector const& y)  const;                 // used to determine whether to use Bennett bounds
-  bool      is_invalid_ss (double ss)          const;                 // checks for nan, neg, inf
-  double    sweep_Q_from_column(int col)       const;                 // only affect Q, R past those of current fit
+  double    sweep_Q_from_column(int col)           const;            // only affect Q, R past those of current fit
   void      update_fit(StringVec xNames);
-  std::pair<double,double> bennett_evaluation () const;               // 0/1 response only; operates on column mK (one past those in use)
+  StringVec name_vec(std::string name)             const;            // inits a vector with one string
+  double    approximate_ss(Vector const& x)        const;            // one-pass estimate of the SS around mean 
+  bool      is_binary_vector(Vector const& y)      const;            // used to determine whether to use Bennett bounds
+  bool      is_invalid_ss (double ss, double ssz)  const;            // checks for singularity, nan, neg, inf
+  std::pair<double,double> bennett_evaluation ()   const;            // 0/1 response only; operates on column mK (one past those in use)
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.array() * a.array()).colwise().sum()); } // diagonal of a'a
