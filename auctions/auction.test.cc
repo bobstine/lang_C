@@ -325,18 +325,17 @@ main(int argc, char** argv)
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     double totalTime (0.0);
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
-    {
-      ++round;
+    { ++round;
       clock_t start;
       start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
-      debug("AUCT",2) << "Time for round " << round <<  " was " << time << std::endl;
+      debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",1) << "\n      -------  Auction ends after " << round << "/" << numberRounds
+    debug("AUCT",0) << "\n      -------  Auction ends after " << round << "/" << numberRounds
 		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
   }
   

@@ -385,7 +385,8 @@ void
 Auction<ModelClass>::print_to (std::ostream& os) const
 {
   os << std::endl << "     Auction    " << mExperts.size() << " bidders with total alpha " << total_expert_alpha() << std::endl;
-  os << mExperts << std::endl << mModel << std::endl;
+  debugging::debug("AUCT",2) << mExperts << std::endl;
+  os << mModel << std::endl;
 }
 
 
