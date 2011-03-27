@@ -13,6 +13,7 @@ using debugging::debug;
 
 #include <set>
 #include <algorithm>
+#include <iomanip>
 
 namespace{
   std::string
