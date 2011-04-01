@@ -1,6 +1,6 @@
 ### rearrange Lyle's data into streaming format
-### run this on sobolev, after creating a directory to put the data into
-### that dir is called "auction" in this example
+### run this in R on sobolev, after creating a directory to write the data
+### that dir is called "auction" in this file
 
 path <- "/data/conll03/"
 setwd(path)
@@ -12,31 +12,41 @@ setwd(path)
 # ----------------------------------------------------------------------
 
 # --- read Y data; check match col dim
-y.train <- read.csv("YMatrixTrainNER.txt")
+y.train <- as.matrix(read.csv("YMatrixTrainNER.txt"))
 dim(y.train)
-y.test <- read.csv("YMatrixTestNER.txt")
+y.test <- as.matrix(read.csv("YMatrixTestNER.txt"))
 dim(y.test)
 ncol(y.train)==ncol(y.test)
+#  -  check dims
+n.train <- nrow(y.train)    #  46,434
+n.test  <- nrow(y.test)     # 254,982
+n.y.cols <- ncol(y.train)
+
+# --- compare marginal counts
+apply(y.train,2,sum)
+      X0   X0.1   X0.2   X0.3   X0.4   X0.5     X1   X0.6 
+   10380     24  14277 212337   5820     41  12092     11 
+
+apply( y.test,2,sum)
+      X0   X0.1   X0.2     X1    X0.3   <X0.4   X0.5  X0.6 
+    1919      5   2773   8322     909      9   2491     6 
 
 # --- read X data; check col dim match
-x.train <- read.csv("XMatrixTrain.txt")
+x.train <- as.matrix(read.csv("XMatrixTrain.txt"))
 dim(x.train)
-x.test <- read.csv("XMatrixTest.txt")
+x.test <- as.matrix(read.csv("XMatrixTest.txt"))
 dim(x.test)
 ncol(x.train)==ncol(x.test)
 
-# --- check dim (301416)
-row.total <- nrow(y.train) + nrow(y.test); row.total
+# --- check dim 
+row.total <- nrow(y.train) + nrow(y.test); row.total  # 301,416
 row.total == (nrow(x.train) + nrow(x.test))
-n.train <- nrow(x.train)
-n.test  <- nrow(x.test)
 
 # ----------------------------------------------------------------------
 # 
 #  Write data
 #
 # ----------------------------------------------------------------------
-
 
 write.var <- function(name, data, role="y", attr.str="") {
 	cat("echo ", name, "\n",
@@ -46,6 +56,9 @@ write.var <- function(name, data, role="y", attr.str="") {
 	cat(as.vector(data), "\n", file=paste(data.path,name,sep=""))
 }
 
+# ----------------------------------------------------------------------
+#         This version writes as a regression with one of 4 y's
+# ----------------------------------------------------------------------
 
 # --- data directory
 data.path <- paste(path,"auction/",sep="")
@@ -57,7 +70,7 @@ cat("#!/bin/sh\n# number of cases in each variable\necho", row.total,"\n",
 
 # --- write CV indicator
 cat("# cross-validation indicator\n",file=manifest.file, append=TRUE)
-write.var("cv.indicator[in]", role = "context", c(rep(1,n.train),rep(0,n.test)))
+write.var("cv.indicator[in]", role = "context", rep(1,n.train),rep(0,n.test))
 
 # --- write the collection of y variables; 
 #     only want one in the manifest, so edit that later to pick the one response
@@ -67,18 +80,117 @@ for(j in 1:ncol(y.test)) {
 	}
 	
 # --- write the collection of x variables; 
-cat("# the collection of predictors starts here\n",file=manifest.file, append=TRUE)
-for(j in 1:ncol(x.test)) { 
-	write.var(paste("xx",j,sep="_"), c(x.train[,j],x.test[,j]), role="x", attr.str="")
+cat("# predictors starts here\n",file=manifest.file, append=TRUE)
+for(j in 1:50) { 
+	write.var(paste("xx",j,sep="_"), c(x.train[,j],x.test[,j]), role="x", attr.str="stream one")
+	}
+for(j in 51:100) { 
+	write.var(paste("xx",j,sep="_"), c(x.train[,j],x.test[,j]), role="x", attr.str="stream two")
+	}
+for(j in 101:150) { 
+	write.var(paste("xx",j,sep="_"), c(x.train[,j],x.test[,j]), role="x", attr.str="stream three")
 	}
 	
 
+# ----------------------------------------------------------------------
+#    This version stacks the y's and adds indicators for the group
+# ----------------------------------------------------------------------
+
+# --- i've forced Y to have 4 columns by adding up y_4 .. y_8
+y.test[,4]  <-  y.test[,4] +  y.test[,5] +  y.test[,6] +  y.test[,7] +  y.test[,8]
+y.train[,4] <- y.train[,4] + y.train[,5] + y.train[,6] + y.train[,7] + y.train[,8]
+y.test <-  y.test [,1:4]
+y.train <- y.train[,1:4]
+
+# --- n.train, n.test are the number of observations (will have 4 times rows)
+sum( y.test) ==  n.test  # check that totals match
+sum(y.train) == n.train 
+
+# --- data directory; change the word "auction" to use a different path
+data.path <- paste(path,"auction/",sep="")
+manifest.file <- paste(data.path,"index.sh",sep="")
+
+# --- open the manifest file: write n ; total is now 1,205,664
+cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", 4*row.total,"\n",
+	    file=manifest.file, append=FALSE)  
+
+# --- write CV indicator; training data come first followed by stacked test data
+cat("# cross-validation indicator\n",file=manifest.file, append=TRUE)
+write.var("cv.indicator[in]", role = "context", c(rep(1,4*n.train),rep(0,4*n.test)))
+
+# --- stack the y variables; R ravels down columns
+cat("# response \n",file=manifest.file, append=TRUE)
+write.var("yy_1234", c(y.train,y.test), role="y", attr.str="") 
 	
+# --- write the stream of group indicators
+cat("# y group indicators\n",file=manifest.file, append=TRUE)
+train <- matrix(1:4,nrow=n.train, ncol=4, byrow=TRUE)
+test  <- matrix(1:4,nrow=n.test , ncol=4, byrow=TRUE)
+for(j in 1:4) { cat("j=",j,"\n");
+	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", attr.str="stream group") }
+
+# --- write the collection of x variables
+cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
+for(j in 1:50) { 
+	col <- rep(j,4);cat("j=",j,"\n")
+	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream one") }
+for(j in 51:100) { 
+	col <- rep(j,4);cat("j=",j,"\n")
+	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream two") }
+for(j in 101:150) { 
+	col <- rep(j,4); cat("j=",j,"\n")
+	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream three") }
 	
-	
-	
-	
-	
-	
+
+# ----------------------------------------------------------------------
+# 
+#  Analysis of results
+#
+# ----------------------------------------------------------------------
+
+# --- use cut to pull off the first 7 columns of the results
+setwd("/home/bob/C/auctions/data/text")
+system("cut -f1-8 model_data.csv > to_r.csv")
+
+# --- read in the results; should match  4 * 301,416 = 1,205,664
+Results <- read.delim("to_r.csv")
+dim(Results); colnames(Results)
+
+# --- vdalidation data are returned from C++ in permuted order (reversed)
+i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/4 ; n.training  # 254,982
+i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/4  ; n.testing  #  46,434
+
+# --- permute test data back to orginal order
+i.test <- i.test[length(i.test):1]
+
+# --- push model predictions into arrays to get response vector back together
+pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=4)
+pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=4)
+
+y.train <- matrix(Results[i.train,"yy_1234"],nrow=n.training, ncol=4)
+y.test  <- matrix(Results[ i.test,"yy_1234"], nrow=n.testing, ncol=4)
+
+# --- evaluate predictions, choice model
+choice.train <- apply(pred.train, 1, which.max); 
+  true.train <- apply(   y.train, 1, which.max)
+tab <- table(choice.train,true.train)
+ftable(addmargins(tab))
+
+choice.test <- apply(pred.test, 1, which.max); 
+  true.test <- apply(   y.test, 1, which.max)
+tab <- table(choice.test,true.test)
+ftable(addmargins(tab))
+
+# --- check SSE vs C++  (these agree 30 Mar 11)
+ sum((pred.train-y.train)^2)
+ sum((pred.test -y.test )^2)
+
+ 
+# --- evaluate predictions, root mean squared error for each group
+ sqrt(apply((pred.train-y.train)^2,2,sum)/n.training)
+ sqrt(apply((pred.test -y.test)^2 ,2,sum)/n.testing)
+
+
+
 
 

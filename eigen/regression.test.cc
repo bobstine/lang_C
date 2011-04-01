@@ -38,8 +38,8 @@ int main(int, char **)
   //      40                          0.06       2.6             0.40
   //      80                          0.10      10.5             0.78
 
-  const int nRows   (200000);   
-  const int nCols     (80);
+  const int nRows    (200);   
+  const int nCols     ( 3);
   const int nAdd      ( 3);
   
   // form random matrix for response and predictors
@@ -49,10 +49,14 @@ int main(int, char **)
   Eigen::MatrixXd X  (Eigen::MatrixXd::Random(nRows,nCols));
   Eigen::MatrixXd Z  (Eigen::MatrixXd::Random(nRows,nAdd));
 
+  // shift the y's by 100 to check ordering in train/test data
+  for(int i=0; i<nRows; ++i)
+    y[i] = y[i] + i * 100;
+  
   // define the weight vector
   for (int i=0; i<nRows; ++i)
     w[i] = 1.0 + i % 4;
-  std::cout << "TEST: weight vector is " << w.head(10).transpose() << std::endl;
+  std::cout << "TEST: First 10 of weight vector = " << w.head(10).transpose() << std::endl;
 
   // names for variables
   std::vector<std::string> xNames;
@@ -70,9 +74,9 @@ int main(int, char **)
 
   //  write data so that can check in JMP/R
   if (nRows < 1000)
-  { Eigen::MatrixXd data(nRows,1+2*nCols);
-    data << y , X , Z;
-    std::cout << "TEST:  Writing data, first two rows are\n" << data.topRows(2) << std::endl;
+  { Eigen::MatrixXd data(nRows,1+nCols+nAdd);
+    data << y , X , Z; 
+    std::cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << std::endl;
     std::string fileName ("test.dat");
     std::ofstream output(fileName.c_str());
     output.precision(7);
@@ -81,7 +85,7 @@ int main(int, char **)
 
 
   
-  if (false)  // basic test, adding variables one at a time
+  if (false)  // basic test of the linear regression routine, adding variables one at a time
   {
     double mean (y.sum()/y.size());
     std::cout << "TEST:  y-bar is " << mean << std::endl;
@@ -140,10 +144,10 @@ int main(int, char **)
     // assemble data
     std::cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
-    double yPtr[nRows*2];
+    double yPtr[2*nRows];
     for(int i=0; i<nRows; ++i)
     { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
-      cv[2*i] = true; cv[2*i+1]=false;
+      cv[2*i] = true; cv[2*i+1]=false;        // weave the training and test data
     }
     std::vector<std::pair<std::string, double*> > xcollection;
     for(int j=0; j<nCols; ++j)
@@ -162,7 +166,7 @@ int main(int, char **)
       zcollection.push_back(make_pair(zNames[j],xPtr));
     }
 
-    if(false) //  validated regression, standard F test
+    if(true) //  validated regression, standard F test
     { std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, 0, true);
       std::cout << vregr << std::endl;
@@ -183,9 +187,11 @@ int main(int, char **)
       // force to add all Z's
       start = clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
       std::cout << "TEST: test of adding zcollection gives " << result << std::endl << vregr << std::endl;
+      // test the writing of data
+      //      vregr.write_data_to (std::cout);
     }
 
-    if(true) // validated regression, white tests
+    if(false) // validated regression, white tests
     { bool shrink (false);
       const int blockSize (1);
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);

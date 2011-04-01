@@ -544,7 +544,7 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 void
 ValidatedRegression::write_data_to(std::ostream& os) const
 {
-  // these are in the order after sorting (not permuted to the original order)
+  // Note: does not return the data to the original ordering
   mModel.write_data_to(os);
   Vector preds (mModel.predictions(mValidationX));
   for(int i=0; i<mValidationX.rows(); ++i)

@@ -187,14 +187,14 @@ public:
 
   std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
 
-  // iterators must include both the estimation and validation cases, as identified at creation
-  template <class Iter> std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
+  template <class Iter>                                                  // iterators must include training and test cases, ordered as in initial y
+  std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
   double                     y_bar()                const  { return mModel.y_bar(); }
   template <class Iter> void fill_with_fit(Iter it) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;
-  void write_data_to(std::ostream& os) const;
+  void write_data_to(std::ostream& os)                     const;       //  written in the internal order (estimation ->, then validation <-
   
 private:
   

@@ -10,6 +10,7 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
+# OPT =   -std=c++0x
 # EXTERNAL_USES = 
 
 
