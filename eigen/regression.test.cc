@@ -31,16 +31,17 @@ int main(int, char **)
   debugging::debug_init(std::cout,3);
   std::cout.precision(4);  
 
-  // Timing to build regr with n = 200,000 rows  (O4)        Add 3 to initial p
-  //                          13"     13/GS(b=1)  17"           13/GS
-  //   p = 3 predictors      0.09 s   0.02       0.06            0.10
-  //      20                 1.3      0.04       0.8             0.23
-  //      40                          0.06       2.6             0.40
-  //      80                          0.10      10.5             0.78
+  // Time to fit regr with n = 200,000 rows  (optimization O4)       Add 3 to initial p
+  //                          Eigen 2 (b=0)    Eigen 3,MGS,b=1          Eigen 3,MGS,b=1
+  //                          13"     17"       13      17               13      17
+  //   p = 3 predictors      0.09 s  0.06      0.02   0.013              0.10    0.07
+  //      20                 1.3     0.8       0.04   0.025              0.23    0.15
+  //      40                         2.6       0.06   0.035              0.40    0.24
+  //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows    (200);   
-  const int nCols     ( 3);
-  const int nAdd      ( 3);
+  const int nRows    (200000);   
+  const int nCols        (80);
+  const int nAdd         ( 3);
   
   // form random matrix for response and predictors
   Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
@@ -118,6 +119,8 @@ int main(int, char **)
     std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
     std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << std::endl;
   }
 
 

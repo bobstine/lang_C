@@ -13,6 +13,7 @@ using debugging::debug;
 
 #include <set>
 #include <algorithm>
+#include <iomanip>
 
 namespace{
   std::string
@@ -123,9 +124,12 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream) mProgressStream << std::endl;
     return false;
   }
-  else 
-    debug("AUCT",3) << "Winning expert " << expert << " bid $" << bid << "(net " << afterTaxBid <<  ")  on [" << features.size()
-		    << "] " << features[0]->name() << std::endl;
+  else
+  { const unsigned int len (40);
+    debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid
+		    << " on " << features.size() << " features, led by " << features[0]->name() << std::endl;
+    debug("AUCT",3) << "Winning expert " << expert << std::endl;
+  }
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
@@ -381,7 +385,8 @@ void
 Auction<ModelClass>::print_to (std::ostream& os) const
 {
   os << std::endl << "     Auction    " << mExperts.size() << " bidders with total alpha " << total_expert_alpha() << std::endl;
-  os << mExperts << std::endl << mModel << std::endl;
+  debugging::debug("AUCT",2) << mExperts << std::endl;
+  os << mModel << std::endl;
 }
 
 

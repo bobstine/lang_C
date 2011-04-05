@@ -66,8 +66,9 @@ crash_test: auction.test
 #
 
 penn_credit_test: auction.test
-	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r 90 -a 0.5 -p 3 -b 1 -c 3 -x 469 -d 3
-#	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r 200 -a 0.5 -p 3 -b 67 -c 3 -x 469 -d 3
+	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  100 -a 1.5 -p 3 -b 67 -c 3 -x 469 -d 0 -s 1
+#	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  200 -a 0.5 -p 3 -b 67 -c 3 -x 469 -d 3 -s 1
+
 
 short_credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
@@ -124,7 +125,7 @@ theher_run: auction.test
 
 
 text_run: auction.test
-	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 40 -a 0.25 -p 3 -c 3 -d 3 -b 1
+	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 400 -a 0.25 -p 3 -c 10 -d 1 -b 1 -s 1
 
 
 

@@ -1,5 +1,5 @@
 Status of Eigen code
 
-***  Why does it not detect singularity in test 1 when add variable twice?
+***  What's up with the White SS seeming so small compared to OLS?
 
 ***  Need to check/debug the weighted LS things.
