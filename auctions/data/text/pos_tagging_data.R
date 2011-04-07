@@ -57,7 +57,7 @@ write.var <- function(name, data, role="y", attr.str="") {
 }
 
 # ----------------------------------------------------------------------
-#         This version writes as a regression with one of 4 y's
+#         This version writes as a regression with one of 8 y's
 # ----------------------------------------------------------------------
 
 # --- data directory
@@ -96,13 +96,15 @@ for(j in 101:150) {
 #    This version stacks the y's and adds indicators for the group
 # ----------------------------------------------------------------------
 
-# --- i've forced Y to have 4 columns by adding up y_4 .. y_8
-y.test[,4]  <-  y.test[,4] +  y.test[,5] +  y.test[,6] +  y.test[,7] +  y.test[,8]
-y.train[,4] <- y.train[,4] + y.train[,5] + y.train[,6] + y.train[,7] + y.train[,8]
-y.test <-  y.test [,1:4]
-y.train <- y.train[,1:4]
+# --- include 5 major categories... combine the little ones (cols 2, 6, 8)
+y.test[,2]  <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
+y.train[,2] <- y.train[,2] + y.train[,6] + y.train[,8] 
+y.test  <-  y.test[,c(1,2,3,4,5,7)]
+y.train <- y.train[,c(1,2,3,4,5,7)]
 
-# --- n.train, n.test are the number of observations (will have 4 times rows)
+n.grps <- ncol(y.test)
+
+# --- n.train, n.test are the number of observations (will have ngroups times rows)
 sum( y.test) ==  n.test  # check that totals match
 sum(y.train) == n.train 
 
@@ -111,34 +113,34 @@ data.path <- paste(path,"auction/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
 # --- open the manifest file: write n ; total is now 1,205,664
-cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", 4*row.total,"\n",
+cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", n.grps*row.total,"\n",
 	    file=manifest.file, append=FALSE)  
 
 # --- write CV indicator; training data come first followed by stacked test data
 cat("# cross-validation indicator\n",file=manifest.file, append=TRUE)
-write.var("cv.indicator[in]", role = "context", c(rep(1,4*n.train),rep(0,4*n.test)))
+write.var("cv.indicator[in]", role = "context", c(rep(1,n.grps*n.train),rep(0,n.grps*n.test)))
 
 # --- stack the y variables; R ravels down columns
 cat("# response \n",file=manifest.file, append=TRUE)
-write.var("yy_1234", c(y.train,y.test), role="y", attr.str="") 
+write.var("yy_123457", c(y.train,y.test), role="y", attr.str="") 
 	
 # --- write the stream of group indicators
 cat("# y group indicators\n",file=manifest.file, append=TRUE)
-train <- matrix(1:4,nrow=n.train, ncol=4, byrow=TRUE)
-test  <- matrix(1:4,nrow=n.test , ncol=4, byrow=TRUE)
-for(j in 1:4) { cat("j=",j,"\n");
+train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
+test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
+for(j in 1:n.grps) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", attr.str="stream group") }
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
 for(j in 1:50) { 
-	col <- rep(j,4);cat("j=",j,"\n")
+	col <- rep(j,n.grps);cat("j=",j,"\n")
 	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream one") }
 for(j in 51:100) { 
-	col <- rep(j,4);cat("j=",j,"\n")
+	col <- rep(j,n.grps);cat("j=",j,"\n")
 	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream two") }
 for(j in 101:150) { 
-	col <- rep(j,4); cat("j=",j,"\n")
+	col <- rep(j,n.grps); cat("j=",j,"\n")
 	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream three") }
 	
 
@@ -152,23 +154,23 @@ for(j in 101:150) {
 setwd("/home/bob/C/auctions/data/text")
 system("cut -f1-8 model_data.csv > to_r.csv")
 
-# --- read in the results; should match  4 * 301,416 = 1,205,664
+# --- read in the results; should match  n.grps * 301,416 = 1,205,664
 Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
 # --- vdalidation data are returned from C++ in permuted order (reversed)
-i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/4 ; n.training  # 254,982
-i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/4  ; n.testing  #  46,434
+i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
+i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps  ; n.testing  #  46,434
 
 # --- permute test data back to orginal order
 i.test <- i.test[length(i.test):1]
 
 # --- push model predictions into arrays to get response vector back together
-pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=4)
-pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=4)
+pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=n.grps)
+pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=n.grps)
 
-y.train <- matrix(Results[i.train,"yy_1234"],nrow=n.training, ncol=4)
-y.test  <- matrix(Results[ i.test,"yy_1234"], nrow=n.testing, ncol=4)
+y.train <- matrix(Results[i.train,"yy_123457"],nrow=n.training, ncol=n.grps)
+y.test  <- matrix(Results[ i.test,"yy_123457"], nrow=n.testing, ncol=n.grps)
 
 # --- evaluate predictions, choice model
 choice.train <- apply(pred.train, 1, which.max); 
