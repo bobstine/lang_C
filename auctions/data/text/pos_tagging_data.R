@@ -57,7 +57,9 @@ write.var <- function(name, data, role="y", attr.str="") {
 }
 
 # ----------------------------------------------------------------------
-#         This version writes as a regression with one of 8 y's
+#
+#     NOTE:    This version writes as a regression with one of 8 y's
+#              See below for stacked code
 # ----------------------------------------------------------------------
 
 # --- data directory
@@ -93,16 +95,20 @@ for(j in 101:150) {
 	
 
 # ----------------------------------------------------------------------
+#
+#     STACKED...
+#
 #    This version stacks the y's and adds indicators for the group
+#
 # ----------------------------------------------------------------------
 
 # --- include 5 major categories... combine the little ones (cols 2, 6, 8)
-y.test[,2]  <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
+ y.test[,2] <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
 y.train[,2] <- y.train[,2] + y.train[,6] + y.train[,8] 
 y.test  <-  y.test[,c(1,2,3,4,5,7)]
 y.train <- y.train[,c(1,2,3,4,5,7)]
 
-n.grps <- ncol(y.test)
+n.grps <- ncol(y.test); n.grps      # 6
 
 # --- n.train, n.test are the number of observations (will have ngroups times rows)
 sum( y.test) ==  n.test  # check that totals match
@@ -112,7 +118,7 @@ sum(y.train) == n.train
 data.path <- paste(path,"auction/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
-# --- open the manifest file: write n ; total is now 1,205,664
+# --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
 cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", n.grps*row.total,"\n",
 	    file=manifest.file, append=FALSE)  
 
@@ -124,12 +130,15 @@ write.var("cv.indicator[in]", role = "context", c(rep(1,n.grps*n.train),rep(0,n.
 cat("# response \n",file=manifest.file, append=TRUE)
 write.var("yy_123457", c(y.train,y.test), role="y", attr.str="") 
 	
-# --- write the stream of group indicators
+# --- write the stream of group indicators; cannot put all 6 in the LOCKED stream
 cat("# y group indicators\n",file=manifest.file, append=TRUE)
 train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
-for(j in 1:n.grps) { cat("j=",j,"\n");
-	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", attr.str="stream group") }
+for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
+	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
+	         attr.str="stream LOCKED parent group") }
+write.var(paste("group",j,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
+	         attr.str="stream group parent group") }
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
@@ -158,7 +167,7 @@ system("cut -f1-8 model_data.csv > to_r.csv")
 Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
-# --- vdalidation data are returned from C++ in permuted order (reversed)
+# --- validation data are returned from C++ in permuted order (reversed)
 i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
 i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps  ; n.testing  #  46,434
 
