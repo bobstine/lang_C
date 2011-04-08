@@ -14,7 +14,7 @@ void LinearRegression::fill_with_beta (Iter begin) const
 
 template <class Iter>
 std::pair<double,double>
-ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
+  ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
 {
   FStatistic f;
   int k (c.size());                                                                  // k denotes the number of added variables
@@ -44,14 +44,17 @@ ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string
   }
   if(mShrink)
     mModel.add_predictors(f);
-  else                  // omit f-stat to omit shrinkage
+  else                            // omit f-stat to omit shrinkage
     mModel.add_predictors();
+  if (n_validation_cases() > 0)   // update validation SS if have some 
+    mValidationSS = (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
   return std::make_pair(f.f_stat(), f.p_value());
 }
 
 
+
 template<class Iter, class BIter>
-void
+  void
   ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, int blockSize)
 { 
   Eigen::VectorXd y(mLength);
@@ -66,6 +69,8 @@ void
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
   mModel = LinearRegression(yName, y.head(mN), blockSize);
+  if (mValidationY.size() > 0)
+    initialize_validation_ss();  // needs mModel and mValidationY
 }
 
 

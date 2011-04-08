@@ -156,13 +156,14 @@ public:
   typedef LinearRegression::Matrix  Matrix;
   
 private:
-  const int        mLength;         // total length estimation + validation
-  const bool       mShrink;        
-  int              mN;              // number of estimation rows as identified on start
-  std::vector<int> mPermute;        // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
-  Vector           mValidationY;
-  Matrix           mValidationX;    // append when variable is added to model
-  LinearRegression mModel;
+  const int             mLength;            // total length estimation + validation
+  const bool            mShrink;        
+  int                   mN;                 // number of estimation rows as identified on start
+  std::vector<int>      mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
+  Vector                mValidationY;
+  Matrix                mValidationX;       // append when variable is added to model
+  double                mValidationSS;      // cache validation ss, computed whenever model changes
+  LinearRegression      mModel;
   
 public:
   ~ValidatedRegression () {  }
@@ -171,7 +172,7 @@ public:
   
   template<class Iter, class BIter>
   ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize, bool shrink)
-    :  mLength(len), mShrink(shrink), mN(0), mPermute(len)    { initialize(yName, Y, B, blockSize); }
+    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, blockSize); }
 
   double goodness_of_fit() const  { return mModel.r_squared(); }
   int block_size()         const  { return mModel.block_size(); }
@@ -185,9 +186,9 @@ public:
   int n_estimation_cases() const  { return mN; }
   
   double estimation_ss()   const  { return mModel.residual_ss(); }
-  double validation_ss()   const;
+  double validation_ss()   const  { return mValidationSS; }
 
-  std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), validation_ss()); }
+  std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), mValidationSS); }
 
   template <class Iter>                                                  // iterators must include training and test cases, ordered as in initial y
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
@@ -202,6 +203,8 @@ private:
   
   template<class Iter, class BIter>
   void   initialize(std::string yName, Iter Y, BIter B, int blockSize);
+
+  void   initialize_validation_ss();
   
   template<class Iter>
   Vector permuted_vector_from_iterator(Iter it) const;

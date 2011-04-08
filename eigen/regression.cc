@@ -550,20 +550,11 @@ LinearRegression::write_data_to (std::ostream& os) const
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 
-
-double
-ValidatedRegression::validation_ss() const
-{
-  double ss (0.0);
-  if (n_validation_cases()>0)
-  { if (q()==0)     // handle differently for initial case to avoid empty matrix
-    { double mean (mModel.y_bar());
-      ss =  mValidationY.unaryExpr([mean](double x)->double { return x-mean; }).squaredNorm();
-    }
-    else
-      ss = (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
-  }
-  return ss;
+void
+ValidatedRegression::initialize_validation_ss()
+{ 
+  double mean (mModel.y_bar());
+  mValidationSS = mValidationY.unaryExpr([mean](double x)->double { return x-mean; }).squaredNorm();
 }
 
 void
