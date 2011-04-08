@@ -10,11 +10,11 @@ include ../c_flags
 
 PROJECT_NAME = boost
 
-OPT = -O2      # -DNDEBUG  this option kills benefit of assert
+OPT = -O2 -std=c++0x     # -DNDEBUG  this option kills benefit of assert
 
-# make sure that boost (with content) is in /usr/local/include
+USES = utils 
 
-#####################
+# Use this for boost files that need compilation
 #
 # To build boost (it takes quite a few minutes to build)
 #
@@ -25,13 +25,6 @@ OPT = -O2      # -DNDEBUG  this option kills benefit of assert
 # These build quite a few libraries in /usr/local/lib.  Access these libraries
 # as shown below by setting the appropriate EXTERNAL_USES names. 
 #
-#####################
-
-USES = utils 
-
-OPT = -std=c++0x
-
-# Use this for boost files that need compilation
 
 EXTERNAL_USES = boost_regex boost_thread
 
@@ -73,7 +66,7 @@ csv_parser: csv_parser.o
 
 
 test_parser: csv_parser csv_test_data.txt
-	rm tar.out/*; ./csv_parser -f csv_test_data.txt -d tar.out
+	rm tar.out/*; ./csv_parser -f csv_test_data.txt -d csv.out
 
 
 test_parser_data: csv_parser.o test-data.csv

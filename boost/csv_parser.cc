@@ -3,25 +3,28 @@
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
 
    EXECUTE:  csv_parser < input.csv > output.data
-             csv_parser -f input.csv -o output-file-name     # writes into one file
-	     cvs_parser -f input.csv -d output-directory     # tar style into one directory
+             csv_parser -f input.csv -o output-file-name     # bob_format_1.0  writes into one file
+	     cvs_parser -f input.csv -d output-directory     # bob_format_2.0  tar style into one directory
 
-   The first version uses standard io.  The second uses a supplied file name.
-   The last allows the user to supply a stream name.  All variables will be
-   associated with a stream named 'stream'.
+   The first version uses standard io.  The second uses a supplied
+   file name and writes the data into the one file, all packed
+   together. (bob format 1) The third allows the user to supply a
+   directory; the variables are written into that directory along with
+   a shell script (index.sh) that can be used to build the dense file.
+   All variables will be associated with the main stream unless
+   there's more to the header information of the variables.
    
-   This program uses boost's BNF spirit engine to parse the information in a csv
-   file.  The program converts the columns in that file into *numerical*
-   columns. Categorical data is converted into indicators, and numerical columns
-   that have missing data are expanded into a mean-filled column along with an
-   indicator that shows which of the columns were missing. Naming conventions
-   denote the columns so that you can recognize the indicators and such and
-   perhaps process them as a block.  Bracketed terms in the names of output
-   variables identify variables generated during processing (e.g., V1[missing]
-   or Location[SC]).  
-   
-   11 Nov 09 ... Attributes read and written.   
-    7 Jan 09 ... Debug, formatting, better messages and comments.
+   This program uses boost's BNF spirit engine to parse the
+   information in a csv file.  The program converts the columns in
+   that file into *numerical* columns. Categorical data is converted
+   into indicators, and numerical columns that have missing data are
+   expanded into a mean-filled column along with an indicator that
+   shows which of the columns were missing. Naming conventions denote
+   the columns so that you can recognize the indicators and such and
+   perhaps process them as a block.  Bracketed terms in the names of
+   output variables identify variables generated during processing
+   (e.g., V1[missing] or Location[SC]).
+
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
 
 */
