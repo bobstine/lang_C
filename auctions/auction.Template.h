@@ -81,7 +81,7 @@ Auction<Model>::write_header_to_progress_stream () const
   mProgressStream << "\t\t\t";
   for (int b=0; b<number_of_experts(); ++b)
     mProgressStream << "\t\t\t";
-  mProgressStream << "\t\t\t\t\t\t\t" << ss.first << "\t" << ss.second << std::endl;
+  mProgressStream << "\t\t\t\t\t\t\t" << ss.first << "\t" <<  ss.second << std::endl;
 }
 
 

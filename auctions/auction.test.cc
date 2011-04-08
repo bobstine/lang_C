@@ -136,7 +136,7 @@ main(int argc, char** argv)
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
-  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
+  debug("AUCT",0) << "Version build 1.5 (1 Apr 2011)\n";
   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
