@@ -3,7 +3,7 @@
 
 #include "read_utils.h"
 
-#include <set>
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -49,8 +49,12 @@ ColumnData::print_to (std::ostream &os) const
   double *x (mBegin);
   int     n (mN);
   os << mName << "  [" << mDescription <<";  "
-     << mNumUnique << "/" << n << ", " << mMin << "<" << mAvg << "<" << mMax <<  "]     {"
-     << x[0] << ", " << x[1] << ", " << x[2] << ", ... " << x[n-1] << "} " ;
+     << mNumUnique << "/" << n << ", " << mMin << "<" << mAvg << "<" << mMax <<  "]   {";
+  if (mUniqueElements.size() > 0)
+    std::for_each(mUniqueElements.begin(), mUniqueElements.end(), [&os](double x) { os << " " << x ;});
+  else
+    os << x[0] << ", " << x[1] << ", " << x[2] << ", ..., " << x[n-1];
+  os << "}";
 }
 
 
@@ -74,6 +78,8 @@ ColumnData::init_properties ()
   }
   mAvg /= mN;
   mNumUnique = (int) uniq.size();
+  if (mNumUnique < 10)               // save the set if count is small
+    mUniqueElements = uniq;
 }
 
 

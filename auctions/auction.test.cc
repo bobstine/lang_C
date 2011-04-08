@@ -1,7 +1,7 @@
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
-           
+            
           auction.test -f filename -o path -r rounds -c calibration_df -v
 
   where
@@ -523,8 +523,11 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
       debug("MAIN",0) << "CV indicator variable is " << indicator->name() << " with sum " << sum
 		      << " estimation cases after skipping " << prefixCases << " leading cases.\n";
     }
-    else
-      debug("MAIN",0) << "ERROR: Proposed indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
+    else // explain why its not a dummy variable
+    { debug("MAIN",0) << "ERROR: CV indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
+      columns[0]->print_to(debug("MAIN",0));
+      debug("MAIN",0) << std::endl << std::endl;
+    }
   }
   return indicator;
 }

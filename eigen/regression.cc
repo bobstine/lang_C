@@ -9,7 +9,7 @@
 #include <bennett.h>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
-const unsigned int numberOfAllocatedColumns(400);   
+const unsigned int numberOfAllocatedColumns(400);    
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
@@ -225,7 +225,9 @@ LinearRegression::predictions(Matrix const& x) const
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
   else
+  { std::cout << "PREDICTING: beta = " << b.transpose() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
+  }
 }
 
 
