@@ -80,7 +80,7 @@ private:
   void print_model_features_to   (std::ostream& os)                      const;
   void print_model_to            (std::ostream& os, bool useHTML=false)  const;
   void write_model_to            (std::ostream& os)                      const;
-  void write_model_data_to       (std::ostream& os)                      const;
+  void write_model_data_to       (std::ostream& os, maxNumXCols)         const;
 
  private:
   void                     write_header_to_progress_stream ()                            const;

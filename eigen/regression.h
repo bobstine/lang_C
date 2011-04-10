@@ -123,23 +123,23 @@ public:
   void      add_predictors (StringVec const& names, Matrix const& x);                                                 // adds with no testing
   void      add_predictors (FStat const& fstat);
   
-  void      print_to       (std::ostream& os)      const;
-  void      print_gamma_to (std::ostream& os)      const;
-  void      print_beta_to  (std::ostream& os)      const;
-  void      write_data_to  (std::ostream& os)      const;            // JMP style, with y followed by X columns (tab delimited)
+  void      print_to       (std::ostream& os)                   const;
+  void      print_gamma_to (std::ostream& os)                   const;
+  void      print_beta_to  (std::ostream& os)                   const;
+  void      write_data_to  (std::ostream& os, int maxNumXCols)  const; // JMP style, with y followed by X columns (tab delimited)
 
-  Matrix    check_orthogonality_matrix ()          const;            // returns r matrix from householder QR of internal G-S Q matrix
+  Matrix    check_orthogonality_matrix ()                       const; // returns r matrix from householder QR of internal G-S Q matrix
   
  private:
   void      allocate_memory();
   void      add_constant();
-  double    sweep_Q_from_column(int col)           const;            // only affect Q, R past those of current fit
+  double    sweep_Q_from_column(int col)           const;              // only affect Q, R past those of current fit
   void      update_fit(StringVec xNames);
-  StringVec name_vec(std::string name)             const;            // inits a vector with one string
-  double    approximate_ss(Vector const& x)        const;            // one-pass estimate of the SS around mean 
-  bool      is_binary_vector(Vector const& y)      const;            // used to determine whether to use Bennett bounds
-  bool      is_invalid_ss (double ss, double ssz)  const;            // checks for singularity, nan, neg, inf
-  std::pair<double,double> bennett_evaluation ()   const;            // 0/1 response only; operates on column mK (one past those in use)
+  StringVec name_vec(std::string name)             const;              // inits a vector with one string
+  double    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
+  bool      is_binary_vector(Vector const& y)      const;              // used to determine whether to use Bennett bounds
+  bool      is_invalid_ss (double ss, double ssz)  const;              // checks for singularity, nan, neg, inf
+  std::pair<double,double> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.array() * a.array()).colwise().sum()); } // diagonal of a'a
@@ -197,7 +197,7 @@ public:
   template <class Iter> void fill_with_fit(Iter it) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;
-  void write_data_to(std::ostream& os)                     const;       //  written in the internal order (estimation ->, then validation <-
+  void write_data_to(std::ostream& os, int maxNumXCols)    const;       //  written in the internal order (estimation ->, then validation <-
   
 private:
   

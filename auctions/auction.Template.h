@@ -417,9 +417,9 @@ Auction<ModelClass>::xb_feature(std::vector<double> const& beta) const
 
 template <class ModelClass>
 void
-Auction<ModelClass>::write_model_data_to       (std::ostream& os)       const
+Auction<ModelClass>::write_model_data_to(std::ostream& os, int numXCols)       const
 {
-  mModel.write_data_to(os);
+  mModel.write_data_to(os, numXCols);
 }
 
 

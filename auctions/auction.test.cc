@@ -5,13 +5,18 @@
           auction.test -f filename -o path -r rounds -c calibration_df -v
 
   where
-        -r  number of rounds for the auction (default is 50)
-        -f  path for input data              (default is est.dat)
-	-o  path for output model results    (default is model)
-	-a  total alpha to distribute        (default is 0.1... might ought to be less)
-	-p  level of protection              (default is level 3)
-	-c  calibration df                   (default is no calibration)
-
+	-a  total alpha to distribute           (default is 0.1... might ought to be less)
+	-b  blocksize for white                 (default 0 is OLS; 1 for white; larger for corr)
+	-c  calibration df                      (default is no calibration)
+        -d  debug level of output
+	-f  path for input data                 (default is est.dat)
+	-k  max number of X columns written out (default 0 implies to write none)
+	-o  path for output model results       (default is model)
+	-p  level of protection                 (default is level 3)
+        -r  number of rounds for the auction    (default is 50)
+	-s  shrink the estimates                (default is 0; set to 1 to shrink)
+	-x  number of leading extra cases       (default is 0; used for lagging)
+	
   10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
   21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
@@ -116,7 +121,8 @@ main(int argc, char** argv)
   bool          useShrinkage         (false);
   int           shrink               (0);
   int           blockSize            (0);                                   // no blocking implies standard testing
-  int           numberRounds         (200); 
+  int           numberRounds         (200);
+  int           numOutputColumns     (0);
   // int           splineDF             (0);
   int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
@@ -125,7 +131,7 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
 		  blockSize, numberRounds, totalAlphaToSpend,
-		  calibrationGap, prefixCases, debugLevel);
+		  calibrationGap, prefixCases, debugLevel, numOutputColumns);
   if(useShrinkage) shrink = 1;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -371,7 +377,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
     } 
-    theAuction.write_model_data_to(output);
+    theAuction.write_model_data_to(output, numOutputColumns);
     output.close();
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
@@ -389,9 +395,8 @@ parse_arguments(int argc, char** argv,
 		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
-		int    &gap,
-		int    &prefixCases,
-		int    &debugLevel)
+		int    &gap,        int    &prefixCases,
+		int    &debugLevel, int    &numOutputColumns)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -403,6 +408,7 @@ parse_arguments(int argc, char** argv,
 	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
+	  {"output-columns",    1, 0, 'k'},  // has arg
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
@@ -411,7 +417,7 @@ parse_arguments(int argc, char** argv,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:b:c:d:f:o:p:r:s:x:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:b:c:d:f:k:o:p:r:s:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -441,6 +447,11 @@ parse_arguments(int argc, char** argv,
 	    {
 	      std::string name(optarg);
 	      inputFile = name;
+	      break;
+	    }
+	  case 'k' : 
+	    {
+	      numOutputColumns = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'o' :  
