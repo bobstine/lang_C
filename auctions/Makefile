@@ -18,6 +18,8 @@ USES =  eigen spline ranges random utils
 
 EXTERNAL_USES = boost_thread
 
+OPT = 
+
 ###########################################################################
 #
 #	Objects ... objects are listed in order of precedence
