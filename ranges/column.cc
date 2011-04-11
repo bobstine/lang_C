@@ -19,7 +19,7 @@ Column&
 Column::operator= (Column const& c)
 {
   --mData->mRefCount;
-  if(mData->mRefCount <= 0 && mData != c.mData) delete mData;    // delete if not the same
+  if(mData->mRefCount <= 0 && mData != c.mData) delete  mData;    // delete if not the same
   mData = c.mData;
   ++mData->mRefCount;
   return *this;
