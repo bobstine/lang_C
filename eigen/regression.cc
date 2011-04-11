@@ -535,21 +535,23 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   for(int j=1; j<numX+1; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
-  // now put the data in external coordinate system
+  // put the data in external coordinate system
   Vector y    (is_ols() ? mY : mY.cwiseQuotient(mSqrtWeights));
   Vector res  (raw_residuals());
   Vector fit  (is_ols() ? fitted_values() : y - res);
   for(int i=0; i<mN; ++i)
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
-    Vector row (x_row(i));
-    if (is_wls())
-      row = row / mSqrtWeights[i];
-    for (int j=1; j<numX-1; ++j)  // skip intercept
-      os << row[j] << "\t";
-    os << row[numX-1] << std::endl;
+    if(numX>0)
+    { Vector row (x_row(i));
+      if (is_wls())
+	row = row / mSqrtWeights[i];
+      for (int j=1; j<numX-1; ++j)  // skip intercept
+	os << row[j] << "\t";
+      os << row[numX-1] << std::endl;
+    }
   }
 }
-
+ 
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 

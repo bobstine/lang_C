@@ -526,33 +526,34 @@ parse_arguments(int argc, char** argv,
  
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
-{
-  debug("MAIN",3) << "Checking for CV indicator variable among " << columns.size() << " columns.  First is named " << columns[0]->name() << std::endl;
-  Column indicator;
+{ // have some weird allocation/bad pointer issues around assigning an empty column; problem was here; avoid by returning Column()
+  debug("MAIN",3) << "Checking for CV indicator variable among " << columns.size() << " columns. "
+		  << " First column is named " << columns[0]->name() << " with size = " << columns[0]->size() << std::endl
+		  << columns[0] << std::endl;
   if (columns.empty())
   { debug("MAIN",0) << "Data lack CV indicator.\n";
-    return indicator;
+    return Column();
   }
   if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator[in]"))
   { debug("MAIN",0) << "First context column is not in/out indicator; found '" << columns[0]->name()
 		    << "' instead. Using all cases for estimation.\n";
-    return indicator;
+    return Column();
   }
   // check name of the first context column, verify its a dummy variable
   if (columns[0]->is_dummy())
-  { indicator = columns[0];
-    double sum (0.0);
-    for (double *b (indicator->begin() + prefixCases); b != indicator->end() ; ++ b)
+  { double sum (0.0);
+    for (double *b (columns[0]->begin() + prefixCases); b != columns[0]->end() ; ++ b)
       sum += *b;
-    debug("MAIN",0) << "CV indicator variable is " << indicator->name() << " with sum " << sum
+    debug("MAIN",0) << "CV indicator variable is " << columns[0]->name() << " with sum " << sum
 		    << " estimation cases after skipping " << prefixCases << " leading cases.\n";
+    return columns[0];
   }
   else // explain why its not a dummy variable
   { debug("MAIN",0) << "ERROR: CV indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
     columns[0]->print_to(debug("MAIN",0));
     debug("MAIN",0) << std::endl << std::endl;
+    return Column();
   }
-  return indicator;
 }
 
  
