@@ -13,6 +13,7 @@ const unsigned int numberOfAllocatedColumns(400);
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
+int    min_int(int i, int j) { if(i<j) return i; else return j; }
 bool   close (double a, double b) { return abs_val(a-b) < 1.0e-50; }
 
 
@@ -525,28 +526,31 @@ LinearRegression::print_beta_to (std::ostream&os) const
 
 
 void
-LinearRegression::write_data_to (std::ostream& os) const
+LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 {
-  // prefix line with var names
+  // number of columns of predictors
+  int numX = min_int(mK,maxNumXCols);
+  // prefix line with var names; intercept is name[0]
   os << "Role\tFit\tResidual\t" << mYName;
-  for(int j=1; j<mK; ++j)
+  for(int j=1; j<numX+1; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
-  // now put the data in external coordinate system
+  // put the data in external coordinate system
   Vector y    (is_ols() ? mY : mY.cwiseQuotient(mSqrtWeights));
   Vector res  (raw_residuals());
   Vector fit  (is_ols() ? fitted_values() : y - res);
   for(int i=0; i<mN; ++i)
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
-    Vector row (x_row(i));
-    if (is_wls())
-      row = row / mSqrtWeights[i];
-    for (int j=1; j<mK-1; ++j)  // skip intercept
-      os << row[j] << "\t";
-    os << row[mK-1] << std::endl;
+    if(numX>0)
+    { Vector row (x_row(i));
+      if (is_wls())
+	row = row / mSqrtWeights[i];
+      for (int j=1; j<numX-1; ++j)  // skip intercept
+	os << row[j] << "\t";
+      os << row[numX-1] << std::endl;
+    }
   }
 }
-
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 
@@ -572,14 +576,14 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 }
 
 void
-ValidatedRegression::write_data_to(std::ostream& os) const
+ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
 {
   // Note: does not return the data to the original ordering
-  mModel.write_data_to(os);
+  mModel.write_data_to(os, maxNumXCols);
   Vector preds (mModel.predictions(mValidationX));
   for(int i=0; i<mValidationX.rows(); ++i)
   { os << "val\t" << preds[i] << "\t" << mValidationY[i]-preds[i] << "\t" << mValidationY[i] << "\t";
-    for (int j=0; j<mValidationX.cols()-1; ++j) 
+    for (int j=0; j<min_int(mValidationX.cols()-1, maxNumXCols); ++j) 
       os << mValidationX(i,j) << "\t";
     os << mValidationX(i,mValidationX.cols()-1) << std::endl;
   }

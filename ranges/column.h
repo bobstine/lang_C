@@ -53,7 +53,7 @@ class ColumnData
   double *    mBegin;
   double *    mEnd;
   int         mRefCount;
-
+ 
  private:
   ~ColumnData()                     { delete[] mBegin; }
 
