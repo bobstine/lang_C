@@ -18,6 +18,8 @@ USES =  eigen spline ranges random utils
 
 EXTERNAL_USES = boost_thread
 
+OPT = 
+
 ###########################################################################
 #
 #	Objects ... objects are listed in order of precedence
@@ -66,7 +68,7 @@ crash_test: auction.test
 #
 
 penn_credit_test: auction.test
-	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  100 -a 1.5 -p 3 -b 67 -c 3 -x 469 -d 0 -s 1
+	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  100 -a 1.5 -p 3 -b 67 -c 3 -x 469 -d 3 -s 1
 #	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  200 -a 0.5 -p 3 -b 67 -c 3 -x 469 -d 3 -s 1
 
 
