@@ -523,7 +523,7 @@ parse_arguments(int argc, char** argv,
     }
 }
 
- 
+  
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 { // have some weird allocation/bad pointer issues around assigning an empty column; problem was here; avoid by returning Column()

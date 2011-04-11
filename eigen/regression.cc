@@ -551,7 +551,6 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     }
   }
 }
- 
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 
