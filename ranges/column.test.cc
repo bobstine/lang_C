@@ -23,7 +23,7 @@ main()
     { x[i] = 7.0 * i;
       y[i] = i;
     }
-
+    
     Column c1 ("c1", "description 1", n, x.begin());
     Column c2 (c1);
     Column c3 (c2);
@@ -40,8 +40,15 @@ main()
     std::cout << "\nTEST: Integer columns...\n";
     IntegerColumn ic1 (c1);
     std::cout << ic1 << std::endl;
-  }
 
+    //  test making an empty column, then putting something in it
+    std::cout << "TEST: empty column\n";
+    Column empty;
+    std::cout << "TEST: empty size " << empty->size() << std::endl;
+    empty = c1;
+    c2 = empty;
+    std::cout << "TEST: empty after assignment " << empty << std::endl;
+  }
 
   {     // read the columns one at a time via the iterator interface    
     std::cout << "\n\nTEST: File portion of test.\n";
