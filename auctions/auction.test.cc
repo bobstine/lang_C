@@ -226,9 +226,12 @@ main(int argc, char** argv)
     return -1;
   }
 
-  // build model and initialize auction with csv stream for tracking progress
-  std::string calibrationSignature ("Y_hat_");
+  // set up calibration options
   bool yIsBinary  (yColumns[0]->is_dummy());
+  debug("AUCT",1) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
+  std::string calibrationSignature ("Y_hat_");
+
+  // build model and initialize auction with csv stream for tracking progress
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
   
