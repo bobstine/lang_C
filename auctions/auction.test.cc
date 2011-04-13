@@ -1,7 +1,7 @@
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
-                
+                  
           auction.test -f filename -o path -r rounds -c calibration_df -v
 
   where
@@ -144,7 +144,7 @@ main(int argc, char** argv)
   debugging::debug_init(std::clog, debugLevel);
 #endif
   debug("AUCT",0) << "Version build 1.5 (1 Apr 2011)\n";
-  
+   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
@@ -228,6 +228,7 @@ main(int argc, char** argv)
 
   // build model and initialize auction with csv stream for tracking progress
   std::string calibrationSignature ("Y_hat_");
+  bool yIsBinary  (yColumns[0]->is_dummy());
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
   
@@ -312,7 +313,8 @@ main(int argc, char** argv)
   { 
     theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature, nContextCases)));
+				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+							 nContextCases, yIsBinary)));
   }
 
   //   Principle component type features

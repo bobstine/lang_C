@@ -130,9 +130,11 @@ class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureV
   int         mDegree;
   std::string mSignature;  // identifying variable name
   int         mSkip;       // possible offset to allow for lag features
+  bool        mTruncate;
   
  public:
-  BuildCalibrationFeature (int degree, std::string s, int skip) : mDegree(degree), mSignature(s), mSkip (skip) { } 
+  BuildCalibrationFeature (int degree, std::string s, int skip, bool truncate)
+    : mDegree(degree), mSignature(s), mSkip (skip), mTruncate(truncate) { } 
   
   FeatureVector operator()(Model const* pModel) const
   {
@@ -146,7 +148,7 @@ class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureV
     for(int i=0; i<mSkip; ++i)
       *pFit++ = mean;
     // fill rest with predictions from model, then center the range
-    pModel->fill_with_fit(fit->begin() + mSkip);
+    pModel->fill_with_fit(fit->begin() + mSkip, mTruncate);
     fit->update();
     std::vector<int> powers;
     for (int j = 2; j <= mDegree; ++j)

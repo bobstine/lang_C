@@ -167,11 +167,11 @@ make_feature_product_stream (std::string const& name, Feature const& f, Collecti
 
 template <class Model>
 FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-make_calibration_stream (std::string const& name, Model const& model, int gap, std::string signature, int skip)
+make_calibration_stream (std::string const& name, Model const& model, int gap, std::string signature, int skip, bool binary)
 {
   debugging::debug("FPRS",2) << "make_calibration_stream with gap between valid = " << gap << " and initial skip of " << skip << " cases." << std::endl;
   return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip));  // 3 = cubic
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip, binary));  // 3 = cubic
 }
 
 

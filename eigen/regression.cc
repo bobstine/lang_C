@@ -129,10 +129,7 @@ LinearRegression::Vector
 LinearRegression::fitted_values(double lo, double hi) const
 {
   Vector fit = fitted_values();
-  for (int i=0; i<fit.size(); ++i)
-  { if (fit[i] < lo)      fit[i] = lo;
-    else if (fit[i] > hi) fit[i] = hi;
-  }
+  fit.unaryExpr([lo,hi](double x) -> double { if(x < lo) return lo; else if(x < hi) return x; return hi; });
   return fit;
 }
 
@@ -229,6 +226,14 @@ LinearRegression::predictions(Matrix const& x) const
   { std::cout << "PREDICTING: beta = " << b.transpose() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
   }
+}
+
+LinearRegression::Vector
+LinearRegression::predictions(Matrix const& x, double lo, double hi) const
+{
+  Vector preds (predictions(x));
+  preds.unaryExpr([lo,hi](double x) -> double { if(x < lo) return lo; else if(x < hi) return x; return hi; });
+  return preds;  
 }
 
 
@@ -532,7 +537,8 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   int numX = min_int(mK,maxNumXCols);
   // prefix line with var names; intercept is name[0]
   os << "Role\tFit\tResidual\t" << mYName;
-  for(int j=1; j<numX+1; ++j)  
+  // skip over the intercept in column 0
+  for(int j=1; j<numX; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
@@ -545,7 +551,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     { Vector row (x_row(i));
       if (is_wls())
 	row = row / mSqrtWeights[i];
-      for (int j=1; j<numX-1; ++j)  // skip intercept
+      for (int j=1; j<(numX-1); ++j)  // skip intercept
 	os << row[j] << "\t";
       os << row[numX-1] << std::endl;
     }
