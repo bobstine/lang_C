@@ -169,7 +169,7 @@ template <class Model>
 FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
 make_calibration_stream (std::string const& name, Model const& model, int gap, std::string signature, int skip, bool binary)
 {
-  debugging::debug("FPRS",2) << "make_calibration_stream with gap between valid = " << gap << " and initial skip of " << skip << " cases." << std::endl;
+  debugging::debug("FPRS",1) << "make_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
   return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
     ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip, binary));  // 3 = cubic
 }

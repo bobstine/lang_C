@@ -129,7 +129,10 @@ LinearRegression::Vector
 LinearRegression::fitted_values(double lo, double hi) const
 {
   Vector fit = fitted_values();
-  fit.unaryExpr([lo,hi](double x) -> double { if(x < lo) return lo; else if(x < hi) return x; return hi; });
+  for(int i=0; i<fit.size(); ++i)
+  { if      (fit[i] < lo) fit[i] = lo;
+    else if (fit[i] > hi) fit[i] = hi;
+  }
   return fit;
 }
 
@@ -232,7 +235,10 @@ LinearRegression::Vector
 LinearRegression::predictions(Matrix const& x, double lo, double hi) const
 {
   Vector preds (predictions(x));
-  preds.unaryExpr([lo,hi](double x) -> double { if(x < lo) return lo; else if(x < hi) return x; return hi; });
+  for(int i=0; i<preds.size(); ++i)
+  { if      (preds[i] < lo) preds[i] = lo;
+    else if (preds[i] > hi) preds[i] = hi;
+  }
   return preds;  
 }
 

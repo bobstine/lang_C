@@ -297,7 +297,7 @@ main(int argc, char** argv)
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                 // less avoids tie 
+      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("Interactions within " + streamNames[s],
 							   featureStreams[s], true)                                  // true means to include squared terms
@@ -310,23 +310,21 @@ main(int argc, char** argv)
 				     ));
     }
   }
-
+   
   //  Calibration expert
   if(calibrationGap > 0)
-  { 
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder(0.000005, calibrationSignature),                  
 				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
 							 nContextCases, yIsBinary)));
-  }
 
   //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                             // kludge alpha share
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),    // number components, standardize? (0 means use sing values)
-						    30))) ;                                                   // bundle size
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // number components, standardize? (0 means use sing values)
+						    30))) ;                                                          // bundle size
 
   //   RKHS stream
   theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,

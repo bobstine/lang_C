@@ -37,7 +37,7 @@
 
 //#define NOTHREADS
 
-
+#pragma GCC optimize ("-O0")
 
 
 template<class W>
