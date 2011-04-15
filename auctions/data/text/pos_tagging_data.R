@@ -50,10 +50,10 @@ row.total == (nrow(x.train) + nrow(x.test))
 # ----------------------------------------------------------------------
 
 # --- new size for the training (use all for testing; have 6 times this amount)
-subsample.size <- 25000
+subsample.size <- 100000
 i.train <- sample (1:n.train, subsample.size)
 
-# --- downsample X and Y data
+# --- downsample X and Y training data
 y.train <- y.train[i.train,];   dim(y.train)
 x.train <- x.train[i.train,];   dim(x.train)
 n.train <- subsample.size
@@ -127,7 +127,7 @@ for(j in 101:150) {
 # --- include 5 major categories... combine the little ones (cols 2, 6, 8)
  y.test[,2] <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
 y.train[,2] <- y.train[,2] + y.train[,6] + y.train[,8] 
-y.test  <-  y.test[,c(1,2,3,4,5,7)]
+ y.test <-  y.test[,c(1,2,3,4,5,7)]
 y.train <- y.train[,c(1,2,3,4,5,7)]
 
 n.grps <- ncol(y.test); n.grps      # 6
@@ -141,9 +141,10 @@ data.path <- paste(path,"auction/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
 # --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
+#                                                  878,604 when 100,000 sampled
 n.grps*row.total
-cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", n.grps*row.total,"\n",
-	    file=manifest.file, append=FALSE)  
+cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho",   
+     n.grps*row.total,"\n", file=manifest.file, append=FALSE)  
 
 # --- write CV indicator; training data come first followed by stacked test data
 cat("# cross-validation indicator\n",file=manifest.file, append=TRUE)
