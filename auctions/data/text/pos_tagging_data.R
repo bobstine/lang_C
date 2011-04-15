@@ -168,6 +168,7 @@ Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
 # --- validation data are returned from C++ in permuted order (reversed)
+n.grps <- 6
 i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
 i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps  ; n.testing  #  46,434
 
