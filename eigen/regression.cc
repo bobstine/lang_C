@@ -133,6 +133,7 @@ LinearRegression::fitted_values(double lo, double hi) const
   { if      (fit[i] < lo) fit[i] = lo;
     else if (fit[i] > hi) fit[i] = hi;
   }
+  std::cout << "TESTING: FITTED VALUES truncated range is " << fit.minCoeff() << " to " << fit.maxCoeff() << std::endl;
   return fit;
 }
 
