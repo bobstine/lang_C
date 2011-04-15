@@ -46,10 +46,10 @@ LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
     if( (y[i] != 0) && (y[i] != 1) )
-    { debugging::debug("REGR",2) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
+    { debugging::debug("REGR",4) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
-  debugging::debug("REGR",2) << "Vector is binary" << std::endl;
+  debugging::debug("REGR",4) << "Vector is binary" << std::endl;
   return true;
 }
 
@@ -129,12 +129,12 @@ LinearRegression::Vector
 LinearRegression::fitted_values(double lo, double hi) const
 {
   Vector fit = fitted_values();
-  for(int i=0; i<fit.size(); ++i)
+  /*  for(int i=0; i<fit.size(); ++i)
   { if      (fit[i] < lo) fit[i] = lo;
     else if (fit[i] > hi) fit[i] = hi;
   }
-  std::cout << "TESTING: FITTED VALUES truncated range is " << fit.minCoeff() << " to " << fit.maxCoeff() << std::endl;
-  return fit;
+  */
+  return fit.unaryExpr([lo,hi] (double x) -> double { if(x < lo) return lo; if(x < hi) return x; return hi; });
 }
 
 

@@ -2,9 +2,9 @@
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
                   
-          auction.test -f filename -o path -r rounds -c calibration_df -v
-
-  where
+           ./auction.test ... { options }
+	   
+  where options are
 	-a  total alpha to distribute           (default is 0.1... might ought to be less)
 	-b  blocksize for white                 (default 0 is OLS; 1 for white; larger for corr)
 	-c  calibration df                      (default is no calibration)
