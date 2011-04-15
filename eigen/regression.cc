@@ -1,6 +1,9 @@
+#pragma GCC optimize ("-O4")
+
 #include "regression.h"
 
 // #define  _CLASSICAL_GS_
+
 
 #include <Eigen/LU>
 #include <Eigen/QR>
@@ -9,7 +12,7 @@
 #include <bennett.h>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
-const unsigned int numberOfAllocatedColumns(400);    
+const unsigned int numberOfAllocatedColumns(500);    
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
@@ -46,10 +49,10 @@ LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
     if( (y[i] != 0) && (y[i] != 1) )
-    { debugging::debug("REGR",2) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
+    { debugging::debug("REGR",4) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
-  debugging::debug("REGR",2) << "Vector is binary" << std::endl;
+  debugging::debug("REGR",4) << "Vector is binary" << std::endl;
   return true;
 }
 
@@ -129,11 +132,7 @@ LinearRegression::Vector
 LinearRegression::fitted_values(double lo, double hi) const
 {
   Vector fit = fitted_values();
-  for (int i=0; i<fit.size(); ++i)
-  { if (fit[i] < lo)      fit[i] = lo;
-    else if (fit[i] > hi) fit[i] = hi;
-  }
-  return fit;
+  return fit.unaryExpr([lo,hi] (double x) -> double { if(x < lo) return lo; if(x < hi) return x; return hi; });
 }
 
 
@@ -226,9 +225,20 @@ LinearRegression::predictions(Matrix const& x) const
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
   else
-  { std::cout << "PREDICTING: beta = " << b.transpose() << std::endl;
+  { debugging::debug("REGR",0) << "Predicting, beta ranges from " << b.minCoeff() " to " << b.maxCoeff() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
   }
+}
+
+LinearRegression::Vector
+LinearRegression::predictions(Matrix const& x, double lo, double hi) const
+{
+  Vector preds (predictions(x));
+  for(int i=0; i<preds.size(); ++i)
+  { if      (preds[i] < lo) preds[i] = lo;
+    else if (preds[i] > hi) preds[i] = hi;
+  }
+  return preds;  
 }
 
 
@@ -532,7 +542,8 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   int numX = min_int(mK,maxNumXCols);
   // prefix line with var names; intercept is name[0]
   os << "Role\tFit\tResidual\t" << mYName;
-  for(int j=1; j<numX+1; ++j)  
+  // skip over the intercept in column 0
+  for(int j=1; j<numX; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
@@ -545,7 +556,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     { Vector row (x_row(i));
       if (is_wls())
 	row = row / mSqrtWeights[i];
-      for (int j=1; j<numX-1; ++j)  // skip intercept
+      for (int j=1; j<(numX-1); ++j)  // skip intercept
 	os << row[j] << "\t";
       os << row[numX-1] << std::endl;
     }

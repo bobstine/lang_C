@@ -1,3 +1,6 @@
+valgrind.out
+1600_*
+text_run.sh
 penn_credit_test.sh
 testlist
 expander

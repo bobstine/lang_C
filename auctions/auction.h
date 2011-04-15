@@ -24,6 +24,7 @@ class Auction
   typedef Model                              ModelClass;
   typedef typename std::vector<Expert>       ExpertVector;
   typedef typename std::set<std::string>     StringSet;
+  typedef typename std::vector<std::string>  StringVec;
   typedef typename std::pair<double,double>  TestResult;
 
   
@@ -40,6 +41,7 @@ private:
   std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
   int                 mNumInitialExperts; // for building results file  (set when prior to header is written)
   ExpertVector        mExperts;
+  StringVec           mPurgedExpertNames; // keep track of the names of any expert that is purged 
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
   FeatureVector       mRejectedFeatures;  // tried and not used
@@ -54,7 +56,7 @@ private:
     
   Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
-      mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mModel(m),
+      mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
@@ -63,7 +65,8 @@ private:
   int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
   double                 total_expert_alpha ()      const;
   double                 recovered_alpha()          const { return mRecoveredAlpha; }
-  bool                   has_active_expert()        const { return mHasActiveExpert; }  
+  bool                   has_active_expert()        const { return mHasActiveExpert; }
+  StringVec              purged_expert_names()      const { return mPurgedExpertNames; }
 									 
   int                    number_of_predictors()     const { return mModel.dimension(); }
   int                    number_of_features_tried() const { return mModelFeatures.size() + mRejectedFeatures.size(); }

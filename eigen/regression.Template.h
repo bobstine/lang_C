@@ -93,11 +93,20 @@ ValidatedRegression::permuted_vector_from_iterator(Iter it) const
 
 template <class Iter>
 void
-ValidatedRegression::fill_with_fit(Iter it) const
+ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
 {
   Vector results (mLength);
-  results.segment(        0           , n_estimation_cases()) = mModel.fitted_values();
-  results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX);
+  
+  if (truncate)
+  { double min (0.0);
+    double max (1.0);
+    results.segment(        0           , n_estimation_cases()) = mModel.fitted_values(min,max);
+    results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,min,max);
+  }
+  else
+  { results.segment(        0           , n_estimation_cases()) = mModel.fitted_values();
+    results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX);
+  } 
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }

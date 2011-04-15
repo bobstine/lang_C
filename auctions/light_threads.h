@@ -38,8 +38,6 @@
 //#define NOTHREADS
 
 
-
-
 template<class W>
 class LightThread
 {
