@@ -1,6 +1,9 @@
+#pragma GCC optimize ("-O4")
+
 #include "regression.h"
 
 // #define  _CLASSICAL_GS_
+
 
 #include <Eigen/LU>
 #include <Eigen/QR>
@@ -9,7 +12,7 @@
 #include <bennett.h>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
-const unsigned int numberOfAllocatedColumns(400);    
+const unsigned int numberOfAllocatedColumns(500);    
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
@@ -129,11 +132,6 @@ LinearRegression::Vector
 LinearRegression::fitted_values(double lo, double hi) const
 {
   Vector fit = fitted_values();
-  /*  for(int i=0; i<fit.size(); ++i)
-  { if      (fit[i] < lo) fit[i] = lo;
-    else if (fit[i] > hi) fit[i] = hi;
-  }
-  */
   return fit.unaryExpr([lo,hi] (double x) -> double { if(x < lo) return lo; if(x < hi) return x; return hi; });
 }
 
@@ -227,7 +225,7 @@ LinearRegression::predictions(Matrix const& x) const
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
   else
-  { std::cout << "PREDICTING: beta = " << b.transpose() << std::endl;
+  { debugging::debug("REGR",0) << "Predicting, beta ranges from " << b.minCoeff() " to " << b.maxCoeff() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
   }
 }

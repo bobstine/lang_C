@@ -50,7 +50,8 @@ Auction<ModelClass>::without_calibration_features(FeatureVector const& fv)      
 }
 
 
-//  intialization     intialization     intialization     intialization     intialization     intialization
+//   initialization     initialization     initialization     initialization     initialization     initialization     initialization
+
 
 template <class ModelClass>
 unsigned int
@@ -189,6 +190,7 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature a
       break;
     else
     { mRecoveredAlpha += (*ee)->alpha();
+      mPurgedExpertNames.push_back((*ee)->name());
       debug("AUCT",3) << "Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
       numberPurged += 1;
       mExperts.erase(ee);

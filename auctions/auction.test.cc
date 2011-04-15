@@ -2,7 +2,7 @@
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
                   
-           ./auction.test ... { options }
+           ./auction.test ... { options } 
 	   
   where options are
 	-a  total alpha to distribute           (default is 0.1... might ought to be less)
@@ -356,9 +356,14 @@ main(int argc, char** argv)
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",0) << "\n      -------  Auction ends after " << round << "/" << numberRounds
-		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
-  }
+    std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
+	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+    { std::vector<std::string> names (theAuction.purged_expert_names());
+      std::cout << "\n During the auction, there were " << names.size() << " purged experts: \n";
+      for(unsigned int i=0; i<names.size(); ++i)
+	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
+      std::cout << std::endl;
+    }
   
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
