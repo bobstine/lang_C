@@ -42,6 +42,27 @@ ncol(x.train)==ncol(x.test)
 row.total <- nrow(y.train) + nrow(y.test); row.total  # 301,416
 row.total == (nrow(x.train) + nrow(x.test))
 
+
+# ----------------------------------------------------------------------
+# 
+#  Downsample data
+#
+# ----------------------------------------------------------------------
+
+# --- new size for the training (use all for testing; have 6 times this amount)
+subsample.size <- 100000
+i.train <- sample (1:n.train, subsample.size)
+
+# --- downsample X and Y training data
+y.train <- y.train[i.train,];   dim(y.train)
+x.train <- x.train[i.train,];   dim(x.train)
+n.train <- subsample.size
+
+# --- check dim 
+row.total <- nrow(y.train) + nrow(y.test); row.total  # 146,434
+row.total == (nrow(x.train) + nrow(x.test))
+
+
 # ----------------------------------------------------------------------
 # 
 #  Write data
@@ -58,8 +79,9 @@ write.var <- function(name, data, role="y", attr.str="") {
 
 # ----------------------------------------------------------------------
 #
-#     NOTE:    This version writes as a regression with one of 8 y's
+#     1 Y      This version writes as a regression with one of 8 y's
 #              See below for stacked code
+#
 # ----------------------------------------------------------------------
 
 # --- data directory
@@ -96,7 +118,7 @@ for(j in 101:150) {
 
 # ----------------------------------------------------------------------
 #
-#     STACKED...
+#     STACKED...  6 Y's
 #
 #    This version stacks the y's and adds indicators for the group
 #
@@ -105,7 +127,7 @@ for(j in 101:150) {
 # --- include 5 major categories... combine the little ones (cols 2, 6, 8)
  y.test[,2] <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
 y.train[,2] <- y.train[,2] + y.train[,6] + y.train[,8] 
-y.test  <-  y.test[,c(1,2,3,4,5,7)]
+ y.test <-  y.test[,c(1,2,3,4,5,7)]
 y.train <- y.train[,c(1,2,3,4,5,7)]
 
 n.grps <- ncol(y.test); n.grps      # 6
@@ -119,8 +141,10 @@ data.path <- paste(path,"auction/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
 # --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
-cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho", n.grps*row.total,"\n",
-	    file=manifest.file, append=FALSE)  
+#                                                  878,604 when 100,000 sampled
+n.grps*row.total
+cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho",   
+     n.grps*row.total,"\n", file=manifest.file, append=FALSE)  
 
 # --- write CV indicator; training data come first followed by stacked test data
 cat("# cross-validation indicator\n",file=manifest.file, append=TRUE)
@@ -137,8 +161,8 @@ test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
 for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
 	         attr.str="stream LOCKED parent group") }
-write.var(paste("group",j,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
-	         attr.str="stream group parent group") }
+write.var(paste("group",n.grps,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
+	         attr.str="stream group parent group") 
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
@@ -152,6 +176,23 @@ for(j in 101:150) {
 	col <- rep(j,n.grps); cat("j=",j,"\n")
 	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream three") }
 	
+
+
+# ----------------------------------------------------------------------
+# 
+#  Check of some of the written data files
+#
+# ----------------------------------------------------------------------
+
+# --- length should match the n.grps * row.total value from above
+x1   <- scan(paste(data.path,"xx_1"       , sep="")); length(x1)
+x71  <- scan(paste(data.path,"xx_71"      , sep="")); length(x71)
+x125 <- scan(paste(data.path,"xx_125"     , sep="")); length(x125)
+
+y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
+
+# --- or just use a wc on the xx_1 file itself...
+
 
 # ----------------------------------------------------------------------
 # 
@@ -169,6 +210,7 @@ dim(Results); colnames(Results)
 
 # --- validation data are returned from C++ in permuted order (reversed)
 n.grps <- 6
+
 i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
 i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps  ; n.testing  #  46,434
 
