@@ -202,7 +202,7 @@ make_cross_product_stream (std::string const& name, FeatureVector const& slow, F
 {
   debugging::debug("FPRS",2) << "make_interaction_stream (static) " << std::endl;
   return FeatureStream< CrossProductIterator, Identity>
-    ("Interaction::"+name, CrossProductIterator(slow, fast), Identity());
+    ("CrossProduct::"+name, CrossProductIterator(slow, fast), Identity());
 }
 
 

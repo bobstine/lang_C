@@ -286,7 +286,7 @@ class CrossProductIterator
  CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast)
    : mSlowSource(slow), mFastSource(fast), mSlowIndex(0), mFastIndices() { update_index_vector(); }
   
-  int                   number_remaining () const      { if (valid()) return 1; else return 0; }
+  int                   number_remaining () const; 
 
   bool                  valid()             const;
 

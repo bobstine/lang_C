@@ -133,12 +133,13 @@ Auction<ModelClass>::auction_next_feature ()
   }
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
-  debug("AUCT",2) << "Test results are  <" << result.first << "," << result.second << ">\n";
+  double pValue (result.second);
+  debug("AUCT",2) << "Test results are  <" << result.first << "," << pValue << ">\n";
   if (mProgressStream)
-    mProgressStream << "\t" << result.second << "\t" << remove_comma(features[0]->name());
+    mProgressStream << "\t" << pValue << "\t" << remove_comma(features[0]->name());
   // report bid result
   double amount;
-  bool accepted (result.second < afterTaxBid);
+  bool accepted (pValue < afterTaxBid);
   for (unsigned int j=0; j<features.size(); ++j)
   { bool newFeature (!features[j]->was_tried_in_model());
     if (newFeature || accepted)
@@ -148,8 +149,8 @@ Auction<ModelClass>::auction_next_feature ()
     if (accepted) 
     { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
       mModelFeatures.push_back(features[j]);
-    }
-    else if ( (!is_calibration_feature(features[j])) && newFeature )     
+    }                                                                       // dont retain calibration, singular, or repeat features
+    else if ( (!is_calibration_feature(features[j])) && (pValue < 0.999) && newFeature )      
       mRejectedFeatures.push_back(features[j]);
   }
   if (accepted)                                                             // inform all experts that variable was added
@@ -159,7 +160,7 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream)  mProgressStream << "\t" << remove_comma(features[0]->name()) << "\t" << amount;
   }
   else
-  { amount = collect_from_losing_expert(expert, bid, (result.second > 1));  // singular?
+  { amount = collect_from_losing_expert(expert, bid, (pValue > 1));         // singular?
     if (mProgressStream)  mProgressStream << "\t\t" << amount;
   }
   std::pair<double,double> rss (mModel.sums_of_squares());                  // resid ss, cv ss

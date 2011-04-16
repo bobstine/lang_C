@@ -21,12 +21,26 @@ CrossProductIterator::valid()             const
   return (mSlowIndex < mSlowSource.size()) && (mFastIndices[mSlowIndex] < mFastSource.size());
 }
 
+int
+CrossProductIterator::number_remaining () const
+{
+  if (! valid() ) return 0;
+  int n (0);
+  for (unsigned iSlow=0; iSlow < mSlowSource.size(); ++iSlow)
+    n += mFastSource.size() - mFastIndices[iSlow];
+  std::cout << "TESTING, Cross product of vectors of sizes " << mSlowSource.size() << " x " << mFastSource.size()
+	    << " has " << n << " remaining features." << std::endl;
+  return n;
+}
+
+
 Feature
 CrossProductIterator::operator*()         const
 {
   assert(valid());
   return Feature(mSlowSource[mSlowIndex], mFastSource[mFastIndices[mSlowIndex]]);
 }
+
 
 CrossProductIterator&
 CrossProductIterator::operator++()

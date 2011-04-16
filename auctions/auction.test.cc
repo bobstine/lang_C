@@ -248,9 +248,9 @@ main(int argc, char** argv)
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
-  theAuction.add_expert(Expert("In/Out", parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   /*
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
@@ -303,9 +303,9 @@ main(int argc, char** argv)
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+"x Lock]", source, nContextCases, alphaCP, 
+	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream("CP[" + streamNames[s] + "x Lock]",
+				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureStreams[s], lockedStream )                     
 				     ));
     }
@@ -364,7 +364,7 @@ main(int argc, char** argv)
 	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
       std::cout << std::endl;
     }
-  
+  }
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
@@ -402,7 +402,7 @@ main(int argc, char** argv)
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   return 0;  
-}
+} 
   
 
 
