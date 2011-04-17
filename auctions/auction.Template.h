@@ -156,7 +156,7 @@ Auction<ModelClass>::auction_next_feature ()
   if (accepted)                                                             // inform all experts that variable was added
   { for(std::vector<Expert>::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
       (*it)->model_adds_current_variable();
-    amount = pay_winning_expert(expert, features);                          // installs experts as needed
+    amount = pay_winning_expert(expert, features);                          // installs additional experts as needed
     if (mProgressStream)  mProgressStream << "\t" << remove_comma(features[0]->name()) << "\t" << amount;
   }
   else
@@ -328,7 +328,7 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 				 make_lag_stream("Lag stream", *f, maxLag, 2, mBlockSize) ));                  // 2 cycles over lags
       }
       // interact winning feature with rest of model stream
-      spawned.push_back(Expert("Cross["+(*f)->name()+",model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
+      spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
 			       UniversalBoundedBidder< ProductStream >(),
 			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/spawned.size();

@@ -13,29 +13,36 @@
 int 
 main ()
 {
-  const int n (99);
+  const int n (20);
   
   // define the base data with name string and vector of numbers
   std::string name1("x1");
   std::string name2("x2");
+  std::string ind1("i1");    // mutually exclusive dummy
+  std::string ind2("i2");
   double*     x1 = new double[n];
   double*     x2 = new double[n];
+  double*     i1 = new double[n];
+  double*     i2 = new double[n];
   double*     ii = new double[n];
   for (int i=0; i<n; ++i)
   { x1[i] = i;
     x2[i] = 2 * i;
-    ii[i] = n-1-i;
+    i1[i] = i % 2;
+    i2[i] = 1 - i1[i];
+    ii[i] = n-i-1;
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
-  // make four columns
+  // make columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
   Column  x2Column  (name2.c_str(), "x2 column",n, x2);
-  Column  iiColumn  ("Indices", "ii", n, ii);
+  Column  i1Column  ("Dummy_1", "i1", n, i1);
+  Column  i2Column  ("Dummy_2", "i2", n, i2);
+  Column  iiColumn  ("Dummy_2", "i2", n, ii);
   IntegerColumn indices (iiColumn);
-  std::cout << xColumn1 << std::endl << x2Column << std::endl << iiColumn << std::endl << indices << std::endl;
-  
+  std::cout << xColumn1 << std::endl << x2Column << std::endl << i1Column << std::endl << i2Column << std::endl << iiColumn << std::endl;
   
   // feature source
   std::vector<Column> colVec;
@@ -45,7 +52,6 @@ main ()
 
   FeatureSource fs(colVec,0);
   fs.print_summary(std::cout);
-  
   
   // make a feature from a column, add some attributes
   Feature x   (xColumn1);
@@ -62,6 +68,12 @@ main ()
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
   std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
 
+  // dummy variable features
+  Feature d1 (i1Column);
+  Feature d2 (i2Column);
+  d1->add_attribute("parent", "group");
+  d2->add_attribute("parent", "group");
+  
   { // find name in feature vector
     FeatureVector fv;
     fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
@@ -98,8 +110,8 @@ main ()
     std::cout << make_indexed_feature(prod, indices) << std::endl;
     std::cout << std::endl;
   }
-  
 
+  
   // make an interaction
   Feature inter (x, dup);
   std::cout << "TEST: center of x x duplicate interaction feature is " << inter->center() << std::endl;
@@ -121,6 +133,11 @@ main ()
   Feature another(xx2,x);
   std::cout << "TEST: interaction with odd name is " << another << std::endl;
 
+  // interact dummy variables
+  Feature zero(d1,d2);
+  std::cout << "TEST: interaction of two dummy variables is " << zero << std::endl;
+  std::cout << "      with mean value " << zero->average() << std::endl;
+  std::cout << "      attributes are " << zero->attributes() << std::endl  << std::endl;
   
   // a linear combination of several
   std::vector<double>      wts (3); wts[0] = 0.7; wts[1] = 100.0; wts[2] = 10000;

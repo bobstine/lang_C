@@ -349,7 +349,7 @@ main(int argc, char** argv)
     { ++round;
       clock_t start;
       start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor
+      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;

@@ -16,9 +16,10 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
 //  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes
 
 bool
-FeatureABC::has_attribute(std::string attr)           const
+FeatureABC::has_attribute(std::string attrName)           const
 {
-  return (mAttributes.end() != mAttributes.find(attr));
+  Attributes attr (attributes());
+  return (attr.end() != attr.find(attrName));
 }
 
 
