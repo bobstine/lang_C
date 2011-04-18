@@ -6,7 +6,7 @@
  *  Copyright 2010. All rights reserved.
  *
  */
-
+ 
 #include "debug.h"
 #include "column.h"
 #include "features.h"
@@ -55,11 +55,16 @@ main()
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
+  std::cout << "TEST: col[ 0]    " << columns[ 0] << std::endl;
+  std::cout << "TEST: col[ 1]    " << columns[ 1] << std::endl;
+  std::cout << "TEST: col[10]    " << columns[10] << std::endl;
+
+  std::cout << "TEST: Feature from column 0 is " << Feature(columns[0]) << std::endl;
   
   FeatureVector features;
   FeatureVector featureVec1,  featureVec2;
   FeatureList   featureList1, featureList2;
-  std::cout << "\n\nTEST: building collections of features\n";
+  std::cout << "\n\nTEST: Building collections of features\n";
   const int numberOfFeatures (10);
   for (int i=0; i<numberOfFeatures; ++i)
   { features.push_back(Feature(columns[i]));
@@ -86,6 +91,13 @@ main()
   std::cout << "  -------------------------------------------------------\n";
   
 
+  if (true)         // test predicate
+  {
+    std::cout << "TEST: features f[2] and f[3] are mutually exclusive gives (should be 1): "
+	      << FeaturePredicates::mutually_exclusive_indicators_from_same_parent(features[2],features[3]) << "   "
+	      << SkipIfRelated(features[2])(features[3]) << "    "
+	      << SkipIfRelatedPair()(features[2],features[3]) << std::endl;
+  }
   
   if (false)        // test queue iterator
   {
@@ -159,7 +171,7 @@ main()
   {
     std::cout << "\n\nTEST:  make model iterator\n";
     Model model (featureList1, featureList2);
-    ModelIterator<Model> it (model);
+    ModelIterator<Model> it (model,0);
     
     int max (4);
     model.increment_q();

@@ -18,14 +18,14 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
 bool
 FeatureABC::has_attribute(std::string attrName)           const
 {
-  Attributes attr (attributes());
-  return (attr.end() != attr.find(attrName));
+  return (mAttributes.end() != mAttributes.find(attrName));
 }
 
 
 void
 FeatureABC::add_attribute(std::string name, std::string value)
 {
+  std::cout << "TESTING: Adding attribute " << name << " with value " << value << std::endl;
   mAttributes[name].insert(value);
 }
 
@@ -33,6 +33,7 @@ FeatureABC::add_attribute(std::string name, std::string value)
 void
 FeatureABC::add_attributes_from_paired_list (std::string list)
 {
+  std::cout << "TESTING: adding attributes from paired list " << list << std::endl;
   std::istringstream iss (list);
   iss >> std::ws;
   while (!iss.eof())
@@ -50,8 +51,7 @@ FeatureABC::attribute_str_value(std::string attr) const
   for(AttrIter it=mAttributes.begin(); it != mAttributes.end(); ++it)
     if (it->first == attr)
       return it->second;
-  std::set<std::string> s;
-  return s;
+  return std::set<std::string>();
 }
       
 
@@ -142,6 +142,7 @@ FeatureABC::write_values_to(std::ostream& os) const
 void
 FeatureABC::print_to(std::ostream& os) const
 {
+  std::cout << "TESTING: call to print_to of FeatureABC... \n";
   os << name() ;
   if (!mAttributes.empty())
     for (AttrIter pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)

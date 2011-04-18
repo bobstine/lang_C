@@ -55,7 +55,7 @@ class FeatureABC
     : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { }
 
   FeatureABC (std::istream& is)
-    : mRefCount(1), mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
+    : mRefCount(1), mSize(   0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
 
   bool                  operator== (FeatureABC const* f)          const { return name() == f->name(); }
 
@@ -66,7 +66,7 @@ class FeatureABC
   double                entry_bid ()                              const { return mEntryBid; }
   void                  set_model_results(bool used, double bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
 
-  virtual Attributes    attributes()                              const { return mAttributes; }
+  Attributes            attributes()                              const { return mAttributes; }
   bool                  has_attribute(std::string attr)           const;
   void                  add_attribute(std::string name, std::string value);
   void                  add_attributes_from_paired_list (std::string list);

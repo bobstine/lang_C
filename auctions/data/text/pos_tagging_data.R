@@ -194,6 +194,8 @@ y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
 # --- or just use a wc on the xx_1 file itself...
 
 
+
+
 # ----------------------------------------------------------------------
 # 
 #  Analysis of results
@@ -201,8 +203,14 @@ y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
 # ----------------------------------------------------------------------
 
 # --- use cut to pull off the first 7 columns of the results
-setwd("/home/bob/C/auctions/data/text")
-system("cut -f1-8 model_data.csv > to_r.csv")
+
+# - subsample
+setwd("/home/bob/C/auctions/data/text/small/")
+
+# - regular
+setwd("/home/bob/C/auctions/data/text/")
+
+system("cut -f1-10 model_data.csv > to_r.csv")
 
 # --- read in the results; should match  n.grps * 301,416 = 1,205,664
 Results <- read.delim("to_r.csv")
