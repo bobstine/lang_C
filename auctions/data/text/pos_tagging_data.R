@@ -160,9 +160,9 @@ train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
 for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
-	         attr.str="stream LOCKED parent group") }
+	         attr.str=paste("stream LOCKED parent group category" j)) }
 write.var(paste("group",n.grps,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
-	         attr.str="stream group parent group") 
+	         attr.str=paste("stream group parent group",n.grps)) 
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
