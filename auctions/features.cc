@@ -116,6 +116,28 @@ InteractionFeature::center_features()
 }
 
 void
+InteractionFeature::collect_attributes()
+{
+  typedef typename std::set<std::string> StringSet;
+  // very early, just to capture simple categorical terms
+  // need to change handling since can have multiple categorial vars, each with own category
+  // parent/category must be kept as a pair.
+  if (mFeature1->has_attribute("parent"))
+  { StringSet attrs (mFeature1->attribute_str_value("parent"));
+    for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
+      add_attribute("parent",*it);
+    add_attribute("category", *(mFeature1->attribute_str_value("category").begin()));
+  }
+  if (mFeature2->has_attribute("parent"))
+  { StringSet attrs (mFeature2->attribute_str_value("parent"));
+    for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
+      add_attribute("parent",*it);
+    add_attribute("category", *(mFeature2->attribute_str_value("category").begin()));
+  }
+}
+
+
+void
 InteractionFeature::make_name()
 {
   Arguments args (arguments());

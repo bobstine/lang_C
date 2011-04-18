@@ -225,7 +225,7 @@ class InteractionFeature : public FeatureABC
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)                              // names built in using map to define canonical order
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mCtr1(0.0), mCtr2(0.0) { center_features();  make_name();  } 
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mCtr1(0.0), mCtr2(0.0) { center_features();  collect_attributes(); make_name();  } 
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
@@ -251,6 +251,7 @@ class InteractionFeature : public FeatureABC
 
  private:
   void        center_features();
+  void        collect_attributes();
   void        make_name();
 };
 
