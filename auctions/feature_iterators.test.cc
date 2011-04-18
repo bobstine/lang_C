@@ -51,7 +51,8 @@ main()
   debugging::debug_init(std::cout,4);
   
   // build vector of columns from file
-  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
+  //  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
+  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
@@ -211,7 +212,7 @@ main()
     for (int i=0; i<4; ++i)                   // small vector to check end
       fv.push_back(features[i]);
     fv.push_back(constantFeature2);
-    std::for_each(fv.begin(), fv.end(), [](Feature const& f) {std::cout << "     " << f->name() << std::endl; });
+    // std::for_each(fv.begin(), fv.end(), [](Feature const& f) {std::cout << "     " << f->name() << std::endl; });
     InteractionIterator<FeatureVector, SkipIfRelatedPair> it (fv, true, SkipIfRelatedPair());  // use squares?
     std::cout << "TEST_inter: initially interaction stream has " << it.number_remaining() << " features remaining\n";
     int more (40);
