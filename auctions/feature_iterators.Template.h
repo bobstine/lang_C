@@ -194,10 +194,13 @@ CrossProductIterator<Pred>::operator++()
     if (mSlowIndex < mFastIndices.size())
     { keepSearching = mSkipPred(mSlowSource[mSlowIndex], mFastSource[mFastIndices[mSlowIndex]]);
       if (keepSearching)
-      { debugging::debug("CPIT",0) << "Skipping cross product of " << mSlowSource[mSlowIndex]->name() << " x "
+      { debugging::debug("CPIT",3) << "Skipping cross product of " << mSlowSource[mSlowIndex]->name() << " x "
 				   << mFastSource[mFastIndices[mSlowIndex]] << std::endl;
 	++mFastIndices[mSlowIndex];
       }
+      else
+	debugging::debug("CPIT",3) << "Allowing cross product of " << mSlowSource[mSlowIndex]->name() << " x "
+				   << mFastSource[mFastIndices[mSlowIndex]] << std::endl;
       debugging::debug("CPIT",4) << "Increment position to " << mSlowIndex << " x " << mFastIndices[mSlowIndex] << std::endl;
     }
     else
