@@ -152,7 +152,7 @@ debugging::debug_prefix(const std::string& prefix)
 std::string
 debugging::debug_prefix(int level)
 {
-upreturn Debug::get_singleton()->prefix(level);
+  return Debug::get_singleton()->prefix(level);
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 std::ostream&

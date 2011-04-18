@@ -274,17 +274,18 @@ operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { 
             var 2                    has not been crossed with any                                              
 */                                                                                                              
                                                                                                                 
-                                                                                                                                                             
+template<class SkipPred>                                                                                                                                                             
 class CrossProductIterator
 {
   FeatureVector const&          mSlowSource;
   FeatureVector const&          mFastSource;
+  SkipPred                      mSkipPred;
   unsigned                      mSlowIndex;
   mutable std::vector<unsigned> mFastIndices;
 
  public:
- CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast)
-   : mSlowSource(slow), mFastSource(fast), mSlowIndex(0), mFastIndices() { update_index_vector(); }
+ CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, SkipPred p)
+   : mSlowSource(slow), mFastSource(fast), mSkipPred(p), mSlowIndex(0), mFastIndices() { update_index_vector(); }
   
   int                   number_remaining () const; 
 
@@ -301,9 +302,9 @@ class CrossProductIterator
 };
                                                                                                                                                            
 
-inline
+template<class Pred>
 std::ostream&
-operator<< (std::ostream& os, CrossProductIterator const& it) { it.print_to(os); return os; }
+operator<< (std::ostream& os, CrossProductIterator<Pred> const& it) { it.print_to(os); return os; }
 
 
 #include "feature_iterators.Template.h"

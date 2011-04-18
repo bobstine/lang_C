@@ -29,7 +29,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-  
+   
 #include "auction.h"
       
 // from ranges
@@ -238,13 +238,13 @@ main(int argc, char** argv)
   // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>             NeighborhoodStream;
+  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
