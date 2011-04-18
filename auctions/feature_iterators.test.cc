@@ -60,7 +60,9 @@ main()
   std::cout << "TEST: col[ 1]    " << columns[ 1] << std::endl;
   std::cout << "TEST: col[10]    " << columns[10] << std::endl;
 
-  std::cout << "TEST: Feature from column 0 is " << Feature(columns[0]) << std::endl;
+  Feature f0 (columns[0]);
+  std::cout << "TESTING: name is " << f0->name() << std::endl;
+  std::cout << "TEST: Feature from column 0 is " << f0 << std::endl;
   
   FeatureVector features;
   FeatureVector featureVec1,  featureVec2;
@@ -225,10 +227,10 @@ main()
 
   
 
-  if (false)    // test dynamic cross-product iterator
+  if (true)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
     FeatureVector featuresSlow, featuresFast;
-    CrossProductIterator it (featuresSlow, featuresFast);
+    CrossProductIterator<SkipIfRelatedPair> it (featuresSlow, featuresFast, SkipIfRelatedPair());
     std::cout << "TEST_cp: initial state of iterator is " << it << std::endl;
     
     featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;
