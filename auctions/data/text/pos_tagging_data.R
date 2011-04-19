@@ -50,7 +50,7 @@ row.total == (nrow(x.train) + nrow(x.test))
 # ----------------------------------------------------------------------
 
 # --- new size for the training (use all for testing; have 6 times this amount)
-subsample.size <- 10000         # largest is currently 100000
+subsample.size <- 20000         # largest is currently 100000
 
 i.small <- which(1==apply(y.train[,c(2,6,8)],1,sum))
 n.small <- length(i.small)
@@ -58,9 +58,9 @@ i.1     <- which(1==      y.train[,1])
 i.3     <- which(1==      y.train[,3])
 i.4     <- which(1==      y.train[,4])
 i.5     <- which(1==      y.train[,5])
-i.7     <- which(1==      y.train[,7])
+i.7     <- which(1==      y.train[,7]); length(i.7)
 
-n.big   <- floor((subsample.size-n.small)/5) 
+n.big   <- floor((subsample.size-n.small)/5) ; n.big
 n.xtra  <- subsample.size-(n.small+5*n.big)
 i.train <- c(i.small, 
 				sample(i.1,n.big), 
@@ -159,6 +159,7 @@ manifest.file <- paste(data.path,"index.sh",sep="")
 
 # --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
 #                                                  878,604 when 100,000 sampled
+#                                                  398,604       20,000
 #                                                  338,604 when  10,000 sampled
 n.grps*row.total
 cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho",   
@@ -178,9 +179,9 @@ train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
 for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
-	         attr.str=paste("stream LOCKED parent group category" j)) }
+	         attr.str=paste("stream LOCKED parent group category",j)) }
 write.var(paste("group",n.grps,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
-	         attr.str=paste("stream group parent group",n.grps)) 
+	         attr.str=paste("stream group parent group category",n.grps)) 
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
