@@ -24,6 +24,7 @@ libs: c_flags
 	-$(MAKE) -sC ranges        lib
 	-$(MAKE) -sC spline        lib
 	-$(MAKE) -sC eigen         lib
+
 #	-$(MAKE) -sC auctions      lib
 #	-$(MAKE) -sC gsl_tools     lib
 
@@ -32,8 +33,10 @@ details: c_flags
 	-$(MAKE) -C random        lib
 	-$(MAKE) -C ranges        lib
 	-$(MAKE) -C spline        lib
-	-$(MAKE) -C auctions      lib
-	-$(MAKE) -C seq_regr      lib
+	-$(MAKE) -C eigen         lib
+
+#	-$(MAKE) -C auctions      lib
+#	-$(MAKE) -C seq_regr      lib
 
 auctions/auctions.test.exec:
 	-$(MAKE) -sC auctions auction.test.exec

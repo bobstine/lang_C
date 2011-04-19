@@ -225,7 +225,7 @@ LinearRegression::predictions(Matrix const& x) const
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
   else
-  { debugging::debug("REGR",0) << "Predicting, beta ranges from " << b.minCoeff() " to " << b.maxCoeff() << std::endl;
+  { debugging::debug("REGR",0) << "Predicting, beta ranges from " << b.minCoeff() << " to " << b.maxCoeff() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
   }
 }

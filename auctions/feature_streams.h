@@ -197,12 +197,12 @@ make_interaction_stream (std::string const& name, Collection const& src, bool us
 
 
 inline
-FeatureStream< CrossProductIterator, Identity >
+FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity >
 make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast)
 {
   debugging::debug("FPRS",2) << "make_interaction_stream (static) " << std::endl;
-  return FeatureStream< CrossProductIterator, Identity>
-    ("Interaction::"+name, CrossProductIterator(slow, fast), Identity());
+  return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>
+    ("CrossProduct::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity());
 }
 
 

@@ -8,7 +8,7 @@
 
 namespace FeaturePredicates {
   
-  bool           indicators_from_same_parent  (Feature const& f1, Feature const& f2) ;
+  bool           mutually_exclusive_indicators_from_same_parent  (Feature const& f1, Feature const& f2) ;
 
   template< class Collection >
     bool         found_name_among_features (std::string const& name, Collection const& features, std::string const& description) ;
@@ -43,13 +43,13 @@ class SkipIfRelated
   Feature mFeature;
 public:
   SkipIfRelated(Feature const& f) : mFeature(f) {}
-  bool operator()(Feature const& f) const { return FeaturePredicates::indicators_from_same_parent(mFeature, f); }
+  bool operator()(Feature const& f) const { return FeaturePredicates::mutually_exclusive_indicators_from_same_parent(mFeature, f); }
 };
 
 class SkipIfRelatedPair
 {  
 public:
-  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::indicators_from_same_parent(f, g); }
+  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::mutually_exclusive_indicators_from_same_parent(f, g); }
 };
 
 

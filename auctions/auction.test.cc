@@ -29,7 +29,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-  
+   
 #include "auction.h"
       
 // from ranges
@@ -238,19 +238,19 @@ main(int argc, char** argv)
   // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>             NeighborhoodStream;
+  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
-  theAuction.add_expert(Expert("In/Out", parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   /*
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
@@ -303,9 +303,9 @@ main(int argc, char** argv)
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+"x Lock]", source, nContextCases, alphaCP, 
+	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream("CP[" + streamNames[s] + "x Lock]",
+				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureStreams[s], lockedStream )                     
 				     ));
     }
@@ -349,7 +349,7 @@ main(int argc, char** argv)
     { ++round;
       clock_t start;
       start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor
+      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
@@ -364,7 +364,7 @@ main(int argc, char** argv)
 	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
       std::cout << std::endl;
     }
-  
+  }
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
@@ -402,7 +402,7 @@ main(int argc, char** argv)
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   return 0;  
-}
+} 
   
 
 

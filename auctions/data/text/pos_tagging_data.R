@@ -178,9 +178,9 @@ train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
 for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
-	         attr.str="stream LOCKED parent group") }
+	         attr.str=paste("stream LOCKED parent group category" j)) }
 write.var(paste("group",n.grps,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
-	         attr.str="stream group parent group") 
+	         attr.str=paste("stream group parent group",n.grps)) 
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
@@ -212,6 +212,8 @@ y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
 # --- or just use a wc on the xx_1 file itself...
 
 
+
+
 # ----------------------------------------------------------------------
 # 
 #  Analysis of results
@@ -219,8 +221,14 @@ y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
 # ----------------------------------------------------------------------
 
 # --- use cut to pull off the first 7 columns of the results
-setwd("/home/bob/C/auctions/data/text")
-system("cut -f1-8 model_data.csv > to_r.csv")
+
+# - subsample
+setwd("/home/bob/C/auctions/data/text/small/")
+
+# - regular
+setwd("/home/bob/C/auctions/data/text/")
+
+system("cut -f1-10 model_data.csv > to_r.csv")
 
 # --- read in the results; should match  n.grps * 301,416 = 1,205,664
 Results <- read.delim("to_r.csv")
