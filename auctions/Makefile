@@ -129,7 +129,7 @@ small_text_run: auction.test
 	 ./auction.test -f /data/conll03/auction_small/data -o data/text/small/ -r 10000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
 
 text_run: auction.test
-	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 1500 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
+	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 2000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
 
 
 
