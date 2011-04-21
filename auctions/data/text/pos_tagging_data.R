@@ -234,10 +234,10 @@ Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
 # --- validation data are returned from C++ in permuted order (reversed)
-n.grps <- 6
+n.grps <- 5
 
 i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
-i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps  ; n.testing  #  46,434
+i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  #  46,434
 
 # --- permute test data back to orginal order
 i.test <- i.test[length(i.test):1]
@@ -246,8 +246,8 @@ i.test <- i.test[length(i.test):1]
 pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=n.grps)
 pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=n.grps)
 
-y.train <- matrix(Results[i.train,"yy_123457"],nrow=n.training, ncol=n.grps)
-y.test  <- matrix(Results[ i.test,"yy_123457"], nrow=n.testing, ncol=n.grps)
+y.train <- matrix(Results[i.train,"yy_13457"],nrow=n.training, ncol=n.grps)
+y.test  <- matrix(Results[ i.test,"yy_13457"], nrow=n.testing, ncol=n.grps)
 
 # --- evaluate predictions, choice model
 choice.train <- apply(pred.train, 1, which.max); 
@@ -305,6 +305,23 @@ ncol(x.train)==ncol(x.test)
 row.total <- nrow(y.train) + nrow(y.test); row.total  # 301,416
 row.total == (nrow(x.train) + nrow(x.test))
 
+
+# --- sequence plots
+n<-nrow(x.test)
+f <- 800
+plot(x.test[seq(f,n,by=25),1]) # very weird at start
+plot(x.test[seq(f,n,by=25),2]) 
+plot(x.test[seq(f,n,by=25),3]) 
+
+plot(x.test[seq(1,n,by=25),51]) 
+plot(x.test[seq(1,n,by=25),52]) 
+
+plot(x.test[seq(f,n,by=25),101]) 
+plot(x.test[seq(f,n,by=25),102]) 
+
+plot(x.train[seq(1,nrow(x.train),by=1000)])
+
+spectrum(x.test[,1:5], spans=c(101,25,23))
 
 
 
