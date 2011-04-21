@@ -18,8 +18,8 @@ y.test <- as.matrix(read.csv("YMatrixTestNER.txt"))
 dim(y.test)
 ncol(y.train)==ncol(y.test)
 #  -  check dims
-n.train <- nrow(y.train)    #  46,434
-n.test  <- nrow(y.test)     # 254,982
+n.train <- nrow(y.train); n.train    #  46,434
+n.test  <- nrow(y.test) ; n.test     # 254,982
 n.y.cols <- ncol(y.train)
 
 # --- compare marginal counts
@@ -45,13 +45,30 @@ row.total == (nrow(x.train) + nrow(x.test))
 
 # ----------------------------------------------------------------------
 # 
-#  Downsample data
+#  Downsample data, selecting most/all of the y's that are 1's
 #
 # ----------------------------------------------------------------------
 
 # --- new size for the training (use all for testing; have 6 times this amount)
-subsample.size <- 100000
-i.train <- sample (1:n.train, subsample.size)
+subsample.size <- 20000         # largest is currently 100000
+
+i.small <- which(1==apply(y.train[,c(2,6,8)],1,sum))
+n.small <- length(i.small)
+i.1     <- which(1==      y.train[,1])
+i.3     <- which(1==      y.train[,3])
+i.4     <- which(1==      y.train[,4])
+i.5     <- which(1==      y.train[,5])
+i.7     <- which(1==      y.train[,7]); length(i.7)
+
+n.big   <- floor((subsample.size-n.small)/5) ; n.big
+n.xtra  <- subsample.size-(n.small+5*n.big)
+i.train <- c(i.small, 
+				sample(i.1,n.big), 
+				sample(i.3,n.big),
+				sample(i.4,n.big+n.xtra),
+				sample(i.5,n.big),
+				sample(i.7,n.big))
+length(i.train) == subsample.size
 
 # --- downsample X and Y training data
 y.train <- y.train[i.train,];   dim(y.train)
@@ -59,7 +76,7 @@ x.train <- x.train[i.train,];   dim(x.train)
 n.train <- subsample.size
 
 # --- check dim 
-row.total <- nrow(y.train) + nrow(y.test); row.total  # 146,434
+row.total <- nrow(y.train) + nrow(y.test); row.total  # 56,434 for the small one; 146,434
 row.total == (nrow(x.train) + nrow(x.test))
 
 
@@ -137,11 +154,13 @@ sum( y.test) ==  n.test  # check that totals match
 sum(y.train) == n.train 
 
 # --- data directory; change the word "auction" to use a different path
-data.path <- paste(path,"auction/",sep="")
+data.path <- paste(path,"auction_small/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
 # --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
 #                                                  878,604 when 100,000 sampled
+#                                                  398,604       20,000
+#                                                  338,604 when  10,000 sampled
 n.grps*row.total
 cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho",   
      n.grps*row.total,"\n", file=manifest.file, append=FALSE)  
@@ -160,9 +179,9 @@ train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
 for(j in 1:(n.grps-1)) { cat("j=",j,"\n");
 	write.var(paste("group",j,sep="_"), as.numeric(c(train==j,test==j)),role="x", 
-	         attr.str="stream LOCKED parent group") }
+	         attr.str=paste("stream LOCKED parent group category",j)) }
 write.var(paste("group",n.grps,sep="_"), as.numeric(c(train==n.grps,test==n.grps)),role="x", 
-	         attr.str="stream group parent group") 
+	         attr.str=paste("stream group parent group category",n.grps)) 
 
 # --- write the collection of x variables
 cat("# rest of predictors start here\n",file=manifest.file, append=TRUE)
