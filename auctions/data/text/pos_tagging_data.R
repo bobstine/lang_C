@@ -135,32 +135,32 @@ for(j in 101:150) {
 
 # ----------------------------------------------------------------------
 #
-#     STACKED...  6 Y's
+#     STACKED...  5 Y's
 #
 #    This version stacks the y's and adds indicators for the group
 #
 # ----------------------------------------------------------------------
 
-# --- include 5 major categories... combine the little ones (cols 2, 6, 8)
- y.test[,2] <-  y.test[,2] +  y.test[,6] +  y.test[,8]    # begins
-y.train[,2] <- y.train[,2] + y.train[,6] + y.train[,8] 
- y.test <-  y.test[,c(1,2,3,4,5,7)]
-y.train <- y.train[,c(1,2,3,4,5,7)]
+# --- include 5 major categories... combine the little ones (cols 2, 6, 8 with 4)
+ y.test[,4] <-  y.test[,2] +  y.test[,4] + y.test[,6] +  y.test[,8]    # begins
+y.train[,4] <- y.train[,2] + y.train[,4] + y.train[,6] + y.train[,8] 
+ y.test <-  y.test[,c(1,3,4,5,7)]
+y.train <- y.train[,c(1,3,4,5,7)]
 
-n.grps <- ncol(y.test); n.grps      # 6
+n.grps <- ncol(y.test); n.grps      # 5
 
 # --- n.train, n.test are the number of observations (will have ngroups times rows)
 sum( y.test) ==  n.test  # check that totals match
 sum(y.train) == n.train 
 
 # --- data directory; change the word "auction" to use a different path
-data.path <- paste(path,"auction_small/",sep="")
+data.path <- paste(path,"auction/",sep="")
 manifest.file <- paste(data.path,"index.sh",sep="")
 
-# --- open the manifest file: write n ; total is 1,205,664 with 4, 1,808,496 with 6
-#                                                  878,604 when 100,000 sampled
-#                                                  398,604       20,000
-#                                                  338,604 when  10,000 sampled
+# --- open manifest: write n; 1,205,664(4), 1,507,080(5), 1,808,496 with 6
+#                               878,604 when 100,000 sampled
+#                               398,604       20,000
+#                               338,604 when  10,000 sampled
 n.grps*row.total
 cat("#!/bin/sh\n# stacked format\n# number of cases in each variable\necho",   
      n.grps*row.total,"\n", file=manifest.file, append=FALSE)  
@@ -171,9 +171,9 @@ write.var("cv.indicator[in]", role = "context", c(rep(1,n.grps*n.train),rep(0,n.
 
 # --- stack the y variables; R ravels down columns
 cat("# response \n",file=manifest.file, append=TRUE)
-write.var("yy_123457", c(y.train,y.test), role="y", attr.str="") 
+write.var("yy_13457", c(y.train,y.test), role="y", attr.str="") 
 	
-# --- write the stream of group indicators; cannot put all 6 in the LOCKED stream
+# --- write the stream of group indicators; cannot put all in the LOCKED stream
 cat("# y group indicators\n",file=manifest.file, append=TRUE)
 train <- matrix(1:n.grps,nrow=n.train, ncol=n.grps, byrow=TRUE)
 test  <- matrix(1:n.grps,nrow=n.test , ncol=n.grps, byrow=TRUE)
@@ -208,10 +208,9 @@ x1   <- scan(paste(data.path,"xx_1"       , sep="")); length(x1)
 x71  <- scan(paste(data.path,"xx_71"      , sep="")); length(x71)
 x125 <- scan(paste(data.path,"xx_125"     , sep="")); length(x125)
 
-y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
+y  <- scan(paste(data.path,"yy_13457", sep="")); length(y); sum(y)
 
 # --- or just use a wc on the xx_1 file itself...
-
 
 
 
@@ -226,12 +225,11 @@ y  <- scan(paste(data.path,"yy_123457", sep="")); length(y); sum(y)
 # - subsample
 setwd("/home/bob/C/auctions/data/text/small/")
 
-# - regular
+# or use the data from the full
 setwd("/home/bob/C/auctions/data/text/")
 
-system("cut -f1-10 model_data.csv > to_r.csv")
-
 # --- read in the results; should match  n.grps * 301,416 = 1,205,664
+system("cut -f1-10 model_data.csv > to_r.csv")
 Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
@@ -262,6 +260,17 @@ choice.test <- apply(pred.test, 1, which.max);
 tab <- table(choice.test,true.test)
 ftable(addmargins(tab))
 
+# --- Precision and recall heuristics
+#     add row for category 2 if needed
+if (nrow(tab)<ncol(tab)) { 
+	tab <- rbind(tab[1,],rep(0,n.grps),tab[2:nrow(tab),]); rownames(tab)<-1:n.grps }
+other <- 4; 
+n.correct    <- sum(diag(tab)       [-other])
+n.entity     <- sum(apply(tab,2,sum)[-other])
+n.say.entity <- sum(apply(tab,1,sum)[-other])
+cat("Precision",round(n.correct/n.entity,3), "   Recall ", round(n.correct/n.say.entity,3), "\n")
+
+
 # --- check SSE vs C++  (these agree 30 Mar 11)
  sum((pred.train-y.train)^2)
  sum((pred.test -y.test )^2)
@@ -271,6 +280,30 @@ ftable(addmargins(tab))
  sqrt(apply((pred.train-y.train)^2,2,sum)/n.training)
  sqrt(apply((pred.test -y.test)^2 ,2,sum)/n.testing)
 
+
+
+
+
+# ----------------------------------------------------------------------
+# 
+#  Time Series analysis of smoothed X data
+#
+# ----------------------------------------------------------------------
+
+path <- "/Users/bob/data/text/conll03/"
+setwd(path)
+
+
+# --- read X data; check col dim match
+x.train <- as.matrix(read.csv("XMatrixTrain.txt"))
+dim(x.train)
+x.test <- as.matrix(read.csv("XMatrixTest.txt"))
+dim(x.test)
+ncol(x.train)==ncol(x.test)
+
+# --- check dim 
+row.total <- nrow(y.train) + nrow(y.test); row.total  # 301,416
+row.total == (nrow(x.train) + nrow(x.test))
 
 
 
