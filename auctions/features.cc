@@ -126,13 +126,25 @@ InteractionFeature::collect_attributes()
   { StringSet attrs (mFeature1->attribute_str_value("parent"));
     for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
       add_attribute("parent",*it);
-    add_attribute("category", *(mFeature1->attribute_str_value("category").begin()));
+    StringSet categoryValues (mFeature1->attribute_str_value("category"));
+    if (categoryValues.empty())
+    { std::cout << "ERROR: Configuration error in categorical variable; " << mFeature1->name() << " has parent but missing category value." << std::endl;
+      add_attribute("category", "0");
+    }
+    else
+      add_attribute("category", *(mFeature1->attribute_str_value("category").begin()));
   }
   if (mFeature2->has_attribute("parent"))
   { StringSet attrs (mFeature2->attribute_str_value("parent"));
     for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
       add_attribute("parent",*it);
-    add_attribute("category", *(mFeature2->attribute_str_value("category").begin()));
+    StringSet categoryValues (mFeature2->attribute_str_value("category"));
+    if (categoryValues.empty())
+    { std::cout << "ERROR: Configuration error in categorical variable; " << mFeature2->name() << " has parent but missing category value." << std::endl;
+      add_attribute("category", "0");
+    }
+    else
+      add_attribute("category", *(mFeature2->attribute_str_value("category").begin()));
   }
 }
 
