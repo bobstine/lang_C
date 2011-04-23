@@ -127,7 +127,7 @@ theher_run: auction.test
 
 
 text_run: auction.test
-	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 600 -a 0.25 -p 3 -c 10 -d 1 -b 1 -s 1
+	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 600 -a 0.25 -p 3 -c 10 -k 500 -d 1 -b 1 -s 1
 
 
 
