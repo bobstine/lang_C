@@ -159,7 +159,7 @@ template <class Collection>
 FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
 make_feature_product_stream (std::string const& name, Feature const& f, Collection const& c)
 {
-  std::cout << "FPRS: make_feature_product_stream from feature " << f->name() << std::endl;
+  debugging::debug("FPRS",2) << "make_feature_product_stream from feature " << f->name() << std::endl;
   return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature>
     ("Feature-product::"+name, QueueIterator<Collection, SkipIfRelated>(c, SkipIfRelated(f)), BuildProductFeature(f));
 }
@@ -167,11 +167,11 @@ make_feature_product_stream (std::string const& name, Feature const& f, Collecti
 
 template <class Model>
 FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-make_calibration_stream (std::string const& name, Model const& model, int gap, std::string signature, int skip)
+make_calibration_stream (std::string const& name, Model const& model, int gap, std::string signature, int skip, bool binary)
 {
-  std::cout << "FPRS: make_calibration_stream with gap between valid = " << gap << " and initial skip of " << skip << " cases." << std::endl;
+  debugging::debug("FPRS",1) << "make_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
   return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip));  // 3 = cubic
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip, binary));  // 3 = cubic
 }
 
 
@@ -180,7 +180,7 @@ template <class Collection, class Trans>
 FeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
 make_subspace_stream (std::string const& name, Collection const& src, Trans const& trans, int bundleSize)
 {
-  std::cout << "FPRS: make_subspace_stream with bundle size " << bundleSize << std::endl;
+  debugging::debug("FPRS",2) << "make_subspace_stream with bundle size " << bundleSize << std::endl;
   return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
     ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
 }
@@ -190,19 +190,19 @@ template <class Collection>
 FeatureStream< InteractionIterator<Collection, SkipIfRelatedPair>, Identity>
 make_interaction_stream (std::string const& name, Collection const& src, bool useSquares)
 {
-  std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
+  debugging::debug("FPRS",2) << "make_interaction_stream (static) " << std::endl;
   return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity>
     ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()), Identity());
 }
 
 
 inline
-FeatureStream< CrossProductIterator, Identity >
+FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity >
 make_cross_product_stream (std::string const& name, FeatureVector const& slow, FeatureVector const& fast)
 {
-  std::cout << "FPRS: make_interaction_stream (static) " << std::endl;
-  return FeatureStream< CrossProductIterator, Identity>
-    ("Interaction::"+name, CrossProductIterator(slow, fast), Identity());
+  debugging::debug("FPRS",2) << "make_interaction_stream (static) " << std::endl;
+  return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>
+    ("CrossProduct::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity());
 }
 
 

@@ -16,15 +16,16 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
 //  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes
 
 bool
-FeatureABC::has_attribute(std::string attr)           const
+FeatureABC::has_attribute(std::string attrName)           const
 {
-  return (mAttributes.end() != mAttributes.find(attr));
+  return (mAttributes.end() != mAttributes.find(attrName));
 }
 
 
 void
 FeatureABC::add_attribute(std::string name, std::string value)
 {
+  //  std::cout << "TESTING: Adding attribute " << name << " with value " << value << std::endl;
   mAttributes[name].insert(value);
 }
 
@@ -32,6 +33,7 @@ FeatureABC::add_attribute(std::string name, std::string value)
 void
 FeatureABC::add_attributes_from_paired_list (std::string list)
 {
+  // std::cout << "TESTING: adding attributes from space-delimited paired list " << list << std::endl;
   std::istringstream iss (list);
   iss >> std::ws;
   while (!iss.eof())
@@ -49,8 +51,7 @@ FeatureABC::attribute_str_value(std::string attr) const
   for(AttrIter it=mAttributes.begin(); it != mAttributes.end(); ++it)
     if (it->first == attr)
       return it->second;
-  std::set<std::string> s;
-  return s;
+  return std::set<std::string>();
 }
       
 

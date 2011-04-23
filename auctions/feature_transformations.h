@@ -130,28 +130,33 @@ class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureV
   int         mDegree;
   std::string mSignature;  // identifying variable name
   int         mSkip;       // possible offset to allow for lag features
+  bool        mTruncate;
   
  public:
-  BuildCalibrationFeature (int degree, std::string s, int skip) : mDegree(degree), mSignature(s), mSkip (skip) { } 
+  BuildCalibrationFeature (int degree, std::string s, int skip, bool truncate)
+    : mDegree(degree), mSignature(s), mSkip (skip), mTruncate(truncate) { } 
   
   FeatureVector operator()(Model const* pModel) const
-  {
-    // construct name for features as 'Y_hat_(number of vars)'
+  { // construct name for features as 'Y_hat_(number of vars)'
     std::ostringstream oss;
     oss << mSignature << pModel->q();
     Column fit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
-    { // fill skipped values with mean of response
-      double *pFit (fit->begin());
-      double ybar (pModel->y_bar());
-      for(int i=0; i<mSkip; ++i)
-	*pFit++ = ybar;
-    }
-    pModel->fill_with_fit(fit->begin() + mSkip);
+    // fill skipped values with mean, assuming mean of y is mean of fit
+    double *pFit (fit->begin());
+    double mean  (pModel->y_bar());
+    for(int i=0; i<mSkip; ++i)
+      *pFit++ = mean;
+    // fill rest with predictions from model, then center the range
+    pModel->fill_with_fit(fit->begin() + mSkip, mTruncate);
+    debugging::debug("CALB",1) << "Range of fit/predictions (truncate=" << mTruncate << ") returned to calibrator by model is  "
+			       << *range_ops::min_element(Ranges::make_range(fit->begin() + mSkip, fit->end())) << "  --  "
+			       << *range_ops::max_element(Ranges::make_range(fit->begin() + mSkip, fit->end())) << std::endl;				 
     fit->update();
     std::vector<int> powers;
     for (int j = 2; j <= mDegree; ++j)
       powers.push_back(j);
-    debugging::debug("FSTR",4) << "BuildCalibrationFeature constructs powers 2-" << mDegree <<" of " << fit->name() << std::endl;
+    debugging::debug("CALB",4) << "BuildCalibrationFeature constructs powers 2-" << mDegree <<" of " << fit->name() << std::endl;
+    // centers the column before powering up
     FeatureVector fv (powers_of_column(fit,powers));
     return fv;
   }

@@ -9,7 +9,7 @@
 */
 
 
-#include <Eigen/Array>
+#include <Eigen/Core>
 
 
 class Householder

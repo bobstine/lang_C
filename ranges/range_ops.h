@@ -1,5 +1,4 @@
 // -*- c++ -*-
-// $Id: range_ops.h,v 1.43 2004/04/29 16:54:20 bob Exp $ -*- c++ -*-
 
 /*
   14 Mar 03 ... Add a length function so can specialize later for sparse ranges.

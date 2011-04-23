@@ -25,7 +25,7 @@ PCA::operator()(Eigen::MatrixXd const& data) const
   else
     linComb = SVD::random_linear_combinations(data,m);
   // compute svd
-  Eigen::SVD<Eigen::MatrixXd> svd(linComb);
+  Eigen::JacobiSVD<Eigen::MatrixXd> svd(linComb, Eigen::ComputeThinU);
   Eigen::MatrixXd u (svd.matrixU());
   Eigen::VectorXd s (svd.singularValues());
   debug("EIGN",3) << "Singular values are {" << s.transpose() << "}" << std::endl;
@@ -74,6 +74,6 @@ Kernel::Radial::operator()(Eigen::VectorXf const& x, Eigen::VectorXf const& y) c
 double
 Kernel::WeightedRadial::operator()(Eigen::VectorXd const& x, Eigen::VectorXd const& y) const
 {
-  Eigen::VectorXd wdiff ((x - y).cwise()/mWts);
+  Eigen::VectorXd wdiff ((x - y).cwiseQuotient(mWts));
   return exp(-0.5 * wdiff.squaredNorm());
 }

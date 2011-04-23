@@ -213,8 +213,7 @@ public:
 
 ////  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder 
 
-// mixes universal with finite/bidder minimum bid
-// keeps bid above a minimal threshold determined
+// mixes universal with finite/bidder; keeps bid above a minimal threshold
 
 namespace {
   double max(double a, double b) { return a>b ? a : b; }

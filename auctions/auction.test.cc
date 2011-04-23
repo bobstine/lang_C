@@ -1,17 +1,22 @@
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
-             
-          auction.test -f filename -o path -r rounds -c calibration_df -v
- 
-  where
-        -r  number of rounds for the auction (default is 50)
-        -f  path for input data              (default is est.dat)
-	-o  path for output model results    (default is model)
-	-a  total alpha to distribute        (default is 0.1... might ought to be less)
-	-p  level of protection              (default is level 3)
-	-c  calibration df                   (default is no calibration)
-
+                    
+           ./auction.test ... { options } 
+	   
+  where options are
+	-a  total alpha to distribute           (default is 0.1... might ought to be less)
+	-b  blocksize for white                 (default 0 is OLS; 1 for white; larger for corr)
+	-c  calibration df                      (default is no calibration)
+        -d  debug level of output
+	-f  path for input data                 (default is est.dat)
+	-k  max number of X columns written out (default 0 implies to write none)
+	-o  path for output model results       (default is model)
+	-p  level of protection                 (default is level 3)
+        -r  number of rounds for the auction    (default is 50)
+	-s  shrink the estimates                (default is 0; set to 1 to shrink)
+	-x  number of leading extra cases       (default is 0; used for lagging)
+	
   10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
   21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
@@ -24,7 +29,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-  
+   
 #include "auction.h"
       
 // from ranges
@@ -91,7 +96,8 @@ parse_arguments(int argc, char** argv,
 		std::string& outputPath,
 		int &protection, bool &useShrinkage,
 		int &blockSize, int &nRounds, double &totalAlpha,
-		int &calibrationGap, int &prefixCases, int &debugLevel);
+		int &calibrationGap, int &prefixCases, int &debugLevel,
+		int &maxNumXCols);
 
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
@@ -108,8 +114,6 @@ main(int argc, char** argv)
   using debugging::debug;
   typedef std::vector<Feature> FeatureVector;
 
-  debug("AUCT",0) << "Version build 1.01 (10 Aug 2010)\n";
-
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
@@ -118,7 +122,8 @@ main(int argc, char** argv)
   bool          useShrinkage         (false);
   int           shrink               (0);
   int           blockSize            (0);                                   // no blocking implies standard testing
-  int           numberRounds         (200); 
+  int           numberRounds         (200);
+  int           numOutputColumns     (0);
   // int           splineDF             (0);
   int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
@@ -127,7 +132,7 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
 		  blockSize, numberRounds, totalAlphaToSpend,
-		  calibrationGap, prefixCases, debugLevel);
+		  calibrationGap, prefixCases, debugLevel, numOutputColumns);
   if(useShrinkage) shrink = 1;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -138,10 +143,12 @@ main(int argc, char** argv)
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
-  
+  debug("AUCT",0) << "Version build 1.5 (1 Apr 2011)\n";
+   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
+		  << " --output-cols=" << numOutputColumns  
 		  << " --alpha=" << totalAlphaToSpend << " --calibration-gap=" << calibrationGap << " --extra-cases=" << prefixCases
 		  << std::endl;
   
@@ -215,32 +222,35 @@ main(int argc, char** argv)
   std::string progressCSVFileName (outputPath + "progress.csv");
   std::ofstream progressStream (progressCSVFileName.c_str());
   if (!progressStream)
-    { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
-      return -1;
-    }
+  { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
+    return -1;
+  }
+
+  // set up calibration options
+  bool yIsBinary  (yColumns[0]->is_dummy());
+  debug("AUCT",1) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
+  std::string calibrationSignature ("Y_hat_");
 
   // build model and initialize auction with csv stream for tracking progress
-  std::string calibrationSignature ("Y_hat_");
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
-  
   
   // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>             NeighborhoodStream;
+  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
-  theAuction.add_expert(Expert("In/Out",parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   /*
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
@@ -253,7 +263,7 @@ main(int argc, char** argv)
   IntegerColumn indices();
   for(unsigned int i=0; i<cColumns.size(); ++i)
   { if (cColumns[i]->name() == "Pop_Neighbor")
-    { debug("MAIN",2) << "Data include a neighborhood context variable.\n";
+    { debug("MAIN",1) << "Data include a neighborhood context variable.\n";
       IntegerColumn indices(cColumns[i]);
       theAuction.add_expert(Expert("Neighborhood", parasite, nContextCases, 0,
 				   UniversalBidder< NeighborhoodStream >(),
@@ -262,49 +272,59 @@ main(int argc, char** argv)
     }
   }
 
-  // add a source and interaction expert for each stream with role=x
-  // first, avoid locked streams 
+  // build a source and interaction expert for each stream with role=x, but not for the locked stream
   std::vector<std::string> streamNames (featureSrc.stream_names());
+  FeatureVector lockedStream;
   for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
   { if (*it == "LOCKED")
-    { debug("MAIN",4) << "Locked stream is not a bidding stream.\n";
+    { debug("MAIN",4) << "Note that the locked stream is not a bidding stream.\n";
       streamNames.erase(it);
+      lockedStream =  featureSrc.features_with_attribute("stream", "LOCKED");
       break;
     }
   }
-  debug("MAIN",3) << "Found " << streamNames.size() << " bidding streams.\n";
-  // allocate alpha for main and interaction input source streams
-  double   alphaShare (totalAlphaToSpend/streamNames.size());
+  debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; locked stream has " << lockedStream.size() << " features." << std::endl;
+  // allocate alpha for main, interaction and cross-product with locked input source streams
   std::vector< FeatureVector> featureStreams(streamNames.size());
-  for (int s=0; s < (int)streamNames.size(); ++s)
-  { debug("MAIN",2) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
-    featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
-    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaShare * 0.52,        // alpha
-				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]",source, nContextCases, alphaShare * 0.48,     // slightly less to avoid tie 
-				 UniversalBoundedBidder<InteractionStream>(),
-				 make_interaction_stream("Interactions within " + streamNames[s],
-							 featureStreams[s], true)                             // include squared terms
-				 ));
+  { bool     hasLockStream (lockedStream.size() > 0);
+    double   alphaShare    (totalAlphaToSpend/streamNames.size());
+    double   alphaMain     (alphaShare * hasLockStream ? 0.40 : 0.6 );
+    double   alphaInt      (alphaShare * hasLockStream ? 0.31 : 0.40);
+    double   alphaCP       (alphaShare * hasLockStream ? 0.29 : 0);
+    for (int s=0; s < (int)streamNames.size(); ++s)
+    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
+      featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
+      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
+				   UniversalBoundedBidder<FiniteStream>(), 
+				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
+      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+				   UniversalBoundedBidder<InteractionStream>(),
+				   make_interaction_stream("Interactions within " + streamNames[s],
+							   featureStreams[s], true)                                  // true means to include squared terms
+				   ));
+      if (hasLockStream)                                                                                             // cross with locked stream
+	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
+				     UniversalBoundedBidder<CrossProductStream>(),
+				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
+							       featureStreams[s], lockedStream )                     
+				     ));
+    }
   }
-
+   
   //  Calibration expert
   if(calibrationGap > 0)
-  { 
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature, nContextCases)));
-  }
-    
+				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+							 nContextCases, yIsBinary)));
 
   //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                             // kludge alpha share
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),    // number components, standardize? (0 means use sing values)
-						    30))) ;                                                   // bundle size
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // number components, standardize? (0 means use sing values)
+						    30))) ;                                                          // bundle size
 
   //   RKHS stream
   theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
@@ -320,29 +340,31 @@ main(int argc, char** argv)
     FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
     if(lockIn.size() > 0)
     { theAuction.add_initial_features(lockIn);
-      debug("AUCT",3) << theAuction << std::endl << std::endl;
+      debug("AUCT",1) << theAuction << std::endl << std::endl;
     }
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     double totalTime (0.0);
     while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
-    {
-      ++round;
+    { ++round;
       clock_t start;
       start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor
-      { debug("AUCT",2) << " @@@ Auction adds predictor; p = " << theAuction.model().q() << " @@@" << std::endl;
-	debug("AUCT",3) << theAuction << std::endl << std::endl;
-      }
+      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
+      	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
-      debug("AUCT",2) << "Time for round " << round <<  " was " << time << std::endl;
+      debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",2) << "\n      -------  Auction ends after " << round << "/" << numberRounds
-		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+    std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
+	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+    { std::vector<std::string> names (theAuction.purged_expert_names());
+      std::cout << "\n During the auction, there were " << names.size() << " purged experts: \n";
+      for(unsigned int i=0; i<names.size(); ++i)
+	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
+      std::cout << std::endl;
+    }
   }
-  
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
@@ -375,12 +397,12 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
     } 
-    theAuction.write_model_data_to(output);
+    theAuction.write_model_data_to(output, numOutputColumns);
     output.close();
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   return 0;  
-}
+} 
   
 
 
@@ -393,9 +415,8 @@ parse_arguments(int argc, char** argv,
 		int    &blockSize,
 		int    &nRounds,
 		double &totalAlpha,
-		int    &gap,
-		int    &prefixCases,
-		int    &debugLevel)
+		int    &gap,        int    &prefixCases,
+		int    &debugLevel, int    &numOutputColumns)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -407,6 +428,7 @@ parse_arguments(int argc, char** argv,
 	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
+	  {"output-columns",    1, 0, 'k'},  // has arg
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
@@ -415,7 +437,7 @@ parse_arguments(int argc, char** argv,
 	  {"help",              0, 0, 'h'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "a:b:c:d:f:o:p:r:s:x:h", long_options, &option_index);
+	key = getopt_long (argc, argv, "a:b:c:d:f:k:o:p:r:s:x:h", long_options, &option_index);
 	if (key == -1)
 	  break;
 	// std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -445,6 +467,11 @@ parse_arguments(int argc, char** argv,
 	    {
 	      std::string name(optarg);
 	      inputFile = name;
+	      break;
+	    }
+	  case 'k' : 
+	    {
+	      numOutputColumns = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'o' :  
@@ -504,33 +531,37 @@ parse_arguments(int argc, char** argv,
     }
 }
 
- 
+  
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
-{
-  Column indicator;
+{ // have some weird allocation/bad pointer issues around assigning an empty column; problem was here; avoid by returning Column()
+  debug("MAIN",3) << "Checking for CV indicator variable among " << columns.size() << " columns. "
+		  << " First column is named " << columns[0]->name() << " with size = " << columns[0]->size() << std::endl
+		  << columns[0] << std::endl;
   if (columns.empty())
   { debug("MAIN",0) << "Data lack CV indicator.\n";
-    return indicator;
+    return Column();
   }
   if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator[in]"))
   { debug("MAIN",0) << "First context column is not in/out indicator; found '" << columns[0]->name()
 		    << "' instead. Using all cases for estimation.\n";
-    return indicator;
+    return Column();
   }
   // check name of the first context column, verify its a dummy variable
-  { if (columns[0]->is_dummy())
-    { indicator = columns[0];
-      double sum (0.0);
-      for (double *b (indicator->begin() + prefixCases); b != indicator->end() ; ++ b)
-	sum += *b;
-      debug("MAIN",0) << "CV indicator variable is " << indicator->name() << " with sum " << sum
-		      << " estimation cases after skipping " << prefixCases << " leading cases.\n";
-    }
-    else
-      debug("MAIN",0) << "ERROR: Proposed indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
+  if (columns[0]->is_dummy())
+  { double sum (0.0);
+    for (double *b (columns[0]->begin() + prefixCases); b != columns[0]->end() ; ++ b)
+      sum += *b;
+    debug("MAIN",0) << "CV indicator variable is " << columns[0]->name() << " with sum " << sum
+		    << " estimation cases after skipping " << prefixCases << " leading cases.\n";
+    return columns[0];
   }
-  return indicator;
+  else // explain why its not a dummy variable
+  { debug("MAIN",0) << "ERROR: CV indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
+    columns[0]->print_to(debug("MAIN",0));
+    debug("MAIN",0) << std::endl << std::endl;
+    return Column();
+  }
 }
 
  

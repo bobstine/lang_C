@@ -10,6 +10,8 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
+OPT = -std=c++0x -O2
+
 # EXTERNAL_USES = 
 
 
@@ -19,7 +21,7 @@ USES = random utils
 #
 ###########################################################################
 
-level_0   =  fstatistic.o # householder.o
+level_0   =  fstatistic.o 
 level_1   =  eigen_svd.o  regression.o
 
 ############################################################################

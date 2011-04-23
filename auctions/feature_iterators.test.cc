@@ -6,7 +6,7 @@
  *  Copyright 2010. All rights reserved.
  *
  */
-
+ 
 #include "debug.h"
 #include "column.h"
 #include "features.h"
@@ -51,15 +51,23 @@ main()
   debugging::debug_init(std::cout,4);
   
   // build vector of columns from file
-  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
+  //  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
+  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
+  std::cout << "TEST: col[ 0]    " << columns[ 0] << std::endl;
+  std::cout << "TEST: col[ 1]    " << columns[ 1] << std::endl;
+  std::cout << "TEST: col[10]    " << columns[10] << std::endl;
+
+  Feature f0 (columns[0]);
+  std::cout << "TESTING: name is " << f0->name() << std::endl;
+  std::cout << "TEST: Feature from column 0 is " << f0 << std::endl;
   
   FeatureVector features;
   FeatureVector featureVec1,  featureVec2;
   FeatureList   featureList1, featureList2;
-  std::cout << "\n\nTEST: building collections of features\n";
+  std::cout << "\n\nTEST: Building collections of features\n";
   const int numberOfFeatures (10);
   for (int i=0; i<numberOfFeatures; ++i)
   { features.push_back(Feature(columns[i]));
@@ -86,6 +94,13 @@ main()
   std::cout << "  -------------------------------------------------------\n";
   
 
+  if (true)         // test predicate
+  {
+    std::cout << "TEST: features f[2] and f[3] are mutually exclusive gives (should be 1): "
+	      << FeaturePredicates::mutually_exclusive_indicators_from_same_parent(features[2],features[3]) << "   "
+	      << SkipIfRelated(features[2])(features[3]) << "    "
+	      << SkipIfRelatedPair()(features[2],features[3]) << std::endl;
+  }
   
   if (false)        // test queue iterator
   {
@@ -159,7 +174,7 @@ main()
   {
     std::cout << "\n\nTEST:  make model iterator\n";
     Model model (featureList1, featureList2);
-    ModelIterator<Model> it (model);
+    ModelIterator<Model> it (model,0);
     
     int max (4);
     model.increment_q();
@@ -199,7 +214,7 @@ main()
     for (int i=0; i<4; ++i)                   // small vector to check end
       fv.push_back(features[i]);
     fv.push_back(constantFeature2);
-    std::for_each(fv.begin(), fv.end(), [](Feature const& f) {std::cout << "     " << f->name() << std::endl; });
+    // std::for_each(fv.begin(), fv.end(), [](Feature const& f) {std::cout << "     " << f->name() << std::endl; });
     InteractionIterator<FeatureVector, SkipIfRelatedPair> it (fv, true, SkipIfRelatedPair());  // use squares?
     std::cout << "TEST_inter: initially interaction stream has " << it.number_remaining() << " features remaining\n";
     int more (40);
@@ -212,10 +227,10 @@ main()
 
   
 
-  if (false)    // test dynamic cross-product iterator
+  if (true)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
     FeatureVector featuresSlow, featuresFast;
-    CrossProductIterator it (featuresSlow, featuresFast);
+    CrossProductIterator<SkipIfRelatedPair> it (featuresSlow, featuresFast, SkipIfRelatedPair());
     std::cout << "TEST_cp: initial state of iterator is " << it << std::endl;
     
     featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;

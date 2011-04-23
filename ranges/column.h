@@ -19,6 +19,7 @@
 #include <iterator>
 #include <vector>
 #include <map>
+#include <set>
 #include <assert.h>
 
 #include <iostream>
@@ -47,11 +48,12 @@ class ColumnData
   int         mN;
   double      mAvg;
   double      mMin, mMax;
-  int         mNumUnique; 
+  int         mNumUnique;
+  std::set<double> mUniqueElements; // only held if mNumUnique is small
   double *    mBegin;
   double *    mEnd;
   int         mRefCount;
-
+ 
  private:
   ~ColumnData()                     { delete[] mBegin; }
 
@@ -70,8 +72,9 @@ class ColumnData
   double          element(int i)  const { return *(mBegin+i); }
   double*         begin()         const { return mBegin; }
   double*         end()           const { return mEnd; }
-  Ranges::range<double*>  writable_range()const { return Ranges::make_range(mBegin, mEnd); }
-  Ranges::range<double const*> range()    const { return Ranges::make_range(mBegin, mEnd); }
+  Ranges::range<double*>       writable_range()  const { return Ranges::make_range(mBegin, mEnd); }
+  Ranges::range<double const*> range()           const { return Ranges::make_range(mBegin, mEnd); }
+  std::set<double>             unique_elements() const { return mUniqueElements; }
   
   bool            is_constant()   const { return mNumUnique == 1; }
   bool            is_dummy()      const { return ((mNumUnique == 2) && (mMin == 0) && (mMax == 1)); }
@@ -113,7 +116,9 @@ class Column
     mData->mDescription = description;
     double *x (mData->mBegin);  
     while(n--)
-      fscanf(fp, "%lf", x++);  
+    { int result;
+      result = fscanf(fp, "%lf", x++);
+    }
     mData->init_properties();
   }
 

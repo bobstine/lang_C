@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <functional>
 
-#include <Eigen/Array>
+#include <Eigen/Dense>
 #include <Eigen/SVD>
 
 

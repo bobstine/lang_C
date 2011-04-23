@@ -4,6 +4,7 @@ regex
 lambda
 csv_parser
 csv_parser_demo
+csv.out
 thread_1
 thread_2
 thread_3
