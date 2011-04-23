@@ -140,3 +140,104 @@ template<class Source, class Pred>
 
 
 
+//   CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator
+
+template<class Pred>
+bool
+CrossProductIterator<Pred>::valid()             const
+{
+  update_index_vector();
+  return (mSlowIndex < mSlowSource.size()) && (mFastIndices[mSlowIndex] < mFastSource.size());
+}
+
+template<class Pred>
+int
+CrossProductIterator<Pred>::number_remaining () const
+{
+  if (! valid() ) return 0;
+  int n (0);
+  for (unsigned iSlow=0; iSlow < mSlowSource.size(); ++iSlow)
+    n += mFastSource.size() - mFastIndices[iSlow];
+  debugging::debug("CPIT",4) << " CP of vectors of sizes " << mSlowSource.size() << " x " << mFastSource.size()
+			     << " has " << n << " remaining features." << std::endl;
+  return n;
+}
+
+template<class Pred>
+Feature
+CrossProductIterator<Pred>::operator*()         const
+{
+  assert(valid());
+  return Feature(mSlowSource[mSlowIndex], mFastSource[mFastIndices[mSlowIndex]]);
+}
+
+
+template<class Pred>
+CrossProductIterator<Pred>&
+CrossProductIterator<Pred>::operator++()
+{
+  // mark that last was used since return directly on stack
+  ++mFastIndices[mSlowIndex];
+  update_index_vector();                                                                                                                                  
+  // find first not used
+  mSlowIndex=0;
+  bool keepSearching (true);
+  while(keepSearching)
+  { while(mSlowIndex < mSlowSource.size())
+    { if (mFastIndices[mSlowIndex] < mFastSource.size())                                                                                                                      
+      { keepSearching = false;
+	break;
+      }
+      else
+	++mSlowIndex;
+    }
+    if (mSlowIndex < mFastIndices.size())
+    { keepSearching = mSkipPred(mSlowSource[mSlowIndex], mFastSource[mFastIndices[mSlowIndex]]);
+      if (keepSearching)
+      { debugging::debug("CPIT",3) << "Skipping cross product of " << mSlowSource[mSlowIndex]->name() << " x "
+				   << mFastSource[mFastIndices[mSlowIndex]] << std::endl;
+	++mFastIndices[mSlowIndex];
+      }
+      else
+	debugging::debug("CPIT",3) << "Allowing cross product of " << mSlowSource[mSlowIndex]->name() << " x "
+				   << mFastSource[mFastIndices[mSlowIndex]] << std::endl;
+      debugging::debug("CPIT",4) << "Increment position to " << mSlowIndex << " x " << mFastIndices[mSlowIndex] << std::endl;
+    }
+    else
+    { --mSlowIndex;              // keep position in valid range in case fast list expands
+      keepSearching = false;     // none left to search
+      debugging::debug("CPIT",4) << "Increment results in empty iterator.\n";
+    }
+  }
+  return *this;
+}
+
+
+template<class Pred>
+void
+CrossProductIterator<Pred>::update_index_vector()    const
+{
+  while (mFastIndices.size() < mSlowSource.size())
+    mFastIndices.push_back(0);
+}
+
+template<class Pred>
+void
+CrossProductIterator<Pred>::print_to (std::ostream& os) const
+{ os << "CrossProductIterator with indices ";
+  print_indices(os);
+  if(valid())
+    os << "@ " << mSlowSource[mSlowIndex]->name() << " x " << mFastSource[mFastIndices[mSlowIndex]]->name() << std::endl;
+  else
+    os << "is empty.\n";
+}
+
+template<class Pred>
+void
+CrossProductIterator<Pred>::print_indices(std::ostream& os)  const
+{
+  os << mSlowIndex << " { ";
+  for (unsigned i=0; i<mFastIndices.size(); ++i)
+    os << mFastIndices[i] << " ";
+  os << "}";
+}

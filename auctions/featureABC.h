@@ -55,42 +55,42 @@ class FeatureABC
     : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { }
 
   FeatureABC (std::istream& is)
-    : mRefCount(1), mSize(0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
+    : mRefCount(1), mSize(   0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
 
-  bool                operator== (FeatureABC const* f)          const { return name() == f->name(); }
+  bool                  operator== (FeatureABC const* f)          const { return name() == f->name(); }
 
-  int                 size()                                    const { return mSize; }
-  Attributes          attributes()                              const { return mAttributes; }
-  bool                has_attribute(std::string attr)           const;
-  void                add_attribute(std::string name, std::string value);
-  void                add_attributes_from_paired_list (std::string list);
-
-  std::set<std::string> attribute_str_value(std::string attr)   const;
-  std::set<     int   > attribute_int_value(std::string attr)   const;
-  std::set<   double  > attribute_dbl_value(std::string attr)   const;
+  int                   size()                                    const { return mSize; } 
   
-  bool                was_tried_in_model ()                     const { return mTried; }
-  bool                is_used_in_model ()                       const { return mInModel; }
-  double              entry_bid ()                              const { return mEntryBid; }
-  void                set_model_results(bool used, double bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
+  bool                  was_tried_in_model ()                     const { return mTried; }
+  bool                  is_used_in_model ()                       const { return mInModel; }
+  double                entry_bid ()                              const { return mEntryBid; }
+  void                  set_model_results(bool used, double bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
 
-  virtual std::string class_name()                              const { return "FeatureABC"; }
-  virtual std::string name()                                    const = 0;                 // pure virtual, must maintain const
-  virtual int         degree()                                  const = 0;                 // number of continuent features, eg 2 for simple interaction
-  virtual Arguments   arguments()                               const = 0;                 //
+  Attributes            attributes()                              const { return mAttributes; }
+  bool                  has_attribute(std::string attr)           const;
+  void                  add_attribute(std::string name, std::string value);
+  void                  add_attributes_from_paired_list (std::string list);
+  std::set<std::string> attribute_str_value(std::string attr)     const;
+  std::set<     int   > attribute_int_value(std::string attr)     const;
+  std::set<   double  > attribute_dbl_value(std::string attr)     const;
+
+  virtual std::string   class_name()                              const { return "FeatureABC"; }
+  virtual std::string   name()                                    const = 0;                 // pure virtual, must maintain const
+  virtual int           degree()                                  const = 0;                 // number of continuent features, eg 2 for simple interaction
+  virtual Arguments     arguments()                               const = 0;                 //
   
-  virtual Iterator    begin ()                                  const = 0;                 //
-  virtual Iterator    end ()                                    const = 0;                 //
-  virtual Range       range ()                                  const = 0;                 //
-  virtual double      average ()                                const = 0;                 // mean value
-  virtual double      center ()                                 const = 0;                 // may or may not be average, easier to compute
-  virtual double      scale ()                                  const = 0;                 // 0 must mean constant
-  virtual bool        is_dummy()                                const;
-  virtual bool        is_constant()                             const { return (0.0 == scale()); }
+  virtual Iterator      begin ()                                  const = 0;                 //
+  virtual Iterator      end ()                                    const = 0;                 //
+  virtual Range         range ()                                  const = 0;                 //
+  virtual double        average ()                                const = 0;                 // mean value
+  virtual double        center ()                                 const = 0;                 // may or may not be average, easier to compute
+  virtual double        scale ()                                  const = 0;                 // 0 must mean constant
+  virtual bool          is_dummy()                                const;
+  virtual bool          is_constant()                             const { return (0.0 == scale()); }
   
-  virtual void        write_to       (std::ostream& os)         const;                     // description of the type of feature
-          void        write_values_to(std::ostream& os)         const;                     // all of the data values
-  virtual void        print_to       (std::ostream& os)         const;                     // just the first few values
+  virtual void          write_to       (std::ostream& os)         const;                     // description of the type of feature
+          void          write_values_to(std::ostream& os)         const;                     // all of the data values
+  virtual void          print_to       (std::ostream& os)         const;                     // just the first few values
 
 protected:
 	  Arguments   join_arguments(Arguments const& a1, Arguments const& a2) const;

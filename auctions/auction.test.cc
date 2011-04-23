@@ -1,10 +1,10 @@
 /*
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
-                
-          auction.test -f filename -o path -r rounds -c calibration_df -v
-
-  where
+                    
+           ./auction.test ... { options } 
+	   
+  where options are
 	-a  total alpha to distribute           (default is 0.1... might ought to be less)
 	-b  blocksize for white                 (default 0 is OLS; 1 for white; larger for corr)
 	-c  calibration df                      (default is no calibration)
@@ -29,7 +29,7 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-  
+   
 #include "auction.h"
       
 // from ranges
@@ -144,7 +144,7 @@ main(int argc, char** argv)
   debugging::debug_init(std::clog, debugLevel);
 #endif
   debug("AUCT",0) << "Version build 1.5 (1 Apr 2011)\n";
-  
+   
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
@@ -226,27 +226,31 @@ main(int argc, char** argv)
     return -1;
   }
 
-  // build model and initialize auction with csv stream for tracking progress
+  // set up calibration options
+  bool yIsBinary  (yColumns[0]->is_dummy());
+  debug("AUCT",1) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
   std::string calibrationSignature ("Y_hat_");
+
+  // build model and initialize auction with csv stream for tracking progress
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
   Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                            FiniteStream;
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >           PolynomialStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>            NeighborhoodStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                  PCAStream;
+  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
+  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
+  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>             NeighborhoodStream;
+  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // parasitic experts
-  theAuction.add_expert(Expert("In/Out", parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("Interact accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   /*
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
@@ -293,35 +297,34 @@ main(int argc, char** argv)
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                 // less avoids tie 
+      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("Interactions within " + streamNames[s],
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+"x Lock]", source, nContextCases, alphaCP, 
+	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream("CP[" + streamNames[s] + "x Lock]",
+				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureStreams[s], lockedStream )                     
 				     ));
     }
   }
-
+   
   //  Calibration expert
   if(calibrationGap > 0)
-  { 
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature, nContextCases)));
-  }
+				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+							 nContextCases, yIsBinary)));
 
   //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                             // kludge alpha share
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),    // number components, standardize? (0 means use sing values)
-						    30))) ;                                                   // bundle size
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // number components, standardize? (0 means use sing values)
+						    30))) ;                                                          // bundle size
 
   //   RKHS stream
   theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
@@ -346,17 +349,22 @@ main(int argc, char** argv)
     { ++round;
       clock_t start;
       start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor
+      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
-    debug("AUCT",0) << "\n      -------  Auction ends after " << round << "/" << numberRounds
-		    << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+    std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
+	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+    { std::vector<std::string> names (theAuction.purged_expert_names());
+      std::cout << "\n During the auction, there were " << names.size() << " purged experts: \n";
+      for(unsigned int i=0; i<names.size(); ++i)
+	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
+      std::cout << std::endl;
+    }
   }
-  
   // ----------------------   write summary and data to various files  ---------------------------------
   // write model in HTML to a file
   {
@@ -394,7 +402,7 @@ main(int argc, char** argv)
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
   return 0;  
-}
+} 
   
 
 

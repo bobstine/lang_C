@@ -115,6 +115,7 @@ public:
   
   StringVec predictor_names()   const   { return mXNames; }
   Vector    predictions  (Matrix const& matrix)  const;
+  Vector    predictions  (Matrix const& matrix, double lo, double hi)  const;      // truncate to range
 
   FStat     f_test_predictor  (std::string name, Vector const& z)                      const; // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;
@@ -193,8 +194,9 @@ public:
   template <class Iter>                                                  // iterators must include training and test cases, ordered as in initial y
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
-  double                     y_bar()                const  { return mModel.y_bar(); }
-  template <class Iter> void fill_with_fit(Iter it) const;
+  double                     y_bar()                               const  { return mModel.y_bar(); }
+  template <class Iter> void fill_with_fit(Iter it)                const;
+  template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;
   void write_data_to(std::ostream& os, int maxNumXCols)    const;       //  written in the internal order (estimation ->, then validation <-
