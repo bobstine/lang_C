@@ -135,6 +135,10 @@ text_run: auction.test
 
 # ---  miscellaneous test applications  -------------------------------------------------------------
 
+diabetes: auction.test
+	 ./auction.test -f ~/C/boost/diab.out/data -o data/diab/ -r 1000 -a 0.25 -p 3 -k 50 -c 10 -d 0 -b 1 -s 1	
+
+
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 

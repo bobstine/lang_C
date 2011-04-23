@@ -66,8 +66,11 @@ csv_parser: csv_parser.o
 
 
 test_parser: csv_parser csv_test_data.txt
-	rm tar.out/*; ./csv_parser -f csv_test_data.txt -d csv.out
+	rm csv.out/*; ./csv_parser -f csv_test_data.txt -d csv.out
 
+parse_diabetes: csv_parser
+	rm diab.out/*; ./csv_parser -f ~foster/diab_smaller.csv -d diab.out
+#	rm diab.out/*; ./csv_parser -f diabetes_test.csv -d diab.out
 
 test_parser_data: csv_parser.o test-data.csv
 	$(GCC) $< $(LDLIBS) -o $@

@@ -1,0 +1,5 @@
+
+Need to have an option in the header by the variable name to indicate
+that we dont want to split this guy into indicators, then flag it in
+the index.sh file as a context column.  Otherwise run into things like
+the date mess with the diabetes data.

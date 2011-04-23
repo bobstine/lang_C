@@ -84,6 +84,15 @@ fill_blanks(std::string str)
 }
 
 
+void
+peel_quotes_from_string_vector (StringVector & sv)
+{
+  std::transform(sv.begin(), sv.end(), sv.begin(),
+		 [] (std::string const& s) -> std::string
+		 { if((s[0]=='"') && (s.size()>2)) return s.substr(1,s.size()-2); else return s; });
+}
+
+
 class StringCatcher
 {
 private:
@@ -212,13 +221,12 @@ parse_data_line (char const* str, OpName f)
   parse_info<> result = parse(str, data_rule, space_p);    // binding 3rd argument produces a phrase scanner  
   if (!result.full) {
     cout << "ERROR: Incomplete data parse ...  Parsing stopped at  " ;
+    char const* s = result.stop;
+    int limit = 15;
+    while(s && limit--)
+      cout << *s++;
+    cout << endl;
     return false;
-    /* char const* s = result.stop;
-       int limit = 10;
-       while(s && limit--)
-       cout << *s++;
-       cout << endl;
-    */
   }
   return result.hit;
 }
@@ -229,7 +237,8 @@ bool
 can_parse_number (std::string const& str)
 {
   parse_info<> result = parse(str.c_str(), real_p);
-  return result.hit;
+  //  cannot return result.hit since leading number will be parsed (ie, 777x can parse leading digits)
+  return result.full;
 }
 
 
@@ -540,6 +549,7 @@ csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
 			     StringCatcher( &inputColumnNames ),
 			     MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
+      peel_quotes_from_string_vector(inputColumnNames);
       for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
 	std::clog << " |" << *it << "| " << endl;
       for (int i=0; i<(int)inputColumnNames.size(); ++i)
@@ -573,15 +583,26 @@ csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
   int lineNumber (0);
   while (getline(input, inputLine))
   { ++lineNumber;
-    std::vector<std::string> inputData;
+    // replace ,NA, by ,, so that missing fields are denoted by empty strings
+    std::string::size_type iNA;
+    if (inputLine.substr(0,3) == "NA,")
+      inputLine.replace(0,2,"");
+    std::string::size_type len (inputLine.size());
+    if (inputLine.substr(len-3,3) == ",NA")
+      inputLine.replace(len-2,2,"");    
+    while(std::string::npos != (iNA = inputLine.find(",NA,")))
+      inputLine.replace(iNA,4,",,");
+    // convert the input line into distinct strings
+    StringVector inputData;
     if( parse_data_line(inputLine.c_str(), StringCatcher( &inputData )) ) {
       // cout <<  "\nData from the item parser:" << endl;
       // for (std::vector<std::string>::iterator it = inputData.begin(); it != inputData.end(); ++it)  {
       // cout << " |" << *it << "| " << endl; 
       if ((int)inputData.size() == nVars)
-      { dataMatrix.push_back(inputData);
+      { peel_quotes_from_string_vector(inputData);
+	dataMatrix.push_back(inputData);
 	for(int i=0; i<nVars; ++i)
-	{ if(inputData[i].size() == 0)              ++missing[i];
+	{ if (0 == inputData[i].size())             ++missing[i];
 	  else if (can_parse_number(inputData[i]))  ++numeric[i];
 	}
       }

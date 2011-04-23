@@ -5,6 +5,8 @@ lambda
 csv_parser
 csv_parser_demo
 csv.out
+diabetes_test.csv
+diab.out
 thread_1
 thread_2
 thread_3

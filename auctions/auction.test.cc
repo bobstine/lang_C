@@ -212,7 +212,9 @@ main(int argc, char** argv)
   }
 
   // check the cross validation indicator
-  Column inOut = identify_cv_indicator(cColumns, prefixCases); 
+  Column inOut;
+  if(!cColumns.empty())
+    inOut = identify_cv_indicator(cColumns, prefixCases); 
 
   // organize data into feature streams
   FeatureSource featureSrc (xColumns, prefixCases);
@@ -585,7 +587,7 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bo
   else
   { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
-    return ValidatedRegression (y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);  
+    return ValidatedRegression (y->name(), y->begin()+prefixRows, noSelection             , nRows, blockSize, useShrinkage);  
   } 
 }
 
