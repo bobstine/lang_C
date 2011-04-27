@@ -1,4 +1,4 @@
-### rearrange Lyle's data into streaming format
+### rearrange Paramveer/Lyle's data into streaming format
 ### run this in R on sobolev, after creating a directory to write the data
 ### that dir is called "auction" in this file
 
