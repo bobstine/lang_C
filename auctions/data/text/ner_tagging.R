@@ -25,6 +25,32 @@ train.ner   <- as.factor(train[,2])   # codes that identify named things
 
 train <- train[,3:ncol(train)]; test <- test[,3:ncol(test)]
 
+# --- check for number in each column
+train.num <- matrix(0,nrow=nrow(train),ncol=ncol(train))
+for (j in 1:ncol(train)) {
+	cat("j=",j,"\n")
+	z <- as.numeric(train[,j])
+	i <- which(is.na(z))
+	if (length(i)>0) cat("j=",j," NA found at ",i,"\n")
+	z[i]<-0
+	train.num[,j]<-z
+	}
+dim(train.num)
+
+test.num <- matrix(0,nrow=nrow(test),ncol=ncol(test))
+for (j in 1:ncol(test)) {
+	cat("j=",j,"\n")
+	z <- as.numeric(test[,j])
+	i <- which(is.na(z))
+	if (length(i)>0) cat("j=",j," NA found at ",i,"\n")
+	z[i]<-0
+	test[,j]<-z
+	}
+dim(test.num)
+
+test <- test.num
+train<-train.num
+
 # --- identify the big categories: still some oddball labels
 levels(as.factor(train.ner)); nlevels(train.ner)
 levels(as.factor( test.ner)); nlevels(test.ner)
@@ -182,10 +208,10 @@ Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
 # --- validation data are returned from C++ in permuted order (reversed)
-n.grps <- 5
+n.grps <- 6
 
-i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 254,982
-i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  #  46,434
+i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 20,000
+i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  #  20,000
 
 # --- permute test data back to orginal order
 i.test <- i.test[length(i.test):1]
@@ -194,8 +220,8 @@ i.test <- i.test[length(i.test):1]
 pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=n.grps)
 pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=n.grps)
 
-y.train <- matrix(Results[i.train,"yy_13457"],nrow=n.training, ncol=n.grps)
-y.test  <- matrix(Results[ i.test,"yy_13457"], nrow=n.testing, ncol=n.grps)
+y.train <- matrix(Results[i.train,"yyy"],nrow=n.training, ncol=n.grps)
+y.test  <- matrix(Results[ i.test,"yyy"], nrow=n.testing, ncol=n.grps)
 
 # --- evaluate predictions, choice model
 choice.train <- apply(pred.train, 1, which.max); 
@@ -211,8 +237,8 @@ ftable(addmargins(tab))
 # --- Precision and recall heuristics
 #     add row for category 2 if needed
 if (nrow(tab)<ncol(tab)) { 
-	tab <- rbind(tab[1,],rep(0,n.grps),tab[2:nrow(tab),]); rownames(tab)<-1:n.grps }
-other <- 4; 
+	tab <- rbind(tab[1:5,rep(0,n.grps)]); rownames(tab)<-1:n.grps }
+other <- 5; 
 n.correct    <- sum(diag(tab)       [-other])
 n.entity     <- sum(apply(tab,2,sum)[-other])
 n.say.entity <- sum(apply(tab,1,sum)[-other])
