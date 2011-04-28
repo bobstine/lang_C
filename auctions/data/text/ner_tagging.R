@@ -12,8 +12,8 @@ setwd(path)
 # ----------------------------------------------------------------------
 
 # --- read training and test data (more in test data)
-train <- as.matrix(read.csv("bob_train.csv")) ; dim(train)  #  64958 x 32
- test <- as.matrix(read.csv("bob_test.csv"))  ; dim(test)   # 138522 x 32
+train <- as.matrix(read.csv("conll_train.csv")) ; dim(train)  # 124129 x 92
+ test <- as.matrix(read.csv("conll_test.csv"))  ; dim(test)   #  36563 x 92
 
 
 # --- rip off words and response from rest of predictors
@@ -23,16 +23,16 @@ train.words <- train[,1]
 train.ner   <- as.factor(train[,2])   # codes that identify named things
  test.ner   <- as.factor( test[,2])
 
-train <- train[,3:32]; test <- test[,3:32]
+train <- train[,3:ncol(train)]; test <- test[,3:ncol(test)]
 
-# --- identify the big categories
+# --- identify the big categories: still some oddball labels
 levels(as.factor(train.ner)); nlevels(train.ner)
 levels(as.factor( test.ner)); nlevels(test.ner)
 
 
 # --- pick off those for modeling
 use.labels <- c("I-LOC","I-MISC","I-ORG","I-PER","O","")
-addmargins(table(factor(train.ner, levels=use.labels)))       # 64751 out of 64958
+addmargins(table(factor(train.ner, levels=use.labels)))       # 124032 out of 124129
 
 train.y <- 0+(outer(train.ner,use.labels,"=="))
 apply(train.y,2,sum);
@@ -53,8 +53,8 @@ test.use <- (1 == apply(test.y,1,sum)); sum(test.use)
 train.rows <- (1:nrow(train.y))[train.use]
 
 # --- if subsample, use these
- test.rows <-  test.rows[1:20000]
-train.rows <- train.rows[1:10000]
+ test.rows <-  test.rows[3:20002]
+train.rows <- train.rows[3:20002]
 
 
 # ----------------------------------------------------------------------
@@ -126,16 +126,13 @@ for(j in 1:30) {
 	col <- rep(j,n.grps);cat("j=",j,"\n")
 	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream one") }
 
-
-
-
-
-for(j in 51:100) { 
+for(j in 31:60) { 
 	col <- rep(j,n.grps);cat("j=",j,"\n")
-	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream two") }
-for(j in 101:150) { 
+	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream two max_lag 4") }
+	
+for(j in 61:90) { 
 	col <- rep(j,n.grps); cat("j=",j,"\n")
-	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream three") }
+	write.var(paste("xx",j,sep="_"), c(x.train[,col],x.test[,col]), role="x", attr.str="stream three max_lag 4") }
 	
 
 # ----------------------------------------------------------------------
