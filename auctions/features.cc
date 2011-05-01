@@ -105,6 +105,20 @@ LagFeature::write_to(std::ostream& os) const
 
 //  InteractionFeature     InteractionFeature     InteractionFeature     InteractionFeature
 
+void
+InteractionFeature::make_dependence_map()
+{
+  mDependenceMap = mFeature1->dependence_map();
+  if (mDependenceMap.empty())  
+    mDependenceMap[mFeature1] = 1;
+  DependenceMap two = mFeature2->dependence_map();
+  if (two.empty())
+    mDependenceMap[mFeature2] += 1;
+  else
+    std::for_each(two.begin(), two.end(),
+		  [&mDependenceMap] (DependenceMap::value_type const& p) { mDependenceMap[p.first]+=p.second; }
+		  );
+}
 
 void
 InteractionFeature::center_features()
@@ -171,6 +185,11 @@ void
 InteractionFeature::write_to (std::ostream& os) const
 {
   os << class_name() << std::endl;
+  os << " Dependence map is   { ";
+  std::for_each(mDependenceMap.begin(), mDependenceMap.end(),
+		[&os] (DependenceMap::value_type const& p) { os << " (" << p.first << "^" << p.second << ")"; }
+		);
+  os << std::endl;
   mFeature1->write_to(os);
   mFeature2->write_to(os);
   FeatureABC::write_to(os);

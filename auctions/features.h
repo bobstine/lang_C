@@ -121,6 +121,18 @@ std::ostream&
 operator<< (std::ostream& os, Feature const& feature)
 {
   feature->print_to(os);
+  FeatureABC::DependenceMap m = feature->dependence_map();
+  if (!m.empty())
+  { os << "\n                 Dependence map is   { ";
+    std::for_each(m.begin(), m.end(),
+		  [&os] (FeatureABC::DependenceMap::value_type const& p)
+		  { os << " (" << p.first->name();
+		    if(p.second>1)
+		      os << "^" << p.second;
+		    os << ")"; }
+		  );
+    os << " } " << std::endl;
+  }
   return os;
 }
 
@@ -221,16 +233,18 @@ class LagFeature : public FeatureABC
 
 class InteractionFeature : public FeatureABC
 {
-  Feature      mFeature1;
-  Feature      mFeature2;
-  double       mCtr1, mCtr2;
-  std::string  mName;
+  Feature       mFeature1;
+  Feature       mFeature2;
+  DependenceMap mDependenceMap;
+  double        mCtr1, mCtr2;
+  std::string   mName;
 
  public:
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)                              // names built in using map to define canonical order
-    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mCtr1(0.0), mCtr2(0.0) { center_features();  collect_attributes(); make_name();  } 
+    : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mDependenceMap(), mCtr1(0.0), mCtr2(0.0)
+    { make_dependence_map(); center_features();  collect_attributes(); make_name();  } 
 
   std::string class_name()    const { return "InteractionFeature"; }
   std::string name()          const { return mName; }
@@ -238,9 +252,7 @@ class InteractionFeature : public FeatureABC
   int         degree()        const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
 
-  DependenceMap dependence_map() const { return DependenceMap(); }
-
-
+  DependenceMap dependence_map() const { return mDependenceMap; }
   
   Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->begin(),
@@ -259,6 +271,7 @@ class InteractionFeature : public FeatureABC
   void        write_to (std::ostream& os) const;
 
  private:
+  void        make_dependence_map();
   void        center_features();
   void        collect_attributes();
   void        make_name();
