@@ -12,6 +12,7 @@
    referenced by a descendant of this ABC must be held elsewhere and
    not kept in the feature itself.
    
+   1 May 11 ... Map for dependencies
    9 Nov 09 ... Attributes as a map of two strings.
   17 Apr 09 ... Arguments hold name; (name, power) setup
    9 Apr 04 ... ABC version; read-write; beef up name structure, <, ==
@@ -36,6 +37,7 @@ class FeatureABC
  public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double> Iterator;
   typedef Ranges::range< Iterator >                                           Range;
+  typedef std::map<Feature,int>                                               DependenceMap;
   typedef std::map<std::string, int>                                          Arguments;   // map sorts names, second is power
   typedef std::map<std::string, std::set<std::string> >                       Attributes;  // allow multiple occurances of the attr 
   typedef std::map<std::string, std::set<std::string> >::const_iterator       AttrIter;
@@ -75,9 +77,10 @@ class FeatureABC
   std::set<   double  > attribute_dbl_value(std::string attr)     const;
 
   virtual std::string   class_name()                              const { return "FeatureABC"; }
+  virtual int           degree()                                  const = 0;                 // # constituent features, eg 2 for simple interaction
+  virtual DependenceMap dependence_map()                          const = 0;
+  virtual Arguments     arguments()                               const = 0;                 // map of names as in a product              
   virtual std::string   name()                                    const = 0;                 // pure virtual, must maintain const
-  virtual int           degree()                                  const = 0;                 // number of continuent features, eg 2 for simple interaction
-  virtual Arguments     arguments()                               const = 0;                 //
   
   virtual Iterator      begin ()                                  const = 0;                 //
   virtual Iterator      end ()                                    const = 0;                 //

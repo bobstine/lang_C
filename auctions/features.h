@@ -158,6 +158,9 @@ class ColumnFeature : public FeatureABC
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn->name(); }
   std::string operator_name()  const { return ""; }
+
+  DependenceMap dependence_map() const { return DependenceMap(); }
+
   int         degree()         const { return 1; }
   Arguments   arguments()      const {        Arguments a; a[name()] = 1; return a; }
   
@@ -195,6 +198,8 @@ class LagFeature : public FeatureABC
   std::string operator_name()  const { return "[-" + mLagStr + "]"; }
   int         degree()         const { return mFeature->degree(); }
   Arguments   arguments()      const { return mFeature->arguments(); }
+
+  DependenceMap dependence_map() const { return DependenceMap(); }
   
   int         lag()            const { return mLag; }
 
@@ -232,6 +237,10 @@ class InteractionFeature : public FeatureABC
   std::string operator_name() const { return "*"; }
   int         degree()        const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
+
+  DependenceMap dependence_map() const { return DependenceMap(); }
+
+
   
   Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
                                                                                           mFeature1->begin(),
@@ -278,6 +287,9 @@ class LinearCombinationFeature : public FeatureABC
   std::string long_name()     const;
   int         degree()        const { return (int) mFeatures.size(); }
   Arguments   arguments()     const {        Arguments a; a[name()]=1; return a;}
+
+  DependenceMap dependence_map() const { return DependenceMap(); }
+
   
   Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
   Iterator    end()           const { return make_anonymous_iterator(mColumn->end()); }
@@ -318,6 +330,8 @@ class UnaryFeature : public FeatureABC
   int         degree()     const { return mFeature->degree(); }
   Arguments   arguments()  const;
   
+  DependenceMap dependence_map() const { return DependenceMap(); }
+
   Iterator    begin()      const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->begin()));    }
   Iterator    end()        const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->end()));    }
   Range       range()      const { return make_anonymous_range(make_unary_range(mOp,mFeature->range()));    }
@@ -350,6 +364,8 @@ class BinaryFeature : public FeatureABC
   int         degree()      const { return mFeature1->degree() + mFeature2->degree(); }
   Arguments   arguments()   const { return Arguments(); }
   
+  DependenceMap dependence_map() const { return DependenceMap(); }
+
   Iterator    begin()       const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->begin(),mFeature2->begin())); }
   Iterator    end()         const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->end(),mFeature2->end())); }
   Range       range()       const { return make_anonymous_range(make_binary_range(mOp,mFeature1->range(),mFeature2->range())); }
