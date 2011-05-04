@@ -12,8 +12,8 @@ setwd(path)
 # ----------------------------------------------------------------------
 
 # --- read training and test data (more in test data)
-train <- as.matrix(read.csv("conll_train.csv")) ; dim(train)  # 124129 x 92
- test <- as.matrix(read.csv("conll_test.csv"))  ; dim(test)   #  36563 x 92
+train <- as.matrix(read.csv("conll_train.csv", header=FALSE)); dim(train)  # 124129 x 92
+ test <- as.matrix(read.csv("conll_test.csv", header=FALSE))  ; dim(test)   #  36563 x 92
 
 
 # --- rip off words and response from rest of predictors
