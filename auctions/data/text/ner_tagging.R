@@ -12,8 +12,8 @@ setwd(path)
 # ----------------------------------------------------------------------
 
 # --- read training and test data (more in test data)
-train <- as.matrix(read.csv("conll_train.csv", header=FALSE)); dim(train)  # 124129 x 92
- test <- as.matrix(read.csv("conll_test.csv", header=FALSE))  ; dim(test)   #  36563 x 92
+train <- as.matrix(read.csv("conll_train.csv", header=FALSE)); dim(train)  # 203622 x 92
+ test <- as.matrix(read.csv("conll_test.csv", header=FALSE))  ; dim(test)   # 51363 x 92
 
 
 # --- rip off words and response from rest of predictors
@@ -57,17 +57,17 @@ levels(as.factor( test.ner)); nlevels(test.ner)
 
 
 # --- pick off those for modeling
-use.labels <- c("I-LOC","I-MISC","I-ORG","I-PER","O","")
-addmargins(table(factor(train.ner, levels=use.labels)))       # 124032 out of 124129
+addmargins(table(factor(train.ner                   )))       # very few B-___ labels
+use.labels <- c("I-LOC","I-MISC","I-ORG","I-PER","O")
+addmargins(table(factor(train.ner, levels=use.labels)))       # 203549 out of 203622
 
 train.y <- 0+(outer(train.ner,use.labels,"=="))
 apply(train.y,2,sum);
-train.use <- (1 == apply(train.y,1,sum)); sum(train.use)      # all should be in some group
+train.use <- (1 == apply(train.y,1,sum)); sum(train.use)      # sum should match total used
 
 test.y <- 0+(outer(test.ner,use.labels,"=="))
 apply(test.y,2,sum);
-test.use <- (1 == apply(test.y,1,sum)); sum(test.use)
-
+test.use <- (1 == apply(test.y,1,sum)); sum(test.use)         # 51358 out of 51363
 
 # ----------------------------------------------------------------------
 # 
@@ -101,7 +101,7 @@ write.var <- function(name, data, role="y", attr.str="") {
 
 # ----------------------------------------------------------------------
 #
-#     STACKED...  6 Y's
+#     STACKED...
 #
 #    This version stacks the y's and adds indicators for the group
 #
@@ -134,7 +134,7 @@ write.var("cv.indicator[in]", role = "context", c(rep(1,n.grps*n.train),rep(0,n.
 
 # --- stack the y variables; R ravels down columns
 cat("# response \n",file=manifest.file, append=TRUE)
-write.var("yyy", c(y.train,y.test), role="y", attr.str="") 
+write.var("yyyyy", c(y.train,y.test), role="y", attr.str="") 
 	
 # --- write the stream of group indicators; cannot put all in the LOCKED stream
 cat("# y group indicators\n",file=manifest.file, append=TRUE)
