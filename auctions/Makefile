@@ -18,7 +18,7 @@ USES =  eigen spline ranges random utils
 
 EXTERNAL_USES = boost_thread
 
-# OPT = 
+OPT = -O2 -std=c++0x
 
 ###########################################################################
 #
@@ -119,14 +119,14 @@ anes_run: auction.test
 
 
 # ---  dean text data models  ----------------------------------------------------------------------
-#                         Note: run the index file to put results into a file named "data"
+#                         Note: run index.sh to put results into a file named "data"
 #
 
 theher_run: auction.test
 	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
 
 small_text_run: auction.test
-	 ./auction.test -f /data/conll03/auction_small/data -o data/text/small/ -r 10000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
+	 ./auction.test -f /data/conll03/auction_small/data -o data/text/small/ -r 500 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
 
 text_run: auction.test
 	 ./auction.test -f data/text/auction.data/data -o data/text/ -r 2000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1
