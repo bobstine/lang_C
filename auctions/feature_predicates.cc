@@ -2,21 +2,38 @@
 
 
 bool
-FeaturePredicates::mutually_exclusive_indicators_from_same_parent(Feature const& f1, Feature const& f2) 
+FeaturePredicates::mutually_exclusive_categories_from_same_parent(Feature const& f1, Feature const& f2) 
 {
-  // false unless both have parents
-  std::set<std::string> p1 = f1->attribute_str_value("parent");
-  if (p1.empty()) return false;
-  std::set<std::string> p2 = f2->attribute_str_value("parent");
-  if (p2.empty()) return false;
-  // false unless parents match
-  if (*p1.begin() != *p2.begin()) return false;
-  // false unless both have category attribute
-  std::set<std::string> c1 = f1->attribute_str_value("category");
-  std::set<std::string> c2 = f2->attribute_str_value("category");
-  if (c1.empty() || c2.empty()) return false;
-  // true if categories differ
-  return *c1.begin() != *c2.begin();
+  if ( (!f1->has_attribute("parent"))
+       || (!f2->has_attribute("parent"))          // false unless both have parents
+       || ( f1->attribute_str_value("parent") != f2->attribute_str_value("parent"))       // false unless parents match
+       || (!f1->has_attribute("category"))
+       || (!f2->has_attribute("category"))   )    // false unless both have category attribute
+    return false;
+  else
+    return (f1->attribute_str_value("category") != f2->attribute_str_value("category"));
+}
+
+
+bool
+FeaturePredicates::mutually_exclusive(Feature const& f1, Feature const& f2) 
+{
+  FeatureABC::DependenceMap d1 (f1->dependence_map());
+  FeatureABC::DependenceMap d2 (f2->dependence_map());
+  //
+  if (d1.empty()) d1[f1]+=1;
+  if (d2.empty()) d2[f2]+=1;
+  // get parents of f1 and f2
+  std::set<std::string> p1;
+  std::for_each(d1.begin(), d1.end(), [&p1] (FeatureABC::DependenceMap::value_type const& p) { p1.insert(p.first->attribute_str_value("parent")); } );
+  std::set<std::string> p2;
+  std::for_each(d2.begin(), d2.end(), [&p2] (FeatureABC::DependenceMap::value_type const& p) { p2.insert(p.first->attribute_str_value("parent")); } );
+  //  std::cout << "TESTING: parents are " << p1 << " ---  " << p2 << std::endl;
+  // exclusive if share a common parent
+  for(std::set<std::string>::const_iterator it = p1.begin(); it != p1.end(); ++it)
+    if (p2.find(*it)!=p2.end())  // mutually exclusive if we find any common parent
+      return true;
+  return false;
 }
 
 

@@ -98,7 +98,7 @@ public:
       debugging::debug("NBDS",4) << "BuildNeighborhoodFeature from feature " <<  f->name() << std::endl;
       FeatureVector fv;
       fv.push_back(make_indexed_feature(f,mIndexColumn));
-      fv[0]->add_attribute("neighborhood", mIndexColumn->name());
+      fv[0]->set_attribute("neighborhood", mIndexColumn->name());
       return fv;
     }
 };

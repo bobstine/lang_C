@@ -11,8 +11,13 @@
    Features do *not* hold data; they must be 'lightweight'. Any data
    referenced by a descendant of this ABC must be held elsewhere and
    not kept in the feature itself.
+
+   Dependence map only used for interaction features where it tracks
+   the underlying features and their powers.  Base method returns an
+   empty map --- though it would make sense to use this more
+   creatively.
    
-   1 May 11 ... Map for dependencies
+   1 May 11 ... Map for dependencies; simplify attributes to have string values
    9 Nov 09 ... Attributes as a map of two strings.
   17 Apr 09 ... Arguments hold name; (name, power) setup
    9 Apr 04 ... ABC version; read-write; beef up name structure, <, ==
@@ -39,8 +44,7 @@ class FeatureABC
   typedef Ranges::range< Iterator >                                           Range;
   typedef std::map<Feature,int>                                               DependenceMap;
   typedef std::map<std::string, int>                                          Arguments;   // map sorts names, second is power
-  typedef std::map<std::string, std::set<std::string> >                       Attributes;  // allow multiple occurances of the attr 
-  typedef std::map<std::string, std::set<std::string> >::const_iterator       AttrIter;
+  typedef std::map<std::string, std::string >                                 Attributes;  // allow multiple occurances of the attr 
   
  private:
   int            mRefCount;
@@ -70,15 +74,15 @@ class FeatureABC
 
   Attributes            attributes()                              const { return mAttributes; }
   bool                  has_attribute(std::string attr)           const;
-  void                  add_attribute(std::string name, std::string value);
+  void                  set_attribute(std::string name, std::string value);
   void                  add_attributes_from_paired_list (std::string list);
-  std::set<std::string> attribute_str_value(std::string attr)     const;
-  std::set<     int   > attribute_int_value(std::string attr)     const;
-  std::set<   double  > attribute_dbl_value(std::string attr)     const;
+  std::string           attribute_str_value(std::string attr)     const;
+  int                   attribute_int_value(std::string attr)     const;
+  double                attribute_dbl_value(std::string attr)     const;
 
   virtual std::string   class_name()                              const { return "FeatureABC"; }
+  virtual DependenceMap dependence_map()                          const = 0; 
   virtual int           degree()                                  const = 0;                 // # constituent features, eg 2 for simple interaction
-  virtual DependenceMap dependence_map()                          const = 0;
   virtual Arguments     arguments()                               const = 0;                 // map of names as in a product              
   virtual std::string   name()                                    const = 0;                 // pure virtual, must maintain const
   
@@ -148,7 +152,7 @@ operator<< (std::ostream& os, std::set<double> const& s)                 // defa
 
 inline
 std::ostream&
-operator<< (std::ostream& os, std::map<std::string,std::set<std::string> > const& attributes)
+operator<< (std::ostream& os, FeatureABC::Attributes const& attributes)
 {
   os << " { ";
   for (FeatureABC::Attributes::const_iterator it = attributes.begin(); it !=attributes.end(); ++it)

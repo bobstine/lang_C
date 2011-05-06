@@ -1,32 +1,20 @@
 Next... 
 
-	Calibration adjustments seem weird.  Need to figure out what sort of 
-	criterion (p-value) is being used.  Plus, it never tries to add the
-	next level... Perhaps its not getting the chance since that stream is
-	not ready soon enough.  May have to hold and add without going back?
-
-	Suprising also that regression code does not pick up the
-	singularity when powers of boolean were added; due to shrinkage?
-
-	School system finds MAIN bidding on variable lag_poverty.county after
-	already in the model.
-
-	Do PCAs work correctly now?
-
+	Check that PCAs/RKHS work correctly.
 
 	Also check that cross-experts are skipping enough terms.
 	
-	Use LVALUE for return to avoid unneeded copy of value returned by
-	a function (as in BuildRegression - make const slot) in auction.test.
 
-	What about shrinkage (see call to add_predictor(s) using f)?
-
+	DependenceMap should be more universally used in the features.
 
 
 	Columns don't seem to know about those prefix rows used for things
 	like lags, so summary stats (eg, average) are messed up.
 
 	Segmented time model requires block of variable and constant shift.
+
+	Lags become a real problem with stacked regression models;
+	need to introduce the neighbor concept to lags.
 
 
 
@@ -35,6 +23,15 @@ Next...
 	Spatial context variables: exp smooth of past, national/state vars
 
 
+
+C++ coding...
+
+	Use LVALUE for return to avoid unneeded copy of value returned by
+	a function (as in BuildRegression - make const slot) in auction.test.
+
+	More threading in the regresion calculations.
+
+	
 Need to 
 
      Deans requests
@@ -42,11 +39,8 @@ Need to
         Track the "other" custom experts and show them in the csv summary.
 
 
-     Memory leaks, exceptions
-
-	Need way to throw an exception at time objects are initialized
-	to signal all is not well (eg: blockSize in gsl_regression).
-
+     Memory leaks, exceptions  (Valgrind results)
+     
 
      General
 

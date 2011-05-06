@@ -299,14 +299,16 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   if (expert->role() != calibrate)
   { const double taxForEach = tax/features.size();
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)       // add expert for interaction with other added features
-    {
-      // each added feature can potentially add several experts to the auction
+    { // each added feature can potentially add several experts to the auction
       std::vector<Expert> spawned;
-      // iteract feature with those that have indicated parent
+      // interact feature with those that have indicated parent
       if ((*f)->has_attribute("interact_with_parent"))
-      { std::set<std::string> s ((*f)->attribute_str_value("interact_with_parent"));
+      { std::istringstream istr ((*f)->attribute_str_value("interact_with_parent"));
+	std::set<std::string> parentNames;
+	std::string name;
+	while (istr >> name) parentNames.insert(name);
 	FeatureVector fv;
-	for(std::set<std::string>::const_iterator it=s.begin(); it != s.end(); ++it)      // could interact with children of many
+	for(std::set<std::string>::const_iterator it=parentNames.begin(); it != parentNames.end(); ++it)      // could interact with children of many
 	{ std::string parent (*it);  
 	  FeatureVector toAppend = mFeatureSource.features_with_attribute("parent",parent);
 	  debug("AUCT",4) << toAppend.size() << " features derived from interact_with attribute for parent " << parent << ".\n";
@@ -316,13 +318,12 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 	fv = without_calibration_features(fv);
 	if (fv.size() > 0)
 	  if((*f)->degree() == 1)                                                        // only cross simple features with stream
-	    spawned.push_back(Expert("Spawn["+(*f)->name()+"_"+*s.begin()+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
+	    spawned.push_back(Expert("Spawn["+(*f)->name()+"_"+name+"]", custom, mFeatureSource.number_skipped_cases(), 0.0,  // set alpha wealth later
 				     UniversalBidder< ProductStream >(),
 				     make_feature_product_stream("interactor", *f, fv)  ));
       }
       if ((*f)->has_attribute("max_lag"))
-      { std::set<int> lagSet ((*f)->attribute_int_value("max_lag"));
-	int maxLag (*lagSet.begin());                                                                          // only one
+      { int maxLag = (*f)->attribute_int_value("max_lag");  
 	spawned.push_back(Expert("Lag_"+(*f)->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
 				 UniversalBoundedBidder< LagStream >(),
 				 make_lag_stream("Lag stream", *f, maxLag, 2, mBlockSize) ));                  // 2 cycles over lags
