@@ -107,10 +107,11 @@ LagFeature::write_to(std::ostream& os) const
 
 void
 InteractionFeature::make_dependence_map()
-{
+{ // join dep maps of input features; init from first
   mDependenceMap = mFeature1->dependence_map();
   if (mDependenceMap.empty())  
     mDependenceMap[mFeature1] = 1;
+  // add items from second
   DependenceMap two = mFeature2->dependence_map();
   if (two.empty())
     mDependenceMap[mFeature2] += 1;
@@ -132,33 +133,15 @@ InteractionFeature::center_features()
 void
 InteractionFeature::collect_attributes()
 {
-  typedef typename std::set<std::string> StringSet;
-  // very early, just to capture simple categorical terms
-  // need to change handling since can have multiple categorial vars, each with own category
-  // parent/category must be kept as a pair.
-  if (mFeature1->has_attribute("parent"))
-  { StringSet attrs (mFeature1->attribute_str_value("parent"));
-    for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
-      add_attribute("parent",*it);
-    StringSet categoryValues (mFeature1->attribute_str_value("category"));
-    if (categoryValues.empty())
-    { std::cout << "ERROR: Configuration error in categorical variable; " << mFeature1->name() << " has parent but missing category value." << std::endl;
-      add_attribute("category", "0");
-    }
-    else
-      add_attribute("category", *(mFeature1->attribute_str_value("category").begin()));
-  }
-  if (mFeature2->has_attribute("parent"))
-  { StringSet attrs (mFeature2->attribute_str_value("parent"));
-    for(StringSet::const_iterator it=attrs.begin(); it != attrs.end(); ++it)
-      add_attribute("parent",*it);
-    StringSet categoryValues (mFeature2->attribute_str_value("category"));
-    if (categoryValues.empty())
-    { std::cout << "ERROR: Configuration error in categorical variable; " << mFeature2->name() << " has parent but missing category value." << std::endl;
-      add_attribute("category", "0");
-    }
-    else
-      add_attribute("category", *(mFeature2->attribute_str_value("category").begin()));
+  if ( (!mFeature1->has_attribute("parent")) && (!mFeature2->has_attribute("parent")))
+    return;
+  else
+  { std::string parentStr   (mFeature1->attribute_str_value("parent") + mFeature2->attribute_str_value("parent"));
+    std::string categoryStr (mFeature1->attribute_str_value("category") + mFeature2->attribute_str_value("category"));
+    if (parentStr.size()>0)
+      set_attribute("parent", parentStr);
+    if (categoryStr.size() > 0)
+      set_attribute("category", categoryStr);
   }
 }
 
@@ -287,22 +270,19 @@ LinearCombinationFeature::write_to (std::ostream& os) const
 void
 FeatureSource::initialize (std::vector<Column> cols)
 { 
-  StringSet streams;                // set to track unique names
-  // mStreams.push_back("MAIN");       
-  // streams.insert("MAIN");
+  StringSet streams;                      // track unique stream names
   for (std::vector<Column>::const_iterator it = cols.begin(); it != cols.end(); ++it)
-  { Feature f(*it);                 // convert column to feature 
-    StringSet streamSet (f->attribute_str_value("stream"));
-    if (streamSet.empty())          // assign to default stream
-    { f->add_attribute("stream", "MAIN");
-      streamSet.insert("MAIN");
-    }
-    for(StringSet::const_iterator it=streamSet.begin(); it!=streamSet.end(); ++it)
-      if(streams.find(*it) == streams.end())
-      { streams.insert(*it);
-	mStreams.push_back(*it);    // add new stream name to ordered list of names
+  { Feature f(*it);                       // convert column to feature 
+    if (!f->has_attribute("stream"))      // assign to default stream
+      f->set_attribute("stream", "MAIN");
+    else
+    { std::string streamName (f->attribute_str_value("stream"));
+      if(streams.find(streamName) == streams.end())
+      { streams.insert(streamName);
+	mStreams.push_back(streamName);   // add new stream name to ordered list of names
       }
     mFeatures.push_back(f);
+    }
   }
 }
 
@@ -313,17 +293,6 @@ FeatureSource::print_summary (std::ostream& os)     const
     os << "      " << *it << " -- " << features_with_attribute("stream",*it).size() << std::endl;
 }
 
-
-
-
-namespace {
-  bool found_string(std::string val, std::set<std::string> const& s)
-  { for (std::set<std::string>::const_iterator it=s.begin(); it!=s.end(); ++it)
-      if (val == *it)
-	return true;
-    return false;
-  }
-}
 
 
 std::vector< Feature >
@@ -344,7 +313,7 @@ FeatureSource::features_with_attribute (std::string attr, std::string value) con
   std::vector< Feature > fv;
 
   for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
-    if ( (*f)->has_attribute(attr) && (found_string(value, (*f)->attribute_str_value(attr))) )
+    if ( (*f)->has_attribute(attr) && ((*f)->attribute_str_value(attr) == value)  )
       fv.push_back(*f);
   return fv;
 }

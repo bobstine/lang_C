@@ -131,7 +131,7 @@ operator<< (std::ostream& os, Feature const& feature)
 		      os << "^" << p.second;
 		    os << ")"; }
 		  );
-    os << " } " << std::endl;
+    os << " } ";
   }
   return os;
 }

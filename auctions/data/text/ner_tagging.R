@@ -2,6 +2,21 @@
 ### These data have no smoothing; these are based on CCA with 
 ### 50K words and 30 dim
 
+convert.to.numeric.matrix <- function(textMat) {
+	numMat <- matrix(0,nrow=nrow(textMat),ncol=ncol(textMat))
+	for (j in 1:ncol(numMat)) {
+		cat("j=",j,"\n")
+		z <- as.numeric(textMat[,j])
+		i <- which(is.na(z))
+		if (length(i)>0) cat("j=",j," found ",length(i)," NAs at ",i,"\n")
+		z[i]<-0
+		numMat[,j]<-z
+		}
+	numMat
+}
+
+
+
 path <- "/data/conll03/"
 setwd(path)
 
@@ -11,9 +26,9 @@ setwd(path)
 #
 # ----------------------------------------------------------------------
 
-# --- read training and test data (more in test data)
-train <- as.matrix(read.csv("conll_train.csv", header=FALSE)); dim(train)  # 203622 x 92
- test <- as.matrix(read.csv("conll_test.csv", header=FALSE))  ; dim(test)   # 51363 x 92
+# --- read training and test data (more in test data)                         6 May 2011
+train <- as.matrix(read.csv("conll_train.csv", header=FALSE)) ; dim(train)   # 203621 x 92
+ test <- as.matrix(read.csv( "conll_test.csv", header=FALSE)) ; dim( test)   #  51362 x 92
 
 
 # --- rip off words and response from rest of predictors
@@ -25,28 +40,9 @@ train.ner   <- as.factor(train[,2])   # codes that identify named things
 
 train <- train[,3:ncol(train)]; test <- test[,3:ncol(test)]
 
-# --- check for number in each column
-train.num <- matrix(0,nrow=nrow(train),ncol=ncol(train))
-for (j in 1:ncol(train)) {
-	cat("j=",j,"\n")
-	z <- as.numeric(train[,j])
-	i <- which(is.na(z))
-	if (length(i)>0) cat("j=",j," NA found at ",i,"\n")
-	z[i]<-0
-	train.num[,j]<-z
-	}
-dim(train.num)
-
-test.num <- matrix(0,nrow=nrow(test),ncol=ncol(test))
-for (j in 1:ncol(test)) {
-	cat("j=",j,"\n")
-	z <- as.numeric(test[,j])
-	i <- which(is.na(z))
-	if (length(i)>0) cat("j=",j," NA found at ",i,"\n")
-	z[i]<-0
-	test[,j]<-z
-	}
-dim(test.num)
+# --- check for number in each column when convert matrix of strings to matrix of numbers
+train.num <- convert.to.numeric.matrix(train)
+test.num  <- convert.to.numeric.matrix( test)
 
 test <- test.num
 train<-train.num
@@ -55,11 +51,10 @@ train<-train.num
 levels(as.factor(train.ner)); nlevels(train.ner)
 levels(as.factor( test.ner)); nlevels(test.ner)
 
-
 # --- pick off those for modeling
 addmargins(table(factor(train.ner                   )))       # very few B-___ labels
 use.labels <- c("I-LOC","I-MISC","I-ORG","I-PER","O")
-addmargins(table(factor(train.ner, levels=use.labels)))       # 203549 out of 203622
+addmargins(table(factor(train.ner, levels=use.labels)))       # 203549 out of 203621
 
 train.y <- 0+(outer(train.ner,use.labels,"=="))
 apply(train.y,2,sum);
@@ -67,7 +62,8 @@ train.use <- (1 == apply(train.y,1,sum)); sum(train.use)      # sum should match
 
 test.y <- 0+(outer(test.ner,use.labels,"=="))
 apply(test.y,2,sum);
-test.use <- (1 == apply(test.y,1,sum)); sum(test.use)         # 51358 out of 51363
+test.use <- (1 == apply(test.y,1,sum)); sum(test.use)         # 51358 out of 51362
+
 
 # ----------------------------------------------------------------------
 # 
@@ -79,8 +75,8 @@ test.use <- (1 == apply(test.y,1,sum)); sum(test.use)         # 51358 out of 513
 train.rows <- (1:nrow(train.y))[train.use]
 
 # --- if subsample, use these
- test.rows <-  test.rows[3:20002]
-train.rows <- train.rows[3:20002]
+ test.rows <-  test.rows[3:25002]
+train.rows <- train.rows[3:25002]
 
 
 # ----------------------------------------------------------------------
@@ -208,36 +204,38 @@ Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
 
 # --- validation data are returned from C++ in permuted order (reversed)
-n.grps <- 6
+n.grps <- 5
 
 i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 20,000
 i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  #  20,000
 
-# --- permute test data back to orginal order
+# --- permute test data back to original order
 i.test <- i.test[length(i.test):1]
 
 # --- push model predictions into arrays to get response vector back together
 pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=n.grps)
 pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=n.grps)
 
-y.train <- matrix(Results[i.train,"yyy"],nrow=n.training, ncol=n.grps)
-y.test  <- matrix(Results[ i.test,"yyy"], nrow=n.testing, ncol=n.grps)
+y.train <- matrix(Results[i.train,"yyyyy"], nrow=n.training, ncol=n.grps)
+y.test  <- matrix(Results[ i.test,"yyyyy"], nrow= n.testing, ncol=n.grps)
 
 # --- evaluate predictions, choice model
 choice.train <- apply(pred.train, 1, which.max); 
   true.train <- apply(   y.train, 1, which.max)
-tab <- table(choice.train,true.train)
+tab <- table(true.train,choice.train)
 ftable(addmargins(tab))
 
 choice.test <- apply(pred.test, 1, which.max); 
   true.test <- apply(   y.test, 1, which.max)
-tab <- table(choice.test,true.test)
+tab <- table(true.test,choice.test)
 ftable(addmargins(tab))
 
 # --- Precision and recall heuristics
-#     add row for category 2 if needed
-if (nrow(tab)<ncol(tab)) { 
-	tab <- rbind(tab[1:5,rep(0,n.grps)]); rownames(tab)<-1:n.grps }
+#     add col for missing category if needed
+if (ncol(tab)<nrow(tab)) { 
+	filled.tab <- matrix(0,nrow=n.grps,ncol=n.grps)
+	filled.tab[,as.numeric(colnames(tab))] <- tab
+	tab <- filled.tab  }
 other <- 5; 
 n.correct    <- sum(diag(tab)       [-other])
 n.entity     <- sum(apply(tab,2,sum)[-other])

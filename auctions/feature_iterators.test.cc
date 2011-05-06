@@ -52,7 +52,7 @@ main()
   
   // build vector of columns from file
   //  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
-  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
+  const std::string columnFileName ("/Users/bob/C/auctions/test/bank_post45.dat");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
@@ -87,19 +87,35 @@ main()
   Column conCol2 ("constant_2", "constant column", n, x);
   Feature constantFeature2(conCol2);
   // make two dummys share common parent  Month7=0, Month7=1
-  features[2]->add_attribute("parent", "Month7");
-  features[3]->add_attribute("parent", "Month7");
-  features[2]->add_attribute("category", "0");
-  features[3]->add_attribute("category", "1");
+  features[2]->set_attribute("parent", "Month7");
+  features[3]->set_attribute("parent", "Month7");
+  features[2]->set_attribute("category", "0");
+  features[3]->set_attribute("category", "1");
   std::cout << "  -------------------------------------------------------\n";
   
 
   if (true)         // test predicate
   {
     std::cout << "TEST: features f[2] and f[3] are mutually exclusive gives (should be 1): "
-	      << FeaturePredicates::mutually_exclusive_indicators_from_same_parent(features[2],features[3]) << "   "
+	      << FeaturePredicates::mutually_exclusive_categories_from_same_parent(features[2],features[3]) << "   "
+	      << FeaturePredicates::mutually_exclusive(features[2],features[3]) << "   "
 	      << SkipIfRelated(features[2])(features[3]) << "    "
 	      << SkipIfRelatedPair()(features[2],features[3]) << std::endl;
+
+    Feature interact (features[1],features[3]);
+    std::cout << "TEST: feature " << interact << " is mutually exclusive but not an indicator (should be 1 1): "
+	      << FeaturePredicates::mutually_exclusive_categories_from_same_parent(interact,features[2]) << "   "
+	      << FeaturePredicates::mutually_exclusive(interact,features[2]) << "   "
+	      << SkipIfRelated(interact)(features[2]) << "    "
+	      << SkipIfRelatedPair()(interact,features[2]) << std::endl;
+
+    std::cout << "TEST: test features for exclusive (should be 0 1): " << std::endl
+	      << "               " << interact     << std::endl
+	      << "               " << features[3]  << std::endl
+	      << FeaturePredicates::mutually_exclusive_categories_from_same_parent(interact,features[3]) << "   "
+	      << FeaturePredicates::mutually_exclusive(interact,features[3]) << "   "
+	      << SkipIfRelated(interact)(features[3]) << "    "
+	      << SkipIfRelatedPair()(interact,features[3]) << std::endl;
   }
   
   if (false)        // test queue iterator
