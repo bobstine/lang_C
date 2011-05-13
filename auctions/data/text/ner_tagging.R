@@ -198,7 +198,7 @@ setwd("/home/bob/C/auctions/data/text/small/")
 # or use the data from the full
 setwd("/home/bob/C/auctions/data/text/")
 
-# --- read in the results; should match  n.grps * 301,416 = 1,205,664
+# --- read in the results
 system("cut -f1-10 model_data.csv > to_r.csv")
 Results <- read.delim("to_r.csv")
 dim(Results); colnames(Results)
@@ -206,13 +206,13 @@ dim(Results); colnames(Results)
 # --- validation data are returned from C++ in permuted order (reversed)
 n.grps <- 5
 
-i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training  # 20,000
-i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  #  20,000
-
+i.train <- which(Results[,1]=="est"); n.training <- length(i.train)/n.grps ; n.training 
+i.test  <- which(Results[,1]=="val"); n.testing  <- length(i.test )/n.grps ; n.testing  
 # --- permute test data back to original order
 i.test <- i.test[length(i.test):1]
 
 # --- push model predictions into arrays to get response vector back together
+#     Ensure Y column name is correct
 pred.train <- matrix(Results[i.train,"Fit"], nrow=n.training, ncol=n.grps)
 pred.test  <- matrix(Results[ i.test,"Fit"], nrow= n.testing, ncol=n.grps)
 
@@ -238,8 +238,8 @@ if (ncol(tab)<nrow(tab)) {
 	tab <- filled.tab  }
 other <- 5; 
 n.correct    <- sum(diag(tab)       [-other])
-n.entity     <- sum(apply(tab,2,sum)[-other])
-n.say.entity <- sum(apply(tab,1,sum)[-other])
+n.entity     <- sum(apply(tab,1,sum)[-other])
+n.say.entity <- sum(apply(tab,2,sum)[-other])
 cat("Precision",round(n.correct/n.entity,3), "   Recall ", round(n.correct/n.say.entity,3), "\n")
 
 

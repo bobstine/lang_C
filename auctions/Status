@@ -1,5 +1,18 @@
 Next... 
 
+	Segmented time model requires 
+
+	block of variable and constant shift.  Lags become a real
+	problem with stacked regression models; need to introduce the
+	neighbor concept to lags.  Lags via neighborhood would handle
+	this nicely.  Would also allow removal of the "-x" exlcude
+	kludge.
+
+	Also needs weighted LS for the segmented models for rare
+	categories.
+
+
+
 	Check that PCAs/RKHS work correctly.
 
 	Also check that cross-experts are skipping enough terms.
@@ -10,11 +23,6 @@ Next...
 
 	Columns don't seem to know about those prefix rows used for things
 	like lags, so summary stats (eg, average) are messed up.
-
-	Segmented time model requires block of variable and constant shift.
-
-	Lags become a real problem with stacked regression models;
-	need to introduce the neighbor concept to lags.
 
 
 
