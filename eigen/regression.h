@@ -76,30 +76,31 @@ public:
        mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames, x); }
 
   
-  // WLS: if weighted, all things held are weighted by W
+  // WLS: if weighted, all things held are weighted by square root of input weights in w
   LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
     :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
-       mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
+       mY(y.array()*w.array().sqrt()), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
     :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
        mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames,x); }  
 
-  bool      is_binary()              const   { return mBinary; }
-  bool      is_wls()                 const   { return mWeights.size() > 1; }
-  bool      is_ols()                 const   { return mWeights.size() == 1; }
-  int       block_size()             const   { return mBlockSize; }
-  int       n()                      const   { return mN; };
-  int       q()                      const   { return mK-1; }                      // -1 for intercept 
-  double    rmse()                   const   { return sqrt(mResidualSS/(mN-mK)); }  
-  double    residual_ss()            const   { return mResidualSS; }
-  double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
+  inline bool      is_binary()              const   { return mBinary; }
+  inline bool      is_wls()                 const   { return !is_ols(); }
+  inline bool      is_ols()                 const   { return mWeights.size() == 1; }
+  inline int       block_size()             const   { return mBlockSize; }
+  inline int       n()                      const   { return mN; };
+  inline int       q()                      const   { return mK-1; }                      // -1 for intercept 
+  inline double    rmse()                   const   { return sqrt(mResidualSS/(mN-mK)); }  
+  inline double    residual_ss()            const   { return mResidualSS; }
+  inline double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
 
-  Vector    x_row(int i)             const; 
-  Vector    residuals()              const   { return mResiduals; }
-  Vector    raw_residuals()          const;
-  Vector    fitted_values()          const   { return mY - mResiduals; }
+  inline Vector    residuals()              const   { return mResiduals; }
+  inline Vector    fitted_values()          const   { return mY - mResiduals; }
+
   Vector    fitted_values(double lo, double hi)  const;                            // truncated to indicated range
+  Vector    raw_residuals()                 const;
+  Vector    x_row(int i)                    const; 
 
   double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
   Vector    gamma()                  const   { return mGamma.head(mK); }
@@ -195,7 +196,7 @@ public:
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
   double                     y_bar()                               const  { return mModel.y_bar(); }
-  template <class Iter> void fill_with_fit(Iter it)                const;
+  template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
   template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
   
   void print_to     (std::ostream& os, bool useHTML=false) const;

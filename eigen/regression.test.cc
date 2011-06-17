@@ -39,8 +39,8 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows    (200000);   
-  const int nCols        (80);
+  const int nRows       (200);   
+  const int nCols        (8 );
   const int nAdd         ( 3);
   
   // form random matrix for response and predictors
@@ -86,7 +86,7 @@ int main(int, char **)
 
 
   
-  if (false)  // basic test of the linear regression routine, adding variables one at a time
+  if (true)  // basic test of the linear regression routine, adding variables one at a time
   {
     double mean (y.sum()/y.size());
     std::cout << "TEST:  y-bar is " << mean << std::endl;
@@ -142,7 +142,41 @@ int main(int, char **)
   }
 
 
-  if (true)   // check validation model (dup validation and estimation cases)
+  
+  if (true)  // basic test of the weighted regression
+  {
+    LinearRegression regr("yyy", y, w, 0);
+    std::cout << "TEST: Initialized weighted regression " << std::endl << regr << std::endl;
+    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    
+    std::cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[0] " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << std::endl;
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[1] " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: Several rows of X" << std::endl;
+    for (int i=0; i<10; ++i)
+      std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
+
+    std::cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << std::endl;               // ??? Why does it not detect singularity
+    regr.add_predictors();
+    std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
+    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+
+    std::cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << std::endl;
+  }
+
+
+  if (false)   // check validation model (dup validation and estimation cases)
   { clock_t start;
     // assemble data
     std::cout << "TEST: Testing validated model\n";

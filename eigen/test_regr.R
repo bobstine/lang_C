@@ -1,27 +1,41 @@
 #  Test Eigen regression
+
+# --- read data file that is written when fewer than 1000 obs
+
 Data <- read.table("~/C/eigen/test.dat") # cols are y, X, Z
+n <- dim(Data)[1]
 
-n <- dim(Data)[1];   Data[1:2,]
 
-#################################################################################
-#
-# test algorithm for fast ss
-#
-#################################################################################
+# --- all eigen regression routines done in GS coordinates so
+#     the following builds the gram-schmidt variables; variables
+#     are intended to be orthonormal: e.g. sum(X1*X1) = 1
 
-approx_ss <- function(x) {
-	m <- x[1]; ss <- 0;
-	for (i in 2:length(x)) {
-		m <- (m * (i-1) + x[i])/i
-		ss <- ss + (x[i]-m)^2
-	}
-	c(m,ss)
-}
+standardize <- function(x) { d <- (x-mean(x)); d/sqrt(d%*%d) }
 
-n <- 100;
-x <- 10*rnorm(n)
-approx_ss(x)
-c(mean(x), (n-1)*var(x))
+Y <- Data[,1]
+
+INT <- rep(1/sqrt(n),n)
+X0  <- standardize(Data[,2])
+X1  <- standardize(residuals(lm(Data[,3] ~ X0)))
+X2  <- standardize(residuals(lm(Data[,4] ~ X0 + X1)))
+
+
+# --- if weighted, then orthogonal in the weighted inner product
+#      e.g. sum(X1*W*X1) = 1.  Idea is to form the exogenous cols
+#     so that X'X = 1, but the weights are baked in
+
+normalize <- function(x) { x/sqrt(x%*%x); }
+
+W <- rep(1:4,n/4)
+
+wY   <- sqrt(W) * Y
+
+wINT <- sqrt(W * 1)/sqrt(sum(W))                                            ; sum(wINT^2)
+wX0  <- sqrt(W)*X0; wX0 <- normalize(residuals( lm(wX0 ~ wINT - 1)) )       ; sum(wINT*wX0); sum(wX0^2)
+wX1  <- sqrt(W)*X1; wX1 <- normalize(residuals( lm(wX1 ~ wINT + wX0 - 1)) ) ; sum(wINT*wX1); sum(wX0*wX1); sum(wX1^2)
+wX2  <- sqrt(W)*X2; wX2 <- normalize(residuals( lm(wX2 ~ wINT + wX0 + wX1 - 1)) )
+
+wX <- cbind(wINT, wX0, wX1, wX2); t(wX) %*% wX
 
 
 #################################################################################
@@ -30,29 +44,36 @@ c(mean(x), (n-1)*var(x))
 #
 #################################################################################
  
-standardize <- function(x) { d <- (x-mean(x)); d/sqrt(d%*%d) }
+# --- ols regression in X[1:3] 
 
-Y  <- Data[,1]
-X0 <- rep(1/sqrt(n),n)
+summary(r <- lm(Y ~ INT)); aov(r)
 
-X1 <- standardize(Data[,2])
-summary(r <- lm(Y ~ X0 + X1 - 1)); aov(r)
+summary(r <- lm(Y ~ INT + X0 - 1)); aov(r)
 
-X2 <- standardize(residuals(lm(Data[,3] ~ X1)))
-summary(r <- lm(Y ~ X0 + X1 + X2 - 1)); aov(r)
+summary(r <- lm(Y ~ INT + X0 + X1 - 1)); aov(r)
 
-# --- check array forms
-cbind(X0,X1,X2)[1:4,]  # Q
-Data[1:5,2:3]          # X
 
 # --- check beta in original coordinates
-summary( lm(Data[,1] ~ Data[,2] + Data[,3]))
+summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
 
 
-# --- regression in X[1:3] 
-#     (done in C all at once, second test)
-X3 <- standardize(residuals(lm(Data[,4] ~ X1 + X2)))
-summary(r <- lm(Y ~ X0 + X1 + X2 + X3 - 1)); aov(r)
+#################################################################################
+#
+# weighted regression example
+#
+#################################################################################
+ 
+# this expression agrees with nothing since it does not norm the weights the same way
+# as in the regression code (ie, predictors are normed to have SS = 1)
+sum(W*Y)/sum(W) 
+
+# agrees with C++ so long as weight Y
+summary(r <- lm(wY ~ wINT-1))
+
+summary(r <- lm(Y ~ INT + X0 - 1)); aov(r)
+
+summary(r <- lm(Y ~ INT + X0 + X1 - 1)); aov(r)
+
 
 # --- check beta in original coordinates
 summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
