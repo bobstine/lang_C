@@ -2,9 +2,6 @@
 
 #include "regression.h"
 
-// #define  _CLASSICAL_GS_
-
-
 #include <Eigen/LU>
 #include <Eigen/QR>
 
@@ -49,10 +46,10 @@ LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
     if( (y[i] != 0) && (y[i] != 1) )
-    { debugging::debug("REGR",4) << "Vector is not binary; found value v[" << i << "] = " << y[i] << std::endl;
+    { debugging::debug("REGR",4) << "Response vector in regression is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
-  debugging::debug("REGR",4) << "Vector is binary" << std::endl;
+  debugging::debug("REGR",4) << "Response vector in regression is binary." << std::endl;
   return true;
 }
 
@@ -92,18 +89,12 @@ LinearRegression::add_constant()
 {
   mK = 1;
   mXNames.push_back("Intercept");
-  if (is_ols())
-  { mR(0,0) = sqrt(mN);
-    mQ.col(0).setConstant(1.0/sqrt(mN));
-  }
-  else
-  { mQ.col(0) = mSqrtWeights;
-    mR(0,0)   = sqrt(mSqrtWeights.squaredNorm());
-    mQ.col(0)/= mR(0,0);
-  }
-  mGamma[0]     = mQ.col(0).dot(mY);
-  mLambda[0]    = 0.0;  // dont shrink intercept
-  mResiduals    = mY.array() -  mGamma(0)/mR(0,0);
+  mQ.col(0)    = mSqrtWeights;
+  mR(0,0)      = sqrt(mSqrtWeights.squaredNorm());
+  mQ.col(0)   /= mR(0,0);
+  mGamma[0]    = mQ.col(0).dot(mY);
+  mLambda[0]   = 0.0;                               // dont shrink intercept
+  mResiduals   = mY -  mGamma[0] * mQ.col(0);   //   mResiduals   = mY.array() -  mGamma[0]/mR(0,0);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 
@@ -114,24 +105,14 @@ LinearRegression::add_constant()
 LinearRegression::Vector
 LinearRegression::x_row (int i)            const
 {
-  return mQ.row(i).head(mK) * RR();
+  return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
 }
 
 
 LinearRegression::Vector
-LinearRegression::raw_residuals()          const
+LinearRegression::raw_fitted_values(double lo, double hi) const
 {
-  if (is_ols())
-    return mResiduals;
-  else
-    return mResiduals.array()/mSqrtWeights.array();
-} 
-
-
-LinearRegression::Vector
-LinearRegression::fitted_values(double lo, double hi) const
-{
-  Vector fit = fitted_values();
+  Vector fit = raw_fitted_values();
   return fit.unaryExpr([lo,hi] (double x) -> double { if(x < lo) return lo; if(x < hi) return x; return hi; });
 }
 
@@ -140,9 +121,9 @@ LinearRegression::fitted_values(double lo, double hi) const
 
 
 LinearRegression::Vector
-LinearRegression::se_gamma_ols() const
+LinearRegression::se_gamma_ls() const
 {
-  double s2  (mResidualSS/(mN-mK));
+  double s2 (mResidualSS/(mN-mK));
   Vector se (mLambda.unaryExpr([s2] (double lam)->double { return sqrt(s2/(1+lam)); }));
   return se;
 }
@@ -152,7 +133,7 @@ LinearRegression::Vector
 LinearRegression::se_gamma() const
 {
   if (mBlockSize==0)
-    return se_gamma_ols();
+    return se_gamma_ls();
   else // compute sandwich estimates; differ from entry F since residuals are updated once added
   { Vector se2 (mK);
     if (mBlockSize==1)
@@ -300,10 +281,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
 {
   mTempNames = name_vec(xName);
   mTempK     = 1;
-  if (is_wls())
-    mQ.col(mK) = z.array() * mSqrtWeights.array();
-  else
-    mQ.col(mK) = z;
+  mQ.col(mK) = z.array() * mSqrtWeights.array();
   if (0.0 == sweep_Q_from_column(mK))
   { std::cout << "REGR: Singularity detected. SSz = 0 for predictor " << xName << "; returning empty F stat" << std::endl;
     return FStatistic();
@@ -346,10 +324,7 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 {
   mTempNames = xNames;
   mTempK     = z.cols();
-  if (is_wls())
-    mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
-  else
-    mQ.block(0,mK,mN,z.cols()) = z;
+  mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column(mK+k))
       return FStatistic();
@@ -385,11 +360,13 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 
 //    Bennett     Bennett     Bennett     Bennett     Bennett     Bennett     Bennett     Bennett     Bennett     Bennett     
 
+// RAS: pretty sure this is wrong when the response gets weighted
+
 std::pair<double,double>
 LinearRegression::bennett_evaluation () const
 {
   const double epsilon (1.0E-10);
-  Vector mu      (fitted_values(epsilon, 1.0-epsilon));                      // think of fit as E(Y), constrained to [eps,1-eps] interval
+  Vector mu      (raw_fitted_values(epsilon, 1.0-epsilon));                  // think of fit as E(Y), constrained to [eps,1-eps] interval
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                  // would match residuals IF other fit is bounded
   double num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)
@@ -427,10 +404,7 @@ LinearRegression::add_predictors (StringVec const& xNames, Matrix const& x)
 {
   assert(x.rows() == mN);
   assert((int)xNames.size() == x.cols());
-  if (is_wls())
-    mQ.block(0,mK,mN,x.cols()) =  mSqrtWeights.asDiagonal() * x;
-  else
-    mQ.block(0,mK,mN,x.cols()) = x;
+  mQ.block(0,mK,mN,x.cols()) =  mSqrtWeights.asDiagonal() * x;
   for(int k = 0; k<x.cols(); ++k)
   { if(0.0 == sweep_Q_from_column(mK+k))
     { std::cout << "REGR: Column " << k << " of added predictors is collinear." << std::endl;
@@ -447,7 +421,7 @@ LinearRegression::add_predictors  (FStatistic const& fstat)
   debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
   double lambda (0);
   double F (fstat.f_stat());
-  if (F > 0) // skip those with F == 0
+  if (F > 0) // dont shrink those with F == 0
   { if (F > 1)
       lambda = 1/(F - 1);
     else
@@ -455,6 +429,17 @@ LinearRegression::add_predictors  (FStatistic const& fstat)
       lambda = 1/F;
     }
   }
+  for (unsigned int j=0; j<mTempNames.size(); ++j)
+    mLambda[mK+j] = lambda;
+  update_fit(mTempNames);
+}
+
+  
+void
+LinearRegression::add_predictors  ()   // no shrinkage
+{
+  debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
+  double lambda (0);
   for (unsigned int j=0; j<mTempNames.size(); ++j)
     mLambda[mK+j] = lambda;
   update_fit(mTempNames);
@@ -477,10 +462,7 @@ void
 LinearRegression::print_to (std::ostream& os) const
 {
   os.precision(6);
-  if (is_ols())
-    os << "Linear Regression";
-  else
-    os << "Weighted Linear Regression";
+  os << mWeightStr << "Linear Regression";
   if (is_binary())
     os << "   Binary response";
   os << "  y = " << mYName << "    (n=" << mN << ",k=" << mK << ") " << std::endl
@@ -502,7 +484,7 @@ LinearRegression::print_gamma_to (std::ostream&os) const
 	 << std::setw(8) << mGamma[j]/se[j] << "   " << mLambda[j] << std::endl;
   }
   else // show ols and sandwich
-  { Vector olsSE (se_gamma_ols());
+  { Vector olsSE (se_gamma_ls());
     os << "                        Variable Name                   Gamma    Sandwich SE     (OLS)        t     Lambda " << std::endl;
     for (int j = 0; j<mK; ++j)
       os << std::setw(maxNameLen) << printed_name(mXNames[j])  << "    " << std::setw(9) << mGamma[j] << "  " << std::setw(8) << se[j]
@@ -547,15 +529,13 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
-  Vector y    (is_ols() ? mY : mY.cwiseQuotient(mSqrtWeights));
+  Vector y    (mY.cwiseQuotient(mSqrtWeights));
   Vector res  (raw_residuals());
-  Vector fit  (is_ols() ? fitted_values() : y - res);
+  Vector fit  (y - res);
   for(int i=0; i<mN; ++i)
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
     if(numX>0)
     { Vector row (x_row(i));
-      if (is_wls())
-	row = row / mSqrtWeights[i];
       for (int j=1; j<(numX-1); ++j)  // skip intercept
 	os << row[j] << "\t";
       os << row[numX-1] << std::endl;

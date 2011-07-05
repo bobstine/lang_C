@@ -10,6 +10,12 @@
 
 #include <time.h>
 
+
+
+#define USE_WLS
+
+
+
 std::ostream&
 operator<<(std::ostream& os, std::pair<double,double> p)
 {
@@ -29,8 +35,8 @@ int main(int, char **)
 {
   std::cout << "TEST:  Test of regression begins...\n\n";
   debugging::debug_init(std::cout,3);
-  std::cout.precision(4);  
-
+  std::cout.precision(4);
+  
   // Time to fit regr with n = 200,000 rows  (optimization O4)       Add 3 to initial p
   //                          Eigen 2 (b=0)    Eigen 3,MGS,b=1          Eigen 3,MGS,b=1
   //                          13"     17"       13      17               13      17
@@ -55,10 +61,12 @@ int main(int, char **)
     y[i] = y[i] + i * 100;
   
   // define the weight vector
+#ifdef USE_WLS
   for (int i=0; i<nRows; ++i)
-    w[i] = 1.0 + i % 4;
+    w[i] = 10.0; //    w[i] = 1.0 + i % 4;
   std::cout << "TEST: First 10 of weight vector = " << w.head(10).transpose() << std::endl;
-
+#endif
+  
   // names for variables
   std::vector<std::string> xNames;
   std::vector<std::string> zNames;
@@ -83,8 +91,6 @@ int main(int, char **)
     output.precision(7);
     output << data << std::endl;
   }
-
-
   
   if (true)  // basic test of the linear regression routine, adding variables one at a time
   {
@@ -93,22 +99,26 @@ int main(int, char **)
     std::cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << std::endl;
     std::cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << std::endl;
 
+#ifdef USE_WLS
+    LinearRegression regr("yyy", y, w, 0);
+#else
     LinearRegression regr("yyy", y, 0);
+#endif
     std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
     std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
     
     std::cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << std::endl;
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[0] " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << std::endl;
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[1] " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: Several rows of X" << std::endl;
     for (int i=0; i<10; ++i)
@@ -118,19 +128,25 @@ int main(int, char **)
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
+    std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << std::endl;
   }
 
 
-  if (false)  // second test, adding 3 at once
+  if (true)  // second test, adding X bundle at once
   {
+#ifdef USE_WLS
+    LinearRegression regr("yyy", y, w, 0);
+#else
     LinearRegression regr("yyy", y, 0);
+#endif
+
     std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
     
     std::cout << "TEST: F test of X " << regr.f_test_predictors(xNames, X) << std::endl;
     regr.add_predictors();
+    
     std::cout << "TEST: regression after adding X " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
     std::cout << "      SE    = " << regr.se_beta_ols().transpose() << std::endl;
@@ -142,49 +158,17 @@ int main(int, char **)
   }
 
 
-  
-  if (true)  // basic test of the weighted regression
-  {
-    LinearRegression regr("yyy", y, w, 0);
-    std::cout << "TEST: Initialized weighted regression " << std::endl << regr << std::endl;
-    std::cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-    
-    std::cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << std::endl;
-    regr.add_predictors();
-    std::cout << "TEST: regression after adding X[0] " << std::endl << regr << std::endl;
-    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-
-    std::cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << std::endl;
-    regr.add_predictors();
-    std::cout << "TEST: regression after adding X[1] " << std::endl << regr << std::endl;
-    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-
-    std::cout << "TEST: Several rows of X" << std::endl;
-    for (int i=0; i<10; ++i)
-      std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
-
-    std::cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << std::endl;               // ??? Why does it not detect singularity
-    regr.add_predictors();
-    std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
-    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
-    std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-
-    std::cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << std::endl;
-  }
-
-
   if (false)   // check validation model (dup validation and estimation cases)
   { clock_t start;
     // assemble data
     std::cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
     double yPtr[2*nRows];
+    double wts[2*nRows];
     for(int i=0; i<nRows; ++i)
     { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
       cv[2*i] = true; cv[2*i+1]=false;        // weave the training and test data
+      wts[2*i] = w[i] = 10.0;
     }
     std::vector<std::pair<std::string, double*> > xcollection;
     for(int j=0; j<nCols; ++j)
@@ -205,7 +189,11 @@ int main(int, char **)
 
     if(true) //  validated regression, standard F test
     { std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
-      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, 0, true);
+#ifdef USE_WLS
+      ValidatedRegression vregr("Y", yPtr, cv, wts, 2*nRows, 0, true);
+#else
+      ValidatedRegression vregr("Y", yPtr, cv,      2*nRows, 0, true);
+#endif
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
       // force to add by setting p-value threshold to 1
@@ -267,57 +255,6 @@ int main(int, char **)
     }
   }
   
-  // weighted regression
-  /* {
-    std::cout << "\n\nTEST: build 3 predictor WLS fit\n";
-    start = clock();     LinearRegression regr("y",y,w);     print_time(start);
-    start = clock();     regr.add_predictors(xNames,X);      print_time(start);
-    std::cout << regr << std::endl;
-    
-    int show ((nRows > 10)?10:nRows);
-    std::cout << "Fitted values: " << regr.fitted_values().head(show).transpose()   << std::endl;
-    std::cout << "Residuals    : " << regr.residuals().head(show).transpose()       << std::endl;
-    std::cout << "Raw Residuals: " << regr.raw_residuals().head(show).transpose()   << std::endl;
-  }
-  */
-  // build a regression; no shrinkage for initial variables
-  /*
-    {
-    std::cout << "\n\n---------------------------------------------------------------------------------\nTEST: test of white regression\n";
-    const int blockSize (0);
-    start = clock();     LinearRegression regr("y",y,blockSize);       print_time(start);
-    start = clock();     regr.add_predictors(xNames,X);                print_time(start);
-    std::cout << regr << std::endl;
-    
-    int show ((nRows > 10)?10:nRows);
-    std::cout << "Response     : " << y.segment(0,show).transpose()                    << std::endl;
-    std::cout << "Fitted values: " << regr.fitted_values().segment(0,show).transpose() << std::endl;
-    std::cout << "Predictions  : " << regr.predictions(X).segment(0,show).transpose()  << std::endl;
-    std::cout << "Residuals    : " << regr.residuals().segment(0,show).transpose()     << "  with sum  " << regr.residuals().sum() << std::endl;
-    
-    // test the test routines
-    std::cout << "\nStarting of the timing routines for testing/adding predictors\n";
-    std::vector<std::string> names; names.push_back("z");
-    
-    start = clock(); std::cout << "Test of X[2]   : " << regr.f_test_predictor("X[2]", X.col(2))   << std::endl; print_time(start);
-    start = clock(); std::cout << "Test of col z  : " << regr.f_test_predictor( " z ", z)          << std::endl; print_time(start);
-    start = clock(); std::cout << "Test 'matrix' z: " << regr.f_test_predictors(names,z)           << std::endl; print_time(start); std::cout << std::endl;
-    
-    std::cout << "\n       Z[0] = " << Z.col(0).head(5).transpose() << " ... " << std::endl;
-    start = clock(); std::cout << "Test of Z[0]     : " << regr.f_test_predictor ("Z[0]",Z.col(0))   << std::endl; print_time(start);
-    start = clock(); std::cout << "Test of Z[0] (s) : " << regr.f_test_predictors(names, Z.col(0))   << std::endl; print_time(start);
-
-    start = clock(); std::cout << "White Z[0],b=1    : " << regr.f_test_predictor ("Z[0]",Z.col(0)) << std::endl; print_time(start);
-    start = clock(); std::cout << "White Z[0],b=1 (s): " << regr.f_test_predictors(names,Z.col(0)) << std::endl; print_time(start);
-
-    start = clock(); std::cout << "Test of Z      : " << regr.f_test_predictors(zNames, Z)         << std::endl; print_time(start);
-    
-    start = clock(); std::cout << "Adding 1 pred  : ";  regr.add_predictors(names, z);             print_time(start);  std::cout << regr << std::endl;
-    start = clock(); std::cout << "Adding k preds : ";  regr.add_predictors(zNames, Z);            print_time(start);  std::cout << regr << std::endl;
-  }
-
-  */
-
 
   return 0;
 }

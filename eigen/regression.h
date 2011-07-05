@@ -15,7 +15,12 @@
   all of the data to fit the model.  A ValidatedRegression understands
   the concept that some data will be reserved for validation purposes.
 
+  All regression models define a set of weights, and the software
+  minimizes the sum w_i(y_i-y^_i)^2.  Weights initialized to 1's when
+  input weights are not defined.
+
   
+   4 Jul 2011 ... Use weighed version in all cases rather than two versions of code.
   20 Mar 2011 ... In place gram-schmidt branch; port to Eigen3
   14 Oct 2010 ... Split out fstatistic, using boost in place of gsl.
   30 Sep 2010 ... Playing with how to do shrinkage reasonably.
@@ -44,7 +49,8 @@ private:
   int                      mN;             // number of actual obs without pseudo-rows used for shrinkage
   int                      mK;             // number of columns (including constant) in the model
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
-  Vector                   mWeights;       // Var(y_i) = 1/W_ii; weight vector is length 1 if not supplied (ie, for ols, weight vector is a scalar)
+  std::string              mWeightStr;
+  Vector                   mWeights;       // minimize sum w_i(y_i-y^_i)^2;  weight vec = 1 if not supplied (for ols, weight vector is a scalar)
   Vector                   mSqrtWeights;
   std::string              mYName; 
   StringVec                mXNames;
@@ -66,45 +72,44 @@ public:
     :  mN(0) { }
 
   
-  // OLS
-  LinearRegression (std::string yName, Vector const& y, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mXNames(),
-       mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
+  LinearRegression (std::string yName, Vector const& y, int blockSize) 
+    : mN(y.size()), mK(0), mBlockSize(blockSize),
+      mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
+      mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
   
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(1), mSqrtWeights(1), mYName(yName), mXNames(),
-       mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames, x); }
+    :  mN(y.size()), mK(0), mBlockSize(blockSize),
+       mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
+       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames, x); }
 
   
   // WLS: if weighted, all things held are weighted by square root of input weights in w
   LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
+    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
        mY(y.array()*w.array().sqrt()), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
+    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
        mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames,x); }  
 
-  inline bool      is_binary()              const   { return mBinary; }
-  inline bool      is_wls()                 const   { return !is_ols(); }
-  inline bool      is_ols()                 const   { return mWeights.size() == 1; }
-  inline int       block_size()             const   { return mBlockSize; }
-  inline int       n()                      const   { return mN; };
-  inline int       q()                      const   { return mK-1; }                      // -1 for intercept 
-  inline double    rmse()                   const   { return sqrt(mResidualSS/(mN-mK)); }  
-  inline double    residual_ss()            const   { return mResidualSS; }
-  inline double    r_squared()              const   { return 1.0 - mResidualSS/mTotalSS; }
+  inline bool      is_binary()         const   { return mBinary; }
+  inline int       block_size()        const   { return mBlockSize; }
+  inline int       n()                 const   { return mN; };
+  inline int       q()                 const   { return mK-1; }                                     // -1 for intercept 
+  inline double    rmse()              const   { return sqrt(mResidualSS/(mN-mK)); }  
+  inline double    residual_ss()       const   { return mResidualSS; }
+  inline double    r_squared()         const   { return 1.0 - mResidualSS/mTotalSS; }
+  inline Vector    residuals()         const   { return mResiduals; }
+  inline Vector    fitted_values()     const   { return mY - mResiduals; }
+  inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }  // raw versions remove the internal weights
+  inline Vector    raw_fitted_values() const   { return fitted_values().array()/mSqrtWeights.array(); }
 
-  inline Vector    residuals()              const   { return mResiduals; }
-  inline Vector    fitted_values()          const   { return mY - mResiduals; }
-
-  Vector    fitted_values(double lo, double hi)  const;                            // truncated to indicated range
-  Vector    raw_residuals()                 const;
+  Vector    raw_fitted_values(double lo, double hi)  const;                                             // truncated to indicated range
   Vector    x_row(int i)                    const; 
 
   double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
   Vector    gamma()                  const   { return mGamma.head(mK); }
-  Vector    se_gamma_ols()           const;
+  Vector    se_gamma_ls()            const;
   Vector    se_gamma()               const;
   Vector    beta()                   const;
   Vector    se_beta_ols()            const;
@@ -114,15 +119,15 @@ public:
   template <class Iter>
   void      fill_with_beta (Iter begin) const;
   
-  StringVec predictor_names()   const   { return mXNames; }
+  StringVec predictor_names()        const   { return mXNames; }
   Vector    predictions  (Matrix const& matrix)  const;
-  Vector    predictions  (Matrix const& matrix, double lo, double hi)  const;      // truncate to range
+  Vector    predictions  (Matrix const& matrix, double lo, double hi)   const;    // truncate to range
 
-  FStat     f_test_predictor  (std::string name, Vector const& z)                      const; // <f,pval>  f == 0 implies singular; uses Bennett if binary
-  FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;
+  FStat     f_test_predictor  (std::string name, Vector const& z)       const;    // <f,pval>  f == 0 implies singular; uses Bennett if binary
+  FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;    //           blocksize > 0 implies blocked white.
   
-  void      add_predictors ()                                                                { add_predictors(FStatistic()); }           // no shrinkage
-  void      add_predictors (StringVec const& names, Matrix const& x);                                                 // adds with no testing
+  void      add_predictors ();                                                    // no shrinkage
+  void      add_predictors (StringVec const& names, Matrix const& x);             // adds with no testing
   void      add_predictors (FStat const& fstat);
   
   void      print_to       (std::ostream& os)                   const;
@@ -176,6 +181,10 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize, bool shrink)
     :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, blockSize); }
 
+  template<class Iter, class BIter, class WIter>
+  ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
+    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
+
   double goodness_of_fit() const  { return mModel.r_squared(); }
   int block_size()         const  { return mModel.block_size(); }
   int q()                  const  { return mModel.q(); }
@@ -206,6 +215,8 @@ private:
   
   template<class Iter, class BIter>
   void   initialize(std::string yName, Iter Y, BIter B, int blockSize);
+  template<class Iter, class BIter, class WIter>
+  void   initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize);
 
   void   initialize_validation_ss();
   

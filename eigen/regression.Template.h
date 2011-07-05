@@ -53,12 +53,33 @@ std::pair<double,double>
 
 
 
+template<class Iter, class BIter, class WIter>
+  void
+  ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)
+{
+  Vector w (mLength);
+  Vector y (mLength);
+  int  k (mLength);
+  for(int i=0; i<mLength; ++i, ++Y, ++W, ++B)
+  { if (*B)   // use for estimation, increment mN
+    { y[mN] = *Y; w[mN] = *W; mPermute[i] = mN; ++mN; }
+    else      // reverse to the end for validation
+    { --k; y[k] = *Y; w[k] = *W; mPermute[i]=k; }
+  }
+  mValidationY = y.tail(mLength-mN);
+  debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
+  mModel = LinearRegression(yName, y.head(mN), w.head(mN), blockSize);
+  if (mValidationY.size() > 0)
+    initialize_validation_ss();  // needs mModel and mValidationY
+}
+
+
 template<class Iter, class BIter>
   void
   ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, int blockSize)
 { 
-  Eigen::VectorXd y(mLength);
-  int k (mLength);
+  Vector y(mLength);
+  int k  (mLength);
   for(int i=0; i<mLength; ++i, ++Y, ++B)
   { if (*B)   // use for estimation, increment mN
     { y[mN] = *Y; mPermute[i] = mN; ++mN; }
@@ -100,11 +121,11 @@ ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
   if (truncate)
   { double min (0.0);
     double max (1.0);
-    results.segment(        0           , n_estimation_cases()) = mModel.fitted_values(min,max);
+    results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(min,max);
     results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,min,max);
   }
   else
-  { results.segment(        0           , n_estimation_cases()) = mModel.fitted_values();
+  { results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values();
     results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX);
   } 
   for(int i = 0; i<mLength; ++i)

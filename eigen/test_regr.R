@@ -21,8 +21,8 @@ X2  <- standardize(residuals(lm(Data[,4] ~ X0 + X1)))
 
 
 # --- if weighted, then orthogonal in the weighted inner product
-#      e.g. sum(X1*W*X1) = 1.  Idea is to form the exogenous cols
-#     so that X'X = 1, but the weights are baked in
+#     e.g. sum(X1*W*X2) = 0 and sum(X1*W1*X1)= 1. Form the exogenous cols
+#     so that X'X = 1, with the weights baked in.
 
 normalize <- function(x) { x/sqrt(x%*%x); }
 
@@ -46,15 +46,15 @@ wX <- cbind(wINT, wX0, wX1, wX2); t(wX) %*% wX
  
 # --- ols regression in X[1:3] 
 
-summary(r <- lm(Y ~ INT)); aov(r)
+summary(r <- lm(Y ~ INT-1)); aov(r)
 
 summary(r <- lm(Y ~ INT + X0 - 1)); aov(r)
 
 summary(r <- lm(Y ~ INT + X0 + X1 - 1)); aov(r)
 
-
 # --- check beta in original coordinates
 summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
+
 
 
 #################################################################################
@@ -67,16 +67,33 @@ summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
 # as in the regression code (ie, predictors are normed to have SS = 1)
 sum(W*Y)/sum(W) 
 
-# agrees with C++ so long as weight Y
+# slope estimate agrees with C++ so long as weight Y, but SE and sigma differ
+# for initial step due to handling of "last round" residuals
 summary(r <- lm(wY ~ wINT-1))
+# but not with this ... summary(r <- lm( Y ~ INT -1, weights=W))
 
-summary(r <- lm(Y ~ INT + X0 - 1)); aov(r)
+# these two agree with C++ and SE summary, but not for the R2 stat
+summary(r <- lm(wY ~ wINT + wX0 - 1))
 
-summary(r <- lm(Y ~ INT + X0 + X1 - 1)); aov(r)
+summary(r <- lm(wY ~ wINT + wX0 + wX1 - 1))
+(residuals(r)/sqrt(W))[1:5]
 
+# --- using R's weights leads to the same residuals (but diff coefficient estimates)
+summary(r <- lm(Y ~ X0 + X1, weights=W*2.5))
+residuals(r)[1:5]
 
 # --- check beta in original coordinates
 summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
+
+
+
+
+
+
+
+
+
+
 
 
 #################################################################################
