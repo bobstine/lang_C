@@ -94,7 +94,7 @@ LinearRegression::add_constant()
   mQ.col(0)   /= mR(0,0);
   mGamma[0]    = mQ.col(0).dot(mY);
   mLambda[0]   = 0.0;                               // dont shrink intercept
-  mResiduals   = mY -  mGamma[0] * mQ.col(0);   //   mResiduals   = mY.array() -  mGamma[0]/mR(0,0);
+  mResiduals   = mY -  mGamma[0] * mQ.col(0);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 

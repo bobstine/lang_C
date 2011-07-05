@@ -92,7 +92,7 @@ int main(int, char **)
     output << data << std::endl;
   }
   
-  if (true)  // basic test of the linear regression routine, adding variables one at a time
+  if (false)  // basic test of the linear regression routine, adding variables one at a time
   {
     double mean (y.sum()/y.size());
     std::cout << "TEST:  y-bar is " << mean << std::endl;
@@ -134,7 +134,7 @@ int main(int, char **)
   }
 
 
-  if (true)  // second test, adding X bundle at once
+  if (false)  // second test, adding X bundle at once
   {
 #ifdef USE_WLS
     LinearRegression regr("yyy", y, w, 0);
@@ -158,7 +158,7 @@ int main(int, char **)
   }
 
 
-  if (false)   // check validation model (dup validation and estimation cases)
+  if (true)   // check validation model (dup validation and estimation cases)
   { clock_t start;
     // assemble data
     std::cout << "TEST: Testing validated model\n";
