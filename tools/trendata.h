@@ -1,7 +1,7 @@
  
 typedef std::map<std::string, std::vector<double> > TimeSeriesMap;   // state x time series
 
-const int    number_of_quarters  (71);                               //   1992:1 .. 2009:3
+const int    number_of_quarters  (76);                               //   1992:1 .. 2010:4
 const double missing_value (-7.777777);
 
 
@@ -42,6 +42,29 @@ parse_line(std::string line, std::vector<std::string> & strs)
     }
   }
 }
+
+void
+parse_line_without_quotes(std::string line, std::vector<std::string> & strs)
+{
+  int nFields (strs.size());
+  int s (0);
+  std::string::const_iterator i (line.begin());
+  // std::cout << "Parsing file with " << nFields << " fields and no quotes.\n";
+  while(i != line.end())
+  {
+    // std::cout << "Processing char [" << *i << "]\n";
+    if (*i == ',')
+    { ++s;
+      if (s < nFields)
+	++i;
+    }
+    else
+    { strs[s].push_back(*i);
+      ++i;
+    }
+  }
+}
+
 
 void
 insert_value(TimeSeriesMap &m, std::string region, int quarter, std::string value)

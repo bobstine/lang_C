@@ -78,20 +78,12 @@ summary(r <- lm(wY ~ wINT + wX0 - 1))
 summary(r <- lm(wY ~ wINT + wX0 + wX1 - 1))
 (residuals(r)/sqrt(W))[1:5]
 
-# --- using R's weights leads to the same residuals (but diff coefficient estimates)
-summary(r <- lm(Y ~ X0 + X1, weights=W*2.5))
+# --- using R's weights gets the same beta and residuals
+summary(r <- lm(Data[,1] ~ Data[,2] + Data[,3], weights=W*2.5))
 residuals(r)[1:5]
 
 # --- check beta in original coordinates
 summary( lm(Data[,1] ~ Data[,2] + Data[,3] + Data[,4]))
-
-
-
-
-
-
-
-
 
 
 
@@ -124,6 +116,13 @@ regr.6 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4]+Data[,5]+Data[,6]+Data[,7])
 anova(regr.3, regr.6)  # compare F in this to C++; differs due to shrinkage
 
 
+
+#################################################################################
+#
+# White estimator
+#
+#################################################################################
+ 
 
 
 # --- white test of block of 3 new predictors together
@@ -186,27 +185,12 @@ t(g) %*% solve(zzi %*% t(z) %*% m %*% z %*% zzi) %*% g
 
 
 
-###########################################################
-###              
-###   WLS
-###
-###########################################################
 
-y <- Data[,1]
-w <- (1+(0:(n-1))%%4)
 
-# weighted mean
-(y %*% w)/ sum(w)
 
-# --- initial regression with intercept (ie, mean)
-regr.0 <- lm(Data[,1] ~ 1, weights=w   )
-summary(regr.0)
-anova(regr.0)
 
-# --- initial regression with 3 predictors
-regr.3 <- lm(Data[,1] ~ Data[,2]+Data[,3]+Data[,4], weights=w   )
-summary(regr.3)
-e <- residuals(regr.3);   e[1:5]
+
+
 
 
 

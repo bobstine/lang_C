@@ -5,11 +5,14 @@
          Year           Files
          1992-1996      raw_data.csv
 	 1997-1998      raw_data_1.csv, raw_data_2.csv
-	 1999-2009      raw_data_x.csv, x=1,2,3,4
+	 1999-2010      raw_data_x.csv, x=1,2,3,4
 	 
-  Each is assumed to have a header line (which is skipped over) followed by
-  lines with five values, such as the following.  Each value appears in quotes
-  in a csv layout with no extraneous blanks.
+  Each is assumed to have a header line (which is skipped over)
+  followed by lines with five values, such as the following.  Each
+  value in years 1992-2009 appears in quotes in a csv layout with no
+  extraneous blanks.
+
+  Data for 2010 is comma delimited *without* the quotes.
 
 
          "2009.1","TMSTD","165.1729","Alabama","Autauga","01001"
@@ -53,6 +56,7 @@ main()
   const int    iFIPS      (5);
   
   std::vector<std::string> dataFileNames;
+
   dataFileNames.push_back("1992/raw_data.csv");
   dataFileNames.push_back("1993/raw_data.csv");
   dataFileNames.push_back("1994/raw_data.csv");
@@ -106,8 +110,12 @@ main()
   dataFileNames.push_back("2009/raw_data_2.csv");
   dataFileNames.push_back("2009/raw_data_3.csv");
   dataFileNames.push_back("2009/raw_data_4.csv");
+  dataFileNames.push_back("2010/raw_data_1.csv");
+  dataFileNames.push_back("2010/raw_data_2.csv");
+  dataFileNames.push_back("2010/raw_data_3.csv");
+  dataFileNames.push_back("2010/raw_data_4.csv");
 
-  std::set<std::string> variableNames;                         // build state tables for these variables
+  std::set<std::string> variableNames;        // build tables for these variables
   /*  variableNames.insert("REPB60M");        // 60+ days past due, revolving
       variableNames.insert("INPB60M");        // installment
       variableNames.insert("MTPB60M");        // mortgage
@@ -116,14 +124,14 @@ main()
       variableNames.insert("REAU");           // utilization of revolving
       variableNames.insert("MTDTD");          // mortgage as percentage of total debt
       variableNames.insert("MTNAB");          // mortgages per borrower
+      variableNames.insert("ATABB");
+      variableNames.insert("ATAU");
+      variableNames.insert("ATNB12");
+      variableNames.insert("ATNC");
+      variableNames.insert("ATTDC");
   */
-  
-  variableNames.insert("ATABB");
-  variableNames.insert("ATAU");
-  variableNames.insert("ATNB12");
-  variableNames.insert("ATNC");
-  variableNames.insert("ATTDC");
   variableNames.insert("BCNARB");
+
 
   std::map<std::string, int> varValueCount;  // records total values read per variable name
   
@@ -142,8 +150,8 @@ main()
     std::cout << "Opening file " << *fileName << " for reading..." << std::endl << "         ";
     std::ifstream dataFile (fileName->c_str());
     std::string header;
-    getline(dataFile, header);                                   // dump header line
-    
+    getline(dataFile, header);                          
+    //  std::cout << "Dumping header line  < " << header << " > " << std::endl;
     while(!dataFile.eof())
     { ++lineCount;
       if (0 == lineCount % 100000) std::cout << " " << lineCount/1000;
@@ -151,13 +159,12 @@ main()
       getline(dataFile, line);
       // std::cout << "Read line " << line << std::endl;
       if (line.empty()) break;
-      if (line[0] != '"')
-      { std::cerr << "   ***  Leading character is not a double quote; ending.  ***\n";
-	break;
-      }
-      // process quoted tokens
+      // process quoted tokens or , delimited tokens
       std::vector<std::string> strs (number_of_fields);
-      parse_line(line, strs);
+      if (line[0]=='"')
+	parse_line(line, strs);
+      else
+	parse_line_without_quotes(line, strs);
       // check date
       int q = quarter_number(strs[iQuarter]);
       assert (q <= number_of_quarters);
@@ -180,12 +187,12 @@ main()
 	insert_value(data[strs[iVarName]], county, q, strs[iValue]);
       }
     }
-    std::cout << " Read complete: " << lineCount << " lines, " << counties.size() << " counties.\n";
+    std::cout << "\nRead complete: " << lineCount << " lines, " << counties.size() << " counties.\n";
   }
   std::cout << "\n\nCompleted reading all " << dataFileNames.size() << " data files:\n";
   for(std::map<std::string, int>::const_iterator i=varValueCount.begin(); i != varValueCount.end(); ++i)
     std::cout << "        " << i->first << "  " << i->second << std::endl;
-  // write separate table for each variable
+  // write separate tab-delimited table for each variable
   for(std::set<std::string>::const_iterator v = variableNames.begin(); v != variableNames.end(); ++v)
   { std::string fileName = *v + ".county.td";
     std::cout << "Writing data to " << fileName << std::endl;
