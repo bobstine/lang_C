@@ -115,21 +115,21 @@ main()
   dataFileNames.push_back("2010/raw_data_3.csv");
   dataFileNames.push_back("2010/raw_data_4.csv");
 
-  std::set<std::string> variableNames;        // build tables for these variables
-  /*  variableNames.insert("REPB60M");        // 60+ days past due, revolving
-      variableNames.insert("INPB60M");        // installment
-      variableNames.insert("MTPB60M");        // mortgage
-      variableNames.insert("ATTDC");          // total debt per consumer
-      variableNames.insert("RENARB");         // revolving per borrower
-      variableNames.insert("REAU");           // utilization of revolving
-      variableNames.insert("MTDTD");          // mortgage as percentage of total debt
-      variableNames.insert("MTNAB");          // mortgages per borrower
-      variableNames.insert("ATABB");
-      variableNames.insert("ATAU");
-      variableNames.insert("ATNB12");
-      variableNames.insert("ATNC");
-      variableNames.insert("ATTDC");
-  */
+  std::set<std::string> variableNames;    // --- build tables for these variables
+  variableNames.insert("REPB60M");        // 60+ days past due, revolving
+  variableNames.insert("INPB60M");        // installment
+  variableNames.insert("MTPB60M");        // mortgage
+  variableNames.insert("ATTDC");          // total debt per consumer
+  variableNames.insert("RENARB");         // revolving per borrower
+  variableNames.insert("REAU");           // utilization of revolving
+  variableNames.insert("MTDTD");          // mortgage as percentage of total debt
+  variableNames.insert("MTNAB");          // mortgages per borrower
+  variableNames.insert("MTTDB");          // total mortgage debt per borrower
+  variableNames.insert("ATABB");
+  variableNames.insert("ATAU");
+  variableNames.insert("ATNB12");
+  variableNames.insert("ATNC");
+  variableNames.insert("ATTDC");
   variableNames.insert("BCNARB");
 
 
