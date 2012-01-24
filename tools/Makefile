@@ -49,6 +49,9 @@ bernoulli: bernoulli.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
 
+bellman: bellman.o
+	$(GCC) $^ $(LDLIBS)  -o  $@
+
 
 # random CV indicator
 random_indicator: random_indicator.o

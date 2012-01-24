@@ -11,18 +11,32 @@
 
 namespace Line_Search
 {
-  typedef std::pair<double,double>           double_pair;
+  typedef std::pair<double,double>           Pair;
   typedef std::unary_function<double,double> scalar_function;
+
   
   class GoldenSection   // finds minimum
-    {
-    public:
-      double_pair  operator()(scalar_function const& f, double_pair const& interval) const;
-      double_pair  operator()(double (*f)(double), double_pair const& interval) const;
+  {
+  private:
+    const double  mTolerance;
+    const Pair    mInterval;
+    const int     mMaxIterations;
+    
+  public:
+
+    GoldenSection (double tolerance, Pair const& interval, int maxIterations=100)
+      : mTolerance(tolerance), mInterval(interval), mMaxIterations(maxIterations) { }
+
+    // returns x and min(f(x))
+    //    Pair  operator()(double (*f)(double))      const;    use ptr_to_unary_function
+
+    template< class Func >
+      Pair operator()(Func const& f) const;
+
     };
   
 }
 
 
-
+#include "line_search.template.h"
 #endif
