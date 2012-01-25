@@ -2,9 +2,10 @@
 #include "math.h"
 #include <iostream>
 
-template< class Func >
+
+template< class Func, class Comp >
 Line_Search::Pair
-Line_Search::GoldenSection::operator()(Func const& f) const
+Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp ) const
 {
   const double GR = 2.0/(1 + sqrt(5.0));   // 0.618
   const double gr = 1.0 - GR;              // 0.382
@@ -30,7 +31,7 @@ Line_Search::GoldenSection::operator()(Func const& f) const
 	      <<        "<" <<  xB.first << "," << xB.second <<  "> "
 	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
     */
-    if(xA.second < xB.second)
+    if(comp(xA.second,xB.second)) // < for min
     { xHi = xB;
       xB=xA;
       x = xLo.first + gr*len;
@@ -49,3 +50,18 @@ Line_Search::GoldenSection::operator()(Func const& f) const
   return(std::make_pair(x,f(x)));
 }
 
+
+template< class Func >
+Line_Search::Pair
+Line_Search::GoldenSection::find_minimum(Func const& f) const
+{
+  return optimize(f, std::less<double> () );
+}
+
+
+template< class Func >
+Line_Search::Pair
+Line_Search::GoldenSection::find_maximum(Func const& f) const
+{
+  return optimize(f, std::greater<double>());
+}

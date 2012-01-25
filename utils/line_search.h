@@ -1,4 +1,3 @@
-
 /*
   23 Jan 12 ... Define.  First code in long time.
 */
@@ -31,12 +30,17 @@ namespace Line_Search
     //    Pair  operator()(double (*f)(double))      const;    use ptr_to_unary_function
 
     template< class Func >
-      Pair operator()(Func const& f) const;
+      Pair find_minimum(Func const& f) const;
 
-    };
-  
-}
+    template< class Func >
+      Pair find_maximum(Func const& f) const;
 
+  private:
+    
+    template< class Func, class Comp >
+      Pair optimize(Func const& f, Comp const& c) const;   // comp is comparison function
+    
+  };
+}  // namespace
 
-#include "line_search.template.h"
 #endif
