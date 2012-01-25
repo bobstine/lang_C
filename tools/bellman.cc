@@ -1,24 +1,34 @@
+#include <Eigen/Core>
+
 #include "line_search.Template.h"
 #include "normal.h"
 #include <math.h>
 
 #include <functional>
 #include <iostream>
+
+#include <fstream>
+#include <sstream>
+
 #include <ctime>
+
+
 
 
 double univ (int k)
 {
-  const int start = 20;
-  const double normConst = 0.3346;
+  const int start = 20;                 // where to start the code
+  const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
   double ll = log(k+1+start);
   return 1.0/( (k+start) * ll * ll * normConst);
 }
 
 double beta (int k, double omega)
 {
-  return omega * .5 * univ(k);
+  const double spendingPct = 0.5;
+  return omega * spendingPct * univ(k); 
 }
+
 
  
 class ExpertCompetitiveGain: public std::unary_function<double,double>
@@ -26,7 +36,8 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
 private:
   const double mGamma;
   const double mOmega;
-  int mK;
+  
+  int    mK;
   double mV0, mVkp1;
   
 public:
@@ -35,7 +46,7 @@ public:
 
   void set_k (int k, double v0, double vkp1)
     { mK = k; mV0 = v0; mVkp1 = vkp1;  }
-  
+
   double operator()(double mu) const
     {
       double b = beta(mK, mOmega);
@@ -68,7 +79,53 @@ private:
 
 };
 
-  
+void
+solve_bellman_equation (double gamma, double omega, Eigen::MatrixXf &gain, Eigen::MatrixXf &mean)
+{
+  Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), 100);
+  ExpertCompetitiveGain compRatio (gamma, omega);
+    
+  // initial boundary condition
+  double v0   = omega - gamma * omega;
+  std::cout << "BELL: Initial value is " << v0 << std::endl;  
+  int maxRow = gain.rows();
+  for (int j=0; j<maxRow; ++j)
+  { gain(maxRow-1,j) = v0;
+    mean(maxRow-1,j) = 0.0;
+  }
+  // fill rows in triangular array
+  for (int row = maxRow-2; row > -1; --row)
+  { v0 = gain(row+1,0);
+    for (int col=0; col<=row; ++col)
+    { std::pair<double,double> maxPair;
+      compRatio.set_k(col, v0, gain(row+1,col+1));
+      double atZero = compRatio(0.0);
+      maxPair = search.find_maximum(compRatio);
+      if (maxPair.second < atZero)
+	maxPair = std::make_pair(0.0,atZero);
+      mean(row,col) = maxPair.first;
+      gain(row,col) = maxPair.second;
+      // std::cout << "    k=" << k << "   @ 0 =" << atZero << "     @" << maxPair.first << "  " << maxPair.second << std::endl;
+    }
+  }
+}
+
+int
+write_matrix_to_file (std::string fileName, Eigen::MatrixXf const& x)
+{
+  std::ofstream output (fileName.c_str());
+  if (! output)
+  { std::cerr << "ERROR: Cannot open output text file for writing " << fileName << std::endl;
+    return 1;
+  }
+  for (int i=0; i<x.rows(); ++i)
+  { for (int j=0; j<x.cols(); ++j)
+      output << x(i,j) << " ";
+    output << std::endl;
+  }
+  return 0;
+}
+
 int  main()
 {
   std::cout << "\n\nMAIN: Bellman recursion for competitive ratio of universal bidder. \n\n\n";
@@ -88,6 +145,7 @@ int  main()
   } 
 
   // test time for optimization of gain
+  if (false)
   {
     clock_t time = clock();
     Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), 100);
@@ -106,9 +164,40 @@ int  main()
 	maxPair = std::make_pair(0.0,atZero);
       // std::cout << "    k=" << k << "   @ 0 =" << atZero << "     @" << maxPair.first << "  " << maxPair.second << std::endl;
     }
-
-    std::cout << "TEST: Took " << clock()-time << " ticks.\n";
+    std::cout << "Calculation required " << clock() - time << " tics.\n";
   }
-  
-  std::cout << "\n\n MAIN: Bellman done.\n";
+
+  // fill matrix solution for finite horizon
+  {
+    int maxRow = 10;
+    Eigen::MatrixXf gain(maxRow+1,maxRow+1);
+    Eigen::MatrixXf mean(maxRow+1,maxRow+1);
+    
+    solve_bellman_equation (gamma, omega, gain, mean);
+    
+    // print first 10 rows and columns of gain and mean
+    for (int i=0; i<10; ++i)
+    { std::cout << "\n[" << i << "] ";
+      for (int j=0; j<10; ++j)
+	std::cout << gain(i,j) << " ";
+    }
+    std::cout << std::endl;
+    for (int i=0; i<10; ++i)
+    { std::cout << "\n[" << i << "] ";
+      for (int j=0; j<10; ++j)
+	std::cout << mean(i,j) << " ";
+    }
+
+    // write solution (without boundary row) to file
+    int gammaInt (trunc(10 *gamma));
+    std::ostringstream ss;
+    ss << "bellman.g" << gammaInt << ".n" << maxRow;
+    std::string fileName  (ss.str() + ".mu");
+    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, mean.rows()-1));  // omit boundary row
+    fileName  = ss.str() + ".gain";
+    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, gain.rows()-1));
+    
+    std::cout << "\n\n MAIN: Bellman done.\n";
+  }
+  return 0;
 }

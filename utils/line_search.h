@@ -26,9 +26,6 @@ namespace Line_Search
     GoldenSection (double tolerance, Pair const& interval, int maxIterations=100)
       : mTolerance(tolerance), mInterval(interval), mMaxIterations(maxIterations) { }
 
-    // returns x and min(f(x))
-    //    Pair  operator()(double (*f)(double))      const;    use ptr_to_unary_function
-
     template< class Func >
       Pair find_minimum(Func const& f) const;
 
