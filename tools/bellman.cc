@@ -9,8 +9,15 @@
 
 #include <fstream>
 #include <sstream>
+#include <getopt.h>
+#include "read_utils.h"     
 
 #include <ctime>
+
+
+
+void
+parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, bool &writeTable);
 
 
 
@@ -87,7 +94,7 @@ solve_bellman_equation (double gamma, double omega, Eigen::MatrixXf &gain, Eigen
     
   // initial boundary condition
   double v0   = omega - gamma * omega;
-  std::cout << "BELL: Initial value is " << v0 << std::endl;  
+  //  std::cout << "BELL: Initial value is " << v0 << std::endl;  
   int maxRow = gain.rows();
   for (int j=0; j<maxRow; ++j)
   { gain(maxRow-1,j) = v0;
@@ -126,18 +133,13 @@ write_matrix_to_file (std::string fileName, Eigen::MatrixXf const& x)
   return 0;
 }
 
-int  main()
+int  main(int argc, char** argv)
 {
-  std::cout << "\n\nMAIN: Bellman recursion for competitive ratio of universal bidder. \n\n\n";
-
-  // parameters for all functions
-  const double gamma = 2.5;
-  const double omega = 0.05;
-
+  // std::cout << "\n\nMAIN: Bellman recursion for competitive ratio of universal bidder. \n\n\n";
   
   // test the probability function
   if (false)
-  {
+  { 
     double total (0.0);
     int count = 100000;
     for(int k=0; k<count; ++k) total += beta(k,0.05);
@@ -147,6 +149,8 @@ int  main()
   // test time for optimization of gain
   if (false)
   {
+    double gamma (2.5);
+    double omega (0.05);
     clock_t time = clock();
     Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), 100);
     ExpertCompetitiveGain compRatio (gamma, omega);
@@ -169,35 +173,95 @@ int  main()
 
   // fill matrix solution for finite horizon
   {
-    int maxRow = 10;
+    // parameters for all functions
+    const double omega  = 0.05;
+
+    double     gamma  = 2.5;
+    int       maxRow  = 100;
+    bool   writeTable = false;    // if false, only find final value
+    
+    parse_arguments(argc, argv, gamma, maxRow, writeTable);
+
     Eigen::MatrixXf gain(maxRow+1,maxRow+1);
     Eigen::MatrixXf mean(maxRow+1,maxRow+1);
     
     solve_bellman_equation (gamma, omega, gain, mean);
     
     // print first 10 rows and columns of gain and mean
-    for (int i=0; i<10; ++i)
-    { std::cout << "\n[" << i << "] ";
-      for (int j=0; j<10; ++j)
-	std::cout << gain(i,j) << " ";
+    if (false)
+    { 
+      for (int i=0; i<10; ++i)
+      { std::cout << "\n[" << i << "] ";
+	for (int j=0; j<10; ++j)
+	  std::cout << gain(i,j) << " ";
+      }
+      std::cout << std::endl;
+      for (int i=0; i<10; ++i)
+      { std::cout << "\n[" << i << "] ";
+	for (int j=0; j<10; ++j)
+	  std::cout << mean(i,j) << " ";
+      }
     }
-    std::cout << std::endl;
-    for (int i=0; i<10; ++i)
-    { std::cout << "\n[" << i << "] ";
-      for (int j=0; j<10; ++j)
-	std::cout << mean(i,j) << " ";
+    
+    // write solution (without boundary row) to file
+    if(writeTable)
+    { int gammaInt (trunc(10 *gamma));
+      std::ostringstream ss;
+      ss << "bellman.g" << gammaInt << ".n" << maxRow;
+      std::string fileName  (ss.str() + ".mu");
+      write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, mean.rows()-1));  // omit boundary row
+      fileName  = ss.str() + ".gain";
+      write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, gain.rows()-1));
     }
 
-    // write solution (without boundary row) to file
-    int gammaInt (trunc(10 *gamma));
-    std::ostringstream ss;
-    ss << "bellman.g" << gammaInt << ".n" << maxRow;
-    std::string fileName  (ss.str() + ".mu");
-    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, mean.rows()-1));  // omit boundary row
-    fileName  = ss.str() + ".gain";
-    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, gain.rows()-1));
-    
-    std::cout << "\n\n MAIN: Bellman done.\n";
-  }
+    // write the final value to std io
+    std::cout << gain(0,0) << std::endl;
+  } 
   return 0;
 }
+
+
+
+
+
+void
+parse_arguments(int argc, char** argv,
+		double &gamma,
+		int &nRounds,
+		bool &writeTable)
+{
+  int key;
+  while (1)                                  // read until empty key causes break
+    {
+      int option_index = 0;
+      static struct option long_options[] = {
+	  {"gamma",             1, 0, 'g'},  // has arg,
+	  {"rounds",            1, 0, 'r'},  // has arg,
+	  {"write",             0, 0, 'w'},  // no arg, switch
+	  {0, 0, 0, 0}                       // terminator 
+	};
+	key = getopt_long (argc, argv, "grw", long_options, &option_index);
+	if (key == -1)
+	  break;
+	std::cout << "Option key " << char(key) << " with option_index " << option_index << " and arg " << optarg << std::endl;
+	switch (key)
+	  {
+	  case 'g' : 
+	    {
+	      gamma = read_utils::lexical_cast<double>(optarg);
+	      break;
+	    }
+	  case 'r' :
+	    {
+	      nRounds = read_utils::lexical_cast<int>(optarg);
+	      break;
+	    }
+	  case 'w' : 
+	    {
+	      writeTable=true ;
+	      break;
+	    }
+	  }
+    }
+}
+

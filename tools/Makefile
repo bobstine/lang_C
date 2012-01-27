@@ -13,6 +13,8 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
+OPT = -O0
+
 # OPT = -O3 -DNDEBUG
 
 USES = ranges utils random
@@ -49,9 +51,13 @@ bernoulli: bernoulli.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
 
-bellman: bellman.o
-	$(GCC) $^ $(LDLIBS)  -o  $@
+# bellman recursion for competitive value
 
+bellman: bellman.o
+	$(GCC) $^ $(LDLIBS) -o  $@
+
+bellman_solution: bellman
+	./bellman -r 100 -w -g 2.5
 
 # random CV indicator
 random_indicator: random_indicator.o
