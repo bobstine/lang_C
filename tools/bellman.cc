@@ -20,7 +20,12 @@ void
 parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, bool &writeTable);
 
 
+/***********************************************************************************
 
+  Bellman backward recursion for comptitive alpha-investing using
+  Rissanen type universal prior, with spending percentage.
+
+***********************************************************************************/
 
 double univ (int k)
 {
@@ -40,6 +45,8 @@ double beta (int k, double omega)
  
 class ExpertCompetitiveGain: public std::unary_function<double,double>
 {
+  typedef std::pair<double,double> DoublePair;
+  
 private:
   const double mGamma;
   const double mOmega;
@@ -67,21 +74,31 @@ public:
 	double a = alpha(mu);
 	double ra = reject(mu,a);
 	double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - b) + rb * mV0 + (1-rb) * mVkp1;
-	// std::cout << "For mu=" << mu << " reject prob rb=" << rb << " ra=" << ra  << " a=" << a << " b=" << b << " gain=" << gain << std::endl;
 	return gain;
       }
     }
   
+  DoublePair change_in_value(double mu, int k) const    // expert and bidder
+    {
+      double b = beta(k,mOmega);
+      if (mu < 0.00001)
+	return std::make_pair(0, b*(mOmega-1));
+      else
+      { double rb = reject(mu,b);
+	double a = alpha(mu);
+	double ra = reject(mu,a);
+	return std::make_pair(mOmega * ra - a, mOmega * rb - b);
+      }
+    }    
+  
 private: 
   inline double alpha (double mu) const
-    {
-      double z = (mu * mu + 2 * log(1.0/mOmega))/(2 * mu);
+    { double z = (mu * mu + 2 * log(1.0/mOmega))/(2 * mu);
       return 1.0 - normal_cdf(z);
     }
   
   inline double reject(double mu, double level) const
-    {
-      return normal_cdf(mu-normal_quantile(1-level));
+    { return normal_cdf(mu-normal_quantile(1-level));
     }
 
 };
@@ -112,7 +129,6 @@ solve_bellman_equation (double gamma, double omega, Eigen::MatrixXf &gain, Eigen
 	maxPair = std::make_pair(0.0,atZero);
       mean(row,col) = maxPair.first;
       gain(row,col) = maxPair.second;
-      // std::cout << "    k=" << k << "   @ 0 =" << atZero << "     @" << maxPair.first << "  " << maxPair.second << std::endl;
     }
   }
 }
@@ -135,133 +151,78 @@ write_matrix_to_file (std::string fileName, Eigen::MatrixXf const& x)
 
 int  main(int argc, char** argv)
 {
-  // std::cout << "\n\nMAIN: Bellman recursion for competitive ratio of universal bidder. \n\n\n";
+  const double omega  = 0.05;
   
-  // test the probability function
-  if (false)
-  { 
-    double total (0.0);
-    int count = 100000;
-    for(int k=0; k<count; ++k) total += beta(k,0.05);
-    std::cout << "MAIN: Total of beta(*,0.05) for " << count << " terms = " << total << std::endl;
-  } 
+  double     gamma  = 2.5;
+  int       maxRow  = 100;
+  bool   writeTable = false;    // if false, only return final value
 
-  // test time for optimization of gain
-  if (false)
-  {
-    double gamma (2.5);
-    double omega (0.05);
-    clock_t time = clock();
-    Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), 100);
-    ExpertCompetitiveGain compRatio (gamma, omega);
-    
-    double v0   = omega - gamma * omega;
-    double vkp1 = v0;
-    std::cout << "TEST: Initial value is " << v0 << std::endl;
-    
-    std::pair<double,double> maxPair;
-    for (int k=0; k<1000; ++k)
-    { compRatio.set_k(k, v0, vkp1);
-      double atZero = compRatio(0.0);
-      maxPair = search.find_maximum(compRatio);
-      if (maxPair.second < atZero)
-	maxPair = std::make_pair(0.0,atZero);
-      // std::cout << "    k=" << k << "   @ 0 =" << atZero << "     @" << maxPair.first << "  " << maxPair.second << std::endl;
-    }
-    std::cout << "Calculation required " << clock() - time << " tics.\n";
+  std::cout << "PARSING ARGUMENTS\n";
+  parse_arguments(argc, argv, gamma, maxRow, writeTable);
+  std::cout << "DONE ARGUMENTS\n";
+
+  std::cout << "BELL: options   g=" << gamma << "   n=" << maxRow << "  writeTable=" << writeTable << std::endl;
+  
+  Eigen::MatrixXf gain(maxRow+1,maxRow+1);
+  Eigen::MatrixXf mean(maxRow+1,maxRow+1);
+  
+  solve_bellman_equation (gamma, omega, gain, mean);
+  
+  // write solution (without boundary row) to file
+  if(writeTable)
+  { int gammaInt (trunc(10 *gamma));
+    std::ostringstream ss;
+    ss << "bellman.g" << gammaInt << ".n" << maxRow;
+    std::string fileName  (ss.str() + ".mu");
+    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, mean.rows()-1));  // omit boundary row
+    fileName  = ss.str() + ".gain";
+    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, gain.rows()-1));
   }
-
-  // fill matrix solution for finite horizon
-  {
-    // parameters for all functions
-    const double omega  = 0.05;
-
-    double     gamma  = 2.5;
-    int       maxRow  = 100;
-    bool   writeTable = false;    // if false, only find final value
-    
-    parse_arguments(argc, argv, gamma, maxRow, writeTable);
-
-    Eigen::MatrixXf gain(maxRow+1,maxRow+1);
-    Eigen::MatrixXf mean(maxRow+1,maxRow+1);
-    
-    solve_bellman_equation (gamma, omega, gain, mean);
-    
-    // print first 10 rows and columns of gain and mean
-    if (false)
-    { 
-      for (int i=0; i<10; ++i)
-      { std::cout << "\n[" << i << "] ";
-	for (int j=0; j<10; ++j)
-	  std::cout << gain(i,j) << " ";
-      }
-      std::cout << std::endl;
-      for (int i=0; i<10; ++i)
-      { std::cout << "\n[" << i << "] ";
-	for (int j=0; j<10; ++j)
-	  std::cout << mean(i,j) << " ";
-      }
-    }
-    
-    // write solution (without boundary row) to file
-    if(writeTable)
-    { int gammaInt (trunc(10 *gamma));
-      std::ostringstream ss;
-      ss << "bellman.g" << gammaInt << ".n" << maxRow;
-      std::string fileName  (ss.str() + ".mu");
-      write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, mean.rows()-1));  // omit boundary row
-      fileName  = ss.str() + ".gain";
-      write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows()-1, gain.rows()-1));
-    }
-
-    // write the final value to std io
-    std::cout << gain(0,0) << std::endl;
-  } 
+  
+  // write the final value to std io
+  std::cout << gain(0,0) << std::endl;
+  
   return 0;
 }
 
 
 
-
-
 void
-parse_arguments(int argc, char** argv,
-		double &gamma,
-		int &nRounds,
-		bool &writeTable)
+parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, bool &writeTable)
 {
+  static struct option long_options[] = {
+    {"gamma",   required_argument, 0, 'g'},  // has arg,
+    {"rounds",  required_argument, 0, 'n'},  // has arg,
+    {"write",         no_argument, 0, 'w'},  // no arg, switch
+    {0, 0, 0, 0}                             // terminator 
+  };
   int key;
-  while (1)                                  // read until empty key causes break
+  int option_index = 0;
+  while (-1 !=(key = getopt_long (argc, argv, "g:n:w", long_options, &option_index))) // do not access optarg no_argument (eg. writea)
+  {
+    // std::cout << "Option key " << char(key) << " for option " << long_options[option_index].name << ", option_index=" << option_index << std::endl;
+    switch (key)
     {
-      int option_index = 0;
-      static struct option long_options[] = {
-	  {"gamma",             1, 0, 'g'},  // has arg,
-	  {"rounds",            1, 0, 'r'},  // has arg,
-	  {"write",             0, 0, 'w'},  // no arg, switch
-	  {0, 0, 0, 0}                       // terminator 
-	};
-	key = getopt_long (argc, argv, "grw", long_options, &option_index);
-	if (key == -1)
-	  break;
-	std::cout << "Option key " << char(key) << " with option_index " << option_index << " and arg " << optarg << std::endl;
-	switch (key)
-	  {
-	  case 'g' : 
-	    {
-	      gamma = read_utils::lexical_cast<double>(optarg);
-	      break;
-	    }
-	  case 'r' :
-	    {
-	      nRounds = read_utils::lexical_cast<int>(optarg);
-	      break;
-	    }
-	  case 'w' : 
-	    {
-	      writeTable=true ;
-	      break;
-	    }
-	  }
-    }
+    case 'g' : 
+      {
+	gamma = read_utils::lexical_cast<double>(optarg);
+	break;
+      }
+    case 'n' :
+      {
+	nRounds = read_utils::lexical_cast<int>(optarg);
+	break;
+      }
+    case 'w' : 
+      {
+	writeTable=true ;
+	break;
+      }
+    default:
+      {
+	std::cout << "PARSE: Option not recognized; returning.\n";
+      }
+    } // switch
+  } // while
 }
 

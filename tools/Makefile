@@ -57,7 +57,7 @@ bellman: bellman.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_solution: bellman
-	./bellman -r 100 -w -g 2.5
+	./bellman --gamma 2.5 --write --rounds 100
 
 # random CV indicator
 random_indicator: random_indicator.o
