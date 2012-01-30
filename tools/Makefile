@@ -13,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O0
+OPT = -O2
 
 # OPT = -O3 -DNDEBUG
 
@@ -57,7 +57,7 @@ bellman: bellman.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_solution: bellman
-	./bellman --gamma 2.5 --write --rounds 100
+	./bellman --gamma 2.5 --write --rounds 10
 
 # random CV indicator
 random_indicator: random_indicator.o
