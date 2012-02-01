@@ -46,10 +46,9 @@ double univ (int k, int)
 
 double geometric (int k, int)
 {
-  const double rate = 0.5;
   double p=1;
-  for (int i=0; i<=k; ++i) p *= rate;
-  return p;
+  for (int i=0; i<=k; ++i) p *= 0.99;
+  return p/99.0;
 }
 
 double equal (int k, int left)   // equal spread over possible locations
@@ -100,6 +99,22 @@ public:
     }
   
   double value_to_oracle(double mu, double o0, double okp1) const    // expert 
+    {
+      double value, rb;
+      if (mu < 0.00001)
+      { value = 0.0;
+	rb = mBetaK;
+      }
+      else
+      { double a = alpha(mu);
+	double ra = reject(mu,a);
+	value = mOmega * ra - a ;
+	rb = reject(mu, mBetaK);
+      }
+      return value + rb * o0 + (1-rb) * okp1;
+    }
+  
+  double value_to_geometric_oracle(double mu, double o0, double okp1) const    // expert 
     {
       double value, rb;
       if (mu < 0.00001)
