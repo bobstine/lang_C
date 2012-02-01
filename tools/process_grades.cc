@@ -28,12 +28,11 @@ parse_arguments(int argc, char** argv,
   while (1)                              // read until empty key causes break
   { int option_index = 0;
     static struct option long_options[] = {
-      {"input-file",        1, 0, 'f'},  // has arg,
-      {"output-file",       1, 0, 'o'},  // has arg,
-      {"questions",         1, 0, 'q'},  // has arg,
-      {"id-column",         1, 0, 'i'},  // has arg,
-      {"answer-column",     1, 0, 'a'},  // has arg,
-      {"dummy",             0, 0, 'd'},  // dummy so that others work
+      {"input-file",        required_argument, 0, 'f'},  // has arg,
+      {"output-file",       required_argument, 0, 'o'},  // has arg,
+      {"questions",         required_argument, 0, 'q'},  // has arg,
+      {"id-column",         required_argument, 0, 'i'},  // has arg,
+      {"answer-column",     required_argument, 0, 'a'},  // has arg,
       {0, 0, 0, 0}                       // terminator 
     };
     key = getopt_long (argc, argv, "f:o:q:i:a:", long_options, &option_index);

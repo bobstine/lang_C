@@ -56,8 +56,31 @@ bernoulli: bernoulli.o
 bellman: bellman.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
-bellman_solution: bellman
-	./bellman --gamma 2.5 --write --rounds 10
+bellman_solution: bellman    # ans g=2.5, s=0.5 u n=10 is -0.0651093 0.0869784 0.0608351 
+	./bellman --gamma 2.5 --rounds 10 --prob u --spend 0.5 --write 
+
+bellman_results.500: bellman bellman.sh
+	rm -f bellman_results.500
+	./bellman.sh u 500 >  bellman_results.500
+	./bellman.sh e 500 >> bellman_results.500
+	./bellman.sh g 500 >> bellman_results.500
+
+
+bellman_results.1000: bellman bellman.sh
+	rm -f bellman_results.1000
+	./bellman.sh u 1000 >  bellman_results.1000
+	./bellman.sh e 1000 >> bellman_results.1000
+	./bellman.sh g 1000 >> bellman_results.1000
+
+
+bellman_results.2000: bellman bellman.sh
+	rm -f bellman_results.2000
+	./bellman.sh u 2000 >  bellman_results.2000
+	./bellman.sh e 2000 >> bellman_results.2000
+	./bellman.sh g 2000 >> bellman_results.2000
+
+
+
 
 # random CV indicator
 random_indicator: random_indicator.o
@@ -71,7 +94,7 @@ doit: random_indicator
 	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s4675
 
 
-# the last option is dying...
+# Summary of scores on exam from scan sheet
 process_608: process_grades
 	/Users/bob/C/tools/process_grades -f/Users/bob/courses/stat608/grades/2010/ag238001.sdf -i29 -a38 -q44
 
