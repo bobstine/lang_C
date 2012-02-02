@@ -53,10 +53,14 @@ bernoulli: bernoulli.o
 
 # bellman recursion for competitive value
 
-bellman: bellman.o
+bellman.o: bellman.cc bellman.h
+
+bellman_solver.o: bellman_solver.cc
+
+bellman: bellman.o bellman_solver.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
-bellman_solution: bellman    # ans g=2.5, s=0.5 u n=10 is -0.0651093 0.0869784 0.0608351 
+bellman_test: bellman   # 2.5 10 1 u 0.5 -0.0651093 0.0869784 0.0608351 
 	./bellman --gamma 2.5 --rounds 10 --prob u --spend 0.5 --write 
 
 bellman_results.500: bellman bellman.sh
