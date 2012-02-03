@@ -17,12 +17,12 @@ int  main(int argc, char** argv)
 
   // default arguments
   double     gamma  = 2.5;
-  int       maxRow  = 100;
+  int      nRounds  = 100;
   double  spendPct  = 0.5;
   char    probChar  = 'u';
   bool   writeTable = false;    // if false, only return final value
   
-  parse_arguments(argc, argv, gamma, maxRow, probChar, spendPct, writeTable);
+  parse_arguments(argc, argv, gamma, nRounds, probChar, spendPct, writeTable);
   
   // select function for spending down probability
   ProbDist p;
@@ -35,8 +35,13 @@ int  main(int argc, char** argv)
   }
   
   // output parameters and let solver tack on results: e-gamma b, e, b
-  std::cout << gamma << " " << maxRow << " " << writeTable << " " << probChar << " " << spendPct << " ";
-  solve_bellman_equation (gamma, omega, maxRow, spendPct, p, true);
+  std::cout << gamma << " " << nRounds << " " << writeTable << " " << probChar << " " << spendPct << " ";
+
+  // nice one
+  solve_bellman_equation (gamma, omega, nRounds, spendPct, p, true);
+
+  // hard one
+  solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, geometric, universal);
   
   return 0;
 }

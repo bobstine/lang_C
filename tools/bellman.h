@@ -11,7 +11,7 @@
 typedef double (*ProbDist)(int,int);
 
 void
-solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
 
 void
 solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb);
@@ -67,14 +67,11 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
   double operator()(double mu) const;
   double value_to_oracle (double mu, double o0, double okp1) const;
   double value_to_bidder (double mu, double b0, double bkp1) const;
-  
- private:
-  double alpha (double mu) const;
 }; 
 
 
 
-//  This expert is control by a geometric spending policy since its last
+//  This expert is constrained by a spending policy since its last
 //  rejection, so its state depends on 2 things: the number of tests since
 //  its last rejection and the number since the  bidder's rejection.
 
@@ -96,15 +93,9 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
   double alpha (void) const { return mAlpha; }
   double beta  (void) const { return mBeta; }
   
-  void set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
-  { mAlpha = mOmega * mSpendPct * mExpertProb(i,nRounds-t);
-    mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
-    mV00 = v00; mVi0 = vi0; mV0j = v0j; mVij = vij;
-  }
+  void set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij);
   
   double operator()(double mu) const;
-  double value_to_oracle (double mu, double o0, double okp1) const;
-  double value_to_bidder (double mu, double b0, double bkp1) const;  
-
-};  // class
-
+  double value_to_oracle (double mu, double o00, double oi0, double o0j, double oij) const;
+  double value_to_bidder (double mu, double b00, double bi0, double b0j, double bij) const;  
+};

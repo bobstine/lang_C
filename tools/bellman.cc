@@ -7,14 +7,14 @@
 #include <functional>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 
+typedef Eigen::MatrixXf Matrix;
 
 ///////////////////////////////////////  Write data to file  /////////////////////////////
 
 int
-write_matrix_to_file (std::string fileName, Eigen::MatrixXf const& x)
+write_matrix_to_file (std::string fileName, Matrix const& x)
 {
   std::ofstream output (fileName.c_str());
   if (! output)
@@ -51,6 +51,13 @@ reject_prob(double mu, double level)
 {
   return normal_cdf(mu-normal_quantile(1-level));
 }  
+
+  
+double
+optimal_alpha (double mu, double omega) 
+{ double z = (mu * mu + 2 * log(1.0/omega))/(2 * mu);
+  return 1.0 - normal_cdf(z);
+}
 
 
 
@@ -90,41 +97,62 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 {
   const int maxIterations (100);
   const double tolerance  (0.0001);
-  const std::pair<double,double> searchInterval = std::make_pair(1.5,6.5);
+  const std::pair<double,double> searchInterval = std::make_pair(0,6.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, maxIterations);
   ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     
   // space for holding intermediate results; extra row for boundary condition
   // code flips between these on read and write
-  Matrix gain0 = Matrix::Constant (nRounds+1, nRounds+1, omega - gamma * omega);
-  Matrix gain1 = Matrix::Zero (nRounds+1, nRounds+1);
-  Matrix oracle0 = Matrix::Constant (nRounds+1, nRounds+1, 0.0);
-  Matrix oracle1(nRounds+1, nRounds+1);
-  Matrix bidder0(nRounds+1, nRounds+1);
-  Matrix bidder1(nRounds+1, nRounds+1);
+  Matrix gain0   = Matrix::Constant (nRounds+1, nRounds+1, omega - gamma * omega);
+  Matrix oracle0 = Matrix::Constant (nRounds+1, nRounds+1, omega);
+  Matrix bidder0 = Matrix::Constant (nRounds+1, nRounds+1, omega);
+  Matrix gain1   = Matrix::Zero (nRounds+1, nRounds+1);
+  Matrix oracle1 = Matrix::Zero (nRounds+1, nRounds+1);
+  Matrix bidder1 = Matrix::Zero (nRounds+1, nRounds+1);
+  Matrix mean    = Matrix::Zero (nRounds, nRounds);
+  bool use0 = true;
 
-  // stores intermediates in rows of triangular array
-  for (int row = nRounds-1; row > -1; --row)
-  { v0 = gain(row+1,0);
-    double b0 = bidder(row+1,0);
-    double o0 = oracle(row+1,0);
-    for (int col=0; col<=row; ++col)
-    { std::pair<double,double> maxPair;
-      compRatio.set_k(col, nRounds-1-row, v0, gain(row+1,col+1)); 
-      double atZero = compRatio(0.0);
-      maxPair = search.find_maximum(compRatio);
-      if (maxPair.second < atZero)
-	maxPair = std::make_pair(0.0,atZero);
-      gain  (row,col) = maxPair.second;
-      oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
-      bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
-      //      mean (row,col) = maxPair.first;
-      //      prob (row,col) = compRatio.beta_k();
+  Matrix* pGainSrc;   Matrix* pGainDest = NULL;
+  Matrix* pOracleSrc; Matrix* pOracleDest = NULL;
+  Matrix* pBidderSrc; Matrix* pBidderDest = NULL;
+  for (int round = nRounds; round > -1; --round)
+  { if (use0)
+    { pGainSrc    = &gain0;
+      pOracleSrc  = &oracle0;
+      pBidderSrc  = &bidder0;
+      pGainDest   = &gain1;
+      pOracleDest = &oracle1;
+      pBidderDest = &bidder1;
+    } else
+    { pGainSrc    = &gain1;
+      pOracleSrc  = &oracle1;
+      pBidderSrc  = &bidder1;
+      pGainDest   = &gain0;
+      pOracleDest = &oracle0;
+      pBidderDest = &bidder0;
     }
+    use0 = !use0;
+    std::cout << " --------------- " << round << " --------------------- " << std::endl << (*pGainSrc) << std::endl;
+    for (int i=0; i<round; ++i)        // next round status of expert
+    { for (int j=0; j<round; ++j)      //                      bidder
+      { std::pair<double,double> maxPair;
+	compRatio.set_delay (i, j, round, nRounds, (*pGainSrc)(0,0), (*pGainSrc)(i+1,0), (*pGainSrc)(0,j+1), (*pGainSrc)(i+1,j+1));
+	// ??? should not need this, but not unimodal; need preliminary grid search
+	double atZero = compRatio(0.0);
+	maxPair = search.find_maximum(compRatio);
+	if (maxPair.second < atZero)
+	  maxPair = std::make_pair(0.0,atZero);
+	mean(i,j) = maxPair.first;
+	(*pGainDest)(i,j) = maxPair.second;
+	(*pOracleDest)(i,j) = compRatio.value_to_oracle(maxPair.first, (*pOracleSrc)(0,0), (*pOracleSrc)(i+1,0), (*pOracleSrc)(0,j+1), (*pOracleSrc)(i+1,j+1));
+	(*pBidderDest)(i,j) = compRatio.value_to_bidder(maxPair.first, (*pBidderSrc)(0,0), (*pBidderSrc)(i+1,0), (*pBidderSrc)(0,j+1), (*pBidderSrc)(i+1,j+1));
+      }
+    }
+    std::cout << " ---------------   MEAN  --------------------- " << std::endl << mean << std::endl;
+    pGainSrc->setZero();
   }
   // write the final values to std io
-  std::cout << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
-
+  std::cout << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
 }
 
 
@@ -145,10 +173,10 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
   Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
   Matrix oracle(nRounds+1, nRounds+1);
   Matrix bidder(nRounds+1, nRounds+1);
+  Matrix mean = Matrix::Zero(nRounds,nRounds);
   // capture further results
-  //  Eigen::MatrixXf prob = Eigen::MatrixXf::Zero(nRounds,nRounds);
-  //  Eigen::MatrixXf mean = Eigen::MatrixXf::Zero(nRounds,nRounds);
-
+  //  Matrix prob = Matrix::Zero(nRounds,nRounds);
+  
   //  initialize boundary conditions
   double v0   = omega - gamma * omega;
   for (int j=0; j<nRounds+1; ++j)
@@ -172,7 +200,7 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
       gain  (row,col) = maxPair.second;
       oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
       bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
-      //      mean (row,col) = maxPair.first;
+      mean (row,col) = maxPair.first;
       //      prob (row,col) = compRatio.beta_k();
     }
   }
@@ -189,8 +217,8 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
     write_matrix_to_file(fileName, oracle.topLeftCorner(oracle.rows()-1,oracle.rows()-1));
     fileName = ss.str() + "bidder";
     write_matrix_to_file(fileName, bidder.topLeftCorner(bidder.rows()-1, bidder.rows()-1));
-    //    std::string fileName  (ss.str() + "mu");
-    //    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows(), mean.rows()));
+    fileName = ss.str() + "mu";
+    write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows(), mean.rows()));
     //    write_matrix_to_file("/Users/bob/C/tools/probmatrix.txt", prob);
   }
   // write the final values to std io
@@ -215,7 +243,7 @@ ExpertCompetitiveGain::operator()(double mu) const
   else
   {
     double rb = reject_prob(mu,mBetaK);
-    double a = alpha(mu);
+    double a = optimal_alpha(mu, mOmega);
     double ra = reject_prob(mu,a);
     double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBetaK) + rb * mV0 + (1-rb) * mVkp1;
     return gain;
@@ -231,7 +259,7 @@ ExpertCompetitiveGain::value_to_oracle(double mu, double o0, double okp1) const 
     rb = mBetaK;
   }
   else
-  { double a = alpha(mu);
+  { double a = optimal_alpha(mu, mOmega);
     double ra = reject_prob(mu,a);
     value = mOmega * ra - a ;
     rb = reject_prob(mu, mBetaK);
@@ -245,13 +273,6 @@ ExpertCompetitiveGain::value_to_bidder (double mu, double b0, double bkp1) const
   double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
   return mOmega * rb - mBetaK + rb * b0 + (1-rb) * bkp1;
 }    
-  
-double
-ExpertCompetitiveGain::alpha (double mu) const
-{ double z = (mu * mu + 2 * log(1.0/mOmega))/(2 * mu);
-  return 1.0 - normal_cdf(z);
-}
-
 
 
 /////////////////////////////////  Unconstrained Expert  ///////////////////////////////////////
@@ -271,28 +292,32 @@ ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, d
 double
 ConstrainedExpertCompetitiveGain::operator()(double mu) const
 {
-  double ra = reject_prob(mu,mAlpha);
+  //  double ra = reject_prob(mu,mAlpha);
+  // --- ignore the state dependence
+  double a = optimal_alpha(mu, mOmega);
+  double ra = reject_prob(mu,a);
+  //
   double rb = reject_prob(mu,mBeta);
-  double gain = (mOmega * ra - mAlpha) - mGamma * (mOmega * rb - mBeta) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
+  double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBeta) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
   return gain;
 }
   
 
 double
-ConstrainedExpertCompetitiveGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij)) const
+ConstrainedExpertCompetitiveGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij) const
 {
   double ra = reject_prob(mu,mAlpha);
   double rb = reject_prob(mu,mBeta);
-  return  (mOmega * ra - mAlpha) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
+  return  (mOmega * ra - mAlpha) + ra * rb * v00 + (1-ra) * (1-rb) * vi0 + ra * (1-rb) * v0j + (1-ra) * rb * vij;
 }
 
 
 double
-ConstrainedExpertCompetitiveGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij)) const
+ConstrainedExpertCompetitiveGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
 {
   double ra = reject_prob(mu,mAlpha);
   double rb = reject_prob(mu,mBeta);
-  return  (mOmega * rb - mBeta) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
+  return  (mOmega * rb - mBeta) + ra * rb * v00 + (1-ra) * (1-rb) * vi0 + ra * (1-rb) * v0j + (1-ra) * rb * vij;
 }
 
 
