@@ -109,7 +109,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);  
-  const std::pair<double,double> searchInterval = std::make_pair(1.5,4.5);
+  const std::pair<double,double> searchInterval = std::make_pair(0.5,5.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, maxIterations);
   ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     
