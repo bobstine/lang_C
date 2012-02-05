@@ -37,11 +37,11 @@ int  main(int argc, char** argv)
   // output parameters and let solver tack on results: e-gamma b, e, b
   std::cout << gamma << " " << nRounds << " " << writeTable << " " << probChar << " " << spendPct << " ";
 
-  // nice one
+  // one-dimensional state, unconstrained expert
   solve_bellman_equation (gamma, omega, nRounds, spendPct, p, true);
 
-  // hard one
-  solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, geometric, universal);
+  // two-dimensional state, constrained
+  solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, geometric, p);
   
   return 0;
 }
