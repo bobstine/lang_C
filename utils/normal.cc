@@ -135,7 +135,7 @@ normal_cdf (double z)
 double
 normal_quantile (double p)
 {
-  assert (p >= 0.0 && p <= 1.0);
+  assert (p > 0.0 && p < 1.0);
   int ret_code;
   return ppnd(p, &ret_code);
 }

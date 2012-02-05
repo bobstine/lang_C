@@ -64,7 +64,7 @@ bellman: bellman.o bellman_solver.o
   # 2.5 25 1 u 0.5 -0.0332263 0.181596 0.0859291
   # 2.5 10 1 u 0.5 -0.0651093 0.086978 0.0608351 	
 bellman_test: bellman
-	./bellman --gamma 2.5 --rounds 10 --prob u --spend 0.5 --write 
+	./bellman --gamma 2.5 --rounds 25 --prob u --spend 0.5 --write 
 
 bellman_results.500: bellman bellman.sh
 	rm -f bellman_results.500

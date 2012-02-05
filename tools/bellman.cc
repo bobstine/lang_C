@@ -49,14 +49,21 @@ write_vector_to_file (std::string fileName, Eigen::VectorXf const& x)
 double
 reject_prob(double mu, double level)
 {
-  return normal_cdf(mu-normal_quantile(1-level));
+  if(level == 0)
+    return 0.0;
+  else
+    return normal_cdf(mu-normal_quantile(1-level));
 }  
 
   
 double
 optimal_alpha (double mu, double omega) 
-{ double z = (mu * mu + 2 * log(1.0/omega))/(2 * mu);
-  return 1.0 - normal_cdf(z);
+{ if (mu < .001)
+    return 0.0;
+  else
+  { double z = (mu * mu + 2 * log(1.0/omega))/(2 * mu);
+    return 1.0 - normal_cdf(z);
+  }
 }
 
 
@@ -85,19 +92,22 @@ double equal (int k, int left)         // equal spread over possible locations
 
 
 
-////////////////////////////////  Constrained Solver  ////////////////////////////////////////
+// --------------------------------------------------------------------------------------------------------------
 //
-// this version handles state-dependent expert, returning the grid of expert and bidder values
-// needed for the next round of the recursion.
+//      Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    
 //
-/////////////////////////////////////////////////////////////////////////////////////////////
+//      This version handles state-dependent expert, returning the grid of expert and bidder values
+//      needed for the next round of the recursion.
+//
+// --------------------------------------------------------------------------------------------------------------
+
 
 void
 solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb)
 {
-  const int maxIterations (100);
-  const double tolerance  (0.0001);
-  const std::pair<double,double> searchInterval = std::make_pair(0,6.5);
+  const int maxIterations (200);     // debug  was 100
+  const double tolerance  (0.0001);  
+  const std::pair<double,double> searchInterval = std::make_pair(1.5,4.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, maxIterations);
   ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     
@@ -112,34 +122,33 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
   Matrix mean    = Matrix::Zero (nRounds, nRounds);
   bool use0 = true;
 
+  // Check the probability distribution being used
+  //  std::cout << std::endl << std::endl;
+  //  for (int i=0; i<10; ++i) std::cout << i << " " << omega * spendPct * bidderProb(i,0) << "    ";
+  //  std::cout << std::endl << std::endl;
+
+  // alternate between reading and writing these matrices
   Matrix* pGainSrc;   Matrix* pGainDest = NULL;
   Matrix* pOracleSrc; Matrix* pOracleDest = NULL;
   Matrix* pBidderSrc; Matrix* pBidderDest = NULL;
-  for (int round = nRounds; round > -1; --round)
+  for (int round = nRounds; round > 0; --round)
   { if (use0)
-    { pGainSrc    = &gain0;
-      pOracleSrc  = &oracle0;
-      pBidderSrc  = &bidder0;
-      pGainDest   = &gain1;
-      pOracleDest = &oracle1;
-      pBidderDest = &bidder1;
+    { pGainSrc    = &gain0;    pOracleSrc  = &oracle0;   pBidderSrc  = &bidder0;
+      pGainDest   = &gain1;    pOracleDest = &oracle1;   pBidderDest = &bidder1;
     } else
-    { pGainSrc    = &gain1;
-      pOracleSrc  = &oracle1;
-      pBidderSrc  = &bidder1;
-      pGainDest   = &gain0;
-      pOracleDest = &oracle0;
-      pBidderDest = &bidder0;
+    { pGainSrc    = &gain1;    pOracleSrc  = &oracle1;   pBidderSrc  = &bidder1;
+      pGainDest   = &gain0;    pOracleDest = &oracle0;   pBidderDest = &bidder0;
     }
     use0 = !use0;
-    std::cout << " --------------- " << round << " --------------------- " << std::endl << (*pGainSrc) << std::endl;
+    std::cout << "\n\n--------------- Round " << round << " comparative value source --------------------- " << std::endl << pGainSrc->topLeftCorner(round+1,round+1) << std::endl;
+    std::cout << " --------------- Expert --------------------- " << std::endl << pOracleSrc->topLeftCorner(round+1,round+1) << std::endl;
+    std::cout << " --------------- Bidder --------------------- " << std::endl << pBidderSrc->topLeftCorner(round+1,round+1) << std::endl;
     for (int i=0; i<round; ++i)        // next round status of expert
     { for (int j=0; j<round; ++j)      //                      bidder
       { std::pair<double,double> maxPair;
 	compRatio.set_delay (i, j, round, nRounds, (*pGainSrc)(0,0), (*pGainSrc)(i+1,0), (*pGainSrc)(0,j+1), (*pGainSrc)(i+1,j+1));
-	// ??? should not need this, but not unimodal; need preliminary grid search
-	double atZero = compRatio(0.0);
 	maxPair = search.find_maximum(compRatio);
+	double atZero = compRatio(0.0);
 	if (maxPair.second < atZero)
 	  maxPair = std::make_pair(0.0,atZero);
 	mean(i,j) = maxPair.first;
@@ -148,17 +157,88 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 	(*pBidderDest)(i,j) = compRatio.value_to_bidder(maxPair.first, (*pBidderSrc)(0,0), (*pBidderSrc)(i+1,0), (*pBidderSrc)(0,j+1), (*pBidderSrc)(i+1,j+1));
       }
     }
-    std::cout << " ---------------   MEAN  --------------------- " << std::endl << mean << std::endl;
-    pGainSrc->setZero();
+    // std::cout << "\n\n---------------   MEAN  --------------------- " << std::endl << mean.topLeftCorner(round,round) << std::endl;
   }
   // write the final values to std io
   std::cout << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
 }
 
+/////////////////////////////////  Constrained Expert  ///////////////////////////////////////
+
+
+void
+ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
+{
+  mAlpha = mOmega * mSpendPct * mExpertProb(i,nRounds-t);
+  mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
+  mV00 = v00;
+  mVi0 = vi0;
+  mV0j = v0j;
+  mVij = vij;
+}
+
+double
+ConstrainedExpertCompetitiveGain::operator()(double mu) const
+{
+  // debug
+  double a = optimal_alpha(mu, mOmega);
+  double ra = reject_prob(mu,a);
+  //  double ra = reject_prob(mu,mAlpha);
+  double rb = reject_prob(mu,mBeta);
+  double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBeta) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
+
+  //
+  // if (mu == 0.0) std::cout << "\n gain @ 0 = " << gain << " using  a,ra = " << a << "," << ra << "   b,rb = " << mBeta << "," << rb
+  //			   << "    v " << mV00 << " " << mVij << " " << mVi0 << " " << mV0j << std::endl;
+  
+  return gain;
+}
+  
+
+double
+ConstrainedExpertCompetitiveGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij) const
+{
+  double value, ra, rb;
+  if (mu < 0.00001)
+  { value = 0.0;
+    ra = 0.0;
+    rb = mBeta;
+  }
+  else
+  { //  double ra = reject_prob(mu,mAlpha);   debug
+    double a = optimal_alpha(mu, mOmega);
+    double ra = reject_prob(mu,a);
+    rb = reject_prob(mu, mBeta);
+    value = mOmega * ra - a ;
+  }
+  return  value + ra * rb * v00 +  (1-ra) * rb * vi0 + ra * (1-rb) * v0j + (1-ra) * (1-rb) * vij;
+}
+
+
+double
+ConstrainedExpertCompetitiveGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
+{
+  double ra, rb;
+  if (mu < 0.00001)
+  { ra = 0.0;
+    rb = mBeta;
+  }
+  else
+  { //  double ra = reject_prob(mu,mAlpha);   debug
+    ra = reject_prob(mu,optimal_alpha(mu, mOmega));
+    rb = reject_prob(mu, mBeta);
+  }
+  return  (mOmega * rb - mBeta)  + ra * rb * v00 +  (1-ra) * rb * vi0 + ra * (1-rb) * v0j + (1-ra) * (1-rb) * vij;
+
+}
 
 
 
-////////////////////////////////  Unconstrained Solver  ////////////////////////////////////////
+// --------------------------------------------------------------------------------------------------------------
+//
+//      Unconstrained     Unconstrained     Unconstrained     Unconstrained     Unconstrained     Unconstrained 
+//
+// --------------------------------------------------------------------------------------------------------------
 
 void
 solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
@@ -275,50 +355,6 @@ ExpertCompetitiveGain::value_to_bidder (double mu, double b0, double bkp1) const
 }    
 
 
-/////////////////////////////////  Unconstrained Expert  ///////////////////////////////////////
-
-
-void
-ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
-{
-  mAlpha = mOmega * mSpendPct * mExpertProb(i,nRounds-t);
-  mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
-  mV00 = v00;
-  mVi0 = vi0;
-  mV0j = v0j;
-  mVij = vij;
-}
-
-double
-ConstrainedExpertCompetitiveGain::operator()(double mu) const
-{
-  //  double ra = reject_prob(mu,mAlpha);
-  // --- ignore the state dependence
-  double a = optimal_alpha(mu, mOmega);
-  double ra = reject_prob(mu,a);
-  //
-  double rb = reject_prob(mu,mBeta);
-  double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBeta) + ra * rb * mV00 + (1-ra) * (1-rb) * mVij + ra * (1-rb) * mV0j + (1-ra) * rb * mVi0;
-  return gain;
-}
-  
-
-double
-ConstrainedExpertCompetitiveGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij) const
-{
-  double ra = reject_prob(mu,mAlpha);
-  double rb = reject_prob(mu,mBeta);
-  return  (mOmega * ra - mAlpha) + ra * rb * v00 + (1-ra) * (1-rb) * vi0 + ra * (1-rb) * v0j + (1-ra) * rb * vij;
-}
-
-
-double
-ConstrainedExpertCompetitiveGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
-{
-  double ra = reject_prob(mu,mAlpha);
-  double rb = reject_prob(mu,mBeta);
-  return  (mOmega * rb - mBeta) + ra * rb * v00 + (1-ra) * (1-rb) * vi0 + ra * (1-rb) * v0j + (1-ra) * rb * vij;
-}
 
 
 
