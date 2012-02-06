@@ -105,7 +105,7 @@ double equal (int k, int left)         // equal spread over possible locations
 
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb)
+solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);  
@@ -142,9 +142,11 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
       pGainDest   = &gain0;    pOracleDest = &oracle0;   pBidderDest = &bidder0;
     }
     use0 = !use0;
-    std::cout << "\n\n--------------- Round " << round << " comparative value source --------------------- " << std::endl << pGainSrc->topLeftCorner(round+1,round+1) << std::endl;
-    std::cout << " --------------- Expert (top 2 rows) --------------------- " << std::endl << pOracleSrc->topLeftCorner(imin(2,round+1),round+1) << std::endl;
-    std::cout << " --------------- Bidder (top 2 rows) --------------------- " << std::endl << pBidderSrc->topLeftCorner(imin(2,round+1),round+1) << std::endl;
+    if (writeDetails)
+    { std::cout << "\n\n--------------- Round " << round << " comparative value source --------------------- " << std::endl << pGainSrc->topLeftCorner(round+1,round+1) << std::endl;
+      std::cout << " --------------- Expert (top 2 rows) --------------------- " << std::endl << pOracleSrc->topLeftCorner(imin(2,round+1),round+1) << std::endl;
+      std::cout << " --------------- Bidder (top 2 rows) --------------------- " << std::endl << pBidderSrc->topLeftCorner(imin(2,round+1),round+1) << std::endl;
+    }
     for (int i=0; i<round; ++i)        // next round status of expert
     { for (int j=0; j<round; ++j)      //                      bidder
       { std::pair<double,double> maxPair;
@@ -158,12 +160,14 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 	(*pOracleDest)(i,j) = compRatio.value_to_oracle(maxPair.first, (*pOracleSrc)(0,0), (*pOracleSrc)(i+1,0), (*pOracleSrc)(0,j+1), (*pOracleSrc)(i+1,j+1));
 	(*pBidderDest)(i,j) = compRatio.value_to_bidder(maxPair.first, (*pBidderSrc)(0,0), (*pBidderSrc)(i+1,0), (*pBidderSrc)(0,j+1), (*pBidderSrc)(i+1,j+1));
       }
-     }
-    std::cout << "\n\n---------------   MEAN  --------------------- " << std::endl << mean.topLeftCorner(round,round) << std::endl;
-   }
-   // write the final values to std io
-   std::cout << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
- }
+    }
+    if (writeDetails)  std::cout << "\n\n---------------   MEAN  --------------------- " << std::endl << mean.topLeftCorner(round,round) << std::endl;
+  }
+  // write parms and final values to std io
+  std::cout << "Constrained " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
+	    << searchInterval.first << " " << searchInterval.second << " " 
+	    << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
+}
 
  /////////////////////////////////  Constrained Expert  ///////////////////////////////////////
 
@@ -296,8 +300,10 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
     write_matrix_to_file(fileName, mean.topLeftCorner(mean.rows(), mean.rows()));
     //    write_matrix_to_file("/Users/bob/C/tools/probmatrix.txt", prob);
   }
-  // write the final values to std io
-  std::cout << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
+  // write parameters and final values to std io
+  std::cout << "Unconstrained " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
+	    << searchInterval.first << " " << searchInterval.second  << " " 
+	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
 }
 
 

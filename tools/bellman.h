@@ -14,7 +14,7 @@ void
 solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb);
+solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb, bool printDetails);
 
 
 

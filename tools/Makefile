@@ -13,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O2
+OPT = -O3
 
 # OPT = -O3 -DNDEBUG
 
@@ -45,23 +45,31 @@ bellman: bellman.o bellman_solver.o
   # 2.5 25 1 u 0.5 -0.0332263 0.181596 0.0859291
   # 2.5 10 1 u 0.5 -0.0651093 0.086978 0.0608351 	
 bellman_test: bellman
-	./bellman --gamma 1.1 --rounds 25 --prob u --spend 0.5 --write 
+	./bellman --constrain --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
 
-bellman_results.500: bellman bellman.sh
+
+#  constrained
+bellman_results.c500: bellman bellman.sh
+	rm -f bellman_results.500
+	./bellman --constrain --gamma 1.1 --rounds 500 >> bellman_results.c500 
+
+
+#  unconstrained
+bellman_results.u500: bellman bellman.sh
 	rm -f bellman_results.500
 	./bellman.sh u 500 >  bellman_results.500
 	./bellman.sh e 500 >> bellman_results.500
 	./bellman.sh g 500 >> bellman_results.500
 
 
-bellman_results.1000: bellman bellman.sh
+bellman_results.u1000: bellman bellman.sh
 	rm -f bellman_results.1000
 	./bellman.sh u 1000 >  bellman_results.1000
 	./bellman.sh e 1000 >> bellman_results.1000
 	./bellman.sh g 1000 >> bellman_results.1000
 
 
-bellman_results.2000: bellman bellman.sh
+bellman_results.u2000: bellman bellman.sh
 	rm -f bellman_results.2000
 	./bellman.sh u 2000 >  bellman_results.2000
 	./bellman.sh e 2000 >> bellman_results.2000
