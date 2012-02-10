@@ -48,14 +48,16 @@ bellman_test: bellman
 	./bellman --constrain --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
 
 
-#  constrained
-bellman_results.c500: bellman bellman.sh
-	rm -f bellman_results.500
-	./bellman --constrain --gamma 1.1 --rounds 500 >> bellman_results.c500 
+#  constrained    $^ are prereq    $@ is target    $* is stem
+bellman_results.c500: bellman bellman.sh gamma.0.91 gamma.0.92 gamma.0.93 gamma.0.94 gamma.0.95 gamma.0.96 gamma.0.97 gamma.0.98 gamma.0.99
+	cat $(filter gamma.%,$^) >> bellman_results.c500
+
+gamma.%: bellman bellman.sh
+	./bellman --constrain --gamma $* --rounds 500 > $@
 
 
 #  unconstrained
-bellman_results.u500: bellman bellman.sh
+bellman_results.u500: bellman bellman.sh  
 	rm -f bellman_results.500
 	./bellman.sh u 500 >  bellman_results.500
 	./bellman.sh e 500 >> bellman_results.500
