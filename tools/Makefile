@@ -41,22 +41,29 @@ bellman_solver.o: bellman_solver.cc
 bellman: bellman.o bellman_solver.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
-  #  unconstrained solutions
-  # 2.5 25 1 u 0.5 -0.0332263 0.181596 0.0859291
-  # 2.5 10 1 u 0.5 -0.0651093 0.086978 0.0608351 	
 bellman_test: bellman
 	./bellman --constrain --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
 
 
-#  constrained    $^ are prereq    $@ is target    $* is stem
-bellman_results.c500: bellman bellman.sh gamma.0.91 gamma.0.92 gamma.0.93 gamma.0.94 gamma.0.95 gamma.0.96 gamma.0.97 gamma.0.98 gamma.0.99
-	cat $(filter gamma.%,$^) >> bellman_results.c500
+# ---  constrained    $^ are prereq    $@ is target    $* is stem
+#      change n to change path, file names, and the length of run
 
-gamma.%: bellman bellman.sh
-	./bellman --constrain --gamma $* --rounds 500 > $@
+n = 500
+gp = gamma.$(n)/
+
+# $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
+#  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958
+bellman_results.c$(n): bellman bellman.sh  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
+	cat $(filter $(gp)%,$^) >> $@
+
+$(gp)%: bellman bellman.sh
+	./bellman --constrain --gamma $* --rounds $(n) > $@
 
 
-#  unconstrained
+# ---  unconstrained
+#   solutions for testing
+#      2.5 25 1 u 0.5 -0.0332263 0.181596 0.0859291
+#      2.5 10 1 u 0.5 -0.0651093 0.086978 0.0608351 	
 bellman_results.u500: bellman bellman.sh  
 	rm -f bellman_results.500
 	./bellman.sh u 500 >  bellman_results.500
