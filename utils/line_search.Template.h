@@ -5,20 +5,49 @@
 
 template< class Func, class Comp >
 Line_Search::Pair
-Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp ) const
+Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
 {
   const double GR = 2.0/(1 + sqrt(5.0));   // 0.618
   const double gr = 1.0 - GR;              // 0.382
   double x;
   
   // build starting conditions
-  double len = mInterval.second-mInterval.first;
   Pair   xLo = std::make_pair(mInterval.first,  f(mInterval.first));
   Pair   xHi = std::make_pair(mInterval.second, f(mInterval.second));
+  // perform optional initial grid search
+  if (mGridSize > 0)
+  { int iOpt = 0;
+    double opt = xLo.second;
+    int n = ceil((mInterval.second - mInterval.first)/mGridSize)-1;
+    double *pGrid  = new double[n];
+    double *pF     = new double[n];
+    x = mInterval.first;
+    for (int i=0; i<n; ++i)
+    { x += mGridSize;
+      pGrid[i] = x;
+      pF[i] = f(x);
+      if (comp(pF[i],opt)) {iOpt = i; opt = pF[i]; }
+    }
+    if(comp(xHi.second,opt)) iOpt = n;
+    if (0 == iOpt || 1 == iOpt)
+    { xHi.first=pGrid[1]; xHi.second=pF[1]; }
+    else if (n == iOpt || (n-1 == iOpt))
+    { xLo.first=pGrid[n-1]; xLo.second=pF[n-1]; }
+    else
+    { xLo.first=pGrid[iOpt-1]; xLo.second=pF[iOpt-1];
+      xHi.first=pGrid[iOpt+1]; xHi.second=pF[iOpt+1];
+    }
+    delete [] pGrid;
+    delete [] pF;
+  }
   // init the internal positions
-  x = mInterval.first + gr*len;
+  // std::cout << "\n\n Searching interval  "
+  //	      << "<" << xLo.first << "," <<xLo.second <<  "> ... " 
+  //	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
+  double len = xHi.first-xLo.first;
+  x = xLo.first + gr*len;
   Pair xA = std::make_pair(x, f(x));
-  x = mInterval.first + GR*len;
+  x = xLo.first + GR*len;
   Pair xB = std::make_pair(x, f(x));
   // find new interval
   int i (0);

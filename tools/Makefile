@@ -52,8 +52,9 @@ n = 500
 gp = gamma.$(n)/
 
 # $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
-#  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958
-bellman_results.c$(n): bellman bellman.sh  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
+# $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
+#  $(gp)0.971 $(gp)0.972 $(gp)0.973 $(gp)0.974  $(gp)0.975 $(gp)0.976 $(gp)0.977 $(gp)0.978 $(gp)0.979
+bellman_results.c$(n): bellman bellman.sh  $(gp)0.6 $(gp)0.7 $(gp)0.8 $(gp)0.9 
 	cat $(filter $(gp)%,$^) >> $@
 
 $(gp)%: bellman bellman.sh

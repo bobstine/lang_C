@@ -7,6 +7,8 @@
 #define _LINE_SEARCH_H_
 
 #include <functional>
+#include <utility>
+
 
 namespace Line_Search
 {
@@ -18,13 +20,14 @@ namespace Line_Search
   {
   private:
     const double  mTolerance;
+    const double  mGridSize;      // do initial grid search at this spacing  (0 implies none)
     const Pair    mInterval;
     const int     mMaxIterations;
     
   public:
 
-    GoldenSection (double tolerance, Pair const& interval, int maxIterations=100)
-      : mTolerance(tolerance), mInterval(interval), mMaxIterations(maxIterations) { }
+    GoldenSection (double tolerance, Pair const& interval, double grid, int maxIterations)
+      : mTolerance(tolerance), mGridSize (grid), mInterval(interval), mMaxIterations(maxIterations) { }
 
     template< class Func >
       Pair find_minimum(Func const& f) const;

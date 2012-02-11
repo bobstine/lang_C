@@ -108,9 +108,10 @@ void
 solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
-  const double tolerance  (0.0001);  
-  const std::pair<double,double> searchInterval = std::make_pair(0.5,5.5);
-  Line_Search::GoldenSection search(tolerance, searchInterval, maxIterations);
+  const double tolerance  (0.0001);
+  const double grid       (0.5);
+  const std::pair<double,double> searchInterval = std::make_pair(0.05,7.0);
+  Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     
   // space for holding intermediate results; extra row for boundary condition
@@ -133,6 +134,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
   Matrix* pGainSrc;   Matrix* pGainDest = NULL;
   Matrix* pOracleSrc; Matrix* pOracleDest = NULL;
   Matrix* pBidderSrc; Matrix* pBidderDest = NULL;
+  std::pair<double,double> bestMeanInterval(100,0);
   for (int round = nRounds; round > 0; --round)
   { if (use0)
     { pGainSrc    = &gain0;    pOracleSrc  = &oracle0;   pBidderSrc  = &bidder0;
@@ -151,7 +153,11 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
     { for (int j=0; j<round; ++j)      //                      bidder
       { std::pair<double,double> maxPair;
 	compRatio.set_delay (i, j, round, nRounds, (*pGainSrc)(0,0), (*pGainSrc)(i+1,0), (*pGainSrc)(0,j+1), (*pGainSrc)(i+1,j+1));
-	maxPair = search.find_maximum(compRatio);
+	maxPair = search.find_maximum(compRatio);        // mean, f(mean)
+	if(maxPair.first < bestMeanInterval.first)       // monitor range of optimal means
+	  bestMeanInterval.first = maxPair.first;
+	else if (maxPair.first > bestMeanInterval.second)
+	  bestMeanInterval.second = maxPair.first;
 	double atZero = compRatio(0.0);
 	if (maxPair.second < atZero)
 	  maxPair = std::make_pair(0.0,atZero);
@@ -161,9 +167,11 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 	(*pBidderDest)(i,j) = compRatio.value_to_bidder(maxPair.first, (*pBidderSrc)(0,0), (*pBidderSrc)(i+1,0), (*pBidderSrc)(0,j+1), (*pBidderSrc)(i+1,j+1));
       }
     }
-    if (writeDetails)  std::cout << "\n\n---------------   MEAN  --------------------- " << std::endl << mean.topLeftCorner(round,round) << std::endl;
+    if (writeDetails)
+      std::cout << "\n\n---------------   MEAN  --------------------- " << std::endl << mean.topLeftCorner(round,round) << std::endl;
   }
   // write parms and final values to std io
+  std::clog << "Interval for optimal means is [" << bestMeanInterval.first << "," << bestMeanInterval.second << std::endl;
   std::cout << "Constrained " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second << " " 
 	    << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
@@ -244,8 +252,9 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
 {
   const int maxIterations (100);
   const double tolerance  (0.0001);
+  const double grid       (0.5);
   const std::pair<double,double> searchInterval = std::make_pair(1.5,6.5);
-  Line_Search::GoldenSection search(tolerance, searchInterval, maxIterations);
+  Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   ExpertCompetitiveGain compRatio (gamma, omega, f, spendPct);
     
   // space for holding intermediate results
