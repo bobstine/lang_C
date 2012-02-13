@@ -29,7 +29,13 @@ int main()
 	    << "  Phi-1(0.0001) = "    << normal_quantile(0.0001)
 	    << "  Phi-1(0.9999999) = " << normal_quantile(0.9999999)
 	    << std::endl;
-  
+
+  { double p = 1.0;
+    for (int i=0; i < 1000; ++i)
+    { p *= .25;
+      std::cout << i << "      p = " << p << "   Q(p) = " << normal_quantile(p) << std::endl;
+    }
+  }
   
   std::cout 
   << "  erf(1.0)  = " << erf(1.0)

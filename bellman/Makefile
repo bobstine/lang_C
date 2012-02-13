@@ -42,7 +42,7 @@ bellman: bellman.o bellman_solver.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_test: bellman
-	./bellman --constrain 0.75 --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
+	./bellman --constrain 0.75 --gamma 1.1 --rounds 100 --prob u --spend 0.5    # add   --write    for details
 
 
 # ---  constrained    $^ are prereq    $@ is target    $* is stem
