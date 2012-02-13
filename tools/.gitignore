@@ -6,4 +6,6 @@ trendata_build_*
 csv_to_table
 bellman
 bellman.g*
+gamma.1000
+gamma.500
 
