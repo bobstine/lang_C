@@ -59,7 +59,7 @@ bellman_results.c$(n): bellman bellman.sh $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 
 	cat $(filter $(gp)%,$^) >> $@
 
 $(gp)%: bellman bellman.sh
-	./bellman --constrain --spend 0.9 --gamma $* --rounds $(n) > $@
+	./bellman --constrain --spend 0.1 --gamma $* --rounds $(n) > $@
 
 
 # ---  unconstrained
