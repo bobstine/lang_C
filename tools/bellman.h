@@ -10,11 +10,13 @@
 
 typedef double (*ProbDist)(int,int);
 
+
+
 void
 solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb, bool printDetails);
+solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
 
 
 
@@ -30,10 +32,27 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 
 double universal (int k, int);
 
-double geometric (int k, int);
-
 double equal (int k, int left);         // equal spread over possible tests since reject
 
+double geometric (int k, int);
+
+class GeometricDist: public std::binary_function<int,int,double>   // has flexible prob
+{
+  const double mP;
+  const double mNorm;
+
+  public:
+
+  GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
+
+  double operator()(int k, int) const
+  { double p=1;
+    for (int i=0; i<=k; ++i) p *= mP;
+    return p * mNorm;
+  }
+
+};
+  
 
 
 //  This guy does the optimization to find the best mu at given state
@@ -80,15 +99,16 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
  private:
   const double mGamma;
   const double mOmega;
-  const ProbDist mExpertProb, mBidderProb;
+  const GeometricDist mExpertDist;
+  const ProbDist mBidderProb;
   const double mSpendPct;
   double mAlpha, mBeta;
   double mV00, mVi0, mVij, mV0j;
   
  public:
 
- ConstrainedExpertCompetitiveGain(double gamma, double omega, double spendPct, ProbDist expertP, ProbDist bidderP)
-   : mGamma(gamma), mOmega(omega), mExpertProb(expertP), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
+ ConstrainedExpertCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
+   : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
 
   double alpha (void) const { return mAlpha; }
   double beta  (void) const { return mBeta; }

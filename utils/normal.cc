@@ -129,7 +129,7 @@ normal_density(double x)
 double
 normal_cdf (double z)
 {
-	return 0.5 + 0.5 * erf(z/SQRT2);
+  return 0.5 + 0.5 * erf(z/SQRT2);
 }
 
 double

@@ -9,36 +9,36 @@
 
 
 void
-parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, bool &constrainOracle, char &probChar, double &spendPct, bool &writeTable);
+parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, double &constrainGeoProb, char &probChar, double &spendPct, bool &writeTable);
 
 int  main(int argc, char** argv)
 {
   const double omega  = 0.05;
 
   // default arguments
-  double     gamma  = 2.5;
-  int      nRounds  = 100;
-  bool   consOracle = false;
-  double  spendPct  = 0.5;
-  char    probChar  = 'u';
-  bool   writeTable = false;    // if false, only return final value
+  double      gamma  = 2.5;
+  int       nRounds  = 100;
+  double consGeoProb = 0.0;      // use constrained geometric oracle if non-zero prob
+  double   spendPct  = 0.5;
+  char     probDist  = 'u';
+  bool    writeTable = false;    // if false, only return final value
   
-  parse_arguments(argc, argv, gamma, nRounds, consOracle, probChar, spendPct, writeTable);
+  parse_arguments(argc, argv, gamma, nRounds, consGeoProb, probDist, spendPct, writeTable);
   
   // select function for spending down probability
   ProbDist p;
-  switch (probChar)
+  switch (probDist)
   {
   case 'u': { p = universal; break; }
   case 'g': { p = geometric; break; }
   case 'e': { p = equal;     break; }
-  default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probChar << " chosen.\n"; return -1; }
+  default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
   }
   
-  if (!consOracle)     // one-dimensional state, unconstrained expert
+  if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
     solve_bellman_equation (gamma, omega, nRounds, spendPct, p, true);
-  else                 // two-dimensional state, constrained
-    solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, geometric, p, writeTable);
+  else                      // two-dimensional state, constrained
+    solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
   
   return 0;
 }
@@ -46,15 +46,15 @@ int  main(int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, bool &consOracle, char &probChar, double &spendPct, bool &writeTable)
+parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &consGeoProb, char &probDist, double &spendPct, bool &writeTable)
 {
   static struct option long_options[] = {
-    {"gamma",   required_argument, 0, 'g'},
-    {"constrain",     no_argument, 0, 'c'},
-    {"rounds",  required_argument, 0, 'n'},
-    {"prob",    required_argument, 0, 'p'},
-    {"spend",   required_argument, 0, 's'},
-    {"write",         no_argument, 0, 'w'},
+    {"gamma",    required_argument, 0, 'g'},
+    {"constrain",required_argument, 0, 'c'},
+    {"rounds",   required_argument, 0, 'n'},
+    {"probdist", required_argument, 0, 'p'},
+    {"spend",    required_argument, 0, 's'},
+    {"write",          no_argument, 0, 'w'},
     {0, 0, 0, 0}                             // terminator 
   };
   int key;
@@ -76,12 +76,12 @@ parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, bool &consO
       }
     case 'c' : 
       {
-	consOracle=true ;
+	consGeoProb= read_utils::lexical_cast<double>(optarg);
 	break;
       }
     case 'p' :
       {
-	probChar = read_utils::lexical_cast<char>(optarg);
+	probDist = read_utils::lexical_cast<char>(optarg);
 	break;
       }
     case 's' :

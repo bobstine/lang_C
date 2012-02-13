@@ -84,7 +84,7 @@ double geometric (int k, int)
 {
   double p=1;
   for (int i=0; i<=k; ++i) p *= 0.99;
-  return p/99.0;
+  return p/99.;
 }
 
 double equal (int k, int left)         // equal spread over possible locations
@@ -105,7 +105,7 @@ double equal (int k, int left)         // equal spread over possible locations
 
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist oracleProb, ProbDist bidderProb, bool writeDetails)
+solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);
@@ -172,7 +172,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
   }
   // write parms and final values to std io
   std::clog << "Interval for optimal means is [" << bestMeanInterval.first << "," << bestMeanInterval.second << std::endl;
-  std::cout << "Constrained " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
+  std::cout << "Constrained " << oracleProb << "  " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second << " " 
 	    << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
 }
@@ -183,8 +183,9 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
  void
  ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
  {
-   mAlpha = mOmega             * mExpertProb(i,nRounds-t);  // no spending constraint for expert
+   mAlpha = mOmega             * mExpertDist(i,nRounds-t);  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
+   std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
    mV00 = v00;
    mVi0 = vi0;
    mV0j = v0j;
@@ -310,7 +311,7 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
     //    write_matrix_to_file("/Users/bob/C/tools/probmatrix.txt", prob);
   }
   // write parameters and final values to std io
-  std::cout << "Unconstrained " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
+  std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second  << " " 
 	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
 }

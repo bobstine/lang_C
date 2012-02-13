@@ -42,7 +42,7 @@ bellman: bellman.o bellman_solver.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_test: bellman
-	./bellman --constrain --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
+	./bellman --constrain 0.75 --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
 
 
 # ---  constrained    $^ are prereq    $@ is target    $* is stem
@@ -55,11 +55,11 @@ gp = gamma.$(n)/
 #  $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
 #  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
 
-bellman_results.c$(n): bellman bellman.sh $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
+bellman_results.c$(n): bellman bellman.sh $(gp)0.6 
 	cat $(filter $(gp)%,$^) >> $@
 
 $(gp)%: bellman bellman.sh
-	./bellman --constrain --spend 0.9 --gamma $* --rounds $(n) > $@
+	./bellman --constrain 0.5 --spend 0.9 --gamma $* --rounds $(n) > $@
 
 
 # ---  unconstrained
