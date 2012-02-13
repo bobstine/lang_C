@@ -183,7 +183,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
  void
  ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
  {
-   mAlpha = mOmega * mSpendPct * mExpertProb(i,nRounds-t);
+   mAlpha = mOmega             * mExpertProb(i,nRounds-t);  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
    mV00 = v00;
    mVi0 = vi0;

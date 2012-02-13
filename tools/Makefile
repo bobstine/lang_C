@@ -46,19 +46,20 @@ bellman_test: bellman
 
 
 # ---  constrained    $^ are prereq    $@ is target    $* is stem
-#      change n to change path, file names, and the length of run
+#      change n to change path, file names, and the length of run;  gp is gamma path
 
-n = 500
+n = 1000
 gp = gamma.$(n)/
 
-# $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
-# $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
-#  $(gp)0.971 $(gp)0.972 $(gp)0.973 $(gp)0.974  $(gp)0.975 $(gp)0.976 $(gp)0.977 $(gp)0.978 $(gp)0.979
-bellman_results.c$(n): bellman bellman.sh  $(gp)0.6 $(gp)0.7 $(gp)0.8 $(gp)0.9 
+#  $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
+#  $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
+#  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
+
+bellman_results.c$(n): bellman bellman.sh $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
 	cat $(filter $(gp)%,$^) >> $@
 
 $(gp)%: bellman bellman.sh
-	./bellman --constrain --gamma $* --rounds $(n) > $@
+	./bellman --constrain --spend 0.5 --gamma $* --rounds $(n) > $@
 
 
 # ---  unconstrained
