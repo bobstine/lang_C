@@ -16,6 +16,7 @@ int  main(int argc, char** argv)
   const double omega  = 0.05;
 
   // default arguments
+  Objective   goal   = rejects;
   double      gamma  = 2.5;
   int       nRounds  = 100;
   double consGeoProb = 0.0;      // use constrained geometric oracle if non-zero prob
@@ -36,9 +37,9 @@ int  main(int argc, char** argv)
   }
   
   if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
-    solve_bellman_equation (gamma, omega, nRounds, spendPct, p, true);
+    solve_bellman_equation (goal, gamma, omega, nRounds, spendPct, p, true);
   else                      // two-dimensional state, constrained
-    solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
+    solve_constrained_bellman_equation (goal, gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
   
   return 0;
 }

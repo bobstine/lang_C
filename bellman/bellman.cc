@@ -105,14 +105,14 @@ double equal (int k, int left)         // equal spread over possible locations
 
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
+solve_constrained_bellman_equation (Objective obj, double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);
   const double grid       (0.5);
   const std::pair<double,double> searchInterval = std::make_pair(0.05,7.0);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
+  ConstrainedExpertCompetitiveGain compRatio (obj, gamma, omega, spendPct, oracleProb, bidderProb);
     
   // space for holding intermediate results; extra row for boundary condition
   // code flips between these on read and write
@@ -172,7 +172,8 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
   }
   // write parms and final values to std io
   std::clog << "Interval for optimal means is [" << bestMeanInterval.first << "," << bestMeanInterval.second << std::endl;
-  std::cout << "Constrained " << oracleProb << "  " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
+  std::cout << obj << "  "
+	    << "Constrained " << oracleProb << "  " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second << " " 
 	    << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
 }
@@ -185,7 +186,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
  {
    mAlpha = mOmega             * mExpertDist(i,nRounds-t);  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
-   std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
+   // std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
    mV00 = v00;
    mVi0 = vi0;
    mV0j = v0j;
@@ -249,14 +250,14 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 // --------------------------------------------------------------------------------------------------------------
 
 void
-solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
+solve_bellman_equation (Objective obj, double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
 {
   const int maxIterations (100);
   const double tolerance  (0.0001);
   const double grid       (0.5);
   const std::pair<double,double> searchInterval = std::make_pair(1.5,6.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  ExpertCompetitiveGain compRatio (gamma, omega, f, spendPct);
+  ExpertCompetitiveGain compRatio (obj, gamma, omega, f, spendPct);
     
   // space for holding intermediate results
   Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
@@ -273,7 +274,6 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
     oracle(nRounds,j)=omega;
     bidder(nRounds,j)=omega;
   }
-  
   // stores intermediates in rows of triangular array
   for (int row = nRounds-1; row > -1; --row)
   { v0 = gain(row+1,0);
@@ -293,7 +293,6 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
       //      prob (row,col) = compRatio.beta_k();
     }
   }
-  
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::string fileName;
@@ -311,7 +310,8 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
     //    write_matrix_to_file("/Users/bob/C/tools/probmatrix.txt", prob);
   }
   // write parameters and final values to std io
-  std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
+  std::cout << obj << "  "
+	    << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second  << " " 
 	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
 }
@@ -324,16 +324,24 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
 double
 ExpertCompetitiveGain::operator()(double mu) const
 {
-  if(mu < 0.00001)
-  { // std::cout << "For mu = 0 reject prob r = b = " << b << " and V0 = " << mV0 << " and V_k+1 = " << mVkp1 << std::endl;
-    return mGamma * mBetaK * (1.0-mOmega) + mBetaK*mV0 + (1-mBetaK)*mVkp1;
-  }
-  else
-  {
-    double rb = reject_prob(mu,mBetaK);
-    double a = optimal_alpha(mu, mOmega);
+  if (mObjective == alpha)
+    if(mu < 0.00001)
+      { // std::cout << "For mu = 0 reject prob r = b = " << b << " and V0 = " << mV0 << " and V_k+1 = " << mVkp1 << std::endl;
+	return mGamma * mBetaK * (1.0-mOmega) + mBetaK*mV0 + (1-mBetaK)*mVkp1;
+      }
+    else
+      {
+	double rb = reject_prob(mu,mBetaK);
+	double a = optimal_alpha(mu, mOmega);
+	double ra = reject_prob(mu,a);
+	double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBetaK) + rb * mV0 + (1-rb) * mVkp1;
+	return gain;
+      }
+  else // for the rejects case
+  { double rb = reject_prob(mu,mBetaK);
+    double a = mOmega;
     double ra = reject_prob(mu,a);
-    double gain = (mOmega * ra - a) - mGamma * (mOmega * rb - mBetaK) + rb * mV0 + (1-rb) * mVkp1;
+    double gain = mOmega * ra - mGamma * mOmega * rb + rb * mV0 + (1-rb) * mVkp1;
     return gain;
   }
 }
@@ -342,22 +350,36 @@ double
 ExpertCompetitiveGain::value_to_oracle(double mu, double o0, double okp1) const 
 {
   double value, rb;
-  if (mu < 0.00001)
-  { value = 0.0;
-    rb = mBetaK;
+  if (mObjective == alpha)
+  { if (mu < 0.00001)
+    { value = 0.0;
+      rb = mBetaK;
+    }
+    else
+    { double a = optimal_alpha(mu, mOmega);
+      double ra = reject_prob(mu,a);
+      value = mOmega * ra - a ;
+      rb = reject_prob(mu, mBetaK);
+    }
+    return value + rb * o0 + (1-rb) * okp1;
   }
-  else
-  { double a = optimal_alpha(mu, mOmega);
-    double ra = reject_prob(mu,a);
-    value = mOmega * ra - a ;
+  else // for rejects case
+  { double ra = reject_prob(mu,mOmega);
+    value = mOmega * ra;
     rb = reject_prob(mu, mBetaK);
+    return value + rb * o0 + (1-rb) * okp1;
   }
-  return value + rb * o0 + (1-rb) * okp1;
 }
   
 double
 ExpertCompetitiveGain::value_to_bidder (double mu, double b0, double bkp1) const
 {
-  double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
-  return mOmega * rb - mBetaK + rb * b0 + (1-rb) * bkp1;
+  if (mObjective == alpha)
+  { double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
+    return mOmega * rb - mBetaK + rb * b0 + (1-rb) * bkp1;
+  }
+  else // track rejects
+  { double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
+    return mOmega * rb          + rb * b0 + (1-rb) * bkp1;
+  }
 }

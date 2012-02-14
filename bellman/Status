@@ -1,0 +1,6 @@
+14 Feb 12
+
+- Need to get the normal tails approximation in place to avoid underflow on geometric
+
+- Add objective from among risk, alpha, and rejects (risk not implemented yet)
+

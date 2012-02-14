@@ -10,13 +10,13 @@
 
 typedef double (*ProbDist)(int,int);
 
-
-
-void
-solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+enum Objective { alpha, rejects, risk };
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
+solve_bellman_equation             (Objective obj, double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+
+void
+solve_constrained_bellman_equation (Objective obj, double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
 
 
 
@@ -65,6 +65,7 @@ class GeometricDist: public std::binary_function<int,int,double>   // has flexib
 class ExpertCompetitiveGain: public std::unary_function<double,double>
 {
  private:
+  const Objective mObjective;
   const double mGamma;
   const double mOmega;
   const ProbDist mProb;
@@ -74,8 +75,8 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
   
  public:
 
- ExpertCompetitiveGain(double gamma, double omega, ProbDist f, double spendPct)
-   : mGamma(gamma), mOmega(omega), mProb(f), mSpendPct(spendPct), mBetaK(0.0) {}
+ ExpertCompetitiveGain(Objective obj, double gamma, double omega, ProbDist f, double spendPct)
+   : mObjective(obj), mGamma(gamma), mOmega(omega), mProb(f), mSpendPct(spendPct), mBetaK(0.0) {}
   
   double beta_k (void) const { return mBetaK; }
   
@@ -97,6 +98,7 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
 class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double>
 {
  private:
+  const Objective mObjective;
   const double mGamma;
   const double mOmega;
   const GeometricDist mExpertDist;
@@ -107,8 +109,8 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
   
  public:
 
- ConstrainedExpertCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
-   : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
+ ConstrainedExpertCompetitiveGain(Objective obj, double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
+   : mObjective(obj), mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
 
   double alpha (void) const { return mAlpha; }
   double beta  (void) const { return mBeta; }
