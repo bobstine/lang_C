@@ -21,6 +21,33 @@ solve_constrained_bellman_equation (Objective obj, double gamma, double omega, i
 
 
 
+
+/**********************************************************************************
+
+   Wealth tracker basically maps from integers that follow the tests
+   to the wealth of the expert or bidder
+
+ **********************************************************************************/
+
+class Tracker
+{
+  const int     *mSize;
+  const double  *mTable;
+  const int mMinK, mMaxK;
+
+ public:
+  Tracker(int minK, int maxK, double (*g)(int), double (*f)(int))
+    : mSize(mMaxK-mMinK+1), mTable(new double[mSize]), mMinK(minK), mMaxK(maxK)
+  { mTable[mMinK] = 1.0;
+    for(i=1; i< mMaxK; ++i)   mTable[mMinK+i]=f(i);
+    for(i=1; i<=mMinK; ++i)   mTable[mMinK-i]=g(i);
+  }
+
+  Tracker(Tracker const& t)
+  { 
+      
+      
+
 /**********************************************************************************
 
    Probability distributions that control spending
