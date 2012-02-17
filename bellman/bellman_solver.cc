@@ -16,7 +16,6 @@ int  main(int argc, char** argv)
   const double omega  = 0.05;
 
   // default arguments
-  Objective   goal   = rejects;
   double      gamma  = 2.5;
   int       nRounds  = 100;
   double consGeoProb = 0.0;      // use constrained geometric oracle if non-zero prob
@@ -32,14 +31,14 @@ int  main(int argc, char** argv)
   {
   case 'u': { p = universal; break; }
   case 'g': { p = geometric; break; }
-  case 'e': { p = equal;     break; }
+  case 'e': { p = uniform_to_end;     break; }
   default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
   }
   
   if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
-    solve_bellman_equation (goal, gamma, omega, nRounds, spendPct, p, true);
+    solve_bellman_equation (gamma, omega, nRounds, spendPct, p, true);
   else                      // two-dimensional state, constrained
-    solve_constrained_bellman_equation (goal, gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
+    solve_constrained_bellman_equation (gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
   
   return 0;
 }

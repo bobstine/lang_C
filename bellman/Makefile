@@ -3,7 +3,6 @@ include ../c_flags
 ###########################################################################
 #
 #        Options
-#
 #   Examples of depending on libaries
 #        LDLIBS =  -lthing -lregression 
 #        libs_used =  ../lib/libthing.a ../lib/libregression.a 
@@ -13,7 +12,7 @@ include ../c_flags
 
 PROJECT_NAME = bellman
 
-OPT = -O3
+OPT = -O3 -std=c++0x
 
 # OPT = -O3 -DNDEBUG
 
@@ -44,6 +43,9 @@ bellman: bellman.o bellman_solver.o
 bellman_test: bellman
 	./bellman --constrain 0 --gamma 1.1 --rounds 100 --prob u --spend 0.5    # add   --write    for details
 
+# Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
+bellman_check: bellman
+	./bellman --constrain 0 --gamma 2.5 --rounds 7  --prob u --spend 0.5 --write
 
 # ---  constrained    $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is gamma path

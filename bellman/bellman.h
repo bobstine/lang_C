@@ -1,5 +1,9 @@
 #include <utility>         // pair
 #include <functional>
+#include <math.h>
+#include <assert.h>
+
+#include "dynamic_array.h"
 
 /***********************************************************************************
 
@@ -10,43 +14,60 @@
 
 typedef double (*ProbDist)(int,int);
 
-enum Objective { alpha, rejects, risk };
+double universal      (int k, int);
+double geometric      (int k, int);
+double uniform_to_end (int k, int left);
+
 
 void
-solve_bellman_equation             (Objective obj, double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
 
 void
-solve_constrained_bellman_equation (Objective obj, double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
-
-
-
+solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
 
 
 /**********************************************************************************
 
    Wealth tracker basically maps from integers that follow the tests
-   to the wealth of the expert or bidder
+   to the wealth of the expert or bidder.
+
+   Normalized to have value omega at index 0.
 
  **********************************************************************************/
 
-class Tracker
+class WealthArray
 {
-  const int     *mSize;
-  const double  *mTable;
-  const int mMinK, mMaxK;
+  typedef double(*Tfunc)(int);
+  typedef std::pair<int, double> WIndex;
+  
+  const std::string     mName;
+  const double          mOmega;
+  DynamicArray<double>  mWealth;
 
  public:
-  Tracker(int minK, int maxK, double (*g)(int), double (*f)(int))
-    : mSize(mMaxK-mMinK+1), mTable(new double[mSize]), mMinK(minK), mMaxK(maxK)
-  { mTable[mMinK] = 1.0;
-    for(i=1; i< mMaxK; ++i)   mTable[mMinK+i]=f(i);
-    for(i=1; i<=mMinK; ++i)   mTable[mMinK-i]=g(i);
-  }
+ WealthArray(std::string name, double omega, int minK, int maxK, Tfunc neg, Tfunc pos)
+   : mName(name), mOmega(omega), mWealth(DynamicArray<double>(minK, maxK)) { fill_array(minK, maxK, neg,pos); }
 
-  Tracker(Tracker const& t)
-  { 
-      
-      
+  double bid(int k)                          const { return mWealth[k]-mWealth[k+1]; }
+  double wealth(int k)                       const { return mWealth[k]; }
+  double operator[](int k)                   const { return mWealth[k]; }
+  
+  std::pair<WIndex, WIndex> new_position (int k, double increaseW) const;
+  
+  void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
+  
+ private:
+  void fill_array(int min, int max, Tfunc neg, Tfunc pos);
+};
+
+inline
+std::ostream&
+operator<< (std::ostream& os, WealthArray const& wa)
+{
+  wa.print_to(os);
+  return os;
+}
+
 
 /**********************************************************************************
 
@@ -56,12 +77,6 @@ class Tracker
      but some (like universal) don't use the second argument
 
  **********************************************************************************/
-
-double universal (int k, int);
-
-double equal (int k, int left);         // equal spread over possible tests since reject
-
-double geometric (int k, int);
 
 class GeometricDist: public std::binary_function<int,int,double>   // has flexible prob
 {
@@ -92,7 +107,6 @@ class GeometricDist: public std::binary_function<int,int,double>   // has flexib
 class ExpertCompetitiveGain: public std::unary_function<double,double>
 {
  private:
-  const Objective mObjective;
   const double mGamma;
   const double mOmega;
   const ProbDist mProb;
@@ -102,8 +116,8 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
   
  public:
 
- ExpertCompetitiveGain(Objective obj, double gamma, double omega, ProbDist f, double spendPct)
-   : mObjective(obj), mGamma(gamma), mOmega(omega), mProb(f), mSpendPct(spendPct), mBetaK(0.0) {}
+ ExpertCompetitiveGain(double gamma, double omega, ProbDist f, double spendPct)
+   : mGamma(gamma), mOmega(omega), mProb(f), mSpendPct(spendPct), mBetaK(0.0) {}
   
   double beta_k (void) const { return mBetaK; }
   
@@ -125,7 +139,6 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
 class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double>
 {
  private:
-  const Objective mObjective;
   const double mGamma;
   const double mOmega;
   const GeometricDist mExpertDist;
@@ -136,8 +149,8 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
   
  public:
 
- ConstrainedExpertCompetitiveGain(Objective obj, double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
-   : mObjective(obj), mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
+ ConstrainedExpertCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
+   : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
 
   double alpha (void) const { return mAlpha; }
   double beta  (void) const { return mBeta; }
@@ -148,3 +161,33 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
   double value_to_oracle (double mu, double o00, double oi0, double o0j, double oij) const;
   double value_to_bidder (double mu, double b00, double bi0, double b0j, double bij) const;  
 };
+
+
+//  This class handles counting the number of rejected hypotheses rather than just alpha alone.
+
+class RejectCompetitiveGain: public std::unary_function<double,double>
+{
+ private:
+  const double mGamma;
+  const double mOmega;
+  const GeometricDist mExpertDist;
+  const ProbDist mBidderProb;
+  const double mSpendPct;
+  double mAlpha, mBeta;
+  double mV00, mVi0, mVij, mV0j;
+  
+ public:
+
+ RejectCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
+   : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
+
+  double alpha (void) const { return mAlpha; }
+  double beta  (void) const { return mBeta; }
+  
+  void set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij);
+  
+  double operator()(double mu) const;
+  double value_to_oracle (double mu, double o00, double oi0, double o0j, double oij) const;
+  double value_to_bidder (double mu, double b00, double bi0, double b0j, double bij) const;  
+};
+

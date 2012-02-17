@@ -70,6 +70,8 @@ class DynamicArray
   DynamicArray(DynamicArray const& da)
     : mDAB(da.mDAB) { mDAB->increment_ref_count(); }
 
+  int min_index ()                 const { return mDAB->mLoIndex; }
+  int max_index ()                 const { return mDAB->mHiIndex; }
 
   void assign (int k, T x)               { mDAB->assign(k,x); }
    
