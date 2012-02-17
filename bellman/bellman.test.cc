@@ -10,6 +10,23 @@
 #include <Eigen/Core>
 
 
+const double rate = 0.95;
+
+double
+negW(int k)
+{ double w=1.0;
+  for(int i=0;i<k;++i) w *= 1/rate;
+  return w;
+}
+
+double
+posW(int k)
+{
+  double w=1.0;
+  for(int i=0;i<k;++i) w *=  rate ;
+  return w;
+}
+
 
 int  main()
 {
@@ -55,15 +72,10 @@ int  main()
   // test tracking function
   {
     double omega (0.05);
-    int min (-10);
-    int max ( 20);
-    WealthArray wealth("Test", omega, min, max,
-		    [](int k) { double x=2.0, z=1; for(int i=0;i<-k;++i) z *= x; return z; },
-		    [](int k) { double x=0.5, z=1; for(int i=0;i< k;++i) z *= x; return z; }
-		    );
-    std::cout << "TEST: " << wealth << std::endl;
-
-    std::cout << "TEST:   bids = ";   for(int i=min; i<max; ++i) std::cout << wealth.bid(i) << " "; std::cout << std::endl;
+    int     max   (100);
+    std::cout << "TEST: Initializing the wealth array." << std::endl;
+    WealthArray wealth("Test array", omega, max, negW, posW);
+    std::cout << "TEST: Wealth array is \n" << wealth << std::endl;
 
     std::pair< std::pair<int,double>, std::pair<int,double> > kk (wealth.new_position(5,0.05));
     std::cout << "TEST:  increment W[5]= " << wealth[5] << " by 0.05 to " << 0.05+wealth[5] << " bracketed by "

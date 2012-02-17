@@ -386,8 +386,17 @@ WealthArray::new_position (int k1, double increaseW) const // k1 is position of 
 
 
 void
-WealthArray::fill_array(int min, int max, Tfunc neg, Tfunc pos)
-{ mWealth.assign(0,mOmega); 
-  for(int i=min; i<0;  ++i)    mWealth.assign(i, mOmega * neg(i));
-  for(int i=1; i<=max; ++i)    mWealth.assign(i, mOmega * pos(i));
+WealthArray::initialize_array(int max, Tfunc neg, Tfunc pos)
+{
+  double prior = 1.0;   // two passes over neg calculations, first to find out how far back to go
+  int kLim=0;           // want spacing to be at least omega
+
+  std::cout << "Initializing array..." << std::cout;
+  
+  while (neg(++kLim) - prior < mOmega) { prior = neg(kLim); std::cout << "Klim = " << kLim << "  @ " << neg(kLim) << std::endl; }
+  DynamicArray<double> da(-kLim,max);
+  da.assign(0,mOmega); 
+  for(int i=1; i<=kLim; ++i) mWealth.assign(-i, mOmega * neg(i));
+  for(int i=1; i<= max; ++i) mWealth.assign( i, mOmega * pos(i));
+  mWealth = da;
 }

@@ -62,13 +62,16 @@ class DynamicArray
   DynamicArrayBase<T> *mDAB;
 
  public:
-  ~DynamicArray()     { mDAB->decrement_ref_count(); if (mDAB->mRefCount <= 0) delete mDAB; }
-  
-  DynamicArray(int lo, int hi)
-    : mDAB(new DynamicArrayBase<T>(lo,hi)) { }
+  ~DynamicArray()     { std::cout << "DEBUG: disposing of dynamic array." << std::cout; if(mDAB) { mDAB->decrement_ref_count(); if (mDAB->mRefCount <= 0) delete mDAB;  } }
 
-  DynamicArray(DynamicArray const& da)
-    : mDAB(da.mDAB) { mDAB->increment_ref_count(); }
+ DynamicArray()
+   : mDAB(NULL) { std::cout << "DEBUG: Creating empty dynamic array." << std::endl; }
+  
+ DynamicArray(int lo, int hi)
+   : mDAB(new DynamicArrayBase<T>(lo,hi)) { }
+  
+ DynamicArray(DynamicArray const& da)
+   : mDAB(da.mDAB) { mDAB->increment_ref_count(); }
 
   int min_index ()                 const { return mDAB->mLoIndex; }
   int max_index ()                 const { return mDAB->mHiIndex; }

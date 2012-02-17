@@ -41,23 +41,23 @@ class WealthArray
   typedef std::pair<int, double> WIndex;
   
   const std::string     mName;
-  const double          mOmega;
-  DynamicArray<double>  mWealth;
+  const double          mOmega;      // defines wealth at position k=0 and determines how far 'up' wealth can go 
+  DynamicArray<double>  mWealth;     // negative indices go back until wealth changes by omega
 
  public:
- WealthArray(std::string name, double omega, int minK, int maxK, Tfunc neg, Tfunc pos)
-   : mName(name), mOmega(omega), mWealth(DynamicArray<double>(minK, maxK)) { fill_array(minK, maxK, neg,pos); }
+ WealthArray(std::string name, double omega, int maxK, Tfunc neg, Tfunc pos)
+   : mName(name), mOmega(omega), mWealth() { std::cout << "HERE" << std::cout; initialize_array(maxK, neg, pos); }
 
   double bid(int k)                          const { return mWealth[k]-mWealth[k+1]; }
   double wealth(int k)                       const { return mWealth[k]; }
   double operator[](int k)                   const { return mWealth[k]; }
   
-  std::pair<WIndex, WIndex> new_position (int k, double increaseW) const;
+  std::pair<WIndex, WIndex> new_position (int k, double increaseInWealth) const;
   
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
-  void fill_array(int min, int max, Tfunc neg, Tfunc pos);
+  void initialize_array(int max, Tfunc neg, Tfunc pos);
 };
 
 inline
@@ -67,6 +67,7 @@ operator<< (std::ostream& os, WealthArray const& wa)
   wa.print_to(os);
   return os;
 }
+
 
 
 /**********************************************************************************

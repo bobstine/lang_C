@@ -1,6 +1,9 @@
-14 Feb 12
+17 Feb 12
+
+- Need to build version that tracks rejects rather than wealth using new WealthTracker array;
+  Will resemble the constrained approach since need to track positions of both bidder and expert.
 
 - Need to get the normal tails approximation in place to avoid underflow on geometric
 
-- Add objective from among risk, alpha, and rejects (risk not implemented yet)
+
 
