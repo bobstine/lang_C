@@ -26,7 +26,7 @@ PROJECT_NAME = utils
 ###########################################################################
 
 level_0   = debug.o
-level_1   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o iterators.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o read_utils.o line_search.o
+level_1   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o iterators.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o read_utils.o line_search.o dynamic_array.o
 level_2   = tags.o
 
 ############################################################################
