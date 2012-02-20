@@ -74,8 +74,11 @@ int  main()
     double omega (0.05);
     int     max   (100);
     std::cout << "TEST: Initializing the wealth array." << std::endl;
-    WealthArray wealth("Test array", omega, max, negW, posW);
-    std::cout << "TEST: Wealth array is \n" << wealth << std::endl;
+
+    std::cout << "TEST: Neg values for 1, 2, and 3: " << negW(1) << " " << negW(2) << " " << negW(3) << std::endl;
+    
+    WealthArray wealth("Test", omega, max, negW, posW);
+    std::cout << "TEST: wealth array  \n" << wealth << std::endl;
 
     std::pair< std::pair<int,double>, std::pair<int,double> > kk (wealth.new_position(5,0.05));
     std::cout << "TEST:  increment W[5]= " << wealth[5] << " by 0.05 to " << 0.05+wealth[5] << " bracketed by "

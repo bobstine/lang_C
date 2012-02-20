@@ -94,6 +94,58 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 
 
+//    solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject
+
+
+void
+solve_bellman_reject_equation            (double gamma, double omega, int nRounds, WealthArray bidderWealthArray, bool writeDetails)
+{
+  const int                      maxIterations   (200);   
+  const double                   tolerance       (0.0001);
+  const double                   grid            (0.5);
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
+  
+  Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
+  CompetitiveRejectionOperator compRatio (gamma, omega, bidderWealthArray);
+  // space for holding intermediate results
+  Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
+  Matrix oracle(nRounds+1, nRounds+1);
+  Matrix bidder(nRounds+1, nRounds+1);
+  Matrix mean = Matrix::Zero(nRounds,nRounds);
+  //  initialize boundary conditions
+  for (int j=0; j<nRounds+1; ++j)
+  { gain(nRounds,j)  = 0.0;
+    oracle(nRounds,j)= 0.0;
+    bidder(nRounds,j)= 0.0;
+  }
+  // stores intermediates in triangular array
+  for (int row = nRounds-1; row > -1; --row)
+  { double b0 = bidder(row+1,0);
+    double o0 = oracle(row+1,0);
+    for (int col=0; col<=row; ++col)
+    { std::pair<double,double> maxPair;
+      compRatio.set_k(col, nRounds-1-row, gain(row+1,0), gain(row+1,col+1)); 
+      double atZero = compRatio(0.0);
+      maxPair = search.find_maximum(compRatio);
+      if (maxPair.second < atZero)
+	maxPair = std::make_pair(0.0,atZero);
+      gain  (row,col) = maxPair.second;
+      oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
+      bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
+      mean (row,col) = maxPair.first;
+      //      prob (row,col) = compRatio.beta_k();
+    }
+  }
+  // write parameters and final values to std io
+  std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
+	    << searchInterval.first << " " << searchInterval.second  << " " 
+	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
+}
+
+
+}
+
+
 // --------------------------------------------------------------------------------------------------------------
 //
 //      Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    
@@ -105,14 +157,14 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
+solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);
   const double grid       (0.5);
   const std::pair<double,double> searchInterval = std::make_pair(0.05,7.0);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  ConstrainedExpertCompetitiveGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
+  ConstrainedExpertCompetitiveAlphaGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     
   // space for holding intermediate results; extra row for boundary condition
   // code flips between these on read and write
@@ -181,7 +233,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 
 
  void
- ConstrainedExpertCompetitiveGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
+ ConstrainedExpertCompetitiveAlphaGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
  {
    mAlpha = mOmega             * mExpertDist(i,nRounds-t);  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
@@ -193,7 +245,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
  }
 
  double
- ConstrainedExpertCompetitiveGain::operator()(double mu) const
+ ConstrainedExpertCompetitiveAlphaGain::operator()(double mu) const
  {
    double a = mAlpha;                 // a = optimal_alpha(mu, mOmega); 
    double ra = reject_prob(mu,a);
@@ -207,7 +259,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 
 
  double
- ConstrainedExpertCompetitiveGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij) const
+ ConstrainedExpertCompetitiveAlphaGain::value_to_oracle(double mu, double v00, double vi0, double v0j, double vij) const
  {
    double value, ra, rb;
    if (mu < 0.00001)
@@ -226,7 +278,7 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 
 
  double
- ConstrainedExpertCompetitiveGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
+ ConstrainedExpertCompetitiveAlphaGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
  {
    double ra, rb;
    if (mu < 0.00001)
@@ -249,14 +301,14 @@ solve_constrained_bellman_equation (double gamma, double omega, int nRounds, dou
 // --------------------------------------------------------------------------------------------------------------
 
 void
-solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
+solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
 {
   const int maxIterations (100);
   const double tolerance  (0.0001);
   const double grid       (0.5);
   const std::pair<double,double> searchInterval = std::make_pair(1.5,6.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  ExpertCompetitiveGain compRatio (gamma, omega, f, spendPct);
+  ExpertCompetitiveAlphaGain compRatio (gamma, omega, f, spendPct);
     
   // space for holding intermediate results
   Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
@@ -320,7 +372,7 @@ solve_bellman_equation (double gamma, double omega, int nRounds, double spendPct
 
 
 double
-ExpertCompetitiveGain::operator()(double mu) const
+ExpertCompetitiveAlphaGain::operator()(double mu) const
 {
   if(mu < 0.00001)
   { // std::cout << "For mu = 0 reject prob r = b = " << b << " and V0 = " << mV0 << " and V_k+1 = " << mVkp1 << std::endl;
@@ -337,7 +389,7 @@ ExpertCompetitiveGain::operator()(double mu) const
 }
   
 double
-ExpertCompetitiveGain::value_to_oracle(double mu, double o0, double okp1) const 
+ExpertCompetitiveAlphaGain::value_to_oracle(double mu, double o0, double okp1) const 
 {
   double value, rb;
   if (mu < 0.00001)
@@ -354,7 +406,7 @@ ExpertCompetitiveGain::value_to_oracle(double mu, double o0, double okp1) const
 }
   
 double
-ExpertCompetitiveGain::value_to_bidder (double mu, double b0, double bkp1) const
+ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) const
 {
   double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
   return mOmega * rb - mBetaK + rb * b0 + (1-rb) * bkp1;
@@ -371,7 +423,6 @@ WealthArray::new_position (int k1, double increaseW) const // k1 is position of 
   double wealth = increaseW + mWealth[k1];
   int k0 (mWealth.min_index());                            // returns k such that W[k] <= wealth < W[k+1]
   assert (mWealth[k0] > wealth);                           // needs to be in range of table
-  std::cout << "Bracket " << wealth << std::endl;
   while (k0+1 < k1)                                        // bracket between k0 and k1
   { int kk = floor((k0+k1)/2);
     //   std::cout << "  W[" << k0 << "]=" << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
@@ -391,12 +442,19 @@ WealthArray::initialize_array(int max, Tfunc neg, Tfunc pos)
   double prior = 1.0;   // two passes over neg calculations, first to find out how far back to go
   int kLim=0;           // want spacing to be at least omega
 
-  std::cout << "Initializing array..." << std::cout;
-  
-  while (neg(++kLim) - prior < mOmega) { prior = neg(kLim); std::cout << "Klim = " << kLim << "  @ " << neg(kLim) << std::endl; }
-  DynamicArray<double> da(-kLim,max);
-  da.assign(0,mOmega); 
-  for(int i=1; i<=kLim; ++i) mWealth.assign(-i, mOmega * neg(i));
-  for(int i=1; i<= max; ++i) mWealth.assign( i, mOmega * pos(i));
+  while (true)
+    { ++kLim;
+      double nx = neg(kLim);
+      double diff = nx - prior;
+      if (diff > 1.0) break;        // 1.0 converts to omega when scaled
+      prior = nx;
+      //      std::cout << "Klim = " << kLim << "  @ " << neg(kLim) << std::endl;
+    }
+  std::cout << "DEBUG: Building dyn array with indices " << -kLim << " to " << max << std::endl;
+  DynamicArray<double> da(-max,max);
+  da.assign(0,mOmega);
+  for(int i=1;      i<=kLim; ++i)    da.assign(-i, mOmega * neg(i) );
+  for(int i=kLim+1; i<= max; ++i)    da.assign(-i, mOmega + da[1-i]);   // rest advance by omega
+  for(int i=1;      i<= max; ++i)    da.assign( i, mOmega * pos(i) );
   mWealth = da;
 }

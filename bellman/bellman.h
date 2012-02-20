@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "dynamic_array.h"
+#include <iostream>      // debug
 
 /***********************************************************************************
 
@@ -20,10 +21,13 @@ double uniform_to_end (int k, int left);
 
 
 void
-solve_bellman_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+solve_bellman_reject_equation            (double gamma, double omega, int nRounds, WealthArray bidderWealth, bool writeDetails);
 
 void
-solve_constrained_bellman_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
+solve_bellman_alpha_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
+
+void
+solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
 
 
 /**********************************************************************************
@@ -42,11 +46,11 @@ class WealthArray
   
   const std::string     mName;
   const double          mOmega;      // defines wealth at position k=0 and determines how far 'up' wealth can go 
-  DynamicArray<double>  mWealth;     // negative indices go back until wealth changes by omega
+  DynamicArray<double>  mWealth;     // negative indices extend until wealth changes by omega
 
  public:
  WealthArray(std::string name, double omega, int maxK, Tfunc neg, Tfunc pos)
-   : mName(name), mOmega(omega), mWealth() { std::cout << "HERE" << std::cout; initialize_array(maxK, neg, pos); }
+   : mName(name), mOmega(omega), mWealth() { initialize_array(maxK, neg, pos); }
 
   double bid(int k)                          const { return mWealth[k]-mWealth[k+1]; }
   double wealth(int k)                       const { return mWealth[k]; }
@@ -105,7 +109,7 @@ class GeometricDist: public std::binary_function<int,int,double>   // has flexib
 //  last time the bidder rejected.  The bidder is deterministic, controlled
 //  by the input probablity distribution (defined above).
 
-class ExpertCompetitiveGain: public std::unary_function<double,double>
+class ExpertCompetitiveAlphaGain: public std::unary_function<double,double>
 {
  private:
   const double mGamma;
@@ -117,7 +121,7 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
   
  public:
 
- ExpertCompetitiveGain(double gamma, double omega, ProbDist f, double spendPct)
+ ExpertCompetitiveAlphaGain(double gamma, double omega, ProbDist f, double spendPct)
    : mGamma(gamma), mOmega(omega), mProb(f), mSpendPct(spendPct), mBetaK(0.0) {}
   
   double beta_k (void) const { return mBetaK; }
@@ -131,13 +135,11 @@ class ExpertCompetitiveGain: public std::unary_function<double,double>
   double value_to_bidder (double mu, double b0, double bkp1) const;
 }; 
 
-
-
 //  This expert is constrained by a spending policy since its last
 //  rejection, so its state depends on 2 things: the number of tests since
 //  its last rejection and the number since the  bidder's rejection.
 
-class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double>
+class ConstrainedExpertCompetitiveAlphaGain: public std::unary_function<double,double>
 {
  private:
   const double mGamma;
@@ -150,7 +152,7 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
   
  public:
 
- ConstrainedExpertCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
+ ConstrainedExpertCompetitiveAlphaGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
    : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
 
   double alpha (void) const { return mAlpha; }
@@ -164,31 +166,35 @@ class ConstrainedExpertCompetitiveGain: public std::unary_function<double,double
 };
 
 
-//  This class handles counting the number of rejected hypotheses rather than just alpha alone.
 
-class RejectCompetitiveGain: public std::unary_function<double,double>
+////  Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     
+
+class CompetitiveRejectsGain: public std::unary_function<double,double>
 {
  private:
   const double mGamma;
   const double mOmega;
-  const GeometricDist mExpertDist;
-  const ProbDist mBidderProb;
-  const double mSpendPct;
-  double mAlpha, mBeta;
-  double mV00, mVi0, mVij, mV0j;
+  const WealthArray mExpertWealth;
+  const WealthArray mBidderWealth;
+  double mAlphaK, mBetaK;
+  double mV0, mVkp1;
   
  public:
 
- RejectCompetitiveGain(double gamma, double omega, double spendPct, double geoProb, ProbDist bidderP)
-   : mGamma(gamma), mOmega(omega), mExpertDist(geoProb), mBidderProb(bidderP), mSpendPct(spendPct), mAlpha(0.0), mBeta(0.0) {}
+ CompetitiveAlphaGain(double gamma, double omega, WealthArray expert, WealthArray bidder)
+   : mGamma(gamma), mOmega(omega), mExpertWealth(expert), mBidderWealth(bidder), mAlphaK(0.0), mBetaK(0.0), mV0(0.0), mVkp1(0.0) {}
 
-  double alpha (void) const { return mAlpha; }
-  double beta  (void) const { return mBeta; }
+  double alpha_k (void) const { return mAlphaK; }
+  double beta_k  (void) const { return mBetaK; }
   
-  void set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij);
+  void set_k (int bidderPos, int expertPos, double v0, double vkp1)
+  { mAlphaK = mExpertWealth.bid(expertPos);
+    mBetaK  = mBidderWealth.bid(bidderPos);
+    mV0 = v0; mVkp1 = vkp1;  }
   
   double operator()(double mu) const;
-  double value_to_oracle (double mu, double o00, double oi0, double o0j, double oij) const;
-  double value_to_bidder (double mu, double b00, double bi0, double b0j, double bij) const;  
-};
+  double value_to_oracle (double mu, double o0, double okp1) const;
+  double value_to_bidder (double mu, double b0, double bkp1) const;
+}; 
+
 

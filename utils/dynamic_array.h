@@ -21,17 +21,17 @@ class DynamicArrayBase
 
  public:
   
-  ~DynamicArrayBase() { if (mPtr) delete[] mPtr; }
+  ~DynamicArrayBase() { delete[] mPtr; }
   
  DynamicArrayBase()
-   : mRefCount(0), mLoIndex(0), mHiIndex(0), mPtr (NULL) { }
+   : mRefCount(0), mLoIndex(0), mHiIndex(0), mPtr (new T[1]) { increment_ref_count(); } 
   
  DynamicArrayBase(int lo, int hi)
-   : mRefCount(0), mLoIndex(lo), mHiIndex(hi), mPtr (new T[hi-lo+1]) { assert(hi-lo > 0); increment_ref_count(); }
+   : mRefCount(0), mLoIndex(lo), mHiIndex(hi), mPtr (new T[hi-lo+1]) { assert(hi-lo >= 0); increment_ref_count(); }
 
   
   int size()                       const   { return mHiIndex-mLoIndex+1; }
-  
+
   void assign (int k, T x)                 { assert((mLoIndex <= k) && (k <= mHiIndex)); mPtr[k-mLoIndex] = x; }
   
   T    operator[](int k)           const   { assert((mLoIndex <= k) && (k <= mHiIndex)); return mPtr[k-mLoIndex]; }
@@ -62,10 +62,10 @@ class DynamicArray
   DynamicArrayBase<T> *mDAB;
 
  public:
-  ~DynamicArray()     { std::cout << "DEBUG: disposing of dynamic array." << std::cout; if(mDAB) { mDAB->decrement_ref_count(); if (mDAB->mRefCount <= 0) delete mDAB;  } }
+  ~DynamicArray()     { mDAB->decrement_ref_count(); if (mDAB->mRefCount <= 0) delete mDAB; }
 
  DynamicArray()
-   : mDAB(NULL) { std::cout << "DEBUG: Creating empty dynamic array." << std::endl; }
+   : mDAB(new DynamicArrayBase<T>(0,0)) { }
   
  DynamicArray(int lo, int hi)
    : mDAB(new DynamicArrayBase<T>(lo,hi)) { }

@@ -12,7 +12,9 @@ include ../c_flags
 
 PROJECT_NAME = bellman
 
-OPT = -O3 -std=c++0x
+# OPT = -O3 -std=c++0x
+
+OPT =
 
 # OPT = -O3 -DNDEBUG
 
