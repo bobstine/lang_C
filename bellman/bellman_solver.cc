@@ -29,17 +29,21 @@ int  main(int argc, char** argv)
   ProbDist p;
   switch (probDist)
   {
-  case 'u': { p = universal; break; }
-  case 'g': { p = geometric; break; }
-  case 'e': { p = uniform_to_end;     break; }
+  case 'u': { pdf = universal; break; }
+  case 'g': { pdf = geometric; break; }
+  case 'e': { pdf = uniform_to_end;     break; }
   default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
   }
   
-  if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
+  WealthArray wealth(" universal wealth ", omega, nRounds, pdf);
+  solve_bellman_reject_equation (gamma, wealth, writeTable);
+
+  /*
+    if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
     solve_bellman_alpha_equation (gamma, omega, nRounds, spendPct, p, true);
-  else                      // two-dimensional state, constrained
+    else                      // two-dimensional state, constrained
     solve_constrained_bellman_alpha_equation (gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
-  
+  */
   return 0;
 }
 

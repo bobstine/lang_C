@@ -14,14 +14,20 @@
 ***********************************************************************************/
 
 typedef double (*ProbDist)(int,int);
+class WealthArray;
 
-double universal      (int k, int);
+
+double universal      (int k);
+inline  // for compability with the uniform to end 
+double universal      (int k, int) { return universal(k); }
+
 double geometric      (int k, int);
 double uniform_to_end (int k, int left);
 
 
 void
-solve_bellman_reject_equation            (double gamma, double omega, int nRounds, WealthArray bidderWealth, bool writeDetails);
+solve_bellman_reject_equation            (double gamma, WealthArray wealth, bool writeDetails);
+
 
 void
 solve_bellman_alpha_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
@@ -33,35 +39,37 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
 /**********************************************************************************
 
    Wealth tracker basically maps from integers that follow the tests
-   to the wealth of the expert or bidder.
+   to the wealth of the expert or bidder.  The wealth is monotone increasing
+   in the index/position k.
 
    Normalized to have value omega at index 0.
 
  **********************************************************************************/
 
+
 class WealthArray
 {
   typedef double(*Tfunc)(int);
-  typedef std::pair<int, double> WIndex;
   
   const std::string     mName;
   const double          mOmega;      // defines wealth at position k=0 and determines how far 'up' wealth can go 
-  DynamicArray<double>  mWealth;     // negative indices extend until wealth changes by omega
+  DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
 
  public:
- WealthArray(std::string name, double omega, int maxK, Tfunc neg, Tfunc pos)
-   : mName(name), mOmega(omega), mWealth() { initialize_array(maxK, neg, pos); }
+ WealthArray(std::string name, double omega, int maxSteps, Tfunc pdf)
+   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf); }
 
-  double bid(int k)                          const { return mWealth[k]-mWealth[k+1]; }
+  int    max_steps (void)                    const { return -mWealth.min_index(); }
+  double bid(int k)                          const { return mWealth[k]-mWealth[k-1]; }
   double wealth(int k)                       const { return mWealth[k]; }
   double operator[](int k)                   const { return mWealth[k]; }
   
-  std::pair<WIndex, WIndex> new_position (int k, double increaseInWealth) const;
+  std::pair<int, double>  new_position (int k, double increaseInWealth) const;
   
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
-  void initialize_array(int max, Tfunc neg, Tfunc pos);
+  void initialize_array(int steps, Tfunc p);
 };
 
 inline
@@ -169,32 +177,32 @@ class ConstrainedExpertCompetitiveAlphaGain: public std::unary_function<double,d
 
 ////  Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     
 
-class CompetitiveRejectsGain: public std::unary_function<double,double>
+class RejectUtility: public std::unary_function<double,double>
 {
  private:
   const double mGamma;
   const double mOmega;
-  const WealthArray mExpertWealth;
   const WealthArray mBidderWealth;
-  double mAlphaK, mBetaK;
-  double mV0, mVkp1;
+  double mBetaK;
+  double mRejectValue, mNoRejectValue;
   
  public:
 
- CompetitiveAlphaGain(double gamma, double omega, WealthArray expert, WealthArray bidder)
-   : mGamma(gamma), mOmega(omega), mExpertWealth(expert), mBidderWealth(bidder), mAlphaK(0.0), mBetaK(0.0), mV0(0.0), mVkp1(0.0) {}
+ RejectUtility(double gamma, WealthArray wealth)
+   : mGamma(gamma), mOmega(wealth[0]), mBidderWealth(wealth), mBetaK(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
-  double alpha_k (void) const { return mAlphaK; }
-  double beta_k  (void) const { return mBetaK; }
+  int    max_steps (void) const { return mBidderWealth.max_steps(); }
+  double beta_k    (void) const { return mBetaK; }
   
-  void set_k (int bidderPos, int expertPos, double v0, double vkp1)
-  { mAlphaK = mExpertWealth.bid(expertPos);
-    mBetaK  = mBidderWealth.bid(bidderPos);
-    mV0 = v0; mVkp1 = vkp1;  }
+  void set_k (int currentK, double rejectValue, double noRejectValue)
+  { mBetaK  = mBidderWealth.bid(currentK);
+    mRejectValue = rejectValue;
+    mNoRejectValue = noRejectValue;
+    // std::cout << "DEBUG:  setting beta k to " << mBetaK << " for k=" << bidderPos << std::endl;
+  }
   
   double operator()(double mu) const;
-  double value_to_oracle (double mu, double o0, double okp1) const;
-  double value_to_bidder (double mu, double b0, double bkp1) const;
+
 }; 
 
 

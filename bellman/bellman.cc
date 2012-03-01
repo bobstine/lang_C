@@ -44,10 +44,11 @@ write_vector_to_file (std::string fileName, Eigen::VectorXf const& x)
   return 0;
 }
 
+
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
 
 double
-reject_prob(double mu, double level)
+reject_prob(double mu, double level)    // r_mu(alpha)
 {
   if(level == 0)
     return 0.0;
@@ -72,7 +73,7 @@ imin(int a, int b)
 
 /////////////////////////////////////////  Distributions  ////////////////////////////////////////
 
-double universal (int k, int)
+double universal (int k)
 {
   const int start = 20;                 // where to start the code
   const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
@@ -98,50 +99,55 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 
 void
-solve_bellman_reject_equation            (double gamma, double omega, int nRounds, WealthArray bidderWealthArray, bool writeDetails)
+solve_bellman_reject_equation            (double gamma, WealthArray bidderWealthArray)
 {
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
   const double                   grid            (0.5);
   const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
-  
+
+  int nRounds (bidderWealthArray.max_steps());
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  CompetitiveRejectionOperator compRatio (gamma, omega, bidderWealthArray);
+  RejectUtility utility (gamma, bidderWealthArray);
+
   // space for holding intermediate results
-  Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
-  Matrix oracle(nRounds+1, nRounds+1);
-  Matrix bidder(nRounds+1, nRounds+1);
-  Matrix mean = Matrix::Zero(nRounds,nRounds);
+  int minK = bidderWealthArray.min_index();
+  int maxK = bidderWealthArray.max_index();
+  int nStates = maxK-minK;
+  Matrix utilityMat(nRounds+1, nStates);   // extra row for boundary condition
+  Matrix oracleMat (nRounds+1, nStates);
+  Matrix bidderMat (nRounds+1, nStates);
+  Matrix meanMat = Matrix::Zero(nRounds,nRounds);
+
   //  initialize boundary conditions
-  for (int j=0; j<nRounds+1; ++j)
-  { gain(nRounds,j)  = 0.0;
-    oracle(nRounds,j)= 0.0;
-    bidder(nRounds,j)= 0.0;
+  for (int j=0; j<nStates; ++j)
+  { utilityMat[nRounds,j] = 0.0;
+    oracleMat [nRounds,j] = 0.0;
+    bidderMat [nRounds,j] = 0.0;
   }
-  // stores intermediates in triangular array
-  for (int row = nRounds-1; row > -1; --row)
-  { double b0 = bidder(row+1,0);
-    double o0 = oracle(row+1,0);
-    for (int col=0; col<=row; ++col)
-    { std::pair<double,double> maxPair;
-      compRatio.set_k(col, nRounds-1-row, gain(row+1,0), gain(row+1,col+1)); 
-      double atZero = compRatio(0.0);
-      maxPair = search.find_maximum(compRatio);
+  // stores intermediates in trapezoidal array
+  std::pair<double,double> maxPair;
+  for (int row = nRounds-1, int firstCol=0; row > -1; --row, ++firstCol)
+  { double b0 = bidderMat[row+1,0];
+    double o0 = oracleMat[row+1,0];
+    for (int col=firstCol, int k=firstCol+minK; col<=nStates; ++col,++k)
+    { std::pair<int,double> kp (wealth.new_position(k,0.05));
+      utility.set_k(k, wealth[k]+0.05, gain(row+1,col+1)); 
+      double atZero = utility(0.0);
+      maxPair = search.find_maximum(utility);
       if (maxPair.second < atZero)
 	maxPair = std::make_pair(0.0,atZero);
-      gain  (row,col) = maxPair.second;
-      oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
-      bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
-      mean (row,col) = maxPair.first;
-      //      prob (row,col) = compRatio.beta_k();
+      meanMat (row,col) = maxPair.first;
+      utilityMat(row,col) = maxPair.second;
+      // oracleMat (row,col) = utility.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
+      // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
     }
   }
   // write parameters and final values to std io
   std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
-	    << searchInterval.first << " " << searchInterval.second  << " " 
-	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
-}
-
+	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat[0,0]  << std::endl;
+	    }
+  */
 
 }
 
@@ -417,44 +423,48 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 //     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray
 
 
-std::pair<WealthArray::WIndex, WealthArray::WIndex>
-WealthArray::new_position (int k1, double increaseW) const // k1 is position of current wealth, 'wealth' is 'new wealth' > 'current wealth'
+std::pair<int, double>
+WealthArray::new_position (int k0, double increaseW) const // k0 is current position denoting current wealth
 {
-  double wealth = increaseW + mWealth[k1];
-  int k0 (mWealth.min_index());                            // returns k such that W[k] <= wealth < W[k+1]
-  assert (mWealth[k0] > wealth);                           // needs to be in range of table
+  double target = increaseW + mWealth[k0];                 // 'wealth' is 'new wealth' > 'current wealth'
+  int k1 (mWealth.max_index());                            // W[k0] <= W[k1]
+  assert (target <= mWealth[k1]);                          // needs to be in range of table
   while (k0+1 < k1)                                        // bracket between k0 and k1
   { int kk = floor((k0+k1)/2);
-    //   std::cout << "  W[" << k0 << "]=" << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
-    if (wealth < mWealth[kk])
-    { k0 = kk; }
-    else
+    std::cout << "  W[" << k0 << "]=" << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
+    if (target < mWealth[kk])
     { k1 = kk; }
+    else
+    { k0 = kk; }
   }
-  double p ((wealth-mWealth[k1])/(mWealth[k0]-mWealth[k1]));
-  return std::make_pair( std::make_pair(k0,p),  std::make_pair(k1,1-p) );
+  double p ( (target - mWealth[k0]) / (mWealth[k1] - mWealth[k0]) );
+  return std::make_pair(k0,1-p);
 }
 
 
 void
-WealthArray::initialize_array(int max, Tfunc neg, Tfunc pos)
+WealthArray::initialize_array(int maxSteps, Tfunc p)
 {
-  double prior = 1.0;   // two passes over neg calculations, first to find out how far back to go
-  int kLim=0;           // want spacing to be at least omega
-
-  while (true)
-    { ++kLim;
-      double nx = neg(kLim);
-      double diff = nx - prior;
-      if (diff > 1.0) break;        // 1.0 converts to omega when scaled
-      prior = nx;
-      //      std::cout << "Klim = " << kLim << "  @ " << neg(kLim) << std::endl;
-    }
-  std::cout << "DEBUG: Building dyn array with indices " << -kLim << " to " << max << std::endl;
-  DynamicArray<double> da(-max,max);
+  int const excessWealthSteps = 4;
+  std::cout << "DEBUG: Building dyn array with indices " << -maxSteps << " to " << excessWealthSteps << std::endl;
+  DynamicArray<double> da(-maxSteps,excessWealthSteps);
   da.assign(0,mOmega);
-  for(int i=1;      i<=kLim; ++i)    da.assign(-i, mOmega * neg(i) );
-  for(int i=kLim+1; i<= max; ++i)    da.assign(-i, mOmega + da[1-i]);   // rest advance by omega
-  for(int i=1;      i<= max; ++i)    da.assign( i, mOmega * pos(i) );
+  for(int i=-1; i >= -maxSteps; --i)   da.assign(i, da[i+1] - mOmega * p(-i) );
+  da.assign(1, (mOmega * 4.0)/3.0 );
+  da.assign(2, (mOmega * 5.0)/3.0 );
+  da.assign(3,  mOmega * 2);
+  da.assign(4,  mOmega * 3);
   mWealth = da;
+}
+
+//   RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     
+
+double
+RejectUtility::operator()(double mu) const
+{
+  // std::cout << "DEBUG: utility calculation, mu=" << mu << "   omega=" << mOmega << "  betaK=" << mBetaK << std::endl;
+  double ra = reject_prob(mu,mOmega);
+  double rb = reject_prob(mu,mBetaK);
+  double util = ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  return util;
 }

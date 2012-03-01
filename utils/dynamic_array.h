@@ -31,7 +31,9 @@ class DynamicArrayBase
 
   
   int size()                       const   { return mHiIndex-mLoIndex+1; }
-
+  int min_index()                  const   { return mLoIndex; }
+  int max_index()                  const   { return mHiIndex; }
+  
   void assign (int k, T x)                 { assert((mLoIndex <= k) && (k <= mHiIndex)); mPtr[k-mLoIndex] = x; }
   
   T    operator[](int k)           const   { assert((mLoIndex <= k) && (k <= mHiIndex)); return mPtr[k-mLoIndex]; }

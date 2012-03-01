@@ -116,7 +116,7 @@ test: test.o $(above_infinity)
 speed.test: speed.test.o $(above_infinity)
 	$(GCC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
 
-%.test: %.test.o %.o
+%.test:  %.test.o %.o
 	@echo Includes are: $(INCLUDES)
 	@echo Load libs are: $(LDLIBS)
 	@echo Making executable test program. $@
@@ -132,6 +132,7 @@ speed.test: speed.test.o $(above_infinity)
 
 %.test.o: %.test.cc  # does not require a .h file
 	$(GCC) $(CFLAGS) -c $< -o $@ 
+
 
 
 install:  $(INSTALL_PATH)/Include  lib$(PROJECT_NAME).a 
