@@ -26,7 +26,7 @@ double uniform_to_end (int k, int left);
 
 
 void
-solve_bellman_reject_equation            (double gamma, WealthArray wealth, bool writeDetails);
+solve_bellman_reject_equation            (double gamma, double omega, int steps, double (*pdf)(int), bool writeDetails);
 
 
 void
@@ -57,9 +57,12 @@ class WealthArray
 
  public:
  WealthArray(std::string name, double omega, int maxSteps, Tfunc pdf)
-   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf); }
+   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf); }      // extra 1 pads for initial bid
 
-  int    max_steps (void)                    const { return -mWealth.min_index(); }
+  int    max_steps ()                        const { return -mWealth.min_index(); }  //  pad for initial bid
+  int    min_index ()                        const { return mWealth.min_index() ; }
+  int    max_index ()                        const { return mWealth.max_index() ; }
+  
   double bid(int k)                          const { return mWealth[k]-mWealth[k-1]; }
   double wealth(int k)                       const { return mWealth[k]; }
   double operator[](int k)                   const { return mWealth[k]; }
@@ -183,22 +186,23 @@ class RejectUtility: public std::unary_function<double,double>
   const double mGamma;
   const double mOmega;
   const WealthArray mBidderWealth;
-  double mBetaK;
+  double mBeta;
   double mRejectValue, mNoRejectValue;
   
  public:
 
  RejectUtility(double gamma, WealthArray wealth)
-   : mGamma(gamma), mOmega(wealth[0]), mBidderWealth(wealth), mBetaK(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
+   : mGamma(gamma), mOmega(wealth[0]), mBidderWealth(wealth), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
-  int    max_steps (void) const { return mBidderWealth.max_steps(); }
-  double beta_k    (void) const { return mBetaK; }
+  int    max_steps () const { return mBidderWealth.max_steps(); }
+  double beta      () const { return mBeta; }
   
-  void set_k (int currentK, double rejectValue, double noRejectValue)
-  { mBetaK  = mBidderWealth.bid(currentK);
+  void set_constants (double beta, double rejectValue, double noRejectValue)
+  { assert((0 <= beta) && (beta <= 1.0));
+    mBeta = beta;
     mRejectValue = rejectValue;
     mNoRejectValue = noRejectValue;
-    // std::cout << "DEBUG:  setting beta k to " << mBetaK << " for k=" << bidderPos << std::endl;
+    // std::cout << "DEBUG:  setting beta to " << mBeta << " for k=" << bidderPos << std::endl;
   }
   
   double operator()(double mu) const;

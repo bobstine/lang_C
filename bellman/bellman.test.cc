@@ -34,57 +34,57 @@ int  main()
 
     WealthArray wealth(" Test wealth array ", omega, max, universal);
     std::cout << "TEST: wealth array  \n" << wealth << std::endl;
-    
-    { int i = -2;
-      std::pair<int,double>  kk (wealth.new_position(i,0.05));
-      std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by 0.05 to " << 0.05+wealth[i] << " bracketed by "
-		<< wealth[kk.first]   << " * (" << kk.second << ")  +  "
-		<< wealth[kk.first+1] << " * (" << 1-kk.second << ")" << std::endl;
+
+    { int i = 4;  // boundary
+      double bid = wealth.bid(i);
+      std::pair<int,double>  kk (wealth.new_position(i,0.05-bid));
+      std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by " << 0.05-bid << " to " << 0.05+wealth[i]-bid
+		<< " bracketed by " << wealth[kk.first] << " * (" << kk.second << ")  +  ";
+      if(kk.first < 4)
+	std::cout << wealth[kk.first+1] << " * (" << 1-kk.second << ")" << std::endl;
+      else
+	std::cout << wealth[kk.first] << " * (" << 1-kk.second << ")" << std::endl;
     }
 
-    { int i = -7;
-      std::pair<int,double>  kk (wealth.new_position(i,0.05));
-      std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by 0.05 to " << 0.05+wealth[i] << " bracketed by "
-		<< wealth[kk.first]   << " * (" << kk.second << ")  +  "
-		<< wealth[kk.first+1] << " * (" << 1-kk.second << ")" << std::endl;
-    }
-
-    { int i = 3;   // one shy of the max allowed so increases to the max position
-      std::pair<int,double>  kk (wealth.new_position(i,0.05));
-      std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by 0.05 to " << 0.05+wealth[i] << " bracketed by "
-		<< wealth[kk.first]   << " * (" << kk.second << ")  +  "
-		<< wealth[kk.first+1] << " * (" << 1-kk.second << ")" << std::endl;
-    }
   }
 
-  if (true)
-  {
-    double gamma (2.5);
+  if (false)
+  { double gamma (2.5);
     double omega (0.05);
     int maxSteps (25);
     WealthArray wealth(" Wealth array ", omega, maxSteps, universal);
     RejectUtility utility (gamma, wealth);  // omega implicit in wealth
     
-     double gridSize (0.25);
-     int    maxIt (100);
-     Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), gridSize, maxIt);
-
-
-     double v0   = 0;
-     double vkp1 = v0;
-     std::cout << "TEST: Initial value is " << v0 << std::endl;
-
-     clock_t time = clock();
-     { int k (-1);
-       std::pair<double,double> maxPair;
-       utility.set_k(k, v0, vkp1);
-       double atZero = utility(0.0);
-       maxPair = search.find_maximum(utility);
-       std::cout << "    k=" << k << "   @ mu=0, f=" << atZero << "     @mu=" << maxPair.first << " max=" << maxPair.second << std::endl;
-     }
-       
-       std::cout << "Calculation required " << clock() - time << " tics.\n";
+    double gridSize (0.25);
+    int    maxIt (100);
+    Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), gridSize, maxIt);
+    
+    double v0   = 0;
+    double vkp1 = v0;
+    std::cout << "TEST: Initial value is " << v0 << std::endl;
+    
+    { clock_t time = clock();
+      int k (-1);
+      std::pair<double,double> maxPair;
+      utility.set_constants(wealth.bid(k), v0, vkp1);
+      double atZero = utility(0.0);
+      maxPair = search.find_maximum(utility);
+      std::cout << "    k=" << k << "   @ mu=0, f=" << atZero << "     @mu=" << maxPair.first << " max=" << maxPair.second << std::endl;
+      std::cout << "Calculation required " << clock() - time << " tics.\n";
+    }
   }
+
+  if (true)
+  { double gamma        ( 2.5);
+    double omega        (0.05);
+    int    maxSteps     ( 25 );
+    bool   writeDetails (true);
+
+    std::cout << "TEST: Solve the bellman reject equation... " << std::endl;
+    
+    solve_bellman_reject_equation (gamma, omega, maxSteps, universal, writeDetails);
+  }
+
   return 0;
 }
 

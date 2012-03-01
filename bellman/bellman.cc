@@ -95,63 +95,6 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 
 
-//    solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject
-
-
-void
-solve_bellman_reject_equation            (double gamma, WealthArray bidderWealthArray)
-{
-  const int                      maxIterations   (200);   
-  const double                   tolerance       (0.0001);
-  const double                   grid            (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
-
-  int nRounds (bidderWealthArray.max_steps());
-  Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
-  RejectUtility utility (gamma, bidderWealthArray);
-
-  // space for holding intermediate results
-  int minK = bidderWealthArray.min_index();
-  int maxK = bidderWealthArray.max_index();
-  int nStates = maxK-minK;
-  Matrix utilityMat(nRounds+1, nStates);   // extra row for boundary condition
-  Matrix oracleMat (nRounds+1, nStates);
-  Matrix bidderMat (nRounds+1, nStates);
-  Matrix meanMat = Matrix::Zero(nRounds,nRounds);
-
-  //  initialize boundary conditions
-  for (int j=0; j<nStates; ++j)
-  { utilityMat[nRounds,j] = 0.0;
-    oracleMat [nRounds,j] = 0.0;
-    bidderMat [nRounds,j] = 0.0;
-  }
-  // stores intermediates in trapezoidal array
-  std::pair<double,double> maxPair;
-  for (int row = nRounds-1, int firstCol=0; row > -1; --row, ++firstCol)
-  { double b0 = bidderMat[row+1,0];
-    double o0 = oracleMat[row+1,0];
-    for (int col=firstCol, int k=firstCol+minK; col<=nStates; ++col,++k)
-    { std::pair<int,double> kp (wealth.new_position(k,0.05));
-      utility.set_k(k, wealth[k]+0.05, gain(row+1,col+1)); 
-      double atZero = utility(0.0);
-      maxPair = search.find_maximum(utility);
-      if (maxPair.second < atZero)
-	maxPair = std::make_pair(0.0,atZero);
-      meanMat (row,col) = maxPair.first;
-      utilityMat(row,col) = maxPair.second;
-      // oracleMat (row,col) = utility.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
-      // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
-    }
-  }
-  // write parameters and final values to std io
-  std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
-	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat[0,0]  << std::endl;
-	    }
-  */
-
-}
-
-
 // --------------------------------------------------------------------------------------------------------------
 //
 //      Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    
@@ -283,17 +226,17 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
  }
 
 
- double
- ConstrainedExpertCompetitiveAlphaGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
- {
-   double ra, rb;
-   if (mu < 0.00001)
-   { ra = mAlpha;                           //     would be zero if unconstrained
-     rb = mBeta;
-   }
-   else
-   { ra = reject_prob(mu,mAlpha);           //     ra = reject_prob(mu,optimal_alpha(mu, mOmega));
-     rb = reject_prob(mu, mBeta);
+double
+ConstrainedExpertCompetitiveAlphaGain::value_to_bidder(double mu, double v00, double vi0, double v0j, double vij) const
+{
+  double ra, rb;
+  if (mu < 0.00001)
+  { ra = mAlpha;                           //     would be zero if unconstrained
+    rb = mBeta;
+  }
+  else
+  { ra = reject_prob(mu,mAlpha);           //     ra = reject_prob(mu,optimal_alpha(mu, mOmega));
+    rb = reject_prob(mu, mBeta);
   }
   return  (mOmega * rb - mBeta)  + ra * rb * v00 +  (1-ra) * rb * vi0 + ra * (1-rb) * v0j + (1-ra) * (1-rb) * vij;
 }
@@ -424,21 +367,26 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 
 
 std::pair<int, double>
-WealthArray::new_position (int k0, double increaseW) const // k0 is current position denoting current wealth
+WealthArray::new_position (int k0, double increase)  const // k0 is current position denoting current wealth
 {
-  double target = increaseW + mWealth[k0];                 // 'wealth' is 'new wealth' > 'current wealth'
+  double target = mWealth[k0] + increase;                  // 'wealth' is 'new wealth' > 'current wealth'
   int k1 (mWealth.max_index());                            // W[k0] <= W[k1]
   assert (target <= mWealth[k1]);                          // needs to be in range of table
   while (k0+1 < k1)                                        // bracket between k0 and k1
   { int kk = floor((k0+k1)/2);
-    std::cout << "  W[" << k0 << "]=" << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
+    // std::cout << "DEBUG: new_position   W[" << k0 << "]="
+    //           << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
     if (target < mWealth[kk])
     { k1 = kk; }
     else
     { k0 = kk; }
   }
-  double p ( (target - mWealth[k0]) / (mWealth[k1] - mWealth[k0]) );
-  return std::make_pair(k0,1-p);
+  if (k0<k1)  // inside range
+  { double p ( (target - mWealth[k0]) / (mWealth[k1] - mWealth[k0]) );
+    return std::make_pair(k0,1-p);
+  }
+  else
+    return std::make_pair(k0,1);
 }
 
 
@@ -457,6 +405,76 @@ WealthArray::initialize_array(int maxSteps, Tfunc p)
   mWealth = da;
 }
 
+
+//    solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject
+
+void
+solve_bellman_reject_equation (double gamma, double omega, int nRounds, double (*pdf)(int), bool writeDetails)
+{
+  const int                      maxIterations   (200);   
+  const double                   tolerance       (0.0001);
+  const double                   grid            (0.5);
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
+
+  // pad wealth to allow for initial bid
+  WealthArray bidderWealth(" Wealth array ", omega, nRounds+1, pdf);
+
+  Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
+  RejectUtility utility (gamma, bidderWealth);
+
+  // need to pad arrays since need room to collect bid
+  int maxK = bidderWealth.max_index();
+  int nStates = nRounds+maxK+1;
+  Matrix utilityMat= Matrix::Zero(nRounds+1, nStates+1);   // extra row/col pad for boundary condition
+  Matrix oracleMat = Matrix::Zero(nRounds+1, nStates+1);
+  Matrix bidderMat = Matrix::Zero(nRounds+1, nStates+1);
+  Matrix meanMat   = Matrix::Zero(nRounds  , nStates  );
+
+  //  initialize boundary conditions
+  for (int j=0; j<nStates; ++j)
+  { utilityMat(nRounds,j) = 0.0;
+    oracleMat (nRounds,j) = 0.0;
+    bidderMat (nRounds,j) = 0.0;
+  }
+  // stores intermediates in trapezoidal array; col 1 pads start
+  std::pair<double,double> maxPair;
+  int done = 1;
+  for (int row = nRounds-1; row > -1; --row, ++done)
+  { // double b0 = bidderMat(row+1,0);
+    // double o0 = oracleMat(row+1,0);
+    for (int col=done; col<nStates; ++col)
+    { int k = col - nRounds;
+      std::pair<int,double> kp (bidderWealth.new_position(k,0.05 - bidderWealth.bid(k)));
+      // std::cout << "DEBUG: solve_reject, row=" << row << " col=" << col << " k=" << k  << " bid=" << bidderWealth.bid(k)
+      //           << " k*=" << kp.first << "  p=" << kp.second;
+      utility.set_constants(bidderWealth.bid(k),
+			    utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second), // reject
+			    utilityMat(row+1,col-1));                                                          // dont
+      double atZero = utility(0.0);
+      maxPair = search.find_maximum(utility);
+      if (maxPair.second < atZero)
+	maxPair = std::make_pair(0.0,atZero);
+      meanMat   (row,col) = maxPair.first;
+      utilityMat(row,col) = maxPair.second;
+      // oracleMat (row,col) = utility.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
+      // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
+    }
+  }
+  // write parameters and final values to std io
+  if (writeDetails)
+  { std::cout << "Write details\n" << std::endl;
+    for (int row=0; row<utilityMat.rows(); ++row)
+    { std::cout << "[" << row << "] ";
+      for (int j=0; j<utilityMat.cols(); ++j)
+	std::cout << utilityMat(row,j) << " ";
+      std::cout << std::endl;
+    }
+  }
+  std::cout << "Solve reject bellman " << 0 << " " << gamma     << " " << nRounds   << " "
+	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat(0,0)  << std::endl;
+}
+
+
 //   RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     
 
 double
@@ -464,7 +482,7 @@ RejectUtility::operator()(double mu) const
 {
   // std::cout << "DEBUG: utility calculation, mu=" << mu << "   omega=" << mOmega << "  betaK=" << mBetaK << std::endl;
   double ra = reject_prob(mu,mOmega);
-  double rb = reject_prob(mu,mBetaK);
+  double rb = reject_prob(mu,mBeta );
   double util = ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
   return util;
 }
