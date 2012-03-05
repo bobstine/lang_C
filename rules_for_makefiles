@@ -184,7 +184,7 @@ lib$(PROJECT_NAME).a: $(above_infinity)
 
 %.test.dd: %.test.cc
 	set -e; $(GCC) $(INCLUDES) -MM $(CPPFLAGS) $< \
-       | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
+        | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@
 
 
 ##	set -e; $(GCC) $(INCLUDES) -MM $(CPPFLAGS) $< | sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; [ -s $@ ] || rm -f $@

@@ -26,7 +26,7 @@ double uniform_to_end (int k, int left);
 
 
 void
-solve_bellman_reject_equation            (double gamma, double omega, int steps, double (*pdf)(int), bool writeDetails);
+solve_reject_equation            (double gamma, double omega, int nRounds, double (*pdf)(int), bool writeDetails);
 
 
 void
@@ -50,16 +50,17 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
 class WealthArray
 {
   typedef double(*Tfunc)(int);
-  
+
   const std::string     mName;
   const double          mOmega;      // defines wealth at position k=0 and determines how far 'up' wealth can go 
+  const int             mMaxSteps;
   DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
 
  public:
  WealthArray(std::string name, double omega, int maxSteps, Tfunc pdf)
-   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf);}
+   : mName(name), mOmega(omega), mMaxSteps(maxSteps), mWealth() { initialize_array(pdf);}
 
-  int    max_steps ()                        const { return -mWealth.min_index(); }  //  pad for initial bid
+  int    max_steps ()                        const { return mMaxSteps; }                            //  pad for initial bid
   int    min_index ()                        const { return mWealth.min_index() ; }
   int    max_index ()                        const { return mWealth.max_index() ; }
   
@@ -67,12 +68,12 @@ class WealthArray
   double wealth(int k)                       const { return mWealth[k]; }
   double operator[](int k)                   const { return mWealth[k]; }
   
-  std::pair<int, double>  new_position (int k, double increaseInWealth) const;
+  std::pair<int, double> new_wealth_position (int k, double increaseInWealth) const;
   
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
-  void initialize_array(int steps, Tfunc p);
+  void initialize_array(Tfunc p);
 };
 
 inline

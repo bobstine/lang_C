@@ -22,7 +22,7 @@ USES = utils random
 
 # EXTERNAL_USES = gsl
 
-level_0 = dummy.o
+level_0 = bellman.o
 
 ############################################################################
 #
@@ -34,8 +34,6 @@ level_0 = dummy.o
 # -------------------------------------------------------------------
 # bellman recursion for competitive value
 # -------------------------------------------------------------------
-
-bellman.o: bellman.cc bellman.h
 
 bellman_solver.o: bellman_solver.cc
 

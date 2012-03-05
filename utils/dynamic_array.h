@@ -33,6 +33,8 @@ class DynamicArrayBase
   int size()                       const   { return mHiIndex-mLoIndex+1; }
   int min_index()                  const   { return mLoIndex; }
   int max_index()                  const   { return mHiIndex; }
+  int position_from_index(int k)   const   { assert ((mLoIndex <= k) && (k <= mHiIndex));   return k-mLoIndex; }    // actual array position
+  int index_from_position(int j)   const   { assert ((j >= 0) && (j <= mHiIndex-mLoIndex)); return mLoIndex+j; }  
   
   void assign (int k, T x)                 { assert((mLoIndex <= k) && (k <= mHiIndex)); mPtr[k-mLoIndex] = x; }
   
@@ -77,6 +79,8 @@ class DynamicArray
 
   int min_index ()                 const { return mDAB->mLoIndex; }
   int max_index ()                 const { return mDAB->mHiIndex; }
+  int position_from_index(int k)   const { return mDAB->position_from_index(k); }    // actual array position
+  int index_from_position(int j)   const { return mDAB->index_from_position(j); }  
 
   void assign (int k, T x)               { mDAB->assign(k,x); }
    

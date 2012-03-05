@@ -23,21 +23,19 @@ int  main()
     std::cout << "MAIN: Total of beta(*,0.05) for " << count << " terms = " << total << std::endl;
   } 
 
-  // test time for optimization of utility
-
   // test tracking function
-  if (false)
+  if (true)
   {
     double omega (0.05);
     int     max   (10);
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
-    WealthArray wealth(" Test wealth array ", omega, max, universal);
+    WealthArray wealth(" Test ", omega, max, universal);
     std::cout << "TEST: wealth array  \n" << wealth << std::endl;
 
     { int i = 4;  // boundary
       double bid = wealth.bid(i);
-      std::pair<int,double>  kk (wealth.new_position(i,0.05-bid));
+      std::pair<int,double>  kk (wealth.new_wealth_position(i,0.05-bid));
       std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by " << 0.05-bid << " to " << 0.05+wealth[i]-bid
 		<< " bracketed by " << wealth[kk.first] << " * (" << kk.second << ")  +  ";
       if(kk.first < 4)
@@ -48,10 +46,11 @@ int  main()
 
   }
 
-  if (true)
+  // test maximizing the wealth array
+  if (false)
   { double gamma (2.5);
     double omega (0.05);
-    int maxSteps (25);
+    int maxSteps (10);
     WealthArray wealth("bidder", omega, maxSteps, universal);
     std::cout << "TEST: bid[0]=" << wealth.bid(0) << "  bid[1]=" << wealth.bid(1) << "  bid[2]=" << wealth.bid(2)
 	      << "  bid[3]=" << wealth.bid(3) << "  bid[4]=" << wealth.bid(4) << std::endl;
@@ -84,7 +83,7 @@ int  main()
 
     std::cout << "TEST: Solve the bellman reject equation... " << std::endl;
     
-    solve_bellman_reject_equation (gamma, omega, maxSteps, universal, writeDetails);
+    solve_reject_equation (gamma, omega, maxSteps, universal, writeDetails);
   }
 
   return 0;
