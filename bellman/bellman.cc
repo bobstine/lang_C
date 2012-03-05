@@ -417,17 +417,18 @@ solve_bellman_reject_equation (double gamma, double omega, int nRounds, double (
   const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
 
   // pad wealth to allow for initial bid
-  WealthArray bidderWealth(" Wealth array ", omega, nRounds+1, pdf);
-
+  WealthArray bidderWealth("bidder", omega, nRounds+1, pdf);
+  if (writeDetails) std::cout << bidderWealth << std::endl;
+  
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   RejectUtility utility (gamma, bidderWealth);
 
   // need to pad arrays since need room to collect bid
   int maxK = bidderWealth.max_index();
   int nStates = nRounds+maxK+1;
-  Matrix utilityMat= Matrix::Zero(nRounds+1, nStates+1);   // extra row/col pad for boundary condition
-  Matrix oracleMat = Matrix::Zero(nRounds+1, nStates+1);
-  Matrix bidderMat = Matrix::Zero(nRounds+1, nStates+1);
+  Matrix utilityMat= Matrix::Zero(nRounds+1, nStates+2);   // extra row and 2 cols pad for boundary conditions
+  Matrix oracleMat = Matrix::Zero(nRounds+1, nStates+2);
+  Matrix bidderMat = Matrix::Zero(nRounds+1, nStates+2);
   Matrix meanMat   = Matrix::Zero(nRounds  , nStates  );
 
   //  initialize boundary conditions
@@ -439,23 +440,26 @@ solve_bellman_reject_equation (double gamma, double omega, int nRounds, double (
   // stores intermediates in trapezoidal array; col 1 pads start
   std::pair<double,double> maxPair;
   int done = 1;
+  int offset = bidderWealth.max_steps();
   for (int row = nRounds-1; row > -1; --row, ++done)
   { // double b0 = bidderMat(row+1,0);
     // double o0 = oracleMat(row+1,0);
+    if (writeDetails) std::cout << "  t = " << row+1 << std::endl; 
     for (int col=done; col<nStates; ++col)
     { int k = col - nRounds;
-      std::pair<int,double> kp (bidderWealth.new_position(k,0.05 - bidderWealth.bid(k)));
-      // std::cout << "DEBUG: solve_reject, row=" << row << " col=" << col << " k=" << k  << " bid=" << bidderWealth.bid(k)
-      //           << " k*=" << kp.first << "  p=" << kp.second;
-      utility.set_constants(bidderWealth.bid(k),
-			    utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second), // reject
-			    utilityMat(row+1,col-1));                                                          // dont
+      std::pair<int,double> kp (bidderWealth.new_position(k,0.05 - bidderWealth.bid(k)));   // k runs -max_steps to +4
+      double valueIfReject = utilityMat(row+1,kp.first+offset)*kp.second + utilityMat(row+1,kp.first+1+offset)*(1-kp.second);
+      utility.set_constants(bidderWealth.bid(k), valueIfReject, utilityMat(row+1,col-1));   // bid, value if reject, value if not reject
       double atZero = utility(0.0);
       maxPair = search.find_maximum(utility);
       if (maxPair.second < atZero)
 	maxPair = std::make_pair(0.0,atZero);
       meanMat   (row,col) = maxPair.first;
       utilityMat(row,col) = maxPair.second;
+      if (writeDetails) std::cout << "     @ " << k << " " << row << " kk= " << kp.first
+				  << " { (" << valueIfReject << "=" << utilityMat(row+1,kp.first+offset)  << "*" << kp.second << " + "
+				  << utilityMat(row+1,kp.first+offset+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,col-1)
+				  << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
       // oracleMat (row,col) = utility.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
       // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
     }

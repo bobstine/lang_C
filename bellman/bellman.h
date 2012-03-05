@@ -57,7 +57,7 @@ class WealthArray
 
  public:
  WealthArray(std::string name, double omega, int maxSteps, Tfunc pdf)
-   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf); }      // extra 1 pads for initial bid
+   : mName(name), mOmega(omega), mWealth() { initialize_array(maxSteps, pdf);}
 
   int    max_steps ()                        const { return -mWealth.min_index(); }  //  pad for initial bid
   int    min_index ()                        const { return mWealth.min_index() ; }

@@ -48,11 +48,13 @@ int  main()
 
   }
 
-  if (false)
+  if (true)
   { double gamma (2.5);
     double omega (0.05);
     int maxSteps (25);
-    WealthArray wealth(" Wealth array ", omega, maxSteps, universal);
+    WealthArray wealth("bidder", omega, maxSteps, universal);
+    std::cout << "TEST: bid[0]=" << wealth.bid(0) << "  bid[1]=" << wealth.bid(1) << "  bid[2]=" << wealth.bid(2)
+	      << "  bid[3]=" << wealth.bid(3) << "  bid[4]=" << wealth.bid(4) << std::endl;
     RejectUtility utility (gamma, wealth);  // omega implicit in wealth
     
     double gridSize (0.25);
@@ -75,10 +77,10 @@ int  main()
   }
 
   if (true)
-  { double gamma        ( 2.5);
-    double omega        (0.05);
-    int    maxSteps     ( 25 );
-    bool   writeDetails (true);
+  { double gamma        ( 2.5 );
+    double omega        ( 0.05);
+    int    maxSteps     (10   );
+    bool   writeDetails ( true);
 
     std::cout << "TEST: Solve the bellman reject equation... " << std::endl;
     
