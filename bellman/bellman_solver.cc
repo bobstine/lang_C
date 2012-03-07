@@ -26,17 +26,16 @@ int  main(int argc, char** argv)
   parse_arguments(argc, argv, gamma, nRounds, consGeoProb, probDist, spendPct, writeTable);
   
   // select function for spending down probability
-  ProbDist p;
+  ProbDist pdf;
   switch (probDist)
   {
   case 'u': { pdf = universal; break; }
   case 'g': { pdf = geometric; break; }
-  case 'e': { pdf = uniform_to_end;     break; }
   default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
   }
   
-  WealthArray wealth(" universal wealth ", omega, nRounds, pdf);
-  solve_bellman_reject_equation (gamma, wealth, writeTable);
+  solve_reject_equation (gamma, omega, nRounds, pdf, writeTable);
+
 
   /*
     if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert

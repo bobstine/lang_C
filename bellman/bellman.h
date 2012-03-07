@@ -13,20 +13,18 @@
 
 ***********************************************************************************/
 
-typedef double (*ProbDist)(int,int);
+typedef double (*ProbDist)(int);
+
 class WealthArray;
 
 
 double universal      (int k);
-inline  // for compability with the uniform to end 
-double universal      (int k, int) { return universal(k); }
-
-double geometric      (int k, int);
-double uniform_to_end (int k, int left);
+double geometric      (int k);
+// double uniform_to_end (int k, int left);
 
 
 void
-solve_reject_equation            (double gamma, double omega, int nRounds, double (*pdf)(int), bool writeDetails);
+solve_reject_equation            (double gamma, double omega, int nRounds, ProbDist pdf, bool writeDetails);
 
 
 void
@@ -95,7 +93,7 @@ operator<< (std::ostream& os, WealthArray const& wa)
 
  **********************************************************************************/
 
-class GeometricDist: public std::binary_function<int,int,double>   // has flexible prob
+class GeometricDist: public std::unary_function<int,double>   // has flexible prob
 {
   const double mP;
   const double mNorm;
@@ -104,7 +102,7 @@ class GeometricDist: public std::binary_function<int,int,double>   // has flexib
 
   GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
 
-  double operator()(int k, int) const
+  double operator()(int k) const
   { double p=1;
     for (int i=0; i<=k; ++i) p *= mP;
     return p * mNorm;
@@ -138,8 +136,8 @@ class ExpertCompetitiveAlphaGain: public std::unary_function<double,double>
   
   double beta_k (void) const { return mBetaK; }
   
-  void set_k (int k, int left, double v0, double vkp1)
-  { mBetaK = mOmega * mSpendPct * mProb(k,left);
+  void set_k (int k, int , double v0, double vkp1)  // ignore left item
+  { mBetaK = mOmega * mSpendPct * mProb(k);
     mV0 = v0; mVkp1 = vkp1;  }
   
   double operator()(double mu) const;

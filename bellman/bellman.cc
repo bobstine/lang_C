@@ -82,7 +82,7 @@ double universal (int k)
   return 1.0/( (k+start) * ll * ll * normConst);
 }
 
-double geometric (int k, int)
+double geometric (int k)
 {
   double p=1;
   for (int i=0; i<=k; ++i) p *= 0.99;
@@ -183,10 +183,10 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
 
 
  void
- ConstrainedExpertCompetitiveAlphaGain::set_delay (int i, int j, int t, int nRounds, double v00, double vi0, double v0j, double vij)
+ ConstrainedExpertCompetitiveAlphaGain::set_delay (int i, int j, int /* t */, int /* nRounds */, double v00, double vi0, double v0j, double vij)
  {
-   mAlpha = mOmega             * mExpertDist(i,nRounds-t);  // no spending constraint for expert
-   mBeta  = mOmega * mSpendPct * mBidderProb(j,nRounds-t);
+   mAlpha = mOmega             * mExpertDist(i /*,nRounds-t*/ );  // no spending constraint for expert
+   mBeta  = mOmega * mSpendPct * mBidderProb(j /*,nRounds-t*/ );
    // std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
    mV00 = v00;
    mVi0 = vi0;
@@ -410,7 +410,7 @@ WealthArray::initialize_array(Tfunc p)
 //    solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject
 
 void
-solve_reject_equation (double gamma, double omega, int nRounds, double (*pdf)(int), bool writeDetails)
+solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bool writeDetails)
 {
   // define wealth and wealth position array
   WealthArray bidderWealth("bidder", omega, nRounds, pdf);
@@ -461,21 +461,23 @@ solve_reject_equation (double gamma, double omega, int nRounds, double (*pdf)(in
       // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
     }
   }
-  // write parameters and final values to std io
-  if (writeDetails)
-  { std::cout << "Write details\n       ";
-    for (int j=0; j<utilityMat.cols(); ++j)
-      std::cout << std::setprecision(3) << std::setw(8) << j-nRounds-1 << " ";
-    std::cout << std::endl;
-    for (int row=0; row<utilityMat.rows(); ++row)
-    { std::cout << "[" << std::setw(4) << row << "] ";
-      for (int j=0; j<utilityMat.cols(); ++j)
-	std::cout << std::setprecision(3) << std::setw(8) << utilityMat(row,j) << " ";
-      std::cout << std::endl;
-    }
+  // write solution (without boundary row) to file
+  if(writeDetails)
+  { std::string fileName;
+    std::ostringstream ss;
+    int gammaInt (trunc(10 * gamma));
+    ss << "bellman_reject.g" << gammaInt << ".n" << nRounds << ".";
+    fileName  = ss.str() + "utility";
+    write_matrix_to_file(fileName, utilityMat.topLeftCorner(utilityMat.rows()-1, utilityMat.cols()-1));  // omit boundary row
+    //    fileName = ss.str() + "oracle";
+    //    write_matrix_to_file(fileName, oracle.topLeftCorner(oracle.rows()-1,oracle.rows()-1));
+    //    fileName = ss.str() + "bidder";
+    //    write_matrix_to_file(fileName, bidder.topLeftCorner(bidder.rows()-1, bidder.rows()-1));
+    fileName = ss.str() + "mean";
+    write_matrix_to_file(fileName, meanMat.topLeftCorner(meanMat.rows(), meanMat.cols()));
   }
-  std::cout << "Solve reject bellman " << 0 << " " << gamma     << " " << nRounds   << " "
-	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat(0,0)  << std::endl;
+  std::cout << "Solve reject bellman " << gamma << " " << nRounds   << " " 
+	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat(0,nRounds+1)  << std::endl;
 }
 
 
