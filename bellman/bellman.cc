@@ -259,7 +259,7 @@ solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double sp
   const std::pair<double,double> searchInterval = std::make_pair(1.5,6.5);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   ExpertCompetitiveAlphaGain compRatio (gamma, omega, f, spendPct);
-    
+     
   // space for holding intermediate results
   Matrix gain  (nRounds+1, nRounds+1);   // extra row for boundary condition
   Matrix oracle(nRounds+1, nRounds+1);
@@ -370,13 +370,13 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 std::pair<int, double>
 WealthArray::new_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
 {
-  double target = mWealth[k0] + increase;                  // 'wealth' is 'new wealth' > 'current wealth'
-  int k1 (mWealth.max_index());                            // W[k0] <= W[k1]
-  assert (target <= mWealth[k1]);                          // needs to be in range of table
-  while (k0+1 < k1)                                        // bracket between k0 and k1
+  double target = mWealth[k0] + increase;      // 'wealth' is 'new wealth' > 'current wealth'
+  int k1 (mSize-1);                            // W[k0] <= W[k1]
+  assert (target <= mWealth[k1]);              // needs to be in range of table
+  while (k0+1 < k1)                            // bracket between k0 and k1
   { int kk = floor((k0+k1)/2);
-    // std::cout << "DEBUG: new_wealth_position   W[" << k0 << "]="
-    //           << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
+    //    std::cout << "DEBUG: new_wealth_position   W[" << k0 << "]="
+    //              << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
     if (target < mWealth[kk])
     { k1 = kk; }
     else
@@ -394,15 +394,18 @@ WealthArray::new_wealth_position (int k0, double increase)  const // k0 is curre
 void
 WealthArray::initialize_array(Tfunc p)
 {
-  int const excessWealthSteps = 4;
-  std::cout << "DEBUG: Building dyn array with indices " << -mMaxSteps-1 << " to " << excessWealthSteps << std::endl;
-  DynamicArray<double> da(-mMaxSteps-1,excessWealthSteps);
-  da.assign(0,mOmega);
-  for(int i=-1; i >= -mMaxSteps-1; --i)   da.assign(i, da[i+1] - mOmega * p(-i) );
-  da.assign(1, (mOmega * 4.0)/3.0 );
-  da.assign(2, (mOmega * 5.0)/3.0 );
-  da.assign(3,  mOmega * 2);
-  da.assign(4,  mOmega * 3);
+  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
+  //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;
+  DynamicArray<double> da(0,mSize-1);
+  da.assign(mZeroIndex,mOmega);
+  for(int i=mZeroIndex-1; 0 <= i; --i)       da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i) );
+  for(int i=mZeroIndex+1; i < mSize-2; ++i)  da.assign(i, da[i-1] + mOmega/3.0);
+  { // increment last 2 by mOmega
+    int i = mSize-2;
+    da.assign(i, da[i-1]+mOmega);
+    ++i;
+    da.assign(i, da[i-1]+mOmega);
+  }
   mWealth = da;
 }
 
@@ -412,8 +415,9 @@ WealthArray::initialize_array(Tfunc p)
 void
 solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bool writeDetails)
 {
-  // define wealth and wealth position array
-  WealthArray bidderWealth("bidder", omega, nRounds, pdf);
+  const int iZero    (nRounds+1);   // for step zero
+  const int nColumns (iZero + 6);   // 6 gives five states above omega
+  WealthArray bidderWealth("bidder", nColumns, omega, iZero, pdf);
   if (writeDetails) std::cout << bidderWealth << std::endl;
   // line search to find max utility
   const int                      maxIterations   (200);   
@@ -422,43 +426,39 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
   const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
   Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
   RejectUtility utility (gamma, bidderWealth);
-  // pad arrays since need room to collect bid
-  int nStates = nRounds+1 + bidderWealth.max_index();
-  Matrix utilityMat= Matrix::Zero(nRounds+2, nStates+1);   // extra rows and 2 cols pad for boundary conditions
-  Matrix oracleMat = Matrix::Zero(nRounds+2, nStates+1);
-  Matrix bidderMat = Matrix::Zero(nRounds+2, nStates+1);
-  Matrix meanMat   = Matrix::Zero(nRounds+1, nStates  );
-  //  initialize boundary conditions
-  for (int j=0; j<utilityMat.cols(); ++j)
-  { utilityMat(nRounds+1,j) = 0.0;
-    oracleMat (nRounds+1,j) = 0.0;
-    bidderMat (nRounds+1,j) = 0.0;
-  }
-  // stores intermediates in trapezoidal array; done=1 pads start
+  // pad arrays since need room to collect bid; initialize to zero
+  Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
+  Matrix oracleMat = Matrix::Zero(nRounds+2, nColumns);
+  Matrix bidderMat = Matrix::Zero(nRounds+2, nColumns);
+  Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
+  // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
   std::pair<double,double> maxPair;
+  double bid, probBidderReject, utilAtMuEqualZero;
   int done = 1;
-  int offset = nRounds;
   for (int row = nRounds; row > -1; --row, ++done)
   { // double b0 = bidderMat(row+1,0);
     // double o0 = oracleMat(row+1,0);
-    if (writeDetails) std::cout << "  t = " << row << std::endl; 
-    for (int col=done; col<nStates; ++col)
-    { int k = col - nRounds - 1;
-      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,0.05 - bidderWealth.bid(k)));
-      double valueIfReject = utilityMat(row+1,kp.first+offset)*kp.second + utilityMat(row+1,kp.first+1+offset)*(1-kp.second);
-      utility.set_constants(bidderWealth.bid(k), valueIfReject, utilityMat(row+1,col-1));   // bid, value if reject, value if not reject
-      double atZero = utility(0.0);
+    // -1 leaves room to avoid if clause
+    for (int k=done; k<nColumns-1; ++k)  
+    { bid = bidderWealth.bid(k);
+      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,0.05 - bid));
+      double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
+      double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
+      double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
+      utility.set_constants(bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
+      utilAtMuEqualZero = utility(0.0);
       maxPair = search.find_maximum(utility);
-      if (maxPair.second < atZero)
-	maxPair = std::make_pair(0.0,atZero);
-      meanMat   (row,col) = maxPair.first;
-      utilityMat(row,col) = maxPair.second;
-      if (writeDetails) std::cout << "     @ " << k << " " << row << " kk= " << kp.first
-				  << " { (" << valueIfReject << "=" << utilityMat(row+1,kp.first+offset)  << "*" << kp.second << " + "
-				  << utilityMat(row+1,kp.first+offset+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,col-1)
-				  << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
-      // oracleMat (row,col) = utility.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
-      // bidderMat (row,col) = utility.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
+      if (maxPair.second < utilAtMuEqualZero)
+	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
+      meanMat   (row,k) = maxPair.first;
+      utilityMat(row,k) = maxPair.second;
+      if (false) std::cout << "     @ " << k << " " << row << " kk= " << kp.first << " { (" << utilityIfReject << "="
+			   << utilityMat(row+1,kp.first  ) << "*" <<   kp.second << " + "
+			   << utilityMat(row+1,kp.first+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,k-1)
+			   << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
+      probBidderReject  = reject_prob(maxPair.first, bid);
+      oracleMat (row,k) = reject_prob(maxPair.first,omega) + oracleIfReject*probBidderReject + oracleMat(row+1,k-1)*(1-probBidderReject);
+      bidderMat (row,k) =       probBidderReject           + bidderIfReject*probBidderReject + bidderMat(row+1,k-1)*(1-probBidderReject);
     }
   }
   // write solution (without boundary row) to file
@@ -468,16 +468,16 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
     int gammaInt (trunc(10 * gamma));
     ss << "bellman_reject.g" << gammaInt << ".n" << nRounds << ".";
     fileName  = ss.str() + "utility";
-    write_matrix_to_file(fileName, utilityMat.topLeftCorner(utilityMat.rows()-1, utilityMat.cols()-1));  // omit boundary row
-    //    fileName = ss.str() + "oracle";
-    //    write_matrix_to_file(fileName, oracle.topLeftCorner(oracle.rows()-1,oracle.rows()-1));
-    //    fileName = ss.str() + "bidder";
-    //    write_matrix_to_file(fileName, bidder.topLeftCorner(bidder.rows()-1, bidder.rows()-1));
+    write_matrix_to_file(fileName, utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
+    fileName = ss.str() + "oracle";
+    write_matrix_to_file(fileName,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
+    fileName = ss.str() + "bidder"; 
+    write_matrix_to_file(fileName,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
     fileName = ss.str() + "mean";
-    write_matrix_to_file(fileName, meanMat.topLeftCorner(meanMat.rows(), meanMat.cols()));
+    write_matrix_to_file(fileName,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
   }
-  std::cout << "Solve reject bellman " << gamma << " " << nRounds   << " " 
-	    << searchInterval.first << " " << searchInterval.second  << " " << utilityMat(0,nRounds+1)  << std::endl;
+  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
 }
 
 
@@ -486,9 +486,14 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
 double
 RejectUtility::operator()(double mu) const
 {
-  // std::cout << "DEBUG: utility calculation, mu=" << mu << "   omega=" << mOmega << "  betaK=" << mBetaK << std::endl;
-  double ra = reject_prob(mu,mOmega);
-  double rb = reject_prob(mu,mBeta );
-  double util = ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
-  return util;
+  double ra,rb;
+  if (mu == 0.0)
+  { ra = mBidderWealth.omega();
+    rb = mBeta;
+  }
+  else
+  { ra = reject_prob(mu,mBidderWealth.omega());
+    rb = reject_prob(mu,mBeta );
+  }
+  return ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }

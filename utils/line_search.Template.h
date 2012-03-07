@@ -54,8 +54,8 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
   while(++i < mMaxIterations)
   { len = xB.first - xLo.first;              // 0.618 times prior length
     if (len < mTolerance) break;
-    /* use to trace optimization
-      std::clog << "GSRC:  <" << xLo.first << "," << xLo.second << "> "
+    // use to trace optimization
+    /*  std::clog << "GSRC:  <" << xLo.first << "," << xLo.second << "> "
 	      <<        "<" <<  xA.first << "," << xA.second <<  "> "
 	      <<        "<" <<  xB.first << "," << xB.second <<  "> "
 	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;

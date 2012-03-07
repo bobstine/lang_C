@@ -27,18 +27,19 @@ int  main()
   if (true)
   {
     double omega (0.05);
-    int     max   (10);
+    int    steps ( 16 );  // need at least 6 above iZero.
+    int    iZero ( 10 );
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
-    WealthArray wealth(" Test ", omega, max, universal);
+    WealthArray wealth(" Test ", steps, omega, iZero, universal);
     std::cout << "TEST: wealth array  \n" << wealth << std::endl;
 
-    { int i = 4;  // boundary
+    { int i = 3;  // boundary
       double bid = wealth.bid(i);
       std::pair<int,double>  kk (wealth.new_wealth_position(i,0.05-bid));
       std::cout << "TEST:  increment W[" << i << "]= " << wealth[i] << " by " << 0.05-bid << " to " << 0.05+wealth[i]-bid
 		<< " bracketed by " << wealth[kk.first] << " * (" << kk.second << ")  +  ";
-      if(kk.first < 4)
+      if(kk.first < steps-1)
 	std::cout << wealth[kk.first+1] << " * (" << 1-kk.second << ")" << std::endl;
       else
 	std::cout << wealth[kk.first] << " * (" << 1-kk.second << ")" << std::endl;
@@ -50,10 +51,11 @@ int  main()
   if (false)
   { double gamma (2.5);
     double omega (0.05);
-    int maxSteps (10);
-    WealthArray wealth("bidder", omega, maxSteps, universal);
-    std::cout << "TEST: bid[0]=" << wealth.bid(0) << "  bid[1]=" << wealth.bid(1) << "  bid[2]=" << wealth.bid(2)
-	      << "  bid[3]=" << wealth.bid(3) << "  bid[4]=" << wealth.bid(4) << std::endl;
+    int    size  (15);
+    int    iZero (10);
+    WealthArray wealth("bidder", size, omega, iZero, universal);
+    std::cout << "TEST: bid[3]=" << wealth.bid(3) << "  bid[6]=" << wealth.bid(6) << "  bid[10]=" << wealth.bid(10)
+	      << "  bid[13]=" << wealth.bid(13) << "  bid[14]=" << wealth.bid(14) << std::endl;
     RejectUtility utility (gamma, wealth);  // omega implicit in wealth
     
     double gridSize (0.25);
@@ -78,12 +80,12 @@ int  main()
   if (true)
   { double gamma        ( 2.5 );
     double omega        ( 0.05);
-    int    maxSteps     (10   );
+    int    nSteps       (10   );
     bool   writeDetails ( true);
 
     std::cout << "TEST: Solve the bellman reject equation... " << std::endl;
     
-    solve_reject_equation (gamma, omega, maxSteps, universal, writeDetails);
+    solve_reject_equation (gamma, omega, nSteps, universal, writeDetails);
   }
 
   return 0;

@@ -50,21 +50,22 @@ class WealthArray
   typedef double(*Tfunc)(int);
 
   const std::string     mName;
-  const double          mOmega;      // defines wealth at position k=0 and determines how far 'up' wealth can go 
-  const int             mMaxSteps;
+  const int             mSize;       // number of distinct wealth values
+  const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
+  const int             mZeroIndex;  // position of W_0, initially the place used for omega
   DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
 
  public:
- WealthArray(std::string name, double omega, int maxSteps, Tfunc pdf)
-   : mName(name), mOmega(omega), mMaxSteps(maxSteps), mWealth() { initialize_array(pdf);}
+ WealthArray(std::string name, int size, double omega, int zeroIndex, Tfunc pdf)
+   : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth() { initialize_array(pdf);}
 
-  int    max_steps ()                        const { return mMaxSteps; }                            //  pad for initial bid
-  int    min_index ()                        const { return mWealth.min_index() ; }
-  int    max_index ()                        const { return mWealth.max_index() ; }
+  int    size ()                   const { return mSize; }
+  int    zero_index ()             const { return mZeroIndex ; }
+  double omega ()                  const { return mOmega; }
   
-  double bid(int k)                          const { return mWealth[k]-mWealth[k-1]; }
-  double wealth(int k)                       const { return mWealth[k]; }
-  double operator[](int k)                   const { return mWealth[k]; }
+  double bid(int k)                const { return mWealth[k]-mWealth[k-1]; }
+  double wealth(int k)             const { return mWealth[k]; }
+  double operator[](int k)         const { return mWealth[k]; }
   
   std::pair<int, double> new_wealth_position (int k, double increaseInWealth) const;
   
@@ -183,7 +184,6 @@ class RejectUtility: public std::unary_function<double,double>
 {
  private:
   const double mGamma;
-  const double mOmega;
   const WealthArray mBidderWealth;
   double mBeta;
   double mRejectValue, mNoRejectValue;
@@ -191,17 +191,15 @@ class RejectUtility: public std::unary_function<double,double>
  public:
 
  RejectUtility(double gamma, WealthArray wealth)
-   : mGamma(gamma), mOmega(wealth[0]), mBidderWealth(wealth), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
+   : mGamma(gamma), mBidderWealth(wealth), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
-  int    max_steps () const { return mBidderWealth.max_steps(); }
-  double beta      () const { return mBeta; }
+  double beta       () const { return mBeta; }
   
   void set_constants (double beta, double rejectValue, double noRejectValue)
   { assert((0 <= beta) && (beta <= 1.0));
     mBeta = beta;
     mRejectValue = rejectValue;
     mNoRejectValue = noRejectValue;
-    // std::cout << "DEBUG:  setting beta to " << mBeta << " for k=" << bidderPos << std::endl;
   }
   
   double operator()(double mu) const;

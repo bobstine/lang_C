@@ -36,7 +36,6 @@ int  main(int argc, char** argv)
   
   solve_reject_equation (gamma, omega, nRounds, pdf, writeTable);
 
-
   /*
     if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
     solve_bellman_alpha_equation (gamma, omega, nRounds, spendPct, p, true);
@@ -62,7 +61,7 @@ parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &con
   };
   int key;
   int option_index = 0;
-  while (-1 !=(key = getopt_long (argc, argv, "g:cn:p:s:w", long_options, &option_index))) // colon means has argument
+  while (-1 !=(key = getopt_long (argc, argv, "g:c:n:p:s:w", long_options, &option_index))) // colon means has argument
   {
     // std::cout << "Option key " << char(key) << " for option " << long_options[option_index].name << ", option_index=" << option_index << std::endl;
     switch (key)
