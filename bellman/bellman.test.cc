@@ -23,8 +23,8 @@ int  main()
     std::cout << "MAIN: Total of beta(*,0.05) for " << count << " terms = " << total << std::endl;
   } 
 
-  // test tracking function
-  if (true)
+  // test bracket search function
+  if (false)
   {
     double omega (0.05);
     int    steps ( 16 );  // need at least 6 above iZero.
@@ -44,18 +44,35 @@ int  main()
       else
 	std::cout << wealth[kk.first] << " * (" << 1-kk.second << ")" << std::endl;
     }
-
   }
 
-  // test maximizing the wealth array
+  // test utility objects 
+  if (true)
+  {
+    double gamma (2.0 );
+    double omega (0.05);
+    int    steps ( 16 );  // need at least 6 above iZero.
+    int    iZero ( 10 );
+    std::cout << "TEST: Preparing to test the utility object." << std::endl;
+    
+    WealthArray wealth(" Test ", steps, omega, iZero, universal);
+    
+    RejectUtility rejectU (gamma, wealth);  // omega implicit in wealth
+    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+
+    RiskUtility riskU (gamma, wealth);  // omega implicit in wealth
+    std::cout << "TEST: risk at mu=0 " << riskU.risk(0,0.05) << "   and at mu=1 " << riskU.risk(1,0.05) << std::endl;
+}
+
+
+  // test maximization object
   if (false)
   { double gamma (2.5);
     double omega (0.05);
     int    size  (15);
     int    iZero (10);
     WealthArray wealth("bidder", size, omega, iZero, universal);
-    std::cout << "TEST: bid[3]=" << wealth.bid(3) << "  bid[6]=" << wealth.bid(6) << "  bid[10]=" << wealth.bid(10)
-	      << "  bid[13]=" << wealth.bid(13) << "  bid[14]=" << wealth.bid(14) << std::endl;
+
     RejectUtility utility (gamma, wealth);  // omega implicit in wealth
     
     double gridSize (0.25);

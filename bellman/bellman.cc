@@ -57,7 +57,12 @@ reject_prob(double mu, double level)    // r_mu(alpha)
     return normal_cdf(mu-normal_quantile(1-level));
 }  
 
-  
+double
+z_alpha (double a)
+{
+  return normal_quantile(1-a);
+}
+
 double
 optimal_alpha (double mu, double omega) 
 { if (mu < .001)
@@ -496,4 +501,41 @@ RejectUtility::operator()(double mu) const
     rb = reject_prob(mu,mBeta );
   }
   return ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
+}
+
+
+//    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      
+
+double
+RiskUtility::operator()(double mu) const
+{
+  double ra,rb;
+  double omega (mBidderWealth.omega());
+  if (mu == 0.0)
+  { ra = omega;
+    rb = mBeta;
+  }
+  else
+  { ra = reject_prob(mu,omega);
+    rb = reject_prob(mu,mBeta);
+  }
+  return risk(mu,omega) - mGamma * risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+}
+
+double
+RiskUtility::risk(double mu, double alpha) const
+{
+  double ra, R;
+
+  if (0 == alpha)
+  { ra = alpha;
+    R = 0.0;
+  }
+  else
+  { ra = reject_prob(mu, alpha);
+    R = (1.0 - ra) * mu*mu;
+  }
+  double dev = z_alpha(alpha) - mu;
+  R += dev * normal_density(dev) + normal_cdf(-dev);
+  return R;
 }

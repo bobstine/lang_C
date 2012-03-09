@@ -178,11 +178,11 @@ class ConstrainedExpertCompetitiveAlphaGain: public std::unary_function<double,d
 
 
 
-////  Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     
+////   Utility class     Utility class     Utility class     Utility class     Utility class     Utility class
 
-class RejectUtility: public std::unary_function<double,double>
+class Utility: public std::unary_function<double,double>
 {
- private:
+ protected:
   const double mGamma;
   const WealthArray mBidderWealth;
   double mBeta;
@@ -190,10 +190,11 @@ class RejectUtility: public std::unary_function<double,double>
   
  public:
 
- RejectUtility(double gamma, WealthArray wealth)
+ Utility(double gamma, WealthArray wealth)
    : mGamma(gamma), mBidderWealth(wealth), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
-  double beta       () const { return mBeta; }
+  double beta       () const { return mBeta;  }
+  double gamma      () const { return mGamma; }
   
   void set_constants (double beta, double rejectValue, double noRejectValue)
   { assert((0 <= beta) && (beta <= 1.0));
@@ -202,8 +203,38 @@ class RejectUtility: public std::unary_function<double,double>
     mNoRejectValue = noRejectValue;
   }
   
+  virtual double operator()(double mu) const  { std::cout << "UTIL:  Call to operator of base class." << std::endl; return 0*mu; }
+
+}; 
+
+
+
+////  Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     
+
+class RejectUtility: public Utility
+{
+ public:
+
+ RejectUtility(double gamma, WealthArray wealth)
+   : Utility(gamma, wealth) { }
+
   double operator()(double mu) const;
 
 }; 
 
+
+////  Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk
+
+
+class RiskUtility: public Utility
+{
+ public:
+
+ RiskUtility(double gamma, WealthArray wealth)
+   : Utility(gamma,wealth) { }
+  
+  double operator()(double mu) const;
+  
+  double risk(double mu, double alpha) const;
+}; 
 
