@@ -415,13 +415,14 @@ WealthArray::initialize_array(Tfunc p)
 }
 
 
-//    solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject     solve_bellman_reject
+//    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
 
 void
-solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bool writeDetails)
+solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & utility, ProbDist pdf, bool writeDetails)
 {
-  const int iZero    (nRounds+1);   // for step zero
-  const int nColumns (iZero + 6);   // 6 gives five states above omega
+  // initialize: iZero is omega location, iZero+6 gives five states above omega
+  const int iZero    (nRounds+1);   
+  const int nColumns (iZero + 6);   
   WealthArray bidderWealth("bidder", nColumns, omega, iZero, pdf);
   if (writeDetails) std::cout << bidderWealth << std::endl;
   // line search to find max utility
@@ -430,7 +431,6 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
   const double                   initialGrid     (0.5);
   const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
   Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
-  RejectUtility utility (gamma, bidderWealth);
   // pad arrays since need room to collect bid; initialize to zero
   Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
   Matrix oracleMat = Matrix::Zero(nRounds+2, nColumns);
@@ -438,7 +438,7 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
   Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
   // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
   std::pair<double,double> maxPair;
-  double bid, probBidderReject, utilAtMuEqualZero;
+  double bid, utilAtMuEqualZero;
   int done = 1;
   for (int row = nRounds; row > -1; --row, ++done)
   { // double b0 = bidderMat(row+1,0);
@@ -446,7 +446,7 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
     // -1 leaves room to avoid if clause
     for (int k=done; k<nColumns-1; ++k)  
     { bid = bidderWealth.bid(k);
-      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,0.05 - bid));
+      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,omega - bid));
       double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
       double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
       double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
@@ -457,13 +457,12 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
 	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
       meanMat   (row,k) = maxPair.first;
       utilityMat(row,k) = maxPair.second;
+      bidderMat (row,k) = utility.bidder_utility(maxPair.first, bidderIfReject, bidderMat(row+1,k-1));
+      oracleMat (row,k) = utility.oracle_utility(maxPair.first, oracleIfReject, oracleMat(row+1,k-1));
       if (false) std::cout << "     @ " << k << " " << row << " kk= " << kp.first << " { (" << utilityIfReject << "="
 			   << utilityMat(row+1,kp.first  ) << "*" <<   kp.second << " + "
 			   << utilityMat(row+1,kp.first+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,k-1)
 			   << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
-      probBidderReject  = reject_prob(maxPair.first, bid);
-      oracleMat (row,k) = reject_prob(maxPair.first,omega) + oracleIfReject*probBidderReject + oracleMat(row+1,k-1)*(1-probBidderReject);
-      bidderMat (row,k) =       probBidderReject           + bidderIfReject*probBidderReject + bidderMat(row+1,k-1)*(1-probBidderReject);
     }
   }
   // write solution (without boundary row) to file
@@ -471,7 +470,7 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
   { std::string fileName;
     std::ostringstream ss;
     int gammaInt (trunc(10 * gamma));
-    ss << "bellman_reject.g" << gammaInt << ".n" << nRounds << ".";
+    ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
     fileName  = ss.str() + "utility";
     write_matrix_to_file(fileName, utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     fileName = ss.str() + "oracle";
@@ -486,44 +485,88 @@ solve_reject_equation (double gamma, double omega, int nRounds, ProbDist pdf, bo
 }
 
 
+//     Utility     Utility     Utility     Utility     Utility     Utility     Utility     Utility     Utility
+
+double
+Utility::r_mu_beta (double mu) const
+{
+  return (0.0 == mu) ? mBeta : reject_prob(mu, mBeta);
+}
+
+double
+Utility::r_mu_alpha (double mu) const
+{
+  return (0.0 == mu) ? omega() : reject_prob(mu, omega());
+}
+
+std::pair<double,double>
+Utility::reject_probabilities (double mu) const
+{
+  double ra,rb;
+  if (mu == 0.0)
+  { ra = omega();
+    rb = mBeta;
+  }
+  else
+  { ra = reject_prob(mu,omega());
+    rb = reject_prob(mu,mBeta );
+  }
+  return std::make_pair(ra,rb);
+}  
+
 //   RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     
 
 double
 RejectUtility::operator()(double mu) const
 {
-  double ra,rb;
-  if (mu == 0.0)
-  { ra = mBidderWealth.omega();
-    rb = mBeta;
-  }
-  else
-  { ra = reject_prob(mu,mBidderWealth.omega());
-    rb = reject_prob(mu,mBeta );
-  }
-  return ra - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rb (rprob.second);
+  return rprob.first - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }
 
+double
+RejectUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
+{
+  double rb (r_mu_beta(mu));
+  return rb  + rb * rejectValue + (1-rb) * noRejectValue;
+}
+
+double
+RejectUtility::oracle_utility (double mu, double rejectValue, double noRejectValue) const
+{
+  std::pair<double,double>  rejectProbs  (reject_probabilities(mu));
+  double rb (rejectProbs.second);
+  return rejectProbs.first + rb * rejectValue + (1-rb) * noRejectValue;
+}
 
 //    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      
 
 double
 RiskUtility::operator()(double mu) const
 {
-  double ra,rb;
-  double omega (mBidderWealth.omega());
-  if (mu == 0.0)
-  { ra = omega;
-    rb = mBeta;
-  }
-  else
-  { ra = reject_prob(mu,omega);
-    rb = reject_prob(mu,mBeta);
-  }
-  return risk(mu,omega) - mGamma * risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rb (rprob.second);
+  return negative_risk(mu,mOmega) - mGamma * negative_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+}
+
+
+double
+RiskUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
+{
+  double rb (r_mu_beta(mu));
+  return negative_risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
 }
 
 double
-RiskUtility::risk(double mu, double alpha) const
+RiskUtility::oracle_utility (double mu, double rejectValue, double noRejectValue) const 
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rb (rprob.second);
+  return negative_risk(mu,mOmega) + rb * rejectValue + (1-rb) * noRejectValue;
+}
+
+double
+RiskUtility::negative_risk(double mu, double alpha) const
 {
   double ra, R;
 
@@ -537,5 +580,5 @@ RiskUtility::risk(double mu, double alpha) const
   }
   double dev = z_alpha(alpha) - mu;
   R += dev * normal_density(dev) + normal_cdf(-dev);
-  return R;
+  return -R;
 }

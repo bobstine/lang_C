@@ -16,6 +16,7 @@
 typedef double (*ProbDist)(int);
 
 class WealthArray;
+class Utility;
 
 
 double universal      (int k);
@@ -23,8 +24,9 @@ double geometric      (int k);
 // double uniform_to_end (int k, int left);
 
 
+// Note that we don't care that the utility is modifiable; its there to be used.
 void
-solve_reject_equation            (double gamma, double omega, int nRounds, ProbDist pdf, bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & util, ProbDist pdf, bool writeDetails);
 
 
 void
@@ -184,17 +186,18 @@ class Utility: public std::unary_function<double,double>
 {
  protected:
   const double mGamma;
-  const WealthArray mBidderWealth;
+  const double mOmega;
   double mBeta;
   double mRejectValue, mNoRejectValue;
   
  public:
 
- Utility(double gamma, WealthArray wealth)
-   : mGamma(gamma), mBidderWealth(wealth), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
+ Utility(double gamma, double omega)
+   : mGamma(gamma), mOmega(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
   double beta       () const { return mBeta;  }
   double gamma      () const { return mGamma; }
+  double omega      () const { return mOmega; }
   
   void set_constants (double beta, double rejectValue, double noRejectValue)
   { assert((0 <= beta) && (beta <= 1.0));
@@ -202,9 +205,21 @@ class Utility: public std::unary_function<double,double>
     mRejectValue = rejectValue;
     mNoRejectValue = noRejectValue;
   }
-  
-  virtual double operator()(double mu) const  { std::cout << "UTIL:  Call to operator of base class." << std::endl; return 0*mu; }
 
+  double r_mu_alpha (double mu) const;
+  double r_mu_beta  (double mu) const;
+  
+  std::pair<double,double> reject_probabilities (double mu) const;    // prob rejecting for alpha and beta
+  
+  virtual
+    double operator()(double mu) const  { std::cout << "UTIL:  Call to operator of base class." << std::endl; return 0*mu; }
+
+  virtual
+    double bidder_utility (double mu, double rejectValue, double noRejectValue) const = 0;
+  
+  virtual
+    double oracle_utility (double mu, double rejectValue, double noRejectValue) const = 0;
+  
 }; 
 
 
@@ -215,26 +230,34 @@ class RejectUtility: public Utility
 {
  public:
 
- RejectUtility(double gamma, WealthArray wealth)
-   : Utility(gamma, wealth) { }
+ RejectUtility(double gamma, double omega)
+   : Utility(gamma, omega) { }
 
   double operator()(double mu) const;
 
+  double bidder_utility (double mu, double rejectValue, double noRejectValue) const;
+  double oracle_utility (double mu, double rejectValue, double noRejectValue) const;
+  
 }; 
 
 
 ////  Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk
 
+//   Actually, computes the negative risk since the utility
+//   functions (line search) look for the max.
 
 class RiskUtility: public Utility
 {
  public:
 
- RiskUtility(double gamma, WealthArray wealth)
-   : Utility(gamma,wealth) { }
+ RiskUtility(double gamma, double omega)
+   : Utility(gamma,omega) { }
   
   double operator()(double mu) const;
   
-  double risk(double mu, double alpha) const;
+  double negative_risk(double mu, double alpha) const;
+
+  double bidder_utility (double mu, double rejectValue, double noRejectValue) const;
+  double oracle_utility (double mu, double rejectValue, double noRejectValue) const;
 }; 
 

@@ -47,7 +47,7 @@ int  main()
   }
 
   // test utility objects 
-  if (true)
+  if (false)
   {
     double gamma (2.0 );
     double omega (0.05);
@@ -57,11 +57,11 @@ int  main()
     
     WealthArray wealth(" Test ", steps, omega, iZero, universal);
     
-    RejectUtility rejectU (gamma, wealth);  // omega implicit in wealth
+    RejectUtility rejectU (gamma, omega);  // omega implicit in wealth
     std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
 
-    RiskUtility riskU (gamma, wealth);  // omega implicit in wealth
-    std::cout << "TEST: risk at mu=0 " << riskU.risk(0,0.05) << "   and at mu=1 " << riskU.risk(1,0.05) << std::endl;
+    RiskUtility riskU (gamma, omega);  // omega implicit in wealth
+    std::cout << "TEST: risk at mu=0 " << -riskU.negative_risk(0,0.05) << "   and at mu=1 " << -riskU.negative_risk(1,0.05) << std::endl;
 }
 
 
@@ -73,7 +73,7 @@ int  main()
     int    iZero (10);
     WealthArray wealth("bidder", size, omega, iZero, universal);
 
-    RejectUtility utility (gamma, wealth);  // omega implicit in wealth
+    RejectUtility utility (gamma, omega);  // omega implicit in wealth
     
     double gridSize (0.25);
     int    maxIt (100);
@@ -97,12 +97,13 @@ int  main()
   if (true)
   { double gamma        ( 2.5 );
     double omega        ( 0.05);
-    int    nSteps       (10   );
+    int    nSteps       ( 500 );
     bool   writeDetails ( true);
 
     std::cout << "TEST: Solve the bellman reject equation... " << std::endl;
-    
-    solve_reject_equation (gamma, omega, nSteps, universal, writeDetails);
+
+    RiskUtility utility (gamma, omega);
+    solve_bellman_utility (gamma, omega, nSteps, utility, universal, writeDetails);
   }
 
   return 0;
