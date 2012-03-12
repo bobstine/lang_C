@@ -22,7 +22,9 @@ USES = utils random
 
 # EXTERNAL_USES = gsl
 
-level_0 = bellman.o
+level_0 = wealth.o
+level_1 = utility.o
+level_2 = bellman.o
 
 ############################################################################
 #

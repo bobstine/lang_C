@@ -4,6 +4,8 @@
 #include <assert.h>
 
 #include "dynamic_array.h"
+#include "utility.h"
+
 #include <iostream>      // debug
 
 /***********************************************************************************
@@ -13,106 +15,26 @@
 
 ***********************************************************************************/
 
-typedef double (*ProbDist)(int);
 
-class WealthArray;
-class Utility;
+//  These use a discrete wealth array to track the wealth of the bidder and (in constrained case) the oracle.
+//  Both use a convex mixture of states when new wealth is not element of the array
+//  Note: It's evil to pass in the reference,  but we don't care that the utility is modifiable; its there to be used.
 
-
-double universal      (int k);
-double geometric      (int k);
-// double uniform_to_end (int k, int left);
-
-
-// Note that we don't care that the utility is modifiable; its there to be used.
+// all powerful oracle
 void
 solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & util, ProbDist pdf, bool writeDetails);
 
+// constrained oracle
+void
+solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & util, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails);
 
+
+// --- Earlier version with the alpha-investing utility, only spending down alpha-wealth
 void
 solve_bellman_alpha_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails);
 
 void
 solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist bidderProb, bool printDetails);
-
-
-/**********************************************************************************
-
-   Wealth tracker basically maps from integers that follow the tests
-   to the wealth of the expert or bidder.  The wealth is monotone increasing
-   in the index/position k.
-
-   Normalized to have value omega at index 0.
-
- **********************************************************************************/
-
-
-class WealthArray
-{
-  typedef double(*Tfunc)(int);
-
-  const std::string     mName;
-  const int             mSize;       // number of distinct wealth values
-  const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
-  const int             mZeroIndex;  // position of W_0, initially the place used for omega
-  DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
-
- public:
- WealthArray(std::string name, int size, double omega, int zeroIndex, Tfunc pdf)
-   : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth() { initialize_array(pdf);}
-
-  int    size ()                   const { return mSize; }
-  int    zero_index ()             const { return mZeroIndex ; }
-  double omega ()                  const { return mOmega; }
-  
-  double bid(int k)                const { return mWealth[k]-mWealth[k-1]; }
-  double wealth(int k)             const { return mWealth[k]; }
-  double operator[](int k)         const { return mWealth[k]; }
-  
-  std::pair<int, double> new_wealth_position (int k, double increaseInWealth) const;
-  
-  void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
-  
- private:
-  void initialize_array(Tfunc p);
-};
-
-inline
-std::ostream&
-operator<< (std::ostream& os, WealthArray const& wa)
-{
-  wa.print_to(os);
-  return os;
-}
-
-
-
-/**********************************************************************************
-
-   Probability distributions that control spending
-
-     All take 2 integer arguments (k since reject, j remaining)
-     but some (like universal) don't use the second argument
-
- **********************************************************************************/
-
-class GeometricDist: public std::unary_function<int,double>   // has flexible prob
-{
-  const double mP;
-  const double mNorm;
-
-  public:
-
-  GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
-
-  double operator()(int k) const
-  { double p=1;
-    for (int i=0; i<=k; ++i) p *= mP;
-    return p * mNorm;
-  }
-
-};
-  
 
 
 //  This guy does the optimization to find the best mu at given state
@@ -179,85 +101,4 @@ class ConstrainedExpertCompetitiveAlphaGain: public std::unary_function<double,d
 };
 
 
-
-////   Utility class     Utility class     Utility class     Utility class     Utility class     Utility class
-
-class Utility: public std::unary_function<double,double>
-{
- protected:
-  const double mGamma;
-  const double mOmega;
-  double mBeta;
-  double mRejectValue, mNoRejectValue;
-  
- public:
-
- Utility(double gamma, double omega)
-   : mGamma(gamma), mOmega(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
-
-  double beta       () const { return mBeta;  }
-  double gamma      () const { return mGamma; }
-  double omega      () const { return mOmega; }
-  
-  void set_constants (double beta, double rejectValue, double noRejectValue)
-  { assert((0 <= beta) && (beta <= 1.0));
-    mBeta = beta;
-    mRejectValue = rejectValue;
-    mNoRejectValue = noRejectValue;
-  }
-
-  double r_mu_alpha (double mu) const;
-  double r_mu_beta  (double mu) const;
-  
-  std::pair<double,double> reject_probabilities (double mu) const;    // prob rejecting for alpha and beta
-  
-  virtual
-    double operator()(double mu) const  { std::cout << "UTIL:  Call to operator of base class." << std::endl; return 0*mu; }
-
-  virtual
-    double bidder_utility (double mu, double rejectValue, double noRejectValue) const = 0;
-  
-  virtual
-    double oracle_utility (double mu, double rejectValue, double noRejectValue) const = 0;
-  
-}; 
-
-
-
-////  Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     Rejects     
-
-class RejectUtility: public Utility
-{
- public:
-
- RejectUtility(double gamma, double omega)
-   : Utility(gamma, omega) { }
-
-  double operator()(double mu) const;
-
-  double bidder_utility (double mu, double rejectValue, double noRejectValue) const;
-  double oracle_utility (double mu, double rejectValue, double noRejectValue) const;
-  
-}; 
-
-
-////  Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk
-
-//   Actually, computes the negative risk since the utility
-//   functions (line search) look for the max.
-
-class RiskUtility: public Utility
-{
- public:
-
- RiskUtility(double gamma, double omega)
-   : Utility(gamma,omega) { }
-  
-  double operator()(double mu) const;
-  
-  double negative_risk(double mu, double alpha) const;
-
-  double bidder_utility (double mu, double rejectValue, double noRejectValue) const;
-  double oracle_utility (double mu, double rejectValue, double noRejectValue) const;
-}; 
 

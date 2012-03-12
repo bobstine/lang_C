@@ -1,6 +1,5 @@
 #include "bellman.h"
 #include "line_search.Template.h"
-#include "normal.h"
 
 #include <Eigen/Core>
 #include <math.h>
@@ -45,59 +44,9 @@ write_vector_to_file (std::string fileName, Eigen::VectorXf const& x)
   return 0;
 }
 
-
-////////////////////////////////////  Utility functions  /////////////////////////////////////////
-
-double
-reject_prob(double mu, double level)    // r_mu(alpha)
-{
-  if(level == 0)
-    return 0.0;
-  else
-    return normal_cdf(mu-normal_quantile(1-level));
-}  
-
-double
-z_alpha (double a)
-{
-  return normal_quantile(1-a);
-}
-
-double
-optimal_alpha (double mu, double omega) 
-{ if (mu < .001)
-    return 0.0;
-  else
-  { double z = (mu * mu + 2 * log(1.0/omega))/(2 * mu);
-    return 1.0 - normal_cdf(z);
-  }
-}
-
 int
 imin(int a, int b)
 { if (a < b) return a; else return b; }
-
-/////////////////////////////////////////  Distributions  ////////////////////////////////////////
-
-double universal (int k)
-{
-  const int start = 20;                 // where to start the code
-  const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
-  double ll = log(k+1+start);
-  return 1.0/( (k+start) * ll * ll * normConst);
-}
-
-double geometric (int k)
-{
-  double p=1;
-  for (int i=0; i<=k; ++i) p *= 0.99;
-  return p/99.;
-}
-
-double uniform_to_end (int k, int left)         // equal spread over possible locations
-{
-  return 1.0/(double)(k + left);
-}
 
 
 
@@ -369,52 +318,6 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 
 
 
-//     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray
-
-
-std::pair<int, double>
-WealthArray::new_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
-{
-  double target = mWealth[k0] + increase;      // 'wealth' is 'new wealth' > 'current wealth'
-  int k1 (mSize-1);                            // W[k0] <= W[k1]
-  assert (target <= mWealth[k1]);              // needs to be in range of table
-  while (k0+1 < k1)                            // bracket between k0 and k1
-  { int kk = floor((k0+k1)/2);
-    //    std::cout << "DEBUG: new_wealth_position   W[" << k0 << "]="
-    //              << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
-    if (target < mWealth[kk])
-    { k1 = kk; }
-    else
-    { k0 = kk; }
-  }
-  if (k0<k1)  // inside range
-  { double p ( (target - mWealth[k0]) / (mWealth[k1] - mWealth[k0]) );
-    return std::make_pair(k0,1-p);
-  }
-  else
-    return std::make_pair(k0,1);
-}
-
-
-void
-WealthArray::initialize_array(Tfunc p)
-{
-  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
-  //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;
-  DynamicArray<double> da(0,mSize-1);
-  da.assign(mZeroIndex,mOmega);
-  for(int i=mZeroIndex-1; 0 <= i; --i)       da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i) );
-  for(int i=mZeroIndex+1; i < mSize-2; ++i)  da.assign(i, da[i-1] + mOmega/3.0);
-  { // increment last 2 by mOmega
-    int i = mSize-2;
-    da.assign(i, da[i-1]+mOmega);
-    ++i;
-    da.assign(i, da[i-1]+mOmega);
-  }
-  mWealth = da;
-}
-
-
 //    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
 
 void
@@ -485,100 +388,114 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & utili
 }
 
 
+
+//    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
+
+void
+solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & utility, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails)
+{
+  // initialize: iZero is omega location, iZero+6 gives five states above omega
+  const int iZero    (nRounds+1);   
+  const int nColumns (iZero + 6);   
+  WealthArray bidderWealth("bidder", nColumns, omega, iZero, bidderPDF);
+  WealthArray oracleWealth("oracle", nColumns, omega, iZero, oraclePDF);
+  if (writeDetails) std::cout << bidderWealth << std::endl;
+  // line search to find max utility
+  const int                      maxIterations   (200);   
+  const double                   tolerance       (0.0001);
+  const double                   initialGrid     (0.5);
+  const std::pair<double,double> searchInterval  (std::make_pair(0.50,7.0));
+  Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
+  // pad arrays since need room to collect bid; initialize to zero
+  // code flips between these on read and write
+  Matrix utilityMat0= Matrix::Zero (nColumns, nColumns);
+  Matrix oracleMat0 = Matrix::Zero (nColumns, nColumns);
+  Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
+  Matrix utilityMat1= Matrix::Zero (nColumns, nColumns);
+  Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
+  Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
+  Matrix meanMat    = Matrix::Zero (nRounds, nRounds);
+  bool use0 = true;
+  // alternate between reading and writing these matrices
+  Matrix* pUtililtySrc;   Matrix* pUtilityDest = NULL;
+  Matrix* pOracleSrc;     Matrix* pOracleDest = NULL;
+  Matrix* pBidderSrc;     Matrix* pBidderDest = NULL;
+  std::pair<double,double> maxPair;
+  double oracleBid,bidderBid, utilAtMuEqualZero, bidderRejectValue, oracleRejectP;
+  int bidderRejectK, oracleRejectK;
+  int done = 1;
+  for (int round = nRounds; round > 0; --round, ++done)
+  { if (use0)
+    { pUtilitySrc = &utilityMat0;    pOracleSrc  = &oracleMat0;   pBidderSrc  = &bidderMat0;
+      pUtilityDest= &utilityMat1;    pOracleDest = &oracleMat1;   pBidderDest = &bidderMat1;
+    } else
+    { pUtilitySrc = &utilityMat1;    pOracleSrc  = &oracleMat1;   pBidderSrc  = &bidderMat1;
+      pUtilityDest= &utilityMat0;    pOracleDest = &oracleMat0;   pBidderDest = &bidderMat0;
+    }
+    use0 = !use0;
+
+    for (int kb=done; kb<nColumns-1; ++kb)        //               bidder wealth array position on rows
+    { bidderBid= bidderWealth.bid(kb);
+      std::pair<int,double> bidderKP (bidderWealth.new_wealth_position(kb,omega - bidderBid));
+      for (int ko=done; ko<nColumns-1; ++ko)      //               oracle on columns of matrix
+      { oracleBid = oracleWealth.bid(ko);
+	std::pair<int,double> oracleKP (oracleWealth.new_wealth_position(ko,omega - oracleBid));
+	double utilityIfReject = reject_value(bidderKP, oracleKP, pUtilitySrc)
+	utility.set_constants(oracleBid, bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
+      
+	compRatio.set_delay (i, j, round, nRounds, (*pGainSrc)(0,0), (*pGainSrc)(i+1,0), (*pGainSrc)(0,j+1), (*pGainSrc)(i+1,j+1));
+	maxPair = search.find_maximum(compRatio);        // mean, f(mean)
+	if(maxPair.first < bestMeanInterval.first)       // monitor range of optimal means
+	  bestMeanInterval.first = maxPair.first;
+	else if (maxPair.first > bestMeanInterval.second)
+	  bestMeanInterval.second = maxPair.first;
+	double atZero = compRatio(0.0);
+	if (maxPair.second < atZero)
+	  maxPair = std::make_pair(0.0,atZero);
+	mean(i,j) = maxPair.first;
+	(*pGainDest)(i,j) = maxPair.second;
+	(*pOracleDest)(i,j) = compRatio.value_to_oracle(maxPair.first, (*pOracleSrc)(0,0), (*pOracleSrc)(i+1,0), (*pOracleSrc)(0,j+1), (*pOracleSrc)(i+1,j+1));
+	(*pBidderDest)(i,j) = compRatio.value_to_bidder(maxPair.first, (*pBidderSrc)(0,0), (*pBidderSrc)(i+1,0), (*pBidderSrc)(0,j+1), (*pBidderSrc)(i+1,j+1));
+      }
+
+
+
+      double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
+      double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
+      utilAtMuEqualZero = utility(0.0);
+      maxPair = search.find_maximum(utility);
+      if (maxPair.second < utilAtMuEqualZero)
+	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
+      meanMat   (row,k) = maxPair.first;
+      utilityMat(row,k) = maxPair.second;
+      bidderMat (row,k) = utility.bidder_utility(maxPair.first, bidderIfReject, bidderMat(row+1,k-1));
+      oracleMat (row,k) = utility.oracle_utility(maxPair.first, oracleIfReject, oracleMat(row+1,k-1));
+
+
+      
+      if (false) std::cout << "     @ " << k << " " << row << " kk= " << kp.first << " { (" << utilityIfReject << "="
+			   << utilityMat(row+1,kp.first  ) << "*" <<   kp.second << " + "
+			   << utilityMat(row+1,kp.first+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,k-1)
+			   << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
+    }
+  }
+  // write solution (without boundary row) to file
+  if(writeDetails)
+  { std::string fileName;
+    std::ostringstream ss;
+    int gammaInt (trunc(10 * gamma));
+    ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
+    fileName  = ss.str() + "utility";
+    write_matrix_to_file(fileName, utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
+    fileName = ss.str() + "oracle";
+    write_matrix_to_file(fileName,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
+    fileName = ss.str() + "bidder"; 
+    write_matrix_to_file(fileName,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
+    fileName = ss.str() + "mean";
+    write_matrix_to_file(fileName,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
+  }
+  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
+}
+
 //     Utility     Utility     Utility     Utility     Utility     Utility     Utility     Utility     Utility
-
-double
-Utility::r_mu_beta (double mu) const
-{
-  return (0.0 == mu) ? mBeta : reject_prob(mu, mBeta);
-}
-
-double
-Utility::r_mu_alpha (double mu) const
-{
-  return (0.0 == mu) ? omega() : reject_prob(mu, omega());
-}
-
-std::pair<double,double>
-Utility::reject_probabilities (double mu) const
-{
-  double ra,rb;
-  if (mu == 0.0)
-  { ra = omega();
-    rb = mBeta;
-  }
-  else
-  { ra = reject_prob(mu,omega());
-    rb = reject_prob(mu,mBeta );
-  }
-  return std::make_pair(ra,rb);
-}  
-
-//   RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     
-
-double
-RejectUtility::operator()(double mu) const
-{
-  std::pair<double,double>  rprob  (reject_probabilities(mu));
-  double rb (rprob.second);
-  return rprob.first - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
-}
-
-double
-RejectUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
-{
-  double rb (r_mu_beta(mu));
-  return rb  + rb * rejectValue + (1-rb) * noRejectValue;
-}
-
-double
-RejectUtility::oracle_utility (double mu, double rejectValue, double noRejectValue) const
-{
-  std::pair<double,double>  rejectProbs  (reject_probabilities(mu));
-  double rb (rejectProbs.second);
-  return rejectProbs.first + rb * rejectValue + (1-rb) * noRejectValue;
-}
-
-//    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      
-
-double
-RiskUtility::operator()(double mu) const
-{
-  std::pair<double,double>  rprob  (reject_probabilities(mu));
-  double rb (rprob.second);
-  return negative_risk(mu,mOmega) - mGamma * negative_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
-}
-
-
-double
-RiskUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
-{
-  double rb (r_mu_beta(mu));
-  return negative_risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
-}
-
-double
-RiskUtility::oracle_utility (double mu, double rejectValue, double noRejectValue) const 
-{
-  std::pair<double,double>  rprob  (reject_probabilities(mu));
-  double rb (rprob.second);
-  return negative_risk(mu,mOmega) + rb * rejectValue + (1-rb) * noRejectValue;
-}
-
-double
-RiskUtility::negative_risk(double mu, double alpha) const
-{
-  double ra, R;
-
-  if (0 == alpha)
-  { ra = alpha;
-    R = 0.0;
-  }
-  else
-  { ra = reject_prob(mu, alpha);
-    R = (1.0 - ra) * mu*mu;
-  }
-  double dev = z_alpha(alpha) - mu;
-  R += dev * normal_density(dev) + normal_cdf(-dev);
-  return -R;
-}
