@@ -323,10 +323,10 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 void
 solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist pdf, bool writeDetails)
 {
-  // initialize: iZero is omega location, iZero+6 gives five states above omega
-  const int iZero    (nRounds+1);   
-  const int nColumns (iZero + 6);   
-  WealthArray bidderWealth("bidder", nColumns, omega, iZero, pdf);
+  // initialize: iOmega is omega location, iOmega+6 gives five states above omega
+  const int iOmega    (nRounds+1);   
+  const int nColumns (iOmega + 6);   
+  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, pdf);
   if (writeDetails) std::cout << bidderWealth << std::endl;
   // line search to find max utility
   const int                      maxIterations   (200);   
@@ -394,11 +394,11 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
 void
 solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails)
 {
-  // initialize: iZero is omega location, iZero+6 gives five states above omega
-  const int iZero    (nRounds+1);   
-  const int nColumns (iZero + 6);   
-  WealthArray bidderWealth("bidder", nColumns, omega, iZero, bidderPDF);
-  WealthArray oracleWealth("oracle", nColumns, omega, iZero, oraclePDF);
+  // initialize: omega location, iOmega+6 gives five states above omega
+  const int iOmega   (nRounds+1);   
+  const int nColumns (iOmega + 6);   
+  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, bidderPDF);
+  WealthArray oracleWealth("oracle", nColumns, omega, iOmega, oraclePDF);
   if (writeDetails) std::cout << bidderWealth << std::endl;
   // line search to find max utility
   const int                      maxIterations   (200);   
@@ -487,9 +487,8 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
     write_matrix_to_file(fileName,    meanMat);
   }
   { // write summary of configuration and results to stdio
-    int i(nColumns-2);
     std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
-	      << (*pUtilityDest)(i,iZero) << " " << (*pOracleDest)(i,iZero) << " " << (*pBidderDest)(i,iZero) << std::endl;
+	      << (*pUtilityDest)(iOmega,iOmega) << " " << (*pOracleDest)(iOmega,iOmega) << " " << (*pBidderDest)(iOmega,iOmega) << std::endl;
   }
 }
 
