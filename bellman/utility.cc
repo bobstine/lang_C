@@ -32,6 +32,14 @@ reject_value(std::pair<int,double> const& kp, int j, Matrix const& value)
   return value(k,j)*p + value(k+1,j)*(1-p);
 }
 
+double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value)
+{
+  int r  (kp1.first);
+  int c  (kp2.first);
+  int pr (kp1.second);
+  int pc (kp2.second);
+  return pr * ( pc * value(pr,pc) + (1-pc) * value(pr,pc+1) ) + (1-pr) * ( pc * value(pr+1,pc) + (1-pc) * value(pr+1,pc+1) );
+}
 
 double
 z_alpha (double a)

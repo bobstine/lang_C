@@ -4,6 +4,7 @@
 #include "wealth.h"
 
 #include <Eigen/Core>
+
 #include <utility>         // pair
 #include <functional>
 #include <math.h>
@@ -13,21 +14,25 @@
 
 typedef Eigen::MatrixXf Matrix;
 
+typedef std::pair<int,double> WIndex;
 
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
 
 double   reject_prob(double mu, double level);
 
-double   reject_value(int i, std::pair<int,double> const& kp, Matrix const& value);
 
-double   reject_value(std::pair<int,double> const& kp, int j, Matrix const& value);
+double   reject_value(int i, WIndex const& kp, Matrix const& value);
+
+double   reject_value(WIndex const& kp, int j, Matrix const& value);
+
+double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value);
 
 
-double   z_alpha (double a);
+double   z_alpha       (double a);
 
 double   optimal_alpha (double mu, double omega);
 
-double   risk (double mu, double alpha);
+double   risk          (double mu, double alpha);
 
 
 

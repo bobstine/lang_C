@@ -1,9 +1,5 @@
-#include <utility>         // pair
-#include <functional>
-#include <math.h>
 #include <assert.h>
 
-#include "dynamic_array.h"
 #include "utility.h"
 
 #include <iostream>      // debug
@@ -22,11 +18,16 @@
 
 // all powerful oracle
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & util, ProbDist pdf, bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & util, ProbDist pdf, bool writeDetails);
 
 // constrained oracle
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, Utility & util, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & util, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails);
+
+
+
+
+
 
 
 // --- Earlier version with the alpha-investing utility, only spending down alpha-wealth
