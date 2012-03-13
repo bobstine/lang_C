@@ -3,6 +3,7 @@
 
 #include "wealth.h"
 
+#include <Eigen/Core>
 #include <utility>         // pair
 #include <functional>
 #include <math.h>
@@ -10,13 +11,14 @@
 #include <iostream>      // debug
 
 
+typedef Eigen::MatrixXf Matrix;
 
 
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
 
-double   reject_prob(double mu, double level)  
+double   reject_prob(double mu, double level);
 
-double   reject_value(int i, std::pair<int,double> const& kp, Matrix const& value)
+double   reject_value(int i, std::pair<int,double> const& kp, Matrix const& value);
 
 double   reject_value(std::pair<int,double> const& kp, int j, Matrix const& value);
 
@@ -24,6 +26,8 @@ double   reject_value(std::pair<int,double> const& kp, int j, Matrix const& valu
 double   z_alpha (double a);
 
 double   optimal_alpha (double mu, double omega);
+
+double   risk (double mu, double alpha);
 
 
 
@@ -50,7 +54,7 @@ class VectorUtility: public std::unary_function<double,double>
   void set_constants (double alpha, double beta, double rejectValue, double noRejectValue)
   { assert((0 <= alpha) && (alpha <= 1.0));
     mAlpha = alpha;
-    set_constants(beta,rejectValyue,noRejectValue);
+    set_constants(beta,rejectValue,noRejectValue);
   }
 
   void set_constants (double beta, double rejectValue, double noRejectValue)
@@ -85,7 +89,7 @@ class RejectVectorUtility: public VectorUtility
  public:
 
  RejectVectorUtility(double gamma, double omega)
-   : Utility(gamma, omega) { }
+   : VectorUtility(gamma, omega) { }
 
   double operator()(double mu) const;
 
@@ -105,12 +109,10 @@ class RiskVectorUtility: public VectorUtility
  public:
 
  RiskVectorUtility(double gamma, double omega)
-   : Utility(gamma,omega) { }
+   : VectorUtility(gamma,omega) { }
   
   double operator()(double mu) const;
   
-  double negative_risk(double mu, double alpha) const;
-
   double bidder_utility (double mu, double rejectValue, double noRejectValue) const;
   double oracle_utility (double mu, double rejectValue, double noRejectValue) const;
 }; 
@@ -132,7 +134,7 @@ class MatrixUtility: public std::unary_function<double,double>
  public:
 
  MatrixUtility(double gamma, double omega)
-   : mGamma(gamma), mOmega(omega), mAlpha(omega), mBeta(0.0), mValue00(0.0), mValue01(0.0), mValue10(0.0), mValue11(0.0) {}
+   : mGamma(gamma), mOmega(omega), mAlpha(omega), mBeta(0.0), mV00(0.0), mV01(0.0), mV10(0.0), mV11(0.0) {}
 
   double alpha      () const { return mAlpha; }
   double beta       () const { return mBeta;  }
@@ -156,10 +158,10 @@ class MatrixUtility: public std::unary_function<double,double>
     double operator()(double mu) const  { std::cout << "UTIL:  Call to operator of matrix base class." << std::endl; return 0*mu; }
 
   virtual
-    double bidder_utility (double mu, double rejectValue, double noRejectValue) const = 0;
+    double bidder_utility (double mu, double v00, double v01, double v10, double v11) const = 0;
   
   virtual
-    double oracle_utility (double mu, double rejectValue, double noRejectValue) const = 0;
+    double oracle_utility (double mu, double v00, double v01, double v10, double v11) const = 0;
   
 }; 
 
@@ -188,7 +190,7 @@ class RiskMatrixUtility: public MatrixUtility
 {
  public:
 
- RiskUtility(double gamma, double omega)
+ RiskMatrixUtility(double gamma, double omega)
    : MatrixUtility(gamma,omega) { }
   
   double operator()(double mu) const;

@@ -1,4 +1,8 @@
+#include "utility.h"
+
 #include "normal.h"
+
+#include <utility> // pair
 
 
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
@@ -46,6 +50,26 @@ optimal_alpha (double mu, double omega)
 }
 
 
+double
+risk(double mu, double alpha)
+{
+  double ra, R;
+
+  if (0 == alpha)
+  { ra = alpha;
+    R = 0.0;
+  }
+  else
+  { ra = reject_prob(mu, alpha);
+    R = (1.0 - ra) * mu*mu;
+  }
+  double dev = z_alpha(alpha) - mu;
+  R += dev * normal_density(dev) + normal_cdf(-dev);
+  return R;
+}
+
+
+// ------------------------------------------------------------------------------------------------------------
 // -----  VectorUtility  -----  VectorUtility  -----  VectorUtility  -----  VectorUtility  -----  VectorUtility
 
 double
@@ -107,7 +131,7 @@ RiskVectorUtility::operator()(double mu) const
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return negative_risk(mu,mAlpha) - mGamma * negative_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  return (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta)) + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }
 
 
@@ -115,7 +139,7 @@ double
 RiskVectorUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
 {
   double rb (r_mu_beta(mu));
-  return negative_risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
+  return -risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
 }
 
 double
@@ -123,23 +147,99 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return negative_risk(mu,mAlpha) + rb * rejectValue + (1-rb) * noRejectValue;
+  return -risk(mu,mAlpha) + rb * rejectValue + (1-rb) * noRejectValue;
+}
+
+
+// -------------------------------------------------------------------------------------------------------------
+// -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility
+
+double
+MatrixUtility::r_mu_beta (double mu) const
+{
+  return (0.0 == mu) ? mBeta : reject_prob(mu, mBeta);
 }
 
 double
-RiskVectorUtility::negative_risk(double mu, double alpha) const
+MatrixUtility::r_mu_alpha (double mu) const
 {
-  double ra, R;
+  return (0.0 == mu) ? mAlpha : reject_prob(mu, mAlpha);
+}
 
-  if (0 == alpha)
-  { ra = alpha;
-    R = 0.0;
+std::pair<double,double>
+MatrixUtility::reject_probabilities (double mu) const
+{
+  double ra,rb;
+  if (mu == 0.0)
+  { ra = mAlpha;
+    rb = mBeta;
   }
   else
-  { ra = reject_prob(mu, alpha);
-    R = (1.0 - ra) * mu*mu;
+  { ra = reject_prob(mu,mAlpha);
+    rb = reject_prob(mu,mBeta );
   }
-  double dev = z_alpha(alpha) - mu;
-  R += dev * normal_density(dev) + normal_cdf(-dev);
-  return -R;
+  return std::make_pair(ra,rb);
+}  
+
+
+//   RejectMatrixUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     RejectUtility     
+
+double
+RejectMatrixUtility::operator()(double mu) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return (rAlpha - mGamma * rBeta)  + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
 }
+
+double
+RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return  rBeta                    + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+}
+
+double
+RejectMatrixUtility::oracle_utility (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return  rAlpha                   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+}
+
+
+//    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      
+
+double
+RiskMatrixUtility::operator()(double mu) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta)) + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
+}
+
+
+double
+RiskMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return -risk(mu,mBeta)   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+}
+
+double
+RiskMatrixUtility::oracle_utility  (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  return -risk(mu,mAlpha)   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+}
+
+
