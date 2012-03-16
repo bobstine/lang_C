@@ -132,6 +132,7 @@ RejectVectorUtility::oracle_utility (double mu, double rejectValue, double noRej
   return rejectProbs.first + rb * rejectValue + (1-rb) * noRejectValue;
 }
 
+
 //    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      
 
 double
@@ -159,9 +160,14 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 }
 
 
+
 // -------------------------------------------------------------------------------------------------------------
 // -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility  -----  MatrixUtility
 
+
+//
+//   Note:  alpha is the first, beta is the second bid in the order supplied (not the math notation)
+// 
 double
 MatrixUtility::r_mu_beta (double mu) const
 {
@@ -198,17 +204,15 @@ RejectMatrixUtility::operator()(double mu) const
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  return (rAlpha - mGamma * rBeta)  + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
+  double util (rAlpha - mGamma * rBeta);
+  if (rAlpha > rBeta)
+    return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
+  else
+    return  util + mV00 * (1- rBeta) + mV01 * (rBeta-rAlpha) +  mV11 * rAlpha;
+  // independence version
+  // return (rAlpha - mGamma * rBeta)  + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
 }
 
-double
-RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10, double v11) const
-{
-  std::pair<double,double>  rprob  (reject_probabilities(mu));
-  double rAlpha (rprob.first);
-  double rBeta (rprob.second);
-  return  rBeta                    + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
-}
 
 double
 RejectMatrixUtility::oracle_utility (double mu, double v00, double v01, double v10, double v11) const
@@ -216,7 +220,24 @@ RejectMatrixUtility::oracle_utility (double mu, double v00, double v01, double v
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  return  rAlpha                   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+  if (rAlpha > rBeta)
+    return  rAlpha + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+  else
+    return  rAlpha + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
+}
+
+
+double
+RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  if (rAlpha > rBeta)
+    return  rBeta + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+  else
+    return  rBeta + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
+  // ind version   return  rBeta + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
 }
 
 
@@ -228,7 +249,25 @@ RiskMatrixUtility::operator()(double mu) const
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  return (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta)) + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
+  double util (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta));  // neg risk since finds the max utility
+  if (rAlpha > rBeta)
+    return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
+  else
+    return  util + mV00 * (1- rBeta) + mV01 * (rBeta-rAlpha) +  mV11 * rAlpha;
+}
+
+
+
+double
+RiskMatrixUtility::oracle_utility  (double mu, double v00, double v01, double v10, double v11) const
+{
+  std::pair<double,double>  rprob  (reject_probabilities(mu));
+  double rAlpha (rprob.first);
+  double rBeta (rprob.second);
+  if (rAlpha > rBeta)
+    return  -risk(mu,mAlpha)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+  else
+    return  -risk(mu,mAlpha)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
 }
 
 
@@ -238,16 +277,12 @@ RiskMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  return -risk(mu,mBeta)   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
+  if (rAlpha > rBeta)
+    return  -risk(mu,mBeta)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+  else
+    return  -risk(mu,mBeta)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
 }
 
-double
-RiskMatrixUtility::oracle_utility  (double mu, double v00, double v01, double v10, double v11) const
-{
-  std::pair<double,double>  rprob  (reject_probabilities(mu));
-  double rAlpha (rprob.first);
-  double rBeta (rprob.second);
-  return -risk(mu,mAlpha)   + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
-}
+
 
 

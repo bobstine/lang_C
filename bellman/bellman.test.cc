@@ -29,7 +29,7 @@ int  main()
   if (true)
   {
     std::cout << "\n\nTEST: Bellman matrix recursion.\n\n";
-    double gamma        ( 2.5 );
+    double gamma        ( 2.0 );
     double omega        ( 0.05);
     int    nSteps       ( 5 );
     bool   writeDetails ( true);

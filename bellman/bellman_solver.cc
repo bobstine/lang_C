@@ -33,8 +33,11 @@ int  main(int argc, char** argv)
   case 'g': { pdf = geometric; break; }
   default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
   }
+
   
-  solve_reject_equation (gamma, omega, nRounds, pdf, writeTable);
+  RiskMatrixUtility utility(gamma, omega);             // oracle    bidder
+  solve_bellman_utility (gamma, omega, nRounds, utility, universal ,   pdf   , writeTable);
+
 
   /*
     if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert

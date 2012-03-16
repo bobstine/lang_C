@@ -11,7 +11,7 @@
 int  main()
 {
 
-  if (true) // basic test
+  if (true)
   { std::cout << "\nTEST: test basic utility object." << std::endl;    double gamma (2.0 );
     double omega (0.05);
     double alpha (0.025);
@@ -38,7 +38,32 @@ int  main()
     }
   }
   
-  if(true) 
+
+ if (true)
+  { std::cout << "\nTEST: test utility, see the lack of symmetry." << std::endl;
+    double gamma (1.0 );
+    double omega (0.05);
+    double alpha (0.025);
+    double beta  (0.0125);
+    {  // matrix
+      RejectMatrixUtility rejectU (gamma, omega);
+      rejectU.set_constants(alpha, beta, 0,0,0,0);
+      std::cout << "TEST: reject util at mu=0  is " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+      std::cout << "       with constants reversed " << std::endl;
+      rejectU.set_constants(beta, alpha, 0,0,0,0);
+      std::cout << "TEST: reject util at mu=0 is " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+      // maximize
+      double gridSize (0.25);
+      int    maxIt (100);
+      Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), gridSize, maxIt);
+      std::pair<double,double> maxPair  = search.find_maximum(utility);
+      
+
+    }
+  }
+
+ 
+  if(false) 
   { std::cout << "\nTEST: testing maximizer function\n";
     double gamma (2.5);
     double omega (0.05);
