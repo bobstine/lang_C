@@ -391,17 +391,17 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
       pUtilityDest= &utilityMat0;    pOracleDest = &oracleMat0;   pBidderDest = &bidderMat0;
     }
     use0 = !use0;
-    for (int kb=done; kb<nColumns-1; ++kb)   
-    { bidderBid = bidderWealth.bid(kb);
-      bidderKP  = bidderWealth.new_wealth_position(kb,omega - bidderBid);
-      for (int ko=done; ko<nColumns-1; ++ko) 
-      { oracleBid = oracleWealth.bid(ko);
-	oracleKP  = oracleWealth.new_wealth_position(ko,omega - oracleBid);    // position if rejects
-	utility.set_constants(oracleBid, bidderBid,                            // oracle is alpha, bidder is beta;  bidder position on rows
-			      (*pUtilitySrc)(kb-1,ko-1),                       // v00  neither rejects
-			      reject_value(bidderKP, ko-1, *pUtilitySrc),      // v01  only bidder rejects
-			      reject_value(kb-1, oracleKP, *pUtilitySrc),      // v10  only oracle rejects
-			      reject_value(bidderKP, oracleKP, *pUtilitySrc)); // v11  both reject00000
+    for (int ko=done; ko<nColumns-1; ++ko) 
+    { oracleBid = oracleWealth.bid(ko);
+      oracleKP  = oracleWealth.new_wealth_position(ko,omega - oracleBid);         // position if rejects    for (int kb=done; kb<nColumns-1; ++kb)   
+      for (int kb=done; kb<nColumns-1; ++kb) 
+      { bidderBid = bidderWealth.bid(kb);
+	bidderKP  = bidderWealth.new_wealth_position(kb,omega - bidderBid);
+	utility.set_constants(oracleBid, bidderBid,                               // oracle is alpha, bidder is beta;  bidder position on cols
+			      (*pUtilitySrc)(ko-1    , kb-1     ),                // v00  neither rejects
+			      reject_value  (ko-1    , bidderKP, *pUtilitySrc),   // v01  only bidder rejects
+			      reject_value  (oracleKP, kb-1    , *pUtilitySrc),   // v10  only oracle rejects
+			      reject_value  (oracleKP, bidderKP, *pUtilitySrc));  // v11  both reject00000
 	maxPair = search.find_maximum(utility);           // mean, f(mean)
 	if(maxPair.first < bestMeanInterval.first)        // monitor range of optimal means
 	  bestMeanInterval.first = maxPair.first;
@@ -410,23 +410,23 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 	double utilAtMuEqualZero = utility(0.0);
 	if (maxPair.second < utilAtMuEqualZero)
 	  maxPair = std::make_pair(0.0,utilAtMuEqualZero);
-	meanMat(kb,ko) = maxPair.first;                   // bidder on rows of outcome, oracle on columns
-	(*pUtilityDest)(kb,ko) = maxPair.second;
-	(* pOracleDest)(kb,ko) = utility.oracle_utility(maxPair.first,
-							(*pOracleSrc)(kb-1,ko-1),
-							reject_value(bidderKP, ko-1, *pOracleSrc),
-							reject_value(kb-1, oracleKP, *pOracleSrc),
-							reject_value(bidderKP, oracleKP, *pOracleSrc));
+	meanMat(ko,kb) = maxPair.first;                   // bidder on rows of outcome, oracle on columns
+	(*pUtilityDest)(ko,kb) = maxPair.second;
+	(* pOracleDest)(ko,kb) = utility.oracle_utility(maxPair.first,
+							(*pOracleSrc)(ko-1    , kb-1   ),
+							reject_value (ko-1    , bidderKP, *pOracleSrc),
+							reject_value (oracleKP, kb-1    , *pOracleSrc),
+							reject_value (oracleKP, bidderKP, *pOracleSrc));
 	(* pBidderDest)(kb,ko) = utility.bidder_utility(maxPair.first,
-							(*pBidderSrc)(kb-1,ko-1),
-							reject_value(bidderKP, ko-1, *pBidderSrc),
-							reject_value(kb-1, oracleKP, *pBidderSrc),
-							reject_value(bidderKP, oracleKP, *pBidderSrc));
-	//  std::cout << "  [" << kb << "," << ko << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
+							(*pBidderSrc)(ko-1    , kb-1   ),
+							reject_value (ko-1    , bidderKP, *pBidderSrc),
+							reject_value (oracleKP, kb-1    , *pBidderSrc),
+							reject_value (oracleKP, bidderKP, *pBidderSrc));
+	std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
       }
-      // std::cout << std::endl;
+      std::cout << std::endl;
     }
-    // std::cout << std::endl;
+    std::cout << std::endl;
   }
   std::cout << std::setprecision(6);
   if(writeDetails)

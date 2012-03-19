@@ -12,15 +12,14 @@
 
 int  main()
 {
+  double gamma        ( 2.0 );
+  double omega        ( 0.05);
+  int    nSteps       ( 5 );
+  bool   writeDetails ( true);
 
   if (false)
   {
     std::cout << "\n\nTEST: Bellman vector recursion.\n\n";
-    double gamma        ( 2.5 );
-    double omega        ( 0.05);
-    int    nSteps       ( 500 );
-    bool   writeDetails ( true);
-
     RejectVectorUtility utility (gamma, omega);
     solve_bellman_utility (gamma, omega, nSteps, utility, universal, writeDetails);
   }
@@ -29,13 +28,7 @@ int  main()
   if (true)
   {
     std::cout << "\n\nTEST: Bellman matrix recursion.\n\n";
-    double gamma        ( 2.0 );
-    double omega        ( 0.05);
-    int    nSteps       ( 5 );
-    bool   writeDetails ( true);
-
     RejectMatrixUtility utility(gamma, omega);
-
     solve_bellman_utility (gamma, omega, nSteps, utility, universal, universal, writeDetails);
   }
 
