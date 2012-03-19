@@ -35,7 +35,7 @@ int  main(int argc, char** argv)
   }
 
   
-  RiskMatrixUtility utility(gamma, omega);             // oracle    bidder
+  RejectMatrixUtility utility(gamma, omega);             // oracle    bidder
   solve_bellman_utility (gamma, omega, nRounds, utility, universal ,   pdf   , writeTable);
 
 

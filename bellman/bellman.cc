@@ -372,9 +372,9 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix meanMat    = Matrix::Zero (nColumns, nColumns);
   bool use0 = true;
   // alternate between reading and writing these matrices
-  Matrix* pUtilitySrc, * pUtilityDest;
-  Matrix* pOracleSrc,  * pOracleDest;
-  Matrix* pBidderSrc,  * pBidderDest;
+  Matrix* pUtilitySrc (&utilityMat0), * pUtilityDest (&utilityMat1);
+  Matrix* pOracleSrc  (&oracleMat0 ), * pOracleDest  (&oracleMat1);
+  Matrix* pBidderSrc  (&bidderMat0 ), * pBidderDest  (&bidderMat1);
   // iteration vars
   std::pair<double,double> maxPair, bestMeanInterval;
   std::pair<int, double> bidderKP, oracleKP;
@@ -422,11 +422,11 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 							reject_value (ko-1    , bidderKP, *pBidderSrc),
 							reject_value (oracleKP, kb-1    , *pBidderSrc),
 							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
+	std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
       }
-      // std::cout << std::endl;
+       std::cout << std::endl;
     }
-    // std::cout << std::endl;
+     std::cout << std::endl;
   }
   std::cout << std::setprecision(6);
   if(writeDetails)
