@@ -38,7 +38,7 @@ double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value)
   int c  (kp2.first);
   int pr (kp1.second);
   int pc (kp2.second);
-  return pr * ( pc * value(pr,pc) + (1-pc) * value(pr,pc+1) ) + (1-pr) * ( pc * value(pr+1,pc) + (1-pc) * value(pr+1,pc+1) );
+  return pr * ( pc * value(r,c) + (1-pc) * value(r,c+1) ) + (1-pr) * ( pc * value(r+1,c) + (1-pc) * value(r+1,c+1) );
 }
 
 double

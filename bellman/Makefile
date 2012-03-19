@@ -12,11 +12,9 @@ include ../c_flags
 
 PROJECT_NAME = bellman
 
-# OPT = -O3 -std=c++0x
+OPT = -O3 -std=c++0x -DNDEBUG
 
-OPT =
-
-# OPT = -O3 -DNDEBUG
+# OPT =
 
 USES = utils random
 
@@ -56,7 +54,7 @@ bellman_check: bellman
 #      change n to change path, file names, and the length of run;  gp is gamma path
 #      need to make that before run this
 
-n = 500
+n = 250
 gp = gamma.$(n)/
 
 #  --- lists of gp arguments
