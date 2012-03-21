@@ -353,8 +353,8 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   // initialize: omega location, iOmega+6 gives five states above omega
   const int iOmega   (nRounds+1);   
   const int nColumns (iOmega + 6);   
-  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, bidderPDF);
-  WealthArray oracleWealth("oracle", nColumns, omega, iOmega, oraclePDF);
+  WealthArray bidderWealth("bidder", nColumns-1, omega, iOmega, bidderPDF);
+  WealthArray oracleWealth("oracle", nColumns-1, omega, iOmega, oraclePDF);
   // line search to find max utility
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
@@ -381,7 +381,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   double oracleBid,bidderBid;
   bestMeanInterval = std::make_pair(10,0);
   int done = 1;
-  std::cout << std::setprecision(3);
+  std::cout << std::setprecision(3);  // debug
   for (int round = nRounds; round > 0; --round, ++done)
   { if (use0)
     { pUtilitySrc = &utilityMat0;    pOracleSrc  = &oracleMat0;   pBidderSrc  = &bidderMat0;
@@ -408,7 +408,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 	else if (maxPair.first > bestMeanInterval.second)
 	  bestMeanInterval.second = maxPair.first;
 	double utilAtMuEqualZero = utility(0.0);
-	if (maxPair.second < utilAtMuEqualZero)
+	if (maxPair.second <= utilAtMuEqualZero)          // put max at zero if flat
 	  maxPair = std::make_pair(0.0,utilAtMuEqualZero);
 	meanMat(ko,kb) = maxPair.first;                   // bidder on rows of outcome, oracle on columns
 	(*pUtilityDest)(ko,kb) = maxPair.second;
@@ -422,11 +422,11 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 							reject_value (ko-1    , bidderKP, *pBidderSrc),
 							reject_value (oracleKP, kb-1    , *pBidderSrc),
 							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
+	  std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
       }
-      // std::cout << std::endl;
+       std::cout << std::endl;
     }
-    // std::cout << std::endl;
+     std::cout << std::endl;
   }
   std::cout << std::setprecision(6);
   if(writeDetails)

@@ -41,9 +41,10 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
     delete [] pF;
   }
   // init the internal positions
-  // std::cout << "\n\n Searching interval  "
-  //	      << "<" << xLo.first << "," <<xLo.second <<  "> ... " 
-  //	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
+  /* std::cout << "\n\n Searching interval  "
+  	      << "<" << xLo.first << "," <<xLo.second <<  "> ... " 
+  	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
+  */
   double len = xHi.first-xLo.first;
   x = xLo.first + gr*len;
   Pair xA = std::make_pair(x, f(x));
@@ -55,7 +56,7 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
   { len = xB.first - xLo.first;              // 0.618 times prior length
     if (len < mTolerance) break;
     // use to trace optimization
-    /*  std::clog << "GSRC:  <" << xLo.first << "," << xLo.second << "> "
+    /*    std::clog << "GSRC:  <" << xLo.first << "," << xLo.second << "> "
 	      <<        "<" <<  xA.first << "," << xA.second <<  "> "
 	      <<        "<" <<  xB.first << "," << xB.second <<  "> "
 	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;

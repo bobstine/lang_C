@@ -11,7 +11,7 @@
 int  main()
 {
 
-  if (true)
+  if (false)
   { std::cout << "\nTEST: test basic utility object." << std::endl;    double gamma (2.0 );
     double omega (0.05);
     double alpha (0.025);
@@ -40,25 +40,28 @@ int  main()
   
 
  if (true)
-  { std::cout << "\nTEST: test utility, see the lack of symmetry." << std::endl;
+  { std::cout << "\nTEST: test utility, and test maximizer with alpha=beta." << std::endl;
     double gamma (1.0 );
     double omega (0.05);
     double alpha (0.025);
     double beta  (0.0125);
-    {  // matrix
+    { // matrix
       RejectMatrixUtility rejectU (gamma, omega);
       rejectU.set_constants(alpha, beta, 0,0,0,0);
-      std::cout << "TEST: reject util at mu=0  is " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
-      std::cout << "       with constants reversed " << std::endl;
-      rejectU.set_constants(beta, alpha, 0,0,0,0);
-      std::cout << "TEST: reject util at mu=0 is " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+      std::cout << "TEST: reject util at mu=0  is " << rejectU(0) << "   and at  mu=1  is " << rejectU(1) << std::endl;
       // maximize
       double gridSize (0.25);
       int    maxIt (100);
-      Line_Search::GoldenSection search(.0001, std::make_pair(1.5,4.0), gridSize, maxIt);
-      std::pair<double,double> maxPair  = search.find_maximum(utility);
-      
-
+      Line_Search::GoldenSection search(.0001, std::make_pair(0.5,7.0), gridSize, maxIt);
+      rejectU.set_constants(0.002, 0.002, 0,0,0,0);
+      double utilAtMuEqualZero = rejectU(0.0);
+      std::cout << "TEST: with alpha=beta=0.002, reject util at mu=0 is " << utilAtMuEqualZero << "   and at  mu=1  is  " << rejectU(1) << std::endl;
+      std::pair<double,double> maxPair  = search.find_maximum(rejectU);
+      if (maxPair.second <= utilAtMuEqualZero)
+	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
+      double mu (maxPair.first);
+      std::cout << "TEST:                      max on [0.5,7] is " << maxPair.second << " @ " << mu << std::endl;
+      std::cout << "TEST:                      bidder utility = " << rejectU.bidder_utility(mu, 0,0,0,0) << "   oracle utility = " << rejectU.oracle_utility(mu, 0,0,0,0) << std::endl;      
     }
   }
 

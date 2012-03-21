@@ -22,13 +22,17 @@ int  main()
   if (true)
   {
     double omega (0.05);
-    int    steps ( 16 );  // need at least 6 above iZero.
-    int    iZero ( 10 );
+    int  nRounds (5);
+    int    iZero ( nRounds + 1 ) ;
+    int    steps ( iZero + 6 );  // need at least 6 above iZero.
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
     WealthArray wealth(" Test ", steps, omega, iZero, universal);
     std::cout << "TEST: wealth array  \n" << wealth << std::endl;
-
+    std::cout << "TEST:  bids are " ;
+    for (int r=1; r <= nRounds; ++r) std::cout << wealth.bid(r) << "  ";
+    std::cout << std::endl;
+    
     { int i = 3;  // boundary
       double bid = wealth.bid(i);
       std::pair<int,double>  kk (wealth.new_wealth_position(i,0.05-bid));
