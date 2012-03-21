@@ -35,7 +35,8 @@ int  main(int argc, char** argv)
   }
 
   
-  RejectMatrixUtility utility(gamma, omega);             // oracle    bidder
+  RejectMatrixUtility utility(gamma, omega); 
+  std::cout << probDist << " " ;               // prefix to id the bidder type
   solve_bellman_utility (gamma, omega, nRounds, utility, universal ,   pdf   , writeTable);
 
 
