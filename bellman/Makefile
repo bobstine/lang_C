@@ -38,6 +38,9 @@ level_2 = bellman.o
 # bellman recursion for competitive value
 # -------------------------------------------------------------------
 
+result: bellman
+	./bellman --gamma 1.0 --rounds 250 --prob u --write   
+
 bellman_solver.o: bellman_solver.cc
 
 bellman: bellman.o wealth.o utility.o bellman_solver.o
