@@ -51,24 +51,26 @@ bellman_check: bellman
 	./bellman --constrain 0 --gamma 2.5 --rounds 7  --prob u --spend 0.5 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
-#      change n to change path, file names, and the length of run;  gp is gamma path
-#      need to make that before run this
+#      change n to change path, file names, and the length of run;  gp is path
+#      need to make that director (eg reject.200) before run this
+#      Once run, cat combines these lines to show all of the results.
 
 n = 250
-gp = gamma.$(n)/
+gp = reject.$(n)/
 
 #  --- lists of gp arguments
 #  $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
 #  $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
+#  $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99 $(gp)1.01 $(gp)1.02 $(gp)1.03 $(gp)1.04 
 #  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
 #   $(gp)0.6  $(gp)0.7  $(gp)0.8  $(gp)0.9  $(gp)1.0  $(gp)1.1  $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5
 #   $(gp)4.0  $(gp)4.5  $(gp)5.0  $(gp)5.5  $(gp)6.0  $(gp)6.5  $(gp)7.0 $(gp)7.5 $(gp)8.0 $(gp)8.5 $(gp)9.0 $(gp)9.5 $(gp)10.0
 #   $(gp)12   $(gp)14   $(gp)16   $(gp)18   $(gp)20   $(gp)25   $(gp)30  $(gp)35  $(gp)40  $(gp)50  $(gp)60  $(gp)70  $(gp)80  $(gp)90 $(gp)100
 
-bellman_results.reject_$(n): bellman bellman.sh $(gp)200  $(gp)300  $(gp)400  $(gp)500  $(gp)600  $(gp)700 $(gp)800 $(gp)900 $(gp)1000
+bellman_results.reject_$(n): bellman bellman.sh  $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99 $(gp)1.01 $(gp)1.02 $(gp)1.03 $(gp)1.04 $(gp)1.05 
 	cat $(filter $(gp)%,$^) >> $@
 
-$(gp)%: bellman bellman.sh
+$(gp)%: bellman bellman.sh 
 	./bellman --gamma $* --prob u --rounds $(n) > $@
 
 
