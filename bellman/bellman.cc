@@ -351,10 +351,10 @@ void
 solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails)
 {
   // initialize: omega location, iOmega+6 gives five states above omega
-  const int iOmega   (nRounds+1);   
-  const int nColumns (iOmega + 6);   
-  WealthArray bidderWealth("bidder", nColumns-1, omega, iOmega, bidderPDF);
-  WealthArray oracleWealth("oracle", nColumns-1, omega, iOmega, oraclePDF);
+  const int iOmega   (nRounds + 1);   
+  const int nColumns (iOmega  + 6);   
+  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, bidderPDF);
+  WealthArray oracleWealth("oracle", nColumns, omega, iOmega, oraclePDF);
   // line search to find max utility
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
