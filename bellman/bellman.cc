@@ -422,11 +422,12 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 							reject_value (ko-1    , bidderKP, *pBidderSrc),
 							reject_value (oracleKP, kb-1    , *pBidderSrc),
 							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	  std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
+	// debugging output (pick up next two line feeds as well 
+	  std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pOracleDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
       }
-       std::cout << std::endl;
+      std::cout << std::endl;
     }
-     std::cout << std::endl;
+    std::cout << std::endl;
   }
   std::cout << std::setprecision(6);
   if(writeDetails)
@@ -450,7 +451,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   }
   { // write summary of configuration and results to stdio
     std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
-	      << (*pUtilityDest)(iOmega,iOmega) << " " << (*pOracleDest)(iOmega,iOmega) << " " << (*pBidderDest)(iOmega,iOmega) << std::endl;
+	      << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
   }
 }
 
