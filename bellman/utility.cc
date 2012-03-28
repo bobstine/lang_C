@@ -7,13 +7,15 @@
 
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
 
+double maximumZ = 10.0;
+
 double
 reject_prob(double mu, double level)    // r_mu(alpha)
 {
   if(level == 0)
     return 0.0;
   else
-    return normal_cdf(mu-normal_quantile(1-level));
+    return normal_cdf(mu-normal_quantile(1-level));  //  HERE   HERE
 }
 
 double
@@ -44,7 +46,10 @@ double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value)
 double
 z_alpha (double a)
 {
-  return normal_quantile(1-a);
+  if (0 == a)
+    return maximumZ;
+  else
+    return normal_quantile(1-a);
 }
 
 double
