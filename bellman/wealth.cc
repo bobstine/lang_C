@@ -13,11 +13,20 @@ double universal (int k)
   return 1.0/( (k+start) * ll * ll * normConst);
 }
 
+double _geometricRate = 0.0;
+double _geometricRateNorm = 0.0;
+
+void set_geometric_rate(double p)
+{
+  _geometricRate = p;
+  _geometricRateNorm = (1.0-_geometricRate)/_geometricRate;
+}
+
 double geometric (int k)
 {
   double p=1;
-  for (int i=0; i<=k; ++i) p *= 0.99;
-  return p/99.;
+  for (int i=0; i<=k; ++i) p *= _geometricRate;
+  return p * _geometricRateNorm;
 }
 
 double uniform_to_end (int k, int left)         // equal spread over possible locations

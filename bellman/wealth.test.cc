@@ -15,7 +15,17 @@ int  main()
     double total (0.0);
     int count = 100000;
     for(int k=0; k<count; ++k) total += universal(k);
-    std::cout << "TEST: Total of beta(*,0.05) for " << count << " terms = " << total << std::endl;
+    std::cout << "TEST: Total of universal(*,0.05) for " << count << " terms = " << total << std::endl;
+
+    total = 0.0;
+    count = 10000;
+    set_geometric_rate(0.9);
+    std::cout << "TEST: initial geometric rates (rate 0.9) ";
+    for(int k=0; k<10; ++k) std::cout << geometric(k) << " ";
+    std::cout << std::endl;
+    for(int k=0; k<count; ++k) total += geometric(k);
+    std::cout << "TEST: Total of geometric for " << count << " terms = " << total << std::endl;
+
   } 
 
   // test bracket function from wealth 

@@ -10,7 +10,9 @@
 typedef double (*ProbDist)(int);
 
 double universal      (int k);
-double geometric      (int k);
+
+void   set_geometric_rate(double p);
+double geometric         (int k);
 // double uniform_to_end (int k, int left);
 
 

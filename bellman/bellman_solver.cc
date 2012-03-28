@@ -9,42 +9,46 @@
 
 
 void
-parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, double &constrainGeoProb, char &probChar, double &spendPct, bool &writeTable);
+parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, double &constrainGeoProb, char &bidderProbChar, double &spendPct, bool &writeTable);
 
 int  main(int argc, char** argv)
 {
   const double omega  = 0.05;
 
   // default arguments
-  double      gamma  = 2.5;
-  int       nRounds  = 100;
-  double consGeoProb = 0.0;      // use constrained geometric oracle if non-zero prob
-  double   spendPct  = 0.5;
-  char     probDist  = 'u';
-  bool    writeTable = false;    // if false, only return final value
+  double       gamma  = 2.5;
+  int        nRounds  = 100;
+  double    spendPct  = 0.5;
+  double      geoProb = 0.0;      // use constrained geometric oracle if non-zero prob
+  char bidderProbDist = 'u';
+  bool     writeTable = false;    // if false, only return final value
   
-  parse_arguments(argc, argv, gamma, nRounds, consGeoProb, probDist, spendPct, writeTable);
+  parse_arguments(argc, argv, gamma, nRounds, geoProb, bidderProbDist, spendPct, writeTable);
   
-  // select function for spending down probability
+  // select function bidder uses to spend down probability
   ProbDist pdf;
-  switch (probDist)
+  switch (bidderProbDist)
   {
   case 'u': { pdf = universal; break; }
   case 'g': { pdf = geometric; break; }
-  default: { std::cerr << "ERROR: Unrecognized probablity distribution " << probDist << " chosen.\n"; return -1; }
+  default: { std::cerr << "ERROR: Unrecognized probablity distribution " << bidderProbDist << " chosen.\n"; return -1; }
   }
-
   
   RejectMatrixUtility utility(gamma, omega); 
-  std::cout << probDist << " " ;               // prefix to id the bidder type
-  solve_bellman_utility (gamma, omega, nRounds, utility, universal ,   pdf   , writeTable);
-
+  if (0 == geoProb)
+  { std::cout << "u " << bidderProbDist << " ";                                     // prefix to id bidder type
+    solve_bellman_utility (gamma, omega, nRounds, utility, universal, pdf , writeTable);
+  } else
+  { std::cout << "g" << geoProb << " " << bidderProbDist << " ";                   // prefix to id bidder type
+    set_geometric_rate(geoProb);
+    solve_bellman_utility (gamma, omega, nRounds, utility, geometric, pdf , writeTable);
+  }
 
   /*
-    if (consGeoProb <= 0)     // one-dimensional state, unconstrained expert
+    if (geoProb <= 0)     // one-dimensional state, unconstrained expert
     solve_bellman_alpha_equation (gamma, omega, nRounds, spendPct, p, true);
     else                      // two-dimensional state, constrained
-    solve_constrained_bellman_alpha_equation (gamma, omega, nRounds, spendPct, consGeoProb, p, writeTable);
+    solve_constrained_bellman_alpha_equation (gamma, omega, nRounds, spendPct, geoProb, p, writeTable);
   */
   return 0;
 }
@@ -52,7 +56,7 @@ int  main(int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &consGeoProb, char &probDist, double &spendPct, bool &writeTable)
+parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &geoProb, char &probDist, double &spendPct, bool &writeTable)
 {
   static struct option long_options[] = {
     {"gamma",    required_argument, 0, 'g'},
@@ -82,7 +86,7 @@ parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &con
       }
     case 'c' : 
       {
-	consGeoProb= read_utils::lexical_cast<double>(optarg);
+	geoProb= read_utils::lexical_cast<double>(optarg);
 	break;
       }
     case 'p' :

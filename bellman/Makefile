@@ -39,7 +39,7 @@ level_2 = bellman.o
 # -------------------------------------------------------------------
 
 result: bellman
-	./bellman --gamma 1.1 --rounds 5 --prob g --write   
+	./bellman --gamma 1 --rounds 200 --constrain 0.8 --prob u --write   
 
 
 bellman_solver.o: bellman_solver.cc
