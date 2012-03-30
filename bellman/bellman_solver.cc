@@ -36,10 +36,10 @@ int  main(int argc, char** argv)
   
   RejectMatrixUtility utility(gamma, omega); 
   if (0 == geoProb)
-  { std::cout << "u " << bidderProbDist << " ";                                     // prefix to id bidder type
+  { std::cout <<           "u " << bidderProbDist << "      ";                   // prefix to id bidder type
     solve_bellman_utility (gamma, omega, nRounds, utility, universal, pdf , writeTable);
   } else
-  { std::cout << "g" << geoProb << " " << bidderProbDist << " ";                   // prefix to id bidder type
+  { std::cout << geoProb << " " << bidderProbDist << "      ";                   // prefix to id bidder type
     set_geometric_rate(geoProb);
     solve_bellman_utility (gamma, omega, nRounds, utility, geometric, pdf , writeTable);
   }

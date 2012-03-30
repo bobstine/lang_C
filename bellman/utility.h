@@ -21,10 +21,8 @@ typedef std::pair<int,double> WIndex;
 double   reject_prob(double mu, double level);
 
 
-double   reject_value(int i, WIndex const& kp, Matrix const& value);
-
-double   reject_value(WIndex const& kp, int j, Matrix const& value);
-
+double   reject_value(   int i         , WIndex const& kp , Matrix const& value);
+double   reject_value(WIndex const& kp ,       int j      , Matrix const& value);
 double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value);
 
 

@@ -417,13 +417,26 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 							reject_value (ko-1    , bidderKP, *pOracleSrc),
 							reject_value (oracleKP, kb-1    , *pOracleSrc),
 							reject_value (oracleKP, bidderKP, *pOracleSrc));
-	(* pBidderDest)(kb,ko) = utility.bidder_utility(maxPair.first,
+	(* pBidderDest)(ko,kb) = utility.bidder_utility(maxPair.first,
 							(*pBidderSrc)(ko-1    , kb-1   ),
 							reject_value (ko-1    , bidderKP, *pBidderSrc),
 							reject_value (oracleKP, kb-1    , *pBidderSrc),
 							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	// debugging output (pick up next two line feeds as well 
-	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pOracleDest)(kb,ko) << "{" << oracleBid << "," << bidderBid << "," << meanMat(kb,ko) << "}";
+	/* huge debugging output...
+	std::cout << "\n " << "alpha=" << utility.alpha() << "  beta=" << utility.beta()
+		  << "  Oracle value is " << (*pOracleDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pOracleSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pOracleSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pOracleSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pOracleSrc) 
+		  << ")   Bidder value is " << (*pBidderDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pBidderSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pBidderSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pBidderSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pBidderSrc) << ")" << std::endl;  */
+	// partial debugging output (pick up next two line feeds as well 
+	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "+" << (*pOracleDest)(kb,ko) << "+" << (*pBidderDest)(kb,ko)
+	//		  << "{" << oracleBid << "," << bidderBid << "," << meanMat(ko,kb) << "}";
       }
       // std::cout << std::endl;
     }

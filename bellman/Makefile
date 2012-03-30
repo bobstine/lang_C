@@ -14,7 +14,7 @@ PROJECT_NAME = bellman
 
 OPT = -O3 -std=c++0x -DNDEBUG
 
-# OPT =
+# OPT =  -std=c++0x
 
 USES = utils random
 
@@ -39,7 +39,7 @@ level_2 = bellman.o
 # -------------------------------------------------------------------
 
 result: bellman
-	./bellman --gamma 1 --rounds 200 --constrain 0.8 --prob u --write   
+	./bellman --gamma 2 --rounds 100 --constrain 0.9 --prob u --write   
 
 
 bellman_solver.o: bellman_solver.cc

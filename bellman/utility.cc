@@ -7,12 +7,13 @@
 
 ////////////////////////////////////  Utility functions  /////////////////////////////////////////
 
-double maximumZ = 10.0;
+double maximumZ = 8.0;
+double epsilon  = 1.0e-15;
 
 double
 reject_prob(double mu, double level)    // r_mu(alpha)
 {
-  if(level == 0)
+  if(level < epsilon)
     return 0.0;
   else
     return normal_cdf(mu-normal_quantile(1-level));  //  HERE   HERE
@@ -44,12 +45,12 @@ double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value)
 }
 
 double
-z_alpha (double a)
+z_alpha (double alpha)
 {
-  if (0 == a)
+  if (alpha < epsilon)
     return maximumZ;
   else
-    return normal_quantile(1-a);
+    return normal_quantile(1-alpha);
 }
 
 double
@@ -176,13 +177,27 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 double
 MatrixUtility::r_mu_beta (double mu) const
 {
-  return (0.0 == mu) ? mBeta : reject_prob(mu, mBeta);
+  if (0.0 == mu)
+    return mBeta;
+  else
+  { if (0.0 == mBeta)
+      return 0.0;
+    else
+      return reject_prob(mu, mBeta);
+  }
 }
 
 double
 MatrixUtility::r_mu_alpha (double mu) const
 {
-  return (0.0 == mu) ? mAlpha : reject_prob(mu, mAlpha);
+  if (0.0 == mu)
+    return mAlpha;
+  else
+  { if (0.0 == mAlpha)
+      return 0.0;
+    else
+      return reject_prob(mu, mAlpha);
+  }
 }
 
 std::pair<double,double>
@@ -194,8 +209,8 @@ MatrixUtility::reject_probabilities (double mu) const
     rb = mBeta;
   }
   else
-  { ra = reject_prob(mu,mAlpha);
-    rb = reject_prob(mu,mBeta );
+  { ra = (0.0 == mAlpha) ? 0.0 : reject_prob(mu,mAlpha);
+    rb = (0.0 == mBeta ) ? 0.0 : reject_prob(mu,mBeta );
   }
   return std::make_pair(ra,rb);
 }  
@@ -244,6 +259,8 @@ RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v
     return  rBeta + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
   // ind version   return  rBeta + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
 }
+
+
 
 
 //    RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      RiskUtility      

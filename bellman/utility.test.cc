@@ -12,34 +12,41 @@ int  main()
 {
 
   if (false)
-  { std::cout << "\nTEST: test basic utility object." << std::endl;    double gamma (2.0 );
+  { std::cout << "\nTEST: test vector utility object." << std::endl;
+    double gamma (2.0 );
     double omega (0.05);
     double alpha (0.025);
     double beta  (0.0125);
-    { // vector
-      RejectVectorUtility rejectU (gamma, omega);
-      std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;    
-      std::cout << "TEST: risk at mu=0 " << risk(0,0.05) << "   and at mu=1 " << risk(1,0.05) << std::endl;
-      // check additive
-      double mu (1.8);
-      RiskVectorUtility riskU (gamma, omega); 
-      riskU.set_constants(alpha, beta, 0,0);
-      std::cout << "TEST: additivity...   net " << riskU(mu) << " = " << riskU.oracle_utility(mu, 0,0) << " - " << gamma << "*" << riskU.bidder_utility(mu,0,0) << std::endl;
-    }
-    {  // matrix
-      RejectMatrixUtility rejectU (gamma, omega);  
-      std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
-      // check additive
-      double mu (1.8);
-      RiskMatrixUtility riskU (gamma, omega); 
-      riskU.set_constants(alpha, beta, 0,0,0,0);
-      std::cout << "TEST: risk   util at mu=0 " << riskU(0) << "   and at mu=1 " << riskU(1) << std::endl;
-      std::cout << "TEST: additivity...   net " << riskU(mu) << " = " << riskU.oracle_utility(mu, 0,0,0,0) << " - " << gamma << "*" << riskU.bidder_utility(mu,0,0,0,0) << std::endl;
-    }
+    RejectVectorUtility rejectU (gamma, omega);
+    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;    
+    std::cout << "TEST: risk at mu=0 " << risk(0,0.05) << "   and at mu=1 " << risk(1,0.05) << std::endl;
+    // check additive
+    double mu (1.8);
+    RiskVectorUtility riskU (gamma, omega); 
+    riskU.set_constants(alpha, beta, 0,0);
+    std::cout << "TEST: additivity...   net " << riskU(mu) << " = " << riskU.oracle_utility(mu, 0,0) << " - " << gamma << "*" << riskU.bidder_utility(mu,0,0) << std::endl;
+  }
+    
+  if (true)
+  { std::cout << "\nTEST: test basic matrix object." << std::endl;
+    double gamma (1.0 );
+    double omega (0.05);
+    RejectMatrixUtility rejectU (gamma, omega);  
+    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+    double mu    (7.0   );
+    double alpha (0.000643 );
+    double beta  (0.000691 );
+    rejectU.set_constants(alpha, beta, 0,0,0,0);
+    std::cout << "TEST: additivity...   net " << rejectU(mu) << " = " << rejectU.oracle_utility(mu, 0,0,0,0) << " - " << gamma << "*" << rejectU.bidder_utility(mu,0,0,0,0) << std::endl;
+    // risk utility,  check additive
+    RiskMatrixUtility riskU (gamma, omega); 
+    riskU.set_constants(alpha, beta, 0,0,0,0);
+    std::cout << "TEST: risk   util at mu=0 " << riskU(0) << "   and at mu=1 " << riskU(1) << std::endl;
+    std::cout << "TEST: additivity...   net " << riskU(mu) << " = " << riskU.oracle_utility(mu, 0,0,0,0) << " - " << gamma << "*" << riskU.bidder_utility(mu,0,0,0,0) << std::endl;
   }
   
 
- if (true)
+  if (false)
   { std::cout << "\nTEST: test utility, and test maximizer with alpha=beta." << std::endl;
     double gamma (1.0 );
     double omega (0.05);
