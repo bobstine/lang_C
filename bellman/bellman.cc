@@ -27,7 +27,7 @@ imin(int a, int b)
 
 
 void
-solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist bidderProb, bool writeDetails)
+solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleProb, ProbDist const& bidderProb, bool writeDetails)
 {
   const int maxIterations (200);   
   const double tolerance  (0.0001);
@@ -171,7 +171,7 @@ ConstrainedExpertCompetitiveAlphaGain::value_to_bidder(double mu, double v00, do
 // --------------------------------------------------------------------------------------------------------------
 
 void
-solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist f, bool writeDetails)
+solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist const& f, bool writeDetails)
 {
   const int maxIterations (100);
   const double tolerance  (0.0001);
@@ -282,7 +282,7 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 //    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist pdf, bool writeDetails)
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist const& pdf, bool writeDetails)
 {
   // initialize: iOmega is omega location, iOmega+6 gives five states above omega
   const int iOmega    (nRounds+1);   
@@ -348,7 +348,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
 //    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist oraclePDF, ProbDist bidderPDF, bool writeDetails)
+solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist const& oraclePDF, ProbDist const& bidderPDF, bool writeDetails)
 {
   // initialize: omega location, iOmega+6 gives five states above omega
   const int iOmega   (nRounds + 1);   

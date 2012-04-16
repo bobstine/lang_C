@@ -15,8 +15,14 @@
 
 */
 
+ProbDist*
+make_prob_dist_ptr (char code, double p = 0.0);
+
 void
-parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, char &oracleProbChar, double &oracleProb, char &bidderProbChar, double &bidderProb, double &spendPct, bool &writeTable);
+parse_arguments(int argc, char** argv,
+		double &gamma, int &nRounds,
+		char &oracleProbChar, double &oracleProb, char &bidderProbChar, double &bidderProb,
+		double &spendPct, bool &writeTable);
 
 int  main(int argc, char** argv)
 {
@@ -26,32 +32,29 @@ int  main(int argc, char** argv)
   double       gamma  = 2.5;
   int        nRounds  = 100;
   double    spendPct  = 0.5;
-  char oracleProbDist = 'u';
+  char     oracleChar = 'u';
   double   oracleProb = 0.0;      // use constrained geometric oracle if non-zero prob
-  char bidderProbDist = 'u';
+  char     bidderChar = 'u';
   double   bidderProb = 0.0;
   bool     writeTable = false;    // if false, only return final value
   
-  parse_arguments(argc, argv, gamma, nRounds, oracleProbDist, oracleProb, bidderProbDist, oracleProb, spendPct, writeTable);
-  
-  // select function bidder uses to spend down probability
-  ProbDist pdf;
-  switch (bidderProbDist)
-  {
-  case 'u': { pdf = universal; break; }
-  case 'g': { pdf = geometric; break; }
-  default: { std::cerr << "ERROR: Unrecognized probablity distribution " << bidderProbDist << " chosen.\n"; return -1; }
+  parse_arguments(argc, argv, gamma, nRounds, oracleChar, oracleProb, bidderChar, bidderProb, spendPct, writeTable);
+
+  // build probability distribution (null if none)
+  ProbDist *pOracleProb = make_prob_dist_ptr(oracleChar, oracleProb);
+  ProbDist *pBidderProb = make_prob_dist_ptr(bidderChar, bidderProb);
+
+  if(NULL == pOracleProb)  // unconstrained oracle 
+  { std::cout << "  O  " << pBidderProb->identifier() << " ";
+    RejectVectorUtility utility(gamma,omega);
+    solve_bellman_utility(gamma, omega, nRounds, utility, *pBidderProb, writeTable);
+  }
+  else                     // constrained expert
+  { std::cout << pOracleProb->identifier() << " " << pBidderProb->identifier() << " ";
+    RejectMatrixUtility utility(gamma, omega);
+    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleProb, *pBidderProb, writeTable);
   }
   
-  RejectMatrixUtility utility(gamma, omega); 
-  if (0 == geoProb)
-  { std::cout <<           "u " << bidderProbDist << "      ";                   // prefix to id bidder type
-    solve_bellman_utility (gamma, omega, nRounds, utility, universal, pdf , writeTable);
-  } else
-  { std::cout << geoProb << " " << bidderProbDist << "      ";                   // prefix to id bidder type
-    set_geometric_rate(geoProb);
-    solve_bellman_utility (gamma, omega, nRounds, utility, geometric, pdf , writeTable);
-  }
 
   /*
     if (geoProb <= 0)     // one-dimensional state, unconstrained expert
@@ -65,20 +68,25 @@ int  main(int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &geoProb, char &probDist, double &spendPct, bool &writeTable)
+parse_arguments(int argc, char** argv,
+		double &gamma, int &nRounds,
+		char &oracleProbChar, double &oracleProb, char &bidderProbChar, double &bidderProb,
+		double &spendPct, bool &writeTable)
 {
   static struct option long_options[] = {
-    {"gamma",    required_argument, 0, 'g'},
-    {"constrain",required_argument, 0, 'c'},
-    {"rounds",   required_argument, 0, 'n'},
-    {"probdist", required_argument, 0, 'p'},
-    {"spend",    required_argument, 0, 's'},
+    {"gamma",      required_argument, 0, 'g'},
+    {"oracle",     required_argument, 0, 'o'},
+    {"oracleprob", required_argument, 0, 'm'},
+    {"bidder",     required_argument, 0, 'b'},
+    {"bidderprob", required_argument, 0, 'p'},
+    {"rounds",     required_argument, 0, 'n'},
+    {"spend",      required_argument, 0, 's'},
     {"write",          no_argument, 0, 'w'},
     {0, 0, 0, 0}                             // terminator 
   };
   int key;
   int option_index = 0;
-  while (-1 !=(key = getopt_long (argc, argv, "g:c:n:p:s:w", long_options, &option_index))) // colon means has argument
+  while (-1 !=(key = getopt_long (argc, argv, "g:o:m:b:p:n:s:w", long_options, &option_index))) // colon means has argument
   {
     // std::cout << "Option key " << char(key) << " for option " << long_options[option_index].name << ", option_index=" << option_index << std::endl;
     switch (key)
@@ -121,3 +129,17 @@ parse_arguments(int argc, char** argv,		double &gamma, int &nRounds, double &geo
   } // while
 }
 
+ProbDist*
+make_prob_dist_ptr (char code, double prob)
+{
+  ProbDist *p = NULL;
+  
+  switch (code)
+  {
+  case 'O': { break; }
+  case 'u': { p = new UniversalDist(); break; }
+  case 'g': { p = new GeometricDist(prob); break; }
+  default : { std::cout << "PARSE: Option " << code << " for distribution not recognized." << std::endl; }
+  }
+  return p;
+}

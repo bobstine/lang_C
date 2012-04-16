@@ -2,10 +2,30 @@
 
 #include <utility>
 #include <math.h>
+#include <sstream>
 
 /////////////////////////////////////////  Distributions  ////////////////////////////////////////
 
-double universal (int k)
+double
+GeometricDist::operator() (int k) const
+{
+  double p=1;
+  for (int i=0; i<=k; ++i) p *= mP;
+  return p * mNorm;
+}
+
+
+std::string
+GeometricDist::identifier() const
+{
+  std::stringstream ss;
+  ss << "g" << floor(100*mP);
+  return ss.str();
+}
+
+
+double
+UniversalDist::operator() (int k) const
 {
   const int start = 20;                 // where to start the code
   const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
@@ -13,21 +33,6 @@ double universal (int k)
   return 1.0/( (k+start) * ll * ll * normConst);
 }
 
-double _geometricRate = 0.0;
-double _geometricRateNorm = 0.0;
-
-void set_geometric_rate(double p)
-{
-  _geometricRate = p;
-  _geometricRateNorm = (1.0-_geometricRate)/_geometricRate;
-}
-
-double geometric (int k)
-{
-  double p=1;
-  for (int i=0; i<=k; ++i) p *= _geometricRate;
-  return p * _geometricRateNorm;
-}
 
 double uniform_to_end (int k, int left)         // equal spread over possible locations
 {
@@ -64,7 +69,7 @@ WealthArray::new_wealth_position (int k0, double increase)  const // k0 is curre
 
 
 void
-WealthArray::initialize_array(Tfunc p)
+WealthArray::initialize_array(ProbDist const& p)
 {
   assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
   //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;

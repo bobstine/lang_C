@@ -9,22 +9,42 @@
 
 class ProbDist: public std::unary_function<int,double>
 {
+  public:
   virtual
-    double operator(int) const = 0;
+    std::string identifier()    const = 0;
+  virtual
+    double      operator()(int) const = 0;
 };
+
+
+
+/**********************************************************************************
+
+   Probability distributions that control spending
+
+     All take 2 integer arguments (k since reject, j remaining)
+     but some (like universal) don't use the second argument
+
+ **********************************************************************************/
 
 class GeometricDist: public ProbDist
 {
-  private:
-  double  mRate;
+  const double mP;
+  const double mNorm;
+
   public:
-  GeometricDist(double rate) : mRate(rate){}
-double operator()(int k) const;
+
+  GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
+
+  std::string identifier() const;
+  double operator()(int k) const;
 };
+  
 
 class UniversalDist: public ProbDist
 {
   public:
+  std::string identifier() const { return "univ"; }
   double operator()(int k) const;
   };
 
@@ -44,8 +64,6 @@ class UniversalDist: public ProbDist
 
 class WealthArray
 {
-  typedef double(*Tfunc)(int);
-
   const std::string     mName;
   const int             mSize;       // number of distinct wealth values
   const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
@@ -53,7 +71,7 @@ class WealthArray
   DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
 
  public:
- WealthArray(std::string name, int size, double omega, int zeroIndex, Tfunc pdf)
+ WealthArray(std::string name, int size, double omega, int zeroIndex, ProbDist const& pdf)
    : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth() { initialize_array(pdf);}
 
   int    size ()                   const { return mSize; }
@@ -69,7 +87,7 @@ class WealthArray
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
-  void initialize_array(Tfunc p);
+  void initialize_array(ProbDist const& p);
 };
 
 inline
@@ -80,34 +98,6 @@ operator<< (std::ostream& os, WealthArray const& wa)
   return os;
 }
 
-
-
-/**********************************************************************************
-
-   Probability distributions that control spending
-
-     All take 2 integer arguments (k since reject, j remaining)
-     but some (like universal) don't use the second argument
-
- **********************************************************************************/
-
-class GeometricDist: public std::unary_function<int,double>   // has flexible prob
-{
-  const double mP;
-  const double mNorm;
-
-  public:
-
-  GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
-
-  double operator()(int k) const
-  { double p=1;
-    for (int i=0; i<=k; ++i) p *= mP;
-    return p * mNorm;
-  }
-
-};
-  
 
 
 #endif

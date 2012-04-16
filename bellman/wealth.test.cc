@@ -9,21 +9,22 @@
 int  main()
 {
   
-  // test the probability function from wealth
+  // test the probability function from wealth.h
   if (true)
-  { 
+  {
+    UniversalDist univ;
     double total (0.0);
     int count = 100000;
-    for(int k=0; k<count; ++k) total += universal(k);
+    for(int k=0; k<count; ++k) total += univ(k);
     std::cout << "TEST: Total of universal(*,0.05) for " << count << " terms = " << total << std::endl;
 
+    GeometricDist geo(0.9);
     total = 0.0;
     count = 10000;
-    set_geometric_rate(0.9);
     std::cout << "TEST: initial geometric rates (rate 0.9) ";
-    for(int k=0; k<10; ++k) std::cout << geometric(k) << " ";
+    for(int k=0; k<10; ++k) std::cout << geo(k) << " ";
     std::cout << std::endl;
-    for(int k=0; k<count; ++k) total += geometric(k);
+    for(int k=0; k<count; ++k) total += geo(k);
     std::cout << "TEST: Total of geometric for " << count << " terms = " << total << std::endl;
 
   } 
@@ -37,7 +38,10 @@ int  main()
     int    steps ( iZero + 6 );  // need at least 6 above iZero.
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
-    WealthArray wealth(" Test ", steps, omega, iZero, universal);
+    ProbDist *p;
+    UniversalDist univ;
+    p = &univ;
+    WealthArray wealth(" Test ", steps, omega, iZero, *p);
     std::cout << "TEST: wealth array  \n" << wealth << std::endl;
     std::cout << "TEST:  bids are " ;
     for (int r=1; r <= nRounds; ++r) std::cout << wealth.bid(r) << "  ";
