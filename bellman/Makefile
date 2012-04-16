@@ -42,9 +42,9 @@ result: bellman
 	./bellman --gamma 2 --rounds 100 --constrain 0.9 --prob u --write   
 
 
-bellman_solver.o: bellman_solver.cc
+bellman_main.o: bellman_main.cc
 
-bellman: bellman.o wealth.o utility.o bellman_solver.o
+bellman: bellman.o wealth.o utility.o bellman_main.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_test: bellman
@@ -56,26 +56,26 @@ bellman_check: bellman
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
-#      need to make that director (eg reject.200) before run this
 #      Once run, cat combines these lines to show all of the results.
 
 n = 250
-gp = reject.$(n)/
+expert_gamma = 0.80
+eg = 080
 
-#  --- lists of gp arguments
-#  $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
-#  $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
-#  $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99 $(gp)1.01 $(gp)1.02 $(gp)1.03 $(gp)1.04 
-#  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
-#   $(gp)0.6  $(gp)0.7  $(gp)0.8  $(gp)0.9  $(gp)1.0  $(gp)1.1  $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5
-#   $(gp)4.0  $(gp)4.5  $(gp)5.0  $(gp)5.5  $(gp)6.0  $(gp)6.5  $(gp)7.0 $(gp)7.5 $(gp)8.0 $(gp)8.5 $(gp)9.0 $(gp)9.5 $(gp)10.0
-#   $(gp)12   $(gp)14   $(gp)16   $(gp)18   $(gp)20   $(gp)25   $(gp)30  $(gp)35  $(gp)40  $(gp)50  $(gp)60  $(gp)70  $(gp)80  $(gp)90 $(gp)100
+#  --- below here is automagic, building output in runs/   start by defining subdirectory path gp
+gp = runs/reject_g$(eg)_$(n)
 
-bellman_results.reject_$(n): bellman bellman.sh  $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99 $(gp)1.01 $(gp)1.02 $(gp)1.03 $(gp)1.04 $(gp)1.05 
-	cat $(filter $(gp)%,$^) >> $@
+$(gp)/.directory_built: 
+	echo Building directory for $(gp)
+	mkdir $(gp)
+	touch $@
 
-$(gp)%: bellman bellman.sh 
-	./bellman --gamma $* --prob u --rounds $(n) > $@
+runs/summary.reject_g$(eg)_$(n): bellman bellman.sh $(gp)/0.5 $(gp)/0.55 $(gp)/0.6 $(gp)/0.65 $(gp)/0.675 $(gp)/0.7 $(gp)/0.705 $(gp)/0.710 $(gp)/0.715 $(gp)/0.720 $(gp)/0.725 $(gp)/0.7275 $(gp)/0.7285 $(gp)/0.7290 $(gp)/0.7295 $(gp)/0.73 $(gp)/0.7305 $(gp)/0.731 $(gp)/0.7315 $(gp)/0.7320 $(gp)/0.7325 $(gp)/0.735 $(gp)/0.740 $(gp)/0.745 $(gp)/0.75 $(gp)/0.755 $(gp)/0.760 $(gp)/0.765 $(gp)/0.770 $(gp)/0.775 $(gp)/0.8 $(gp)/0.825  $(gp)/0.85 $(gp)/0.875 $(gp)/0.9 $(gp)/0.925 $(gp)/0.95 $(gp)/0.975 $(gp)/0.990 $(gp)/1.0 $(gp)/1.01 $(gp)/1.05 $(gp)/1.1 $(gp)/1.15 $(gp)/1.2 $(gp)/1.3 $(gp)/1.4 $(gp)/1.5 $(gp)/1.6 $(gp)/1.7 $(gp)/2.0 $(gp)/2.5 $(gp)/3.0 $(gp)/3.5 $(gp)/4.0  $(gp)/4.5  $(gp)/5.0  $(gp)/5.5  $(gp)/6.0  $(gp)/6.5  $(gp)/7.0 $(gp)/7.5 $(gp)/8.0  $(gp)/9.0 $(gp)/10.0 $(gp)/15.0 $(gp)/20.0
+	rm -f $@
+	cat $(filter $(gp)/%,$^) >> $@
+
+$(gp)/%: bellman bellman.sh $(gp)/.directory_built
+	./bellman --gamma $* --constrain $(expert_gamma) --prob u --rounds $(n) > $@
 
 
 # ---  unconstrained

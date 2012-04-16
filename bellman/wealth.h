@@ -7,12 +7,27 @@
 #include <functional>
 
 
-typedef double (*ProbDist)(int);
+class ProbDist: public std::unary_function<int,double>
+{
+  virtual
+    double operator(int) const = 0;
+};
 
-double universal      (int k);
+class GeometricDist: public ProbDist
+{
+  private:
+  double  mRate;
+  public:
+  GeometricDist(double rate) : mRate(rate){}
+double operator()(int k) const;
+};
 
-void   set_geometric_rate(double p);
-double geometric         (int k);
+class UniversalDist: public ProbDist
+{
+  public:
+  double operator()(int k) const;
+  };
+
 // double uniform_to_end (int k, int left);
 
 

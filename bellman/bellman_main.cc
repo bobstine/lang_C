@@ -8,8 +8,15 @@
 
 
 
+/*
+  prob character indicates the distribution, u for universal and g for geometric
+  
+  following probability is only relevant for a geometric distribution.
+
+*/
+
 void
-parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, double &constrainGeoProb, char &bidderProbChar, double &spendPct, bool &writeTable);
+parse_arguments(int argc, char** argv,     double &gamma, int &nRounds, char &oracleProbChar, double &oracleProb, char &bidderProbChar, double &bidderProb, double &spendPct, bool &writeTable);
 
 int  main(int argc, char** argv)
 {
@@ -19,11 +26,13 @@ int  main(int argc, char** argv)
   double       gamma  = 2.5;
   int        nRounds  = 100;
   double    spendPct  = 0.5;
-  double      geoProb = 0.0;      // use constrained geometric oracle if non-zero prob
+  char oracleProbDist = 'u';
+  double   oracleProb = 0.0;      // use constrained geometric oracle if non-zero prob
   char bidderProbDist = 'u';
+  double   bidderProb = 0.0;
   bool     writeTable = false;    // if false, only return final value
   
-  parse_arguments(argc, argv, gamma, nRounds, geoProb, bidderProbDist, spendPct, writeTable);
+  parse_arguments(argc, argv, gamma, nRounds, oracleProbDist, oracleProb, bidderProbDist, oracleProb, spendPct, writeTable);
   
   // select function bidder uses to spend down probability
   ProbDist pdf;
