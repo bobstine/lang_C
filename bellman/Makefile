@@ -38,8 +38,12 @@ level_2 = bellman.o
 # bellman recursion for competitive value
 # -------------------------------------------------------------------
 
-result: bellman
-	./bellman --gamma 2 --rounds 100 --constrain 0.9 --prob u --write   
+constrained_test: bellman
+	./bellman --gamma 2 --rounds 50 --oracle u --oracleprob 0.5 --bidder u --bidderprob 0.5 --write   
+
+unconstrained_test: bellman
+	./bellman --gamma 2 --rounds 50                             --bidder u --bidderprob 0.5 --write   
+
 
 
 bellman_main.o: bellman_main.cc

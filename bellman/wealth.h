@@ -34,10 +34,10 @@ class GeometricDist: public ProbDist
 
   public:
 
-  GeometricDist (double p): mP(p), mNorm((1-p)/p) { }
+  GeometricDist (double p): mP(p), mNorm(p/(1-p)) { }   
 
-  std::string identifier() const;
-  double operator()(int k) const;
+  std::string identifier() const; 
+  double operator()(int k) const;    // CDF, percent spent along the way
 };
   
 

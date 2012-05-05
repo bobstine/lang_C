@@ -10,7 +10,7 @@ double
 GeometricDist::operator() (int k) const
 {
   double p=1;
-  for (int i=0; i<=k; ++i) p *= mP;
+  for (int i=0; i<=k; ++i) p *= (1-mP);
   return p * mNorm;
 }
 

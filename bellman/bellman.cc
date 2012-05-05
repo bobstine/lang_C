@@ -94,7 +94,7 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
   }
   // write parms and final values to std io
   std::clog << "Interval for optimal means is [" << bestMeanInterval.first << "," << bestMeanInterval.second << std::endl;
-  std::cout << "Constrained " << oracleProb << "  " << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
+  std::cout << gamma             << " " << omega               << " " << nRounds             << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second << " " 
 	    << (*pGainDest)(0,0) << " " << (*pOracleDest)(0,0) << " " << (*pBidderDest)(0,0) << std::endl;
 }
@@ -170,6 +170,8 @@ ConstrainedExpertCompetitiveAlphaGain::value_to_bidder(double mu, double v00, do
 //
 // --------------------------------------------------------------------------------------------------------------
 
+
+// this version does alpha-wealth rather than input utility
 void
 solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, ProbDist const& f, bool writeDetails)
 {
@@ -226,7 +228,7 @@ solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double sp
     write_matrix_to_file(ss.str() + "mu",       mean.topLeftCorner(mean.rows(), mean.rows()));
   }
   // write parameters and final values to std io
-  std::cout << "Unconstrained " << 0 << " " << gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
+  std::cout <<  gamma     << " " << omega       << " " << nRounds     << " " << spendPct << " "
 	    << searchInterval.first << " " << searchInterval.second  << " " 
 	    << gain(0,0) << " " << oracle(0,0) << " " << bidder(0,0) << std::endl;
 }
@@ -278,8 +280,11 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
 }
 
 
-
+//
+//    Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained
+//
 //    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
+//
 
 void
 solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist const& pdf, bool writeDetails)
@@ -288,7 +293,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   const int iOmega    (nRounds+1);   
   const int nColumns (iOmega + 6);   
   WealthArray bidderWealth("bidder", nColumns, omega, iOmega, pdf);
-  if (writeDetails) std::cout << bidderWealth << std::endl;
+
   // line search to find max utility
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);

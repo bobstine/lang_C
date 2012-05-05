@@ -18,7 +18,7 @@
 
 // all powerful oracle
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & util, ProbDist const& pdf, bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & util,                            ProbDist const& pdf,       bool writeDetails);
 
 // constrained oracle
 void

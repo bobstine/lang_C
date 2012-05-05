@@ -44,17 +44,16 @@ int  main(int argc, char** argv)
   ProbDist *pOracleProb = make_prob_dist_ptr(oracleChar, oracleProb);
   ProbDist *pBidderProb = make_prob_dist_ptr(bidderChar, bidderProb);
 
-  if(NULL == pOracleProb)  // unconstrained oracle 
-  { std::cout << "  O  " << pBidderProb->identifier() << " ";
+  if(0 == oracleProb)  // unconstrained oracle 
+  { std::cout <<                         "uncon " << pBidderProb->identifier() << " ";
     RejectVectorUtility utility(gamma,omega);
-    solve_bellman_utility(gamma, omega, nRounds, utility, *pBidderProb, writeTable);
+    solve_bellman_utility (gamma, omega, nRounds, utility,               *pBidderProb, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleProb->identifier() << " " << pBidderProb->identifier() << " ";
     RejectMatrixUtility utility(gamma, omega);
     solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleProb, *pBidderProb, writeTable);
   }
-  
 
   /*
     if (geoProb <= 0)     // one-dimensional state, unconstrained expert
@@ -81,7 +80,7 @@ parse_arguments(int argc, char** argv,
     {"bidderprob", required_argument, 0, 'p'},
     {"rounds",     required_argument, 0, 'n'},
     {"spend",      required_argument, 0, 's'},
-    {"write",          no_argument, 0, 'w'},
+    {"write",            no_argument, 0, 'w'},
     {0, 0, 0, 0}                             // terminator 
   };
   int key;
@@ -101,14 +100,24 @@ parse_arguments(int argc, char** argv,
 	nRounds = read_utils::lexical_cast<int>(optarg);
 	break;
       }
-    case 'c' : 
+    case 'o' : 
       {
-	geoProb= read_utils::lexical_cast<double>(optarg);
+	oracleProbChar = read_utils::lexical_cast<char>(optarg);
+	break;
+      }
+    case 'm' :
+      {
+	oracleProb = read_utils::lexical_cast<double>(optarg);
+	break;
+      }
+    case 'b' : 
+      {
+	bidderProbChar = read_utils::lexical_cast<char>(optarg);
 	break;
       }
     case 'p' :
       {
-	probDist = read_utils::lexical_cast<char>(optarg);
+	bidderProb = read_utils::lexical_cast<double>(optarg);
 	break;
       }
     case 's' :

@@ -21,7 +21,7 @@ int  main()
     GeometricDist geo(0.9);
     total = 0.0;
     count = 10000;
-    std::cout << "TEST: initial geometric rates (rate 0.9) ";
+    std::cout << "TEST: initial 10 geometric rates (" << geo.identifier() << ")  ";
     for(int k=0; k<10; ++k) std::cout << geo(k) << " ";
     std::cout << std::endl;
     for(int k=0; k<count; ++k) total += geo(k);
