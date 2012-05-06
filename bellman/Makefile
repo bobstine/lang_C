@@ -38,15 +38,16 @@ level_2 = bellman.o
 # bellman recursion for competitive value
 #
 # constrained:  univ univ 2 0.05   50   0.5 7     -0.015669 0.015669 0.015669
-# uncons       uncon univ 2 0.05   50   0.05 7     18.1857 22.6992 2.25676
-
+# uncons      uncon g50 2 0.05   50   0.05 7     37.1289 37.7115 0.291287
 # -------------------------------------------------------------------
 
 constrained_test: bellman
-	./bellman --gamma 2 --rounds 50 --oracle u --oracleprob 0.5 --bidder u --bidderprob 0.5 --write   
+	./bellman --gamma 2 --rounds 50 --constrain --oracleprob 0.5 --bidderprob 0.0 --write    # geometric oracle
+	./bellman --gamma 2 --rounds 50 --constrain                  --bidderprob 0.0 --write    # univ oracle
+	./bellman --gamma 2 --rounds 50             --oracleprob 0.5 --bidderprob 0.0 --write    # warning message
 
 unconstrained_test: bellman
-	./bellman --gamma 2 --rounds 50                             --bidder u --bidderprob 0.5 --write   
+	./bellman --gamma 2 --rounds 50                              --bidderprob 0.5 --write   
 
 
 
