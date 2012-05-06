@@ -36,6 +36,10 @@ level_2 = bellman.o
 
 # -------------------------------------------------------------------
 # bellman recursion for competitive value
+#
+# constrained:  univ univ 2 0.05   50   0.5 7     -0.015669 0.015669 0.015669
+# uncons       uncon univ 2 0.05   50   0.05 7     18.1857 22.6992 2.25676
+
 # -------------------------------------------------------------------
 
 constrained_test: bellman
