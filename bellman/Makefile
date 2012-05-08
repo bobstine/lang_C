@@ -67,24 +67,39 @@ bellman_check: bellman
 #      change n to change path, file names, and the length of run;  gp is path
 #      Once run, cat combines these lines to show all of the results.
 
-n = 250
-expert_gamma = 0.80
-eg = 080
+# define these constants, then use a command like
+#    make -j lots  -k runs/summary.reject_psi90_n100
+# with these values chosen to match (don't know how to pick them from make input
+# so you have to define the constants here and match them in the make command.
+# Builds a directory in runs for these results, then files for each.
+n = 100
 
-#  --- below here is automagic, building output in runs/   start by defining subdirectory path gp
-gp = runs/reject_g$(eg)_$(n)
+# define expert by geometric rate 
+psi = 0.11
+ptxt= 11
 
-$(gp)/.directory_built: 
-	echo Building directory for $(gp)
-	mkdir $(gp)
+
+#--------------------------------------------------------------------------------------------
+#  below here is automagic, building output in runs/   
+#--------------------------------------------------------------------------------------------
+
+# define path within runs subdirectory for each psi (oracle) and n combination; 0 ids universal
+pp = runs/reject_psi$(ptxt)_n$(n)
+
+$(pp)/.directory_built: 
+	echo Building directory for $(pp)
+	mkdir $(pp)
 	touch $@
 
-runs/summary.reject_g$(eg)_$(n): bellman bellman.sh $(gp)/0.5 $(gp)/0.55 $(gp)/0.6 $(gp)/0.65 $(gp)/0.675 $(gp)/0.7 $(gp)/0.705 $(gp)/0.710 $(gp)/0.715 $(gp)/0.720 $(gp)/0.725 $(gp)/0.7275 $(gp)/0.7285 $(gp)/0.7290 $(gp)/0.7295 $(gp)/0.73 $(gp)/0.7305 $(gp)/0.731 $(gp)/0.7315 $(gp)/0.7320 $(gp)/0.7325 $(gp)/0.735 $(gp)/0.740 $(gp)/0.745 $(gp)/0.75 $(gp)/0.755 $(gp)/0.760 $(gp)/0.765 $(gp)/0.770 $(gp)/0.775 $(gp)/0.8 $(gp)/0.825  $(gp)/0.85 $(gp)/0.875 $(gp)/0.9 $(gp)/0.925 $(gp)/0.95 $(gp)/0.975 $(gp)/0.990 $(gp)/1.0 $(gp)/1.01 $(gp)/1.05 $(gp)/1.1 $(gp)/1.15 $(gp)/1.2 $(gp)/1.3 $(gp)/1.4 $(gp)/1.5 $(gp)/1.6 $(gp)/1.7 $(gp)/2.0 $(gp)/2.5 $(gp)/3.0 $(gp)/3.5 $(gp)/4.0  $(gp)/4.5  $(gp)/5.0  $(gp)/5.5  $(gp)/6.0  $(gp)/6.5  $(gp)/7.0 $(gp)/7.5 $(gp)/8.0  $(gp)/9.0 $(gp)/10.0 $(gp)/15.0 $(gp)/20.0
+# main target with parameters that identify gamma over tasks
+runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.675 $(pp)/0.7 $(pp)/0.705 $(pp)/0.710 $(pp)/0.715 $(pp)/0.720 $(pp)/0.725 $(pp)/0.7275 $(pp)/0.7285 $(pp)/0.7290 $(pp)/0.7295 $(pp)/0.73 $(pp)/0.7305 $(pp)/0.731 $(pp)/0.7315 $(pp)/0.7320 $(pp)/0.7325 $(pp)/0.735 $(pp)/0.740 $(pp)/0.745 $(pp)/0.75 $(pp)/0.755 $(pp)/0.760 $(pp)/0.765 $(pp)/0.770 $(pp)/0.775 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.3 $(pp)/1.4 $(pp)/1.5 $(pp)/1.6 $(pp)/1.7 $(pp)/2.0 $(pp)/2.5 $(pp)/3.0 $(pp)/3.5 $(pp)/4.0  $(pp)/4.5  $(pp)/5.0  $(pp)/5.5  $(pp)/6.0  $(pp)/6.5  $(pp)/7.0 $(pp)/7.5 $(pp)/8.0  $(pp)/9.0 $(pp)/10.0 $(pp)/15.0 $(pp)/20.0
 	rm -f $@
-	cat $(filter $(gp)/%,$^) >> $@
+	cat $(filter $(pp)/%,$^) >> $@
 
-$(gp)/%: bellman bellman.sh $(gp)/.directory_built
-	./bellman --gamma $* --constrain $(expert_gamma) --prob u --rounds $(n) > $@
+# actual run command for contrained solution, with univ and geometric
+$(pp)/%: bellman bellman.sh $(pp)/.directory_built
+	./bellman --gamma $* --constrain --oracleprob $(psi) --bidderprob 0.0    --rounds $(n) >  $@
+	./bellman --gamma $* --constrain --oracleprob 0.0    --bidderprob $(psi) --rounds $(n) >> $@
 
 
 # ---  unconstrained

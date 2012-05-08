@@ -19,7 +19,8 @@ std::string
 GeometricDist::identifier() const
 {
   std::stringstream ss;
-  ss << "g" << floor(100*mP);
+  ss << "g";
+  ss << floor(100*mP);
   return ss.str();
 }
 
