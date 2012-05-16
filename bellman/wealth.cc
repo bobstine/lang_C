@@ -84,7 +84,8 @@ WealthArray::initialize_array(ProbDist const& p)
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
-  { // std::cout << "Assign da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i-1<<"]="<< p(mZeroIndex-i-1)<<")\n";
+  { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
+    // correct    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) ); // mZeroIndex-i 'banks' some wealth
     da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );
   }
   for(int i=mZeroIndex+1; i < mSize-2; ++i)  da.assign(i, da[i-1] + mOmega/3.0);

@@ -34,7 +34,7 @@ int  main()
   if (true)
   {
     double omega (0.05);
-    int  nRounds (7);
+    int  nRounds (250);
     int    iZero ( nRounds + 1 ) ;
     int    steps ( iZero + 6 );  // need at least 6 above iZero.
     std::cout << "TEST: Initializing the wealth array." << std::endl;
