@@ -9,9 +9,9 @@
 double
 GeometricDist::operator() (int k) const
 {
-  double p=1;
-  for (int i=0; i<=k; ++i) p *= (1-mP);
-  return p * mNorm;
+  double p=1.0;
+  for (int i=0; i<k; ++i) p *= mOneMinusPsi;
+  return p * mPsi;
 }
 
 
@@ -20,7 +20,14 @@ GeometricDist::identifier() const
 {
   std::stringstream ss;
   ss << "g";
-  ss << floor(100*mP);
+  if (mPsi < 0.1)
+  { ss << "0";
+    if (mPsi < 0.01)
+    { ss << "0";
+      if (mPsi < 0.001) ss << "0";
+    }
+  }
+  ss << floor(1000*mPsi);
   return ss.str();
 }
 
@@ -76,7 +83,10 @@ WealthArray::initialize_array(ProbDist const& p)
   //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
-  for(int i=mZeroIndex-1; 0 <= i; --i)       da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i) );
+  for(int i=mZeroIndex-1; 0 <= i; --i)
+  { // std::cout << "Assign da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i-1<<"]="<< p(mZeroIndex-i-1)<<")\n";
+    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );
+  }
   for(int i=mZeroIndex+1; i < mSize-2; ++i)  da.assign(i, da[i-1] + mOmega/3.0);
   { // increment last 2 by mOmega
     int i = mSize-2;

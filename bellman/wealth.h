@@ -29,15 +29,15 @@ class ProbDist: public std::unary_function<int,double>
 
 class GeometricDist: public ProbDist
 {
-  const double mP;
-  const double mNorm;
+  const double mPsi;
+  const double mOneMinusPsi;
 
   public:
 
-  GeometricDist (double p): mP(p), mNorm(p/(1-p)) { }   
+  GeometricDist (double psi): mPsi(psi), mOneMinusPsi(1-psi) { }   
 
   std::string identifier() const; 
-  double operator()(int k) const;    // CDF, percent spent along the way
+  double operator()(int k) const;    // percent of wealth spent at step k; adds to 1
 };
   
 
