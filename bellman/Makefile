@@ -72,11 +72,11 @@ bellman_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 251
+n = 250
 
 # define expert by geometric rate 
-psi = 0.0001
-ptxt= 0001
+psi = 0.05000
+ptxt=   05000
 
 
 #--------------------------------------------------------------------------------------------
@@ -98,8 +98,8 @@ runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(
 
 # actual run command for contrained solution, with univ and geometric
 $(pp)/%: bellman bellman.sh $(pp)/.directory_built
-	./bellman --gamma $* --constrain --oracleprob $(psi) --bidderprob 0.0    --rounds $(n) >  $@
-	./bellman --gamma $* --constrain --oracleprob 0.0    --bidderprob $(psi) --rounds $(n) >> $@
+	./bellman --gamma $* --constrain --oracleprob $(psi) --bidderprob 0.001    --rounds $(n) >  $@
+	./bellman --gamma $* --constrain --oracleprob 0.001   --bidderprob $(psi) --rounds $(n) >> $@
 
 
 # ---  unconstrained
