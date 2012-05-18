@@ -48,12 +48,14 @@ int  main(int argc, char** argv)
 
   if(!constrain)           // unconstrained oracle 
   { std::cout <<                         "uncon " << pBidderDist->identifier() << " ";
-    RejectVectorUtility utility(gamma,omega);
+    //    RejectVectorUtility utility(gamma, omega);
+    RiskVectorUtility utility(gamma, omega);
     solve_bellman_utility (gamma, omega, nRounds, utility,               *pBidderDist, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleDist->identifier() << " " << pBidderDist->identifier() << " ";
-    RejectMatrixUtility utility(gamma, omega);
+    //    RejectMatrixUtility utility(gamma, omega);
+    RiskMatrixUtility utility(gamma, omega);
     solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleDist, *pBidderDist, writeTable);
   }
 

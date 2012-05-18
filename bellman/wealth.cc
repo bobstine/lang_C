@@ -27,11 +27,14 @@ GeometricDist::identifier() const
       if (mPsi < 0.001)
       { ss << "0";
         if (mPsi < 0.0001)
-	  ss << "0";
+	{ ss << "0";
+	  if (mPsi < 0.00001)
+	    ss << "0";
+	}
       }
     }
   }
-  ss << floor(1000*mPsi);
+  ss << floor(100000*mPsi);
   return ss.str();
 }
 
