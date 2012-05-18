@@ -60,7 +60,7 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 
 std::pair<int, double>
-WealthArray::new_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
+WealthArray::find_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
 {
   double target = mWealth[k0] + increase;      // 'wealth' is 'new wealth' > 'current wealth'
   int k1 (mSize-1);                            // W[k0] <= W[k1]
@@ -103,5 +103,8 @@ WealthArray::initialize_array(ProbDist const& p)
     da.assign(i, da[i-1]+mOmega);
   }
   mWealth = da;
+  mPositions.push_back( std::make_pair(0,0) ) ; // dummy starting value so indexing conforms
+  for(int j = 1; j<mSize-1; ++j)
+    mPositions.push_back( find_wealth_position(j,mOmega-bid(j)) );
 }
 

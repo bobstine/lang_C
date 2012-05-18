@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <functional>
-
+#include <vector>
 
 class ProbDist: public std::unary_function<int,double>
 {
@@ -69,10 +69,11 @@ class WealthArray
   const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
   const int             mZeroIndex;  // position of W_0, initially the place used for omega
   DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
+  std::vector< std::pair<int,double> > mPositions;  // hold locations for new positions
 
  public:
  WealthArray(std::string name, int size, double omega, int zeroIndex, ProbDist const& pdf)
-   : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth() { initialize_array(pdf);}
+   : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
   int    size ()                   const { return mSize; }
   int    zero_index ()             const { return mZeroIndex ; }
@@ -82,12 +83,14 @@ class WealthArray
   double wealth(int k)             const { return mWealth[k]; }
   double operator[](int k)         const { return mWealth[k]; }
   
-  std::pair<int, double> new_wealth_position (int k, double increaseInWealth) const;
+  std::pair<int, double> wealth_position (int k) const { return mPositions[k]; }
   
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
   void initialize_array(ProbDist const& p);
+  std::pair<int, double> find_wealth_position (int k, double increaseInWealth) const;
+
 };
 
 inline
