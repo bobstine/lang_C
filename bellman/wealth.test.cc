@@ -20,7 +20,7 @@ int  main()
     for(int k=0; k<count; ++k) total += univ(k);
     std::cout << "TEST: Total of universal(*,0.05) for " << count << " terms = " << total << std::endl;
 
-    GeometricDist geo(0.05);
+    GeometricDist geo(0.005);
     total = 0.0;
     count = 10000;
     std::cout << "TEST: initial 20 geometric rates (" << geo.identifier() << ")  ";
@@ -41,7 +41,7 @@ int  main()
 
     ProbDist *p;
     UniversalDist univ;
-    GeometricDist geo(0.05);
+    GeometricDist geo(0.005);
     p = &univ;
     WealthArray uWealth(" Univ ", steps, omega, iZero, *p);
     p = &geo;

@@ -16,7 +16,7 @@ reject_prob(double mu, double level)    // r_mu(alpha)
   if(level < epsilon)
     return 0.0;
   else
-    return normal_cdf(mu-normal_quantile(1-level));  //  HERE   HERE
+    return normal_cdf(mu-normal_quantile(1-level));
 }
 
 double

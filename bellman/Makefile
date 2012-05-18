@@ -43,7 +43,7 @@ level_2 = bellman.o
 
 constrained_test: bellman
 	./bellman --gamma 2 --rounds 50 --constrain --oracleprob 0.5 --bidderprob 0.0 --write    # geometric oracle
-	./bellman --gamma 2 --rounds 50 --constrain                  --bidderprob 0.0 --write    # univ oracle
+	./bellman --gamma 2 --rounds 50 --constrain --oracleprob 0.0 --bidderprob 0.5 --write    # univ oracle
 	./bellman --gamma 2 --rounds 50             --oracleprob 0.5 --bidderprob 0.0 --write    # warning message
 
 unconstrained_test: bellman
@@ -68,15 +68,17 @@ bellman_check: bellman
 #      Once run, cat combines these lines to show all of the results.
 
 # define these constants, then use a command like
-#    make -j lots  -k runs/summary.reject_psi90_n100
+#    make -j lots  -k runs/summary.reject_psi0090_n100
+# or
+#    make -j lots  -k runs/summary.risk_psi00100_n250
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
 n = 251
 
 # define expert by geometric rate 
-psi = 0.0001
-ptxt= 0001
+psi = 0.05000
+ptxt=   05000
 
 
 #--------------------------------------------------------------------------------------------
@@ -84,7 +86,7 @@ ptxt= 0001
 #--------------------------------------------------------------------------------------------
 
 # define path within runs subdirectory for each psi (oracle) and n combination; 0 ids universal
-pp = runs/reject_psi$(ptxt)_n$(n)
+pp = runs/risk_psi$(ptxt)_n$(n)
 
 $(pp)/.directory_built: 
 	echo Building directory for $(pp)
@@ -111,22 +113,6 @@ bellman_results.u500: bellman bellman.sh
 	./bellman.sh u 500 >  bellman_results.500
 	./bellman.sh e 500 >> bellman_results.500
 	./bellman.sh g 500 >> bellman_results.500
-
-
-bellman_results.u1000: bellman bellman.sh
-	rm -f bellman_results.1000
-	./bellman.sh u 1000 >  bellman_results.1000
-	./bellman.sh e 1000 >> bellman_results.1000
-	./bellman.sh g 1000 >> bellman_results.1000
-
-
-bellman_results.u2000: bellman bellman.sh
-	rm -f bellman_results.2000
-	./bellman.sh u 2000 >  bellman_results.2000
-	./bellman.sh e 2000 >> bellman_results.2000
-	./bellman.sh g 2000 >> bellman_results.2000
-
-
 
 
 
