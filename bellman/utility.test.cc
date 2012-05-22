@@ -18,8 +18,12 @@ int  main()
     double alpha (0.025);
     double beta  (0.0125);
     RejectVectorUtility rejectU (gamma, omega);
-    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;    
-    std::cout << "TEST: risk at mu=0 " << risk(0,0.05) << "   and at mu=1 " << risk(1,0.05) << std::endl;
+    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+    std::cout <<   "                         Risk @ 0        Risk @ 1\n";
+    for (int j = 0; j<10; ++j)
+    { double alpha = (double) j/10.0;
+      std::cout << "TEST: alpha= " << alpha << "   " << risk(0,alpha) << "    " << risk(1,alpha) << std::endl;
+    }
     // check additive
     double mu (1.8);
     RiskVectorUtility riskU (gamma, omega); 

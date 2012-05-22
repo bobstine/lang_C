@@ -107,7 +107,6 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
  {
    mAlpha = mOmega             * mExpertDist(i /*,nRounds-t*/ );  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j /*,nRounds-t*/ );
-   // std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
    mV00 = v00;
    mVi0 = vi0;
    mV0j = v0j;
@@ -213,7 +212,6 @@ solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double sp
       oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
       bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
       mean (row,col) = maxPair.first;
-      //      prob (row,col) = compRatio.beta_k();
     }
   }
   // write solution (without boundary row) to file
@@ -315,7 +313,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
     // -1 leaves room to avoid if clause
     for (int k=done; k<nColumns-1; ++k)  
     { bid = bidderWealth.bid(k);
-      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,omega - bid));
+      std::pair<int,double> kp (bidderWealth.wealth_position(k));
       double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
       double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
       double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
@@ -396,17 +394,18 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
       pUtilityDest= &utilityMat0;    pOracleDest = &oracleMat0;   pBidderDest = &bidderMat0;
     }
     use0 = !use0;
+    std::cout << " ---------  Round " << round << " ----------------------\n";
     for (int ko=done; ko<nColumns-1; ++ko) 
     { oracleBid = oracleWealth.bid(ko);
-      oracleKP  = oracleWealth.new_wealth_position(ko,omega - oracleBid);         // position if rejects    for (int kb=done; kb<nColumns-1; ++kb)   
+      oracleKP  = oracleWealth.wealth_position(ko);         // position if rejects
       for (int kb=done; kb<nColumns-1; ++kb) 
       { bidderBid = bidderWealth.bid(kb);
-	bidderKP  = bidderWealth.new_wealth_position(kb,omega - bidderBid);
+	bidderKP  = bidderWealth.wealth_position(kb);
 	utility.set_constants(oracleBid, bidderBid,                               // oracle is alpha, bidder is beta;  bidder position on cols
 			      (*pUtilitySrc)(ko-1    , kb-1     ),                // v00  neither rejects
 			      reject_value  (ko-1    , bidderKP, *pUtilitySrc),   // v01  only bidder rejects
 			      reject_value  (oracleKP, kb-1    , *pUtilitySrc),   // v10  only oracle rejects
-			      reject_value  (oracleKP, bidderKP, *pUtilitySrc));  // v11  both reject00000
+			      reject_value  (oracleKP, bidderKP, *pUtilitySrc));  // v11  both reject
 	maxPair = search.find_maximum(utility);           // mean, f(mean)
 	if(maxPair.first < bestMeanInterval.first)        // monitor range of optimal means
 	  bestMeanInterval.first = maxPair.first;

@@ -14,7 +14,9 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-OPT = -O3   -std=c++0x 
+OPT = -O3  
+
+# -std=c++0x 
 
 # USES = 
 
