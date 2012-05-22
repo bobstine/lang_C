@@ -57,7 +57,7 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 bellman_test: bellman
-	./bellman --gamma 2.0 --rounds 250 --prob u --write    # add   --write    for details
+	./bellman --gamma 2.0 --rounds 250 --constrain --oracleprob 0.0 --bidderprob 0.05 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 bellman_check: bellman

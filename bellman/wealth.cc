@@ -86,8 +86,8 @@ WealthArray::new_wealth_position (int k0, double increase)  const // k0 is curre
 void
 WealthArray::initialize_array(ProbDist const& p)
 {
-  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
   //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;
+  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
