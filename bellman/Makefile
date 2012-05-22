@@ -14,7 +14,7 @@ PROJECT_NAME = bellman
 
 # OPT = -O3 -std=c++0x -DNDEBUG
 
-# OPT =  -std=c++0x
+OPT =  -std=c++11
 
 USES = utils random
 

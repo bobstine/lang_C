@@ -10,7 +10,7 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-OPT = -O2 -fopenmp
+OPT = -O2 -fopenmp -std=c++11
 
 EXTERNAL_USES = gomp
 
