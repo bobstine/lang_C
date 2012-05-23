@@ -58,9 +58,8 @@ double uniform_to_end (int k, int left)         // equal spread over possible lo
 
 //     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray     WealthArray
 
-
 std::pair<int, double>
-WealthArray::new_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
+WealthArray::find_wealth_position (int k0, double increase)  const // k0 is current position denoting current wealth
 {
   double target = mWealth[k0] + increase;      // 'wealth' is 'new wealth' > 'current wealth'
   int k1 (mSize-1);                            // W[k0] <= W[k1]
@@ -86,22 +85,37 @@ WealthArray::new_wealth_position (int k0, double increase)  const // k0 is curre
 void
 WealthArray::initialize_array(ProbDist const& p)
 {
+  std::cout << "WARRAY: Building dyn array with " << mSize << " steps and wealth " << mOmega << " @ " << mZeroIndex << std::endl;
   assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
-  //  std::cout << "WARRAY: Building dyn array with " << mSize << " steps with wealth " << mOmega << " @ " << mZeroIndex << std::endl;
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
-  { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
-    // correct    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) ); // mZeroIndex-i 'banks' some wealth
-    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );
+  { std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
+    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
-  for(int i=mZeroIndex+1; i < mSize-2; ++i)  da.assign(i, da[i-1] + mOmega/3.0);
-  { // increment last 2 by mOmega
-    int i = mSize-2;
-    da.assign(i, da[i-1]+mOmega);
-    ++i;
-    da.assign(i, da[i-1]+mOmega);
+  // Add padding for wealth above omega by incrementing bid to omega over padding steps
+  //  double b = bid(mZeroIndex);
+  // double m = exp(log(mOmega/b)/(mPadding-2));
+  double b = 1.0;
+  double m = 1.0;
+
+  std::cout << "Basing on bid at omega = " << b << " with factor m = " << m << std::endl;
+  for(int i=mZeroIndex+1; i < mSize-2; ++i)
+  { b *= m;
+    
+    std::cout << "Assigning i=" << i << std::endl;
+
+    da.assign(i, da[i-1] + b);
   }
+  // increment last 2 by omega
+  int i = mSize-2;
+  da.assign(i, da[i-1]+mOmega);
+  ++i;
+  da.assign(i, da[i-1]+mOmega);
   mWealth = da;
+  // lock in indexing for finding new positions since the increment is known in advance
+  mPositions.push_back( std::make_pair(0,0) ) ;
+  for(int j = 1; j<mSize-1; ++j)
+    mPositions.push_back( find_wealth_position(j,mOmega-bid(j)) );
 }
 

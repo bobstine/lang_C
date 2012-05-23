@@ -16,6 +16,220 @@ imin(int a, int b)
 
 
 
+
+
+//
+//    Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained
+//
+//    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
+//
+
+void
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist const& pdf, bool writeDetails)
+{
+  // initialize: iOmega is omega location, iOmega+6 gives five states above omega
+  const int iOmega    (nRounds+1);   
+  WealthArray bidderWealth("bidder", omega, iOmega, pdf);
+  const int nColumns (bidderWealth.size());   
+
+  // line search to find max utility
+  const int                      maxIterations   (200);   
+  const double                   tolerance       (0.0001);
+  const double                   initialGrid     (0.5);
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
+  Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
+  // pad arrays since need room to collect bid; initialize to zero
+  Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
+  Matrix oracleMat = Matrix::Zero(nRounds+2, nColumns);
+  Matrix bidderMat = Matrix::Zero(nRounds+2, nColumns);
+  Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
+  // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
+  std::pair<double,double> maxPair;
+  double bid, utilAtMuEqualZero;
+  int done = 1;
+  for (int row = nRounds; row > -1; --row, ++done)
+  { // double b0 = bidderMat(row+1,0);
+    // double o0 = oracleMat(row+1,0);
+    // -1 leaves room to avoid if clause
+    for (int k=done; k<nColumns-1; ++k)  
+    { bid = bidderWealth.bid(k);
+      std::pair<int,double> kp (bidderWealth.wealth_position(k));
+      double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
+      double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
+      double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
+      utility.set_constants(bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
+      utilAtMuEqualZero = utility(0.0);
+      maxPair = search.find_maximum(utility);
+      if (maxPair.second < utilAtMuEqualZero)
+	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
+      meanMat   (row,k) = maxPair.first;
+      utilityMat(row,k) = maxPair.second;
+      bidderMat (row,k) = utility.bidder_utility(maxPair.first, bidderIfReject, bidderMat(row+1,k-1));
+      oracleMat (row,k) = utility.oracle_utility(maxPair.first, oracleIfReject, oracleMat(row+1,k-1));
+      if (false) std::cout << "     @ " << k << " " << row << " kk= " << kp.first << " { (" << utilityIfReject << "="
+			   << utilityMat(row+1,kp.first  ) << "*" <<   kp.second << " + "
+			   << utilityMat(row+1,kp.first+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,k-1)
+			   << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
+    }
+  }
+  // write solution (without boundary row) to file
+  if(writeDetails)
+  { std::ostringstream ss;
+    int gammaInt (trunc(10 * gamma));
+    ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
+    write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
+    write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
+    write_matrix_to_file(ss.str() + "bidder" ,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
+    write_matrix_to_file(ss.str() + "mean"   ,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
+  }
+  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
+}
+
+
+
+//    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
+
+void
+solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist const& oraclePDF, ProbDist const& bidderPDF, bool writeDetails)
+{
+  // initialize: omega location, size includes padding for wealth above omega
+  const int iOmega   (nRounds + 1);   
+  WealthArray bidderWealth("bidder", omega, iOmega, bidderPDF);
+  WealthArray oracleWealth("oracle", omega, iOmega, oraclePDF);
+  const int nColumns (bidderWealth.size());   
+  // line search to find max utility
+  const int                      maxIterations   (200);   
+  const double                   tolerance       (0.0001);
+  const double                   initialGrid     (0.5);
+  const std::pair<double,double> searchInterval  (std::make_pair(0.50,7.0));
+  Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
+  // pad arrays since need room to collect bid; initialize to zero
+  // code flips between these on read and write using use0
+  bool use0 = true;
+  Matrix utilityMat0= Matrix::Zero (nColumns, nColumns);
+  Matrix utilityMat1= Matrix::Zero (nColumns, nColumns);
+  Matrix oracleMat0 = Matrix::Zero (nColumns, nColumns);
+  Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
+  Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
+  Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
+  // holds means with oracle always at two fixed wealths identified mIndexA and mIndexB
+  // top row holds bids in these states, with oracle in last col of top row
+  const int mIndexA = iOmega -  1;
+  const int mIndexB = iOmega - 25;  // lower wealth
+  Matrix meanMatA    = Matrix::Zero (nRounds+1, nColumns);
+  Matrix meanMatB    = Matrix::Zero (nRounds+1, nColumns);
+  for (int col=0; col<nColumns-1; ++col)
+    meanMatA(0,col) = meanMatB(0,col) = bidderWealth.bid(col);
+  meanMatA(0,nColumns-1) = oracleWealth.bid(mIndexA);
+  meanMatB(0,nColumns-1) = oracleWealth.bid(mIndexB);
+  // alternate between reading and writing these matrices
+  Matrix* pUtilitySrc (&utilityMat0), * pUtilityDest (&utilityMat1);
+  Matrix* pOracleSrc  (&oracleMat0 ), * pOracleDest  (&oracleMat1);
+  Matrix* pBidderSrc  (&bidderMat0 ), * pBidderDest  (&bidderMat1);
+  // iteration vars
+  std::pair<double,double> maxPair, bestMeanInterval;
+  std::pair<int, double> bidderKP, oracleKP;
+  double oracleBid,bidderBid;
+  bestMeanInterval = std::make_pair(10,0);
+  int done = 1;
+  std::cout << std::setprecision(3);  // debug
+  for (int round = nRounds; round > 0; --round, ++done)
+  { if (use0)
+    { pUtilitySrc = &utilityMat0;    pOracleSrc  = &oracleMat0;   pBidderSrc  = &bidderMat0;
+      pUtilityDest= &utilityMat1;    pOracleDest = &oracleMat1;   pBidderDest = &bidderMat1;
+    } else
+    { pUtilitySrc = &utilityMat1;    pOracleSrc  = &oracleMat1;   pBidderSrc  = &bidderMat1;
+      pUtilityDest= &utilityMat0;    pOracleDest = &oracleMat0;   pBidderDest = &bidderMat0;
+    }
+    use0 = !use0;
+    //    std::cout << " ---------  Round " << round << " ----------------------\n";
+    // recursion is in 'reverse time' starting from final round, working forward
+    for (int ko=done; ko<nColumns-1; ++ko) 
+    { oracleBid = oracleWealth.bid(ko);
+      oracleKP  = oracleWealth.wealth_position(ko);         // position if rejects
+      for (int kb=done; kb<nColumns-1; ++kb) 
+      { bidderBid = bidderWealth.bid(kb);
+	bidderKP  = bidderWealth.wealth_position(kb);
+	utility.set_constants(oracleBid, bidderBid,                               // oracle is alpha, bidder is beta;  bidder position on cols
+			      (*pUtilitySrc)(ko-1    , kb-1     ),                // v00  neither rejects
+			      reject_value  (ko-1    , bidderKP, *pUtilitySrc),   // v01  only bidder rejects
+			      reject_value  (oracleKP, kb-1    , *pUtilitySrc),   // v10  only oracle rejects
+			      reject_value  (oracleKP, bidderKP, *pUtilitySrc));  // v11  both reject
+	maxPair = search.find_maximum(utility);           // mean, f(mean)
+	// monitor range of optimal means
+	if(maxPair.first < bestMeanInterval.first) 
+	  bestMeanInterval.first = maxPair.first;
+	else if (maxPair.first > bestMeanInterval.second)
+	  bestMeanInterval.second = maxPair.first;
+	double utilAtMuEqualZero = utility(0.0);
+	if (maxPair.second <= utilAtMuEqualZero)
+	  maxPair = std::make_pair(0.0,utilAtMuEqualZero);
+	// save mean if oracle in desired wealth state
+	if (mIndexA == ko) meanMatA(round,kb) = maxPair.first;
+	else if (mIndexB == ko) meanMatB(round,kb) = maxPair.first; 
+	// oracle on rows of outcome, bidder on columns
+	(*pUtilityDest)(ko,kb) = maxPair.second;
+	(* pOracleDest)(ko,kb) = utility.oracle_utility(maxPair.first,
+							(*pOracleSrc)(ko-1    , kb-1   ),
+							reject_value (ko-1    , bidderKP, *pOracleSrc),
+							reject_value (oracleKP, kb-1    , *pOracleSrc),
+							reject_value (oracleKP, bidderKP, *pOracleSrc));
+	(* pBidderDest)(ko,kb) = utility.bidder_utility(maxPair.first,
+							(*pBidderSrc)(ko-1    , kb-1   ),
+							reject_value (ko-1    , bidderKP, *pBidderSrc),
+							reject_value (oracleKP, kb-1    , *pBidderSrc),
+							reject_value (oracleKP, bidderKP, *pBidderSrc));
+	/* huge debugging output...
+	std::cout << "\n " << "alpha=" << utility.alpha() << "  beta=" << utility.beta()
+		  << "  Oracle value is " << (*pOracleDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pOracleSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pOracleSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pOracleSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pOracleSrc) 
+		  << ")   Bidder value is " << (*pBidderDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pBidderSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pBidderSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pBidderSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pBidderSrc) << ")" << std::endl;  */
+	// partial debugging output (pick up next two line feeds as well 
+	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "+" << (*pOracleDest)(kb,ko) << "+" << (*pBidderDest)(kb,ko)
+	//		  << "{" << oracleBid << "," << bidderBid << "," << meanMat(ko,kb) << "}";
+      }
+      // std::cout << std::endl;
+    }
+    // std::cout << std::endl;
+  }
+  std::cout << std::setprecision(6);
+  if(writeDetails)
+  { std::ostringstream ss;
+    int gammaInt (trunc(10 * gamma));
+    ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
+    write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
+    write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );
+    bool writeOneRow = false;
+    if (!writeOneRow) // write final destination matrices
+    { write_matrix_to_file(ss.str() + "utility", *pUtilityDest);
+      write_matrix_to_file(ss.str() + "oracle" ,  *pOracleDest);
+      write_matrix_to_file(ss.str() + "bidder" ,  *pBidderDest);
+    }
+    else // write omega row of each to summary file
+    { std::string fileName (ss.str() + "summary");
+      write_vector_to_file(fileName, pUtilityDest->row(iOmega));
+      write_vector_to_file(fileName,  pOracleDest->row(iOmega), true);  // append 
+      write_vector_to_file(fileName,  pBidderDest->row(iOmega), true);
+    }
+  }
+  { // write summary of configuration and results to stdio
+    std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+	      << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
+  }
+}
+
+
+
+
+
 // --------------------------------------------------------------------------------------------------------------
 //
 //      Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    Constrained    
@@ -107,7 +321,6 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
  {
    mAlpha = mOmega             * mExpertDist(i /*,nRounds-t*/ );  // no spending constraint for expert
    mBeta  = mOmega * mSpendPct * mBidderProb(j /*,nRounds-t*/ );
-   // std::cout << "Setting malpha to " << mAlpha << " and mBeta to " << mBeta << std::endl;
    mV00 = v00;
    mVi0 = vi0;
    mV0j = v0j;
@@ -213,7 +426,6 @@ solve_bellman_alpha_equation (double gamma, double omega, int nRounds, double sp
       oracle(row,col) = compRatio.value_to_oracle(maxPair.first, o0, oracle(row+1,col+1));
       bidder(row,col) = compRatio.value_to_bidder(maxPair.first, b0, bidder(row+1,col+1));
       mean (row,col) = maxPair.first;
-      //      prob (row,col) = compRatio.beta_k();
     }
   }
   // write solution (without boundary row) to file
@@ -278,199 +490,4 @@ ExpertCompetitiveAlphaGain::value_to_bidder (double mu, double b0, double bkp1) 
   double rb = (mu < 0.00001) ? mBetaK : reject_prob(mu,mBetaK);
   return mOmega * rb - mBetaK + rb * b0 + (1-rb) * bkp1;
 }
-
-
-//
-//    Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained   Unconstrained
-//
-//    solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     solve_bellman_utility     
-//
-
-void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist const& pdf, bool writeDetails)
-{
-  // initialize: iOmega is omega location, iOmega+6 gives five states above omega
-  const int iOmega    (nRounds+1);   
-  const int nColumns (iOmega + 6);   
-  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, pdf);
-
-  // line search to find max utility
-  const int                      maxIterations   (200);   
-  const double                   tolerance       (0.0001);
-  const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
-  Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
-  // pad arrays since need room to collect bid; initialize to zero
-  Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
-  Matrix oracleMat = Matrix::Zero(nRounds+2, nColumns);
-  Matrix bidderMat = Matrix::Zero(nRounds+2, nColumns);
-  Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
-  // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
-  std::pair<double,double> maxPair;
-  double bid, utilAtMuEqualZero;
-  int done = 1;
-  for (int row = nRounds; row > -1; --row, ++done)
-  { // double b0 = bidderMat(row+1,0);
-    // double o0 = oracleMat(row+1,0);
-    // -1 leaves room to avoid if clause
-    for (int k=done; k<nColumns-1; ++k)  
-    { bid = bidderWealth.bid(k);
-      std::pair<int,double> kp (bidderWealth.new_wealth_position(k,omega - bid));
-      double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
-      double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
-      double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
-      utility.set_constants(bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
-      utilAtMuEqualZero = utility(0.0);
-      maxPair = search.find_maximum(utility);
-      if (maxPair.second < utilAtMuEqualZero)
-	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
-      meanMat   (row,k) = maxPair.first;
-      utilityMat(row,k) = maxPair.second;
-      bidderMat (row,k) = utility.bidder_utility(maxPair.first, bidderIfReject, bidderMat(row+1,k-1));
-      oracleMat (row,k) = utility.oracle_utility(maxPair.first, oracleIfReject, oracleMat(row+1,k-1));
-      if (false) std::cout << "     @ " << k << " " << row << " kk= " << kp.first << " { (" << utilityIfReject << "="
-			   << utilityMat(row+1,kp.first  ) << "*" <<   kp.second << " + "
-			   << utilityMat(row+1,kp.first+1) << "*" << 1-kp.second  << "), " << utilityMat(row+1,k-1)
-			   << "}  with bid " << bidderWealth.bid(k) << "    max  : " << maxPair.second << " @ " << maxPair.first << std::endl;
-    }
-  }
-  // write solution (without boundary row) to file
-  if(writeDetails)
-  { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
-    ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
-    write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
-    write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
-    write_matrix_to_file(ss.str() + "bidder" ,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
-    write_matrix_to_file(ss.str() + "mean"   ,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
-  }
-  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
-	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
-}
-
-
-
-//    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
-
-void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist const& oraclePDF, ProbDist const& bidderPDF, bool writeDetails)
-{
-  // initialize: omega location, iOmega+6 gives five states above omega
-  const int iOmega   (nRounds + 1);   
-  const int nColumns (iOmega  + 6);   
-  WealthArray bidderWealth("bidder", nColumns, omega, iOmega, bidderPDF);
-  WealthArray oracleWealth("oracle", nColumns, omega, iOmega, oraclePDF);
-  // line search to find max utility
-  const int                      maxIterations   (200);   
-  const double                   tolerance       (0.0001);
-  const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.50,7.0));
-  Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
-  // pad arrays since need room to collect bid; initialize to zero
-  // code flips between these on read and write
-  Matrix utilityMat0= Matrix::Zero (nColumns, nColumns);
-  Matrix utilityMat1= Matrix::Zero (nColumns, nColumns);
-  Matrix oracleMat0 = Matrix::Zero (nColumns, nColumns);
-  Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
-  Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
-  Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
-  Matrix meanMat    = Matrix::Zero (nColumns, nColumns);
-  bool use0 = true;
-  // alternate between reading and writing these matrices
-  Matrix* pUtilitySrc (&utilityMat0), * pUtilityDest (&utilityMat1);
-  Matrix* pOracleSrc  (&oracleMat0 ), * pOracleDest  (&oracleMat1);
-  Matrix* pBidderSrc  (&bidderMat0 ), * pBidderDest  (&bidderMat1);
-  // iteration vars
-  std::pair<double,double> maxPair, bestMeanInterval;
-  std::pair<int, double> bidderKP, oracleKP;
-  double oracleBid,bidderBid;
-  bestMeanInterval = std::make_pair(10,0);
-  int done = 1;
-  std::cout << std::setprecision(3);  // debug
-  for (int round = nRounds; round > 0; --round, ++done)
-  { if (use0)
-    { pUtilitySrc = &utilityMat0;    pOracleSrc  = &oracleMat0;   pBidderSrc  = &bidderMat0;
-      pUtilityDest= &utilityMat1;    pOracleDest = &oracleMat1;   pBidderDest = &bidderMat1;
-    } else
-    { pUtilitySrc = &utilityMat1;    pOracleSrc  = &oracleMat1;   pBidderSrc  = &bidderMat1;
-      pUtilityDest= &utilityMat0;    pOracleDest = &oracleMat0;   pBidderDest = &bidderMat0;
-    }
-    use0 = !use0;
-    for (int ko=done; ko<nColumns-1; ++ko) 
-    { oracleBid = oracleWealth.bid(ko);
-      oracleKP  = oracleWealth.new_wealth_position(ko,omega - oracleBid);         // position if rejects    for (int kb=done; kb<nColumns-1; ++kb)   
-      for (int kb=done; kb<nColumns-1; ++kb) 
-      { bidderBid = bidderWealth.bid(kb);
-	bidderKP  = bidderWealth.new_wealth_position(kb,omega - bidderBid);
-	utility.set_constants(oracleBid, bidderBid,                               // oracle is alpha, bidder is beta;  bidder position on cols
-			      (*pUtilitySrc)(ko-1    , kb-1     ),                // v00  neither rejects
-			      reject_value  (ko-1    , bidderKP, *pUtilitySrc),   // v01  only bidder rejects
-			      reject_value  (oracleKP, kb-1    , *pUtilitySrc),   // v10  only oracle rejects
-			      reject_value  (oracleKP, bidderKP, *pUtilitySrc));  // v11  both reject00000
-	maxPair = search.find_maximum(utility);           // mean, f(mean)
-	if(maxPair.first < bestMeanInterval.first)        // monitor range of optimal means
-	  bestMeanInterval.first = maxPair.first;
-	else if (maxPair.first > bestMeanInterval.second)
-	  bestMeanInterval.second = maxPair.first;
-	double utilAtMuEqualZero = utility(0.0);
-	if (maxPair.second <= utilAtMuEqualZero)          // put max at zero if flat
-	  maxPair = std::make_pair(0.0,utilAtMuEqualZero);
-	meanMat(ko,kb) = maxPair.first;                   // bidder on rows of outcome, oracle on columns
-	(*pUtilityDest)(ko,kb) = maxPair.second;
-	(* pOracleDest)(ko,kb) = utility.oracle_utility(maxPair.first,
-							(*pOracleSrc)(ko-1    , kb-1   ),
-							reject_value (ko-1    , bidderKP, *pOracleSrc),
-							reject_value (oracleKP, kb-1    , *pOracleSrc),
-							reject_value (oracleKP, bidderKP, *pOracleSrc));
-	(* pBidderDest)(ko,kb) = utility.bidder_utility(maxPair.first,
-							(*pBidderSrc)(ko-1    , kb-1   ),
-							reject_value (ko-1    , bidderKP, *pBidderSrc),
-							reject_value (oracleKP, kb-1    , *pBidderSrc),
-							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	/* huge debugging output...
-	std::cout << "\n " << "alpha=" << utility.alpha() << "  beta=" << utility.beta()
-		  << "  Oracle value is " << (*pOracleDest)(ko,kb) << "= Util(" << maxPair.first << " , "
-		  << (*pOracleSrc)(ko-1    , kb-1   ) << " , "
-		  << reject_value (ko-1    , bidderKP, *pOracleSrc) << " , "
-		  << reject_value (oracleKP, kb-1    , *pOracleSrc) << " , "
-		  << reject_value (oracleKP, bidderKP, *pOracleSrc) 
-		  << ")   Bidder value is " << (*pBidderDest)(ko,kb) << "= Util(" << maxPair.first << " , "
-		  << (*pBidderSrc)(ko-1    , kb-1   ) << " , "
-		  << reject_value (ko-1    , bidderKP, *pBidderSrc) << " , "
-		  << reject_value (oracleKP, kb-1    , *pBidderSrc) << " , "
-		  << reject_value (oracleKP, bidderKP, *pBidderSrc) << ")" << std::endl;  */
-	// partial debugging output (pick up next two line feeds as well 
-	// std::cout << "  [" << ko << "," << kb << "] = " << std::setw(5) << (*pUtilityDest)(kb,ko) << "+" << (*pOracleDest)(kb,ko) << "+" << (*pBidderDest)(kb,ko)
-	//		  << "{" << oracleBid << "," << bidderBid << "," << meanMat(ko,kb) << "}";
-      }
-      // std::cout << std::endl;
-    }
-    // std::cout << std::endl;
-  }
-  std::cout << std::setprecision(6);
-  if(writeDetails)
-  { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
-    ss << "bellman2.g" << gammaInt << ".n" << nRounds << ".";
-    bool writeOneRow = false;
-    if (!writeOneRow) // write final destination matrices
-    { write_matrix_to_file(ss.str() + "utility", *pUtilityDest);
-      write_matrix_to_file(ss.str() + "oracle" ,  *pOracleDest);
-      write_matrix_to_file(ss.str() + "bidder" ,  *pBidderDest);
-      write_matrix_to_file(ss.str() + "mean"   ,    meanMat  );
-    }
-    else // write omega row of each
-    { std::string fileName (ss.str() + "summary");
-      write_vector_to_file(fileName, pUtilityDest->row(iOmega));
-      write_vector_to_file(fileName,  pOracleDest->row(iOmega), true);  // append 
-      write_vector_to_file(fileName,  pBidderDest->row(iOmega), true);
-      write_vector_to_file(fileName,    meanMat.row(iOmega)   , true);
-    }
-  }
-  { // write summary of configuration and results to stdio
-    std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
-	      << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
-  }
-}
-
 

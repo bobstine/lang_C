@@ -18,8 +18,12 @@ int  main()
     double alpha (0.025);
     double beta  (0.0125);
     RejectVectorUtility rejectU (gamma, omega);
-    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;    
-    std::cout << "TEST: risk at mu=0 " << risk(0,0.05) << "   and at mu=1 " << risk(1,0.05) << std::endl;
+    std::cout << "TEST: reject util at mu=0 " << rejectU(0) << "   and at mu=1 " << rejectU(1) << std::endl;
+    std::cout << "                         Risk @ 0        Risk @ 1\n";
+    for (int j = 1; j<10; ++j)
+    { double alpha = (double) j/10.0;
+      std::cout << "TEST: alpha= " << alpha << "   " << risk(0,alpha) << "    " << risk(1,alpha) << std::endl;
+    }
     // check additive
     double mu (1.8);
     RiskVectorUtility riskU (gamma, omega); 
@@ -68,7 +72,7 @@ int  main()
 	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
       double mu (maxPair.first);
       std::cout << "TEST:                      max on [0.5,7] is " << maxPair.second << " @ " << mu << std::endl;
-      std::cout << "TEST:                      bidder utility = " << rejectU.bidder_utility(mu, 0,0,0,0) << "   oracle utility = " << rejectU.oracle_utility(mu, 0,0,0,0) << std::endl;      
+      std::cout << "TEST:                      bidder utility = " << rejectU.bidder_utility(mu, 0,0,0,0) << "   oracle utility = " << rejectU.oracle_utility(mu, 0,0,0,0) << std::endl;
     }
   }
 
@@ -79,8 +83,9 @@ int  main()
     double omega (0.05);
     int    size  (15);
     int    iZero (10);
-    WealthArray wealth("bidder", size, omega, iZero, universal);
-
+    UniversalDist univ;
+    ProbDist *p = &univ;
+    WealthArray wealth(" Univ ", size, omega, iZero, *p);
     RejectVectorUtility utility (gamma, omega);
     
     double gridSize (0.25);
