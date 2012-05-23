@@ -114,13 +114,18 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
   // holds means with oracle always at two fixed wealths identified mIndexA and mIndexB
-  // top row holds bids in these states, with oracle in last col of top row
+  // top row A holds wealth, second row the bids or oracle, with oracle bid for table in last col
+  // top row B holds for the bidder
   const int mIndexA = iOmega -  1;
   const int mIndexB = iOmega - 25;  // lower wealth
-  Matrix meanMatA    = Matrix::Zero (nRounds+1, nColumns);
-  Matrix meanMatB    = Matrix::Zero (nRounds+1, nColumns);
+  Matrix meanMatA    = Matrix::Zero (nRounds+2, nColumns);
+  Matrix meanMatB    = Matrix::Zero (nRounds+2, nColumns);
   for (int col=0; col<nColumns-1; ++col)
-    meanMatA(0,col) = meanMatB(0,col) = bidderWealth.bid(col);
+  { meanMatA(0,col) = oracleWealth.bid(col);
+    meanMatB(0,col) = bidderWealth.bid(col);
+    meanMatA(1,col) = oracleWealth[col];
+    meanMatB(1,col) = bidderWealth[col];
+  }
   meanMatA(0,nColumns-1) = oracleWealth.bid(mIndexA);
   meanMatB(0,nColumns-1) = oracleWealth.bid(mIndexB);
   // alternate between reading and writing these matrices
@@ -166,8 +171,8 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
 	if (maxPair.second <= utilAtMuEqualZero)
 	  maxPair = std::make_pair(0.0,utilAtMuEqualZero);
 	// save mean if oracle in desired wealth state
-	if (mIndexA == ko) meanMatA(round,kb) = maxPair.first;
-	else if (mIndexB == ko) meanMatB(round,kb) = maxPair.first; 
+	if      (mIndexA == ko) meanMatA(round+1,kb) = maxPair.first;
+	else if (mIndexB == ko) meanMatB(round+1,kb) = maxPair.first; 
 	// oracle on rows of outcome, bidder on columns
 	(*pUtilityDest)(ko,kb) = maxPair.second;
 	(* pOracleDest)(ko,kb) = utility.oracle_utility(maxPair.first,

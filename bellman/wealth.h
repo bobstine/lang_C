@@ -79,7 +79,7 @@ class WealthArray
   int    zero_index ()             const { return mZeroIndex ; }
   double omega ()                  const { return mOmega; }
   
-  double bid(int k)                const { return mWealth[k+1]-mWealth[k]; }    // recursion goes from small wealth to larger
+  double bid(int k)                const { return mWealth[k+1]-mWealth[k]; }    // recursion goes from small wealth to larger (note inlined in init array too)
   double wealth(int k)             const { return mWealth[k]; }
   double operator[](int k)         const { return mWealth[k]; }
   

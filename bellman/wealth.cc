@@ -66,8 +66,8 @@ WealthArray::find_wealth_position (int k0, double increase)  const // k0 is curr
   assert (target <= mWealth[k1]);              // needs to be in range of table
   while (k0+1 < k1)                            // bracket between k0 and k1
   { int kk = floor((k0+k1)/2);
-    //    std::cout << "DEBUG: new_wealth_position   W[" << k0 << "]="
-    //              << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
+    // std::cout << "DEBUG: find_wealth_position   W[" << k0 << "]="
+    //          << mWealth[k0] << " W[" << kk << "]=" << mWealth[kk] << "  W[" << k1 << "]=" << mWealth[k1] << std::endl;
     if (target < mWealth[kk])
     { k1 = kk; }
     else
@@ -93,15 +93,16 @@ WealthArray::initialize_array(ProbDist const& p)
     { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
     da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
-  // Add padding for wealth above omega by incrementing bid to slightly more than omega over padding steps
-  double b = da[mZeroIndex]-da[mZeroIndex-1];
+  // Add padding for wealth above omega by incrementing the fixed bid b to omega over padding steps
+  double b = .001;
   double m = exp(log(mOmega/b)/(mPadding-1));
   for(int i=mZeroIndex+1; i < mSize-1; ++i)
   { b *= m;
     da.assign(i, da[i-1] + b);
   }
-  // increment last by 1.01 omega
-  da.assign(mSize-1, da[mSize-2]+1.01*mOmega);
+  // increment last by omega
+  da.assign(mSize-1, da[mSize-2]+mOmega);
+  mWealth=da;
   // lock in indexing for finding new positions since the increment is known in advance
   mPositions.push_back( std::make_pair(0,0) ) ;
   for(int j = 1; j<mSize-1; ++j)

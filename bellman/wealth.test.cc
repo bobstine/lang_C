@@ -43,9 +43,9 @@ int  main()
     UniversalDist univ;
     GeometricDist geo(0.005);
     p = &univ;
-    WealthArray uWealth(" Univ ", steps, omega, iZero, *p);
+    WealthArray uWealth(" Univ ", omega, iZero, *p);
     p = &geo;
-    WealthArray gWealth(" Geom ", steps, omega, iZero, *p);
+    WealthArray gWealth(" Geom ", omega, iZero, *p);
     std::cout << "TEST: wealth array  \n" << uWealth << std::endl;
     std::cout << "TEST: wealth array  \n" << gWealth << std::endl;
     std::cout << "TEST:  bids are " ;
@@ -55,7 +55,7 @@ int  main()
     
     { int i = 3;  // boundary
       double bid = uWealth.bid(i);
-      std::pair<int,double>  kk (uWealth.new_wealth_position(i,0.05-bid));
+      std::pair<int,double>  kk (uWealth.wealth_position(i));
       std::cout << "TEST:  increment W[" << i << "]= " << uWealth[i] << " by " << 0.05-bid << " to " << 0.05+uWealth[i]-bid
 		<< " bracketed by " << uWealth[kk.first] << " * (" << kk.second << ")  +  ";
       if(kk.first < steps-1)
