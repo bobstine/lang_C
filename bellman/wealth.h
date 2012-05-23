@@ -61,19 +61,19 @@ class UniversalDist: public ProbDist
 
  **********************************************************************************/
 
-
 class WealthArray
 {
   const std::string     mName;
+  const int             mPadding;    // space for wealth above omega
   const int             mSize;       // number of distinct wealth values
   const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
-  const int             mZeroIndex;  // position of W_0, initially the place used for omega
+  const int             mZeroIndex;  // position of W_0, the place used for omega
   DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
   std::vector< std::pair<int,double> > mPositions;  // hold locations for new positions
 
  public:
- WealthArray(std::string name, int size, double omega, int zeroIndex, ProbDist const& pdf)
-   : mName(name), mSize(size), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
+ WealthArray(std::string name, double omega, int zeroIndex, ProbDist const& pdf)
+   : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
   int    size ()                   const { return mSize; }
   int    zero_index ()             const { return mZeroIndex ; }

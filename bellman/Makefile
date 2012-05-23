@@ -14,7 +14,7 @@ PROJECT_NAME = bellman
 
 # OPT = -O3 -std=c++0x -DNDEBUG
 
-OPT =  -std=c++11
+OPT =  -O3 -std=c++11
 
 USES = utils random
 
@@ -41,6 +41,9 @@ level_2 = bellman.o
 # uncons      uncon g50 2 0.05   50   0.05 7     37.1289 37.7115 0.291287
 # -------------------------------------------------------------------
 
+compiler: bellman
+	gcc --version
+
 constrained_test: bellman
 	./bellman --gamma 2 --rounds 50 --constrain --oracleprob 0.5 --bidderprob 0.0 --write    # geometric oracle
 	./bellman --gamma 2 --rounds 50 --constrain --oracleprob 0.0 --bidderprob 0.5 --write    # univ oracle
@@ -56,8 +59,9 @@ bellman_main.o: bellman_main.cc
 bellman: bellman.o wealth.o utility.o bellman_main.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
+# Test geometric oracle, universal bidder
 bellman_test: bellman
-	./bellman --gamma 2.0 --rounds 250 --constrain --oracleprob 0.0 --bidderprob 0.05 --write
+	./bellman --gamma 2.0 --rounds 100 --constrain --oracleprob 0.05 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 bellman_check: bellman
@@ -74,7 +78,7 @@ bellman_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 251
+n = 250
 
 # define expert by geometric rate 
 psi = 0.05000
