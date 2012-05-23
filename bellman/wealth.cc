@@ -94,10 +94,8 @@ WealthArray::initialize_array(ProbDist const& p)
     da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
   // Add padding for wealth above omega by incrementing bid to omega over padding steps
-  //  double b = bid(mZeroIndex);
-  // double m = exp(log(mOmega/b)/(mPadding-2));
-  double b = 1.0;
-  double m = 1.0;
+  double b = da[mZeroIndex]-da[mZeroIndex-1];
+  double m = exp(log(mOmega/b)/(mPadding-2));
 
   std::cout << "Basing on bid at omega = " << b << " with factor m = " << m << std::endl;
   for(int i=mZeroIndex+1; i < mSize-2; ++i)

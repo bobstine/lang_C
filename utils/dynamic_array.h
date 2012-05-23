@@ -38,7 +38,8 @@ class DynamicArrayBase
   
   void assign (int k, T x)                 { assert((mLoIndex <= k) && (k <= mHiIndex)); mPtr[k-mLoIndex] = x; }
   
-  T    operator[](int k)           const   { std::cout << "DA index " << mLoIndex << " <= " << k << " <= " << mHiIndex << std::endl; assert((mLoIndex <= k) && (k <= mHiIndex)); return mPtr[k-mLoIndex]; }
+  T    operator[](int k)           const   { // std::cout << "DA index " << mLoIndex << " <= " << k << " <= " << mHiIndex << std::endl;
+                                             assert((mLoIndex <= k) && (k <= mHiIndex)); return mPtr[k-mLoIndex]; }
 
   void print_to (std::ostream& os) const   { os << "DynArray[" << size() << ",r" << mRefCount << "] "; for (int i=0; i<size(); ++i) os << mPtr[i] << " "; }
 
