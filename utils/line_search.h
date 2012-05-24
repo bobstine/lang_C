@@ -71,4 +71,5 @@ namespace Line_Search
   };
 }  // namespace
 
+
 #endif

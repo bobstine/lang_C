@@ -31,8 +31,7 @@ Line_Search::Bisection::find_zero (F const& f, Comp const& comp) const   // comp
   double            eps       (length(interval));
   double            mp;
   while (eps > mTolerance)
-  { // std::cout << "BISC: interval [" << interval.first << "," << interval.second << "]   with f=["
-    //           << fInterval.first << " , " << fInterval.second << "]\n";
+  { //std::cout << "BISECT: On ["<<interval.first<< ","<<interval.second<<"], f=["<<fInterval.first<< "," << fInterval.second << "]\n";
     mp = midpoint(interval);
     double fx (f(mp));
     if (comp(fx,0))

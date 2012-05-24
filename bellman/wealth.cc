@@ -1,4 +1,5 @@
 #include "wealth.h"
+#include "line_search.Template.h"
 
 #include <utility>
 #include <math.h>
@@ -94,8 +95,12 @@ WealthArray::initialize_array(ProbDist const& p)
     da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
   // Add padding for wealth above omega by incrementing the fixed bid b to omega over padding steps
-  double b = .001;
-  double m = exp(log(mOmega/b)/(mPadding-1));
+  double w (0.5);           // allow to grow this much
+  int    k (mPadding-2) ;   // over this many steps
+  double b (mOmega*p(0));   // incrementing this top probability bid
+  double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
+	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
+  //  std::cout << " w = " << w << "   k=" << k << "  b=" << b << "   m= " << m << std::endl;
   for(int i=mZeroIndex+1; i < mSize-1; ++i)
   { b *= m;
     da.assign(i, da[i-1] + b);
