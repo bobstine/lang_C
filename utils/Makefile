@@ -14,7 +14,7 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-OPT = -O3  
+OPT = -O3 -std=c++11
 
 # -std=c++0x 
 
@@ -38,6 +38,9 @@ level_2   = tags.o
 #            INCLUDING RULES AND DEFINITIONS
 #
 ###########################################################################
+
+compiler_version:
+	$(GCC) --version
 
 cols_to_rows: columns_to_rows.o
 	$(GCC) columns_to_rows.o $(LDLIBS) -o $@

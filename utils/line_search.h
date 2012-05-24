@@ -1,4 +1,5 @@
 /*
+  24 May 12 ... Add bisection for finding zero.
   23 Jan 12 ... Define.  First code in long time.
 */
 
@@ -16,6 +17,30 @@ namespace Line_Search
   typedef std::unary_function<double,double> scalar_function;
 
   
+  //     bisection     bisection     bisection     bisection     bisection     bisection     bisection     bisection     
+  class Bisection        // finds zero
+  {
+  private:
+    const double mTolerance;
+    const Pair   mInterval;
+    
+  public:
+    Bisection (double tolerance, Pair const& interval)
+      : mTolerance (tolerance), mInterval(interval) { }
+
+    template <class F>
+      double operator()(F const& f) const;
+
+  private:
+    double length  (Pair const& p) const { return p.second-p.first; }
+    double midpoint(Pair const& p) const { return (p.second+p.first)/2; }
+    template <class F, class Comp>
+      double find_zero (F const& f, Comp const& comp) const;   // comp is comparison func
+  };
+
+
+  
+  //     golden section     golden section     golden section     golden section     golden section     golden section     
   class GoldenSection   // finds minimum
   {
   private:
@@ -28,6 +53,9 @@ namespace Line_Search
 
     GoldenSection (double tolerance, Pair const& interval, double grid, int maxIterations)
       : mTolerance(tolerance), mGridSize (grid), mInterval(interval), mMaxIterations(maxIterations) { }
+
+    GoldenSection (double tolerance, Pair const& interval)
+      : mTolerance(tolerance), mGridSize (0), mInterval(interval), mMaxIterations(100) { }
 
     template< class Func >
       Pair find_minimum(Func const& f) const;

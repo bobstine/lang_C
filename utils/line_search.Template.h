@@ -3,6 +3,50 @@
 #include <iostream>
 
 
+
+template <class F>
+double
+Line_Search::Bisection::operator()(F const& f) const
+{
+  // check signs first
+  double left  (f(mInterval.first));
+  double right (f(mInterval.second));
+  if (left*right > 0)
+  { std::cerr << "LINE_SEARCH: Error. Zero of input function not on this range."<< std::endl;
+    return 0;
+  }
+  else if (left < right)               // monotone increasing
+    return find_zero(f,std::greater<double>());
+  else                                          // decreasing
+    return find_zero(f,std::less<double>());
+}
+
+
+template <class F, class Comp>
+double
+Line_Search::Bisection::find_zero (F const& f, Comp const& comp) const   // comp is comparison func
+{
+  Line_Search::Pair interval  (mInterval);
+  Line_Search::Pair fInterval (std::make_pair(f(mInterval.first),f(mInterval.second)));
+  double            eps       (length(interval));
+  double            mp;
+  while (eps > mTolerance)
+  { // std::cout << "BISC: interval [" << interval.first << "," << interval.second << "]   with f=["
+    //           << fInterval.first << " , " << fInterval.second << "]\n";
+    mp = midpoint(interval);
+    double fx (f(mp));
+    if (comp(fx,0))
+    { interval.second= mp; fInterval.second=fx; }
+    else
+    { interval.first = mp; fInterval.first =fx; }
+    eps /= 2;
+  }
+  return midpoint(interval);
+}
+  
+
+
+
 template< class Func, class Comp >
 Line_Search::Pair
 Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
