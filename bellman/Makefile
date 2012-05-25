@@ -61,11 +61,11 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 
 # Test geometric oracle, universal bidder
 bellman_test: bellman
-	./bellman --gamma 2.0 --rounds 100 --constrain --oracleprob 0.05 --bidderprob 0 --write
+	./bellman --gamma 2.0 --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 bellman_check: bellman
-	./bellman --gamma 2.5 --rounds 7 --constrain --oracleprob 0.0 --bidderprob 0.05 --write
+	./bellman --gamma 2.5 --rounds   7 --constrain --oracleprob 0.0 --bidderprob 0.05 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path

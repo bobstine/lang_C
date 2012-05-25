@@ -113,11 +113,11 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
-  // holds means with oracle always at two fixed wealths identified mIndexA and mIndexB
-  // top row A holds wealth, second row the bids or oracle, with oracle bid for table in last col
-  // top row B holds for the bidder
+  // arrays to hold mean with oracle always at two fixed wealths identified mIndexA and mIndexB
+  // top row A holds wealth, second row the bids for oracle, with oracle bid in last col
+  // top row B holds information for the bidder
   const int mIndexA = iOmega -  1;
-  const int mIndexB = iOmega - 25;  // lower wealth
+  const int mIndexB = iOmega - 50;  // less wealth
   Matrix meanMatA    = Matrix::Zero (nRounds+2, nColumns);
   Matrix meanMatB    = Matrix::Zero (nRounds+2, nColumns);
   for (int col=0; col<nColumns-1; ++col)

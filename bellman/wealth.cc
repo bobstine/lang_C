@@ -95,7 +95,7 @@ WealthArray::initialize_array(ProbDist const& p)
     da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
   // Add padding for wealth above omega by incrementing the fixed bid b to omega over padding steps
-  double w (0.5);           // allow to grow this much
+  double w (0.2);           // allow to grow this much
   int    k (mPadding-2) ;   // over this many steps
   double b (mOmega*p(0));   // incrementing this top probability bid
   double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
@@ -105,8 +105,8 @@ WealthArray::initialize_array(ProbDist const& p)
   { b *= m;
     da.assign(i, da[i-1] + b);
   }
-  // increment last by omega
-  da.assign(mSize-1, da[mSize-2]+mOmega);
+  // last increment must be omega
+  da.assign(mSize-1, da[mSize-2] + mOmega);
   mWealth=da;
   // lock in indexing for finding new positions since the increment is known in advance
   mPositions.push_back( std::make_pair(0,0) ) ;
