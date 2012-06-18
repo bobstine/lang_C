@@ -180,6 +180,6 @@ end(range<Iter> r)
 
 } // namespace ranges
 
-// using namespace Ranges;
+using namespace Ranges;
 
 #endif

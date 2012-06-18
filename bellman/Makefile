@@ -78,18 +78,18 @@ bellman_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 250
+n = 500
 
 # define expert by geometric rate 
-psi = 0.05000
-ptxt=   05000
+psi = 0.01000
+ptxt=   01000
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
 #--------------------------------------------------------------------------------------------
 
 # define path within runs subdirectory for each psi (oracle) and n combination; 0 ids universal
-pp = runs/$risk_psi$(ptxt)_n$(n)
+pp = runs/risk_psi$(ptxt)_n$(n)
 
 $(pp)/.directory_built: 
 	echo Building directory for $(pp)
@@ -97,7 +97,7 @@ $(pp)/.directory_built:
 	touch $@
 
 # main target with parameters that identify gamma over tasks
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.85 $(pp)/0.9 $(pp)/0.95 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0 
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/1.0 $(pp)/1.025 $(pp)/1.05 $(pp)/1.075 $(pp)/1.1 $(pp)/1.125 $(pp)/1.15 $(pp)/1.175 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0  $(pp)/100.0   $(pp)/200.0 
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
