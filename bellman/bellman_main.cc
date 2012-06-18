@@ -6,7 +6,8 @@
 #include <getopt.h>
 #include "read_utils.h"     
 
-
+*WealthArray
+make_wealth_array(std::string name, double omega, int iOmega, double prob);
 
 /*
   prob character indicates the distribution, u for universal and g for geometric
@@ -14,9 +15,6 @@
   following probability is only relevant for a geometric distribution.
 
 */
-
-ProbDist*
-make_prob_dist_ptr (double p);
 
 void
 parse_arguments(int argc, char** argv,
@@ -36,27 +34,26 @@ int  main(int argc, char** argv)
   double   bidderProb = 0.0;
   bool     writeTable = false;    // if false, only return final value
   double    spendPct  = 0.5;
-  
+
   parse_arguments(argc, argv, gamma, nRounds, constrain, oracleProb, bidderProb, spendPct, writeTable);
   if ((!constrain) && (oracleProb != 0))
     std::cout << "Warning: Unconstrained but nonzero oracle probability " << oracleProb << " assigned." << std::endl;
-
   
-  // build probability distribution (null if none)
-  ProbDist *pOracleDist = make_prob_dist_ptr(oracleProb);
-  ProbDist *pBidderDist = make_prob_dist_ptr(bidderProb);
-
+  const int iOmega    (nRounds+1);   
+  WealthArray* bidderWealth = make_wealth_array("bidder", omega, iOmega, bidderProb);
+  WeathhArray* oracleWealth = make_wealth_array("oracle", omega, iOmega, oracleProb);
+  
   if(!constrain)           // unconstrained oracle 
   { std::cout <<                         "uncon " << pBidderDist->identifier() << " ";
     //    RejectVectorUtility utility(gamma, omega);
     RiskVectorUtility utility(gamma, omega);
-    solve_bellman_utility (gamma, omega, nRounds, utility,               *pBidderDist, writeTable);
+    solve_bellman_utility (gamma, omega, nRounds, utility, *bidderWealth, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleDist->identifier() << " " << pBidderDist->identifier() << " ";
     //    RejectMatrixUtility utility(gamma, omega);
     RiskMatrixUtility utility(gamma, omega);
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleDist, *pBidderDist, writeTable);
+    solve_bellman_utility (gamma, omega, nRounds, utility, *oracleWealth, *bidderWealth, writeTable);
   }
 
   /*
@@ -147,3 +144,13 @@ make_prob_dist_ptr (double prob)
     p = new GeometricDist(prob);
   return p;
 }
+  WealthArray oracleWealth ();
+  if(0 == oracleProb)
+    oracleWealth = WealthArray("oracle",omega,iOmega, UniversalDist());
+  else
+    oracleWealth = WealthArray("oracle",omega,iOmega, oracleProb);
+  WealthArray bidderWealth ();
+  if(0 == bidderProb)
+    bidderWealth = WealthArray("bidder",omega,iOmega, UniversalDist());
+  else
+    bidderWealth = WealthArray("bidder",omega,iOmega, oracleProb);

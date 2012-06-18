@@ -25,11 +25,9 @@ imin(int a, int b)
 //
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, ProbDist const& pdf, bool writeDetails)
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: iOmega is omega location, iOmega+6 gives five states above omega
-  const int iOmega    (nRounds+1);   
-  WealthArray bidderWealth("bidder", omega, iOmega, pdf);
   const int nColumns (bidderWealth.size());   
 
   // line search to find max utility
@@ -91,12 +89,10 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
 //    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, ProbDist const& oraclePDF, ProbDist const& bidderPDF, bool writeDetails)
+solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: omega location, size includes padding for wealth above omega
   const int iOmega   (nRounds + 1);   
-  WealthArray bidderWealth("bidder", omega, iOmega, bidderPDF);
-  WealthArray oracleWealth("oracle", omega, iOmega, oraclePDF);
   const int nColumns (bidderWealth.size());   
   // line search to find max utility
   const int                      maxIterations   (200);   

@@ -22,9 +22,6 @@ class ProbDist: public std::unary_function<int,double>
 
    Probability distributions that control spending
 
-     All take 2 integer arguments (k since reject, j remaining)
-     but some (like universal) don't use the second argument
-
  **********************************************************************************/
 
 class GeometricDist: public ProbDist
@@ -68,12 +65,20 @@ class WealthArray
   const int             mSize;       // number of distinct wealth values
   const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
   const int             mZeroIndex;  // position of W_0, the place used for omega
-  DynamicArray<double>  mWealth;     // negative indices indicate wealth below omega
-  std::vector< std::pair<int,double> > mPositions;  // hold locations for new positions
+  DynamicArray<double>  mWealth;     // indices k < mZeroIndex denote wealth less than omega
+  std::vector< std::pair<int,double> > mPositions;  // cache locations for new positions when increment wealth by rejection
 
  public:
+
+  WealthArray ()
+    : mName("empty"), mPadding(0), mSize(mPadding), mOmega(0), mZeroIndex(0), mWealth(), mPositions() { }
+  
  WealthArray(std::string name, double omega, int zeroIndex, ProbDist const& pdf)
    : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
+
+ WealthArray(std::string name, double omega, int zeroIndex, double psi) // use for geometric for numerical stability
+   : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
+
 
   int    size ()                   const { return mSize; }
   int    zero_index ()             const { return mZeroIndex ; }
@@ -89,6 +94,8 @@ class WealthArray
   
  private:
   void initialize_array(ProbDist const& p);
+  void initialize_geometric_array(double psi);
+  void fill_array_top();
   std::pair<int, double> find_wealth_position (int k, double increaseInWealth) const;
 
 };

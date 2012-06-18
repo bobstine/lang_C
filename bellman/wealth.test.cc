@@ -33,17 +33,23 @@ int  main()
   // test extremes in geometric wealth table for underflows
   if (true)
   {
+    double psi(0.2);
     UniversalDist univ;
-    GeometricDist geo(0.005);
+    GeometricDist geo(psi);
 
     double omega ( 0.05 );
-    int    iZero ( 250 ) ;
+    int    iZero ( 500  ) ;
  
+    //    WealthArray gWealth(" Geom ", omega, iZero, geo );   // not numerically stable for long trials
     WealthArray uWealth(" Univ ", omega, iZero, univ);
-    WealthArray gWealth(" Geom ", omega, iZero, geo );
+    WealthArray gWealth(" Geom ", omega, iZero, psi );  // better geometric
 
-    std::cout << "TEST: wealth at -200 is " << uWealth[-200] << " " << gWealth[-200] << std::endl << std::endl;
-    
+    std::cout << "TEST: wealth at  0 is " << uWealth[ 0] << " " << gWealth[ 0] << std::endl << std::endl;
+    std::cout << "TEST: wealth at  1 is " << uWealth[ 1] << " " << gWealth[ 1] << std::endl << std::endl;
+    std::cout << "TEST: wealth at omega is " << uWealth[ iZero ] << " " << gWealth[ iZero ] << std::endl << std::endl;
+
+    std::cout << "TEST: Low bids " << uWealth.bid(0) << " " << gWealth.bid(0) << std::endl << std::endl;
+
     std::cout << "TEST: wealth array  \n" << uWealth << std::endl;
     std::cout << "TEST: wealth array  \n" << gWealth << std::endl;
 
@@ -51,7 +57,7 @@ int  main()
 
 
   // test bracket function from wealth 
-  if (true)
+  if (false)
   {
     double omega (0.05);
     int  nRounds (250);

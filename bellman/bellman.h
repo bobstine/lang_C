@@ -18,11 +18,11 @@
 
 // all powerful oracle
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & util,                            ProbDist const& pdf,       bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & util,                                  WealthArray const& bidderWealth, bool writeDetails);
 
 // constrained oracle
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & util, ProbDist const& oraclePDF, ProbDist const& bidderPDF, bool writeDetails);
+solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & util, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails);
 
 
 
