@@ -76,10 +76,11 @@ class WealthArray
  WealthArray(std::string name, double omega, int zeroIndex, ProbDist const& pdf)
    : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
- WealthArray(std::string name, double omega, int zeroIndex, double psi) // use for geometric for numerical stability
-   : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
+ WealthArray(double omega, int zeroIndex, double psi) // use for geometric for numerical stability
+   : mName(geom_name(psi)), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
 
 
+  std::string name()               const { return mName; }
   int    size ()                   const { return mSize; }
   int    zero_index ()             const { return mZeroIndex ; }
   double omega ()                  const { return mOmega; }
@@ -93,6 +94,7 @@ class WealthArray
   void print_to (std::ostream& os) const { os << "Wealth array " << mName << "  " << mWealth; }
   
  private:
+  std::string geom_name(double p) const;
   void initialize_array(ProbDist const& p);
   void initialize_geometric_array(double psi);
   void fill_array_top();

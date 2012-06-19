@@ -11,6 +11,13 @@
 int  main()
 {
 
+  if (true)
+  { std::cout << "\nTEST: risk calculations." << std::endl;
+    std::cout << "   risk(0,0)   = " << risk(0,0)     << std::endl;  // mu, alpha
+    std::cout << "   risk(0,.1)  = " << risk(0,0.1)   << std::endl;
+    std::cout << "   risk(1,.05) = " << risk(1,0.05)  << std::endl;
+  }
+
   if (false)
   { std::cout << "\nTEST: test vector utility object." << std::endl;
     double gamma (2.0 );
@@ -31,7 +38,7 @@ int  main()
     std::cout << "TEST: additivity...   net " << riskU(mu) << " = " << riskU.oracle_utility(mu, 0,0) << " - " << gamma << "*" << riskU.bidder_utility(mu,0,0) << std::endl;
   }
     
-  if (true)
+  if (false)
   { std::cout << "\nTEST: test basic matrix object." << std::endl;
     double gamma (1.0 );
     double omega (0.05);
@@ -81,11 +88,10 @@ int  main()
   { std::cout << "\nTEST: testing maximizer function\n";
     double gamma (2.5);
     double omega (0.05);
-    int    size  (15);
     int    iZero (10);
     UniversalDist univ;
     ProbDist *p = &univ;
-    WealthArray wealth(" Univ ", size, omega, iZero, *p);
+    WealthArray wealth(" Univ ", omega, iZero, *p);
     RejectVectorUtility utility (gamma, omega);
     
     double gridSize (0.25);

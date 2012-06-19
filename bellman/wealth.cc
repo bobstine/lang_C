@@ -20,22 +20,7 @@ std::string
 GeometricDist::identifier() const
 {
   std::stringstream ss;
-  ss << "g";
-  if (mPsi < 0.1)
-  { ss << "0";
-    if (mPsi < 0.01)
-    { ss << "0";
-      if (mPsi < 0.001)
-      { ss << "0";
-        if (mPsi < 0.0001)
-	{ ss << "0";
-	  if (mPsi < 0.00001)
-	    ss << "0";
-	}
-      }
-    }
-  }
-  ss << floor(100000*mPsi);
+  ss << "g" << mPsi;
   return ss.str();
 }
 
@@ -97,6 +82,30 @@ WealthArray::initialize_array(ProbDist const& p)
   }
   mWealth=da;
   fill_array_top();
+}
+
+
+std::string
+WealthArray::geom_name(double psi) const
+{
+  std::stringstream ss;
+  ss << "g" ;
+  if (psi < 0.1)
+  { ss << "0";
+    if (psi < 0.01)
+    { ss << "0";
+      if (psi < 0.001)
+      { ss << "0";
+        if (psi < 0.0001)
+	{ ss << "0";
+	  if (psi < 0.00001)
+	    ss << "0";
+	}
+      }
+    }
+  }
+  ss << floor(100000*psi);
+  return ss.str();
 }
 
 

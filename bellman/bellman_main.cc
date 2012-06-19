@@ -6,15 +6,15 @@
 #include <getopt.h>
 #include "read_utils.h"     
 
-*WealthArray
-make_wealth_array(std::string name, double omega, int iOmega, double prob);
 
-/*
-  prob character indicates the distribution, u for universal and g for geometric
-  
-  following probability is only relevant for a geometric distribution.
+// Need to use special order of calls to fill geometric
+// prob=0 signals universal, prob > 0 is geometric
 
-*/
+WealthArray*
+make_wealth_array(double omega, int iOmega, double prob);
+
+
+//  prob character indicates the distribution, u for universal and g for geometric
 
 void
 parse_arguments(int argc, char** argv,
@@ -22,6 +22,8 @@ parse_arguments(int argc, char** argv,
 		double &oracleProb, double &bidderProb,  
 		double &spendPct, bool &writeTable);
 
+
+// Main     Main     Main     Main     Main     Main     Main     Main     Main     Main     Main     Main     
 int  main(int argc, char** argv)
 {
   const double omega  = 0.05;
@@ -40,28 +42,21 @@ int  main(int argc, char** argv)
     std::cout << "Warning: Unconstrained but nonzero oracle probability " << oracleProb << " assigned." << std::endl;
   
   const int iOmega    (nRounds+1);   
-  WealthArray* bidderWealth = make_wealth_array("bidder", omega, iOmega, bidderProb);
-  WeathhArray* oracleWealth = make_wealth_array("oracle", omega, iOmega, oracleProb);
+  WealthArray* pBidderWealth = make_wealth_array(omega, iOmega, bidderProb);
+  WealthArray* pOracleWealth = make_wealth_array(omega, iOmega, oracleProb);
   
   if(!constrain)           // unconstrained oracle 
-  { std::cout <<                         "uncon " << pBidderDist->identifier() << " ";
-    //    RejectVectorUtility utility(gamma, omega);
-    RiskVectorUtility utility(gamma, omega);
-    solve_bellman_utility (gamma, omega, nRounds, utility, *bidderWealth, writeTable);
+  { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
+    //    RejectVectorUtility utility(gamma, omega);  // need to max
+    RiskVectorUtility utility(gamma, omega);    // need to min
+    solve_bellman_utility (gamma, omega, nRounds, utility, *pBidderWealth, writeTable);
   }
   else                     // constrained expert
-  { std::cout << pOracleDist->identifier() << " " << pBidderDist->identifier() << " ";
-    //    RejectMatrixUtility utility(gamma, omega);
-    RiskMatrixUtility utility(gamma, omega);
-    solve_bellman_utility (gamma, omega, nRounds, utility, *oracleWealth, *bidderWealth, writeTable);
+  { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
+    //    RejectMatrixUtility utility(gamma, omega);  // need to max
+    RiskMatrixUtility utility(gamma, omega);   // need to min
+    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
-
-  /*
-    if (geoProb <= 0)     // one-dimensional state, unconstrained expert
-    solve_bellman_alpha_equation (gamma, omega, nRounds, spendPct, p, true);
-    else                      // two-dimensional state, constrained
-    solve_constrained_bellman_alpha_equation (gamma, omega, nRounds, spendPct, geoProb, p, writeTable);
-  */
   return 0;
 }
 
@@ -144,13 +139,12 @@ make_prob_dist_ptr (double prob)
     p = new GeometricDist(prob);
   return p;
 }
-  WealthArray oracleWealth ();
-  if(0 == oracleProb)
-    oracleWealth = WealthArray("oracle",omega,iOmega, UniversalDist());
+
+WealthArray*
+make_wealth_array(double omega, int iOmega, double prob)
+{
+  if(0 == prob)
+    return new WealthArray("univ", omega, iOmega, UniversalDist());
   else
-    oracleWealth = WealthArray("oracle",omega,iOmega, oracleProb);
-  WealthArray bidderWealth ();
-  if(0 == bidderProb)
-    bidderWealth = WealthArray("bidder",omega,iOmega, UniversalDist());
-  else
-    bidderWealth = WealthArray("bidder",omega,iOmega, oracleProb);
+    return new WealthArray(omega, iOmega, prob);
+}

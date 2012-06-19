@@ -101,5 +101,3 @@ class ConstrainedExpertCompetitiveAlphaGain: public std::unary_function<double,d
   double value_to_bidder (double mu, double b00, double bi0, double b0j, double bij) const;  
 };
 
-
-

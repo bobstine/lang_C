@@ -41,7 +41,7 @@ namespace Line_Search
 
   
   //     golden section     golden section     golden section     golden section     golden section     golden section     
-  class GoldenSection   // finds minimum
+  class GoldenSection
   {
   private:
     const double  mTolerance;

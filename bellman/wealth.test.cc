@@ -10,7 +10,7 @@ int  main()
 {
   
   // test the probability function from wealth.h
-  if (true)
+  if (false)
   {
     UniversalDist univ;
     double total (0.0);
@@ -36,13 +36,14 @@ int  main()
     double psi(0.2);
     UniversalDist univ;
     GeometricDist geo(psi);
-
+    
     double omega ( 0.05 );
     int    iZero ( 500  ) ;
  
     //    WealthArray gWealth(" Geom ", omega, iZero, geo );   // not numerically stable for long trials
     WealthArray uWealth(" Univ ", omega, iZero, univ);
-    WealthArray gWealth(" Geom ", omega, iZero, psi );  // better geometric
+    WealthArray gWealth(omega, iZero, psi );  // better geometric
+    std::cout << "TEST: geometric name for psi=" << psi << " is " << gWealth.name() << std::endl;
 
     std::cout << "TEST: wealth at  0 is " << uWealth[ 0] << " " << gWealth[ 0] << std::endl << std::endl;
     std::cout << "TEST: wealth at  1 is " << uWealth[ 1] << " " << gWealth[ 1] << std::endl << std::endl;

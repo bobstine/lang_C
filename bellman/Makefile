@@ -60,12 +60,19 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 # Test geometric oracle, universal bidder
+# With revised geometric wealth array and different top fill (19 Jun 12)
+#           g01000 univ 2 0.05   200   0.5 7     515.584 -448.759 -482.172
+# Done with sobolev and prior code the geometric got higher risk
+#           g01000 univ 2 0.05   200   0.5 7     500.546 -463.415 -481.981
+# With code set to find the minimum risk, get same answer (so make neg_risk to retain legacy figures)
+#           g01000 univ 2 0.05   200   0.5 7     -515.584 448.759 482.172
+
 bellman_test: bellman
 	./bellman --gamma 2.0 --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 bellman_check: bellman
-	./bellman --gamma 2.5 --rounds   7 --constrain --oracleprob 0.0 --bidderprob 0.05 --write
+	./bellman --gamma 2.0 --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
