@@ -30,7 +30,6 @@ level_2 = bellman.o
 #
 ###########################################################################
 
-
 # TAGS 
 # find . | grep ".*\.\(h\|cc\)" | xargs etags -f TAGS
 
@@ -68,7 +67,7 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 #           g01000 univ 2 0.05   200   0.5 7     -515.584 448.759 482.172
 
 bellman_test: bellman
-	./bellman --gamma 2.0 --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --gamma 200 --rounds 250 --constrain --oracleprob 0 --bidderprob 0.001 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 bellman_check: bellman

@@ -29,7 +29,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
   const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,10.0));
   Line_Search::GoldenSection     search(tolerance, searchInterval, initialGrid, maxIterations);
   // pad arrays since need room to collect bid; initialize to zero
   Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
@@ -93,7 +93,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
   const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.50,7.0));
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,10.0));
   Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
   // pad arrays since need room to collect bid; initialize to zero
   // code flips between these on read and write using use0
@@ -241,7 +241,7 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
   const int maxIterations (200);   
   const double tolerance  (0.0001);
   const double grid       (0.5);
-  const std::pair<double,double> searchInterval = std::make_pair(0.05,7.0);
+  const std::pair<double,double> searchInterval = std::make_pair(0.05,10.0);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   ConstrainedExpertCompetitiveAlphaGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     

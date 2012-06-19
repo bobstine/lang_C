@@ -33,7 +33,7 @@ int  main()
   // test extremes in geometric wealth table for underflows
   if (true)
   {
-    double psi(0.2);
+    double psi(0.01);
     UniversalDist univ;
     GeometricDist geo(psi);
     
@@ -48,9 +48,12 @@ int  main()
     std::cout << "TEST: wealth at  0 is " << uWealth[ 0] << " " << gWealth[ 0] << std::endl << std::endl;
     std::cout << "TEST: wealth at  1 is " << uWealth[ 1] << " " << gWealth[ 1] << std::endl << std::endl;
     std::cout << "TEST: wealth at omega is " << uWealth[ iZero ] << " " << gWealth[ iZero ] << std::endl << std::endl;
-
     std::cout << "TEST: Low bids " << uWealth.bid(0) << " " << gWealth.bid(0) << std::endl << std::endl;
 
+    std::cout << "TEST: Bid comparisons, geometric(0.01) and universal...\n";
+    for (int j=0; j<10; ++j)
+      std::cout << "[" << j << "]  " << gWealth.bid(iZero-j) << "   " << uWealth.bid(iZero-j) << std::endl;
+    
     std::cout << "TEST: wealth array  \n" << uWealth << std::endl;
     std::cout << "TEST: wealth array  \n" << gWealth << std::endl;
 
