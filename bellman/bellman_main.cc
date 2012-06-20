@@ -3,9 +3,14 @@
 #include <math.h>
 
 #include <iostream>
+#include <sstream>
 #include <getopt.h>
 #include "read_utils.h"     
 
+
+// Where to start the universal coder
+
+const int universalStart (1);
 
 // Need to use special order of calls to fill geometric
 // prob=0 signals universal, prob > 0 is geometric
@@ -132,9 +137,8 @@ ProbDist*
 make_prob_dist_ptr (double prob)
 {
   ProbDist *p = NULL;
-  
   if (0 == prob)
-    p = new UniversalDist(); 
+    p = new UniversalDist( universalStart );
   else
     p = new GeometricDist(prob);
   return p;
@@ -143,8 +147,11 @@ make_prob_dist_ptr (double prob)
 WealthArray*
 make_wealth_array(double omega, int iOmega, double prob)
 {
+  std::stringstream ss;
   if(0 == prob)
-    return new WealthArray("univ", omega, iOmega, UniversalDist());
+  { ss << "univ" << universalStart;
+    return new WealthArray(ss.str(), omega, iOmega, UniversalDist(universalStart));
+  }
   else
     return new WealthArray(omega, iOmega, prob);
 }

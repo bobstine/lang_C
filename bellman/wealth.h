@@ -37,11 +37,27 @@ class GeometricDist: public ProbDist
   double operator()(int k) const;    // percent of wealth spent at step k; adds to 1
 };
   
+class UniformDist: public ProbDist
+{
+  const double  mP;  // 1/(number of tests)
+  
+ public:
+
+  UniformDist (double n): mP(1.0/n) {}
+  
+  std::string identifier() const;
+  double operator()(int ) const;
+};
 
 class UniversalDist: public ProbDist
 {
+  const int mStart;  // starting index
+  
   public:
-  std::string identifier() const { return "univ"; }
+
+  UniversalDist (int start): mStart (start) { }
+  
+  std::string identifier() const;
   double operator()(int k) const;
   };
 

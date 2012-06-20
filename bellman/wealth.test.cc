@@ -8,11 +8,13 @@
 
 int  main()
 {
+
+  const int univStart (1);
   
   // test the probability function from wealth.h
-  if (false)
+  if (true)
   {
-    UniversalDist univ;
+    UniversalDist univ(univStart);
     double total (0.0);
     int count = 100000;
     std::cout << "TEST: initial 20 universal rates (" << univ.identifier() << ")  ";
@@ -34,7 +36,7 @@ int  main()
   if (true)
   {
     double psi(0.01);
-    UniversalDist univ;
+    UniversalDist univ(univStart);
     GeometricDist geo(psi);
     
     double omega ( 0.05 );
@@ -51,12 +53,11 @@ int  main()
     std::cout << "TEST: Low bids " << uWealth.bid(0) << " " << gWealth.bid(0) << std::endl << std::endl;
 
     std::cout << "TEST: Bid comparisons, geometric(0.01) and universal...\n";
-    for (int j=0; j<10; ++j)
+    for (int j=1; j<10; ++j)
       std::cout << "[" << j << "]  " << gWealth.bid(iZero-j) << "   " << uWealth.bid(iZero-j) << std::endl;
     
     std::cout << "TEST: wealth array  \n" << uWealth << std::endl;
     std::cout << "TEST: wealth array  \n" << gWealth << std::endl;
-
   } 
 
 
@@ -70,7 +71,7 @@ int  main()
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
     ProbDist *p;
-    UniversalDist univ;
+    UniversalDist univ(univStart);
     GeometricDist geo(0.005);
     p = &univ;
     WealthArray uWealth(" Univ ", omega, iZero, *p);
