@@ -20,33 +20,47 @@ std::string
 GeometricDist::identifier() const
 {
   std::stringstream ss;
-  ss << "g";
-  if (mPsi < 0.1)
-  { ss << "0";
-    if (mPsi < 0.01)
-    { ss << "0";
-      if (mPsi < 0.001)
-      { ss << "0";
-        if (mPsi < 0.0001)
-	{ ss << "0";
-	  if (mPsi < 0.00001)
-	    ss << "0";
-	}
-      }
-    }
-  }
-  ss << floor(100000*mPsi);
+  ss << "g" << mPsi;
   return ss.str();
 }
 
 
 double
+UniformDist::operator() (int ) const
+{
+  return mP;
+}
+
+
+std::string
+UniformDist::identifier() const
+{
+  std::stringstream ss;
+  ss << "u" << trunc(1/mP);
+  return ss.str();
+}
+
+
+
+std::string
+UniversalDist::identifier() const
+{
+  std::stringstream ss;
+  ss << "univ" << mStart;
+  return ss.str();
+}
+
+// constants to make universal into density, from MMa
+double normalizingConstants[21]={0,3.3877355 , 1.3063666 , 0.8920988 , 0.7186514 , 0.6221371,
+				   0.5598396 , 0.51582439, 0.48278679, 0.45689505, 0.4359382,
+				   0.4185466 , 0.40382391, 0.39115728, 0.38011245, 0.37037246,
+ 				   0.36170009, 0.35391396, 0.34687281, 0.34046481, 0.33460018};
+
+double
 UniversalDist::operator() (int k) const
 {
-  const int start = 20;                 // where to start the code
-  const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
-  double ll = log(k+1+start);
-  return 1.0/( (k+start) * ll * ll * normConst);
+  double ll = log(k+1+mStart);
+  return 1.0/( (k+mStart) * ll * ll * normalizingConstants[mStart]);
 }
 
 
@@ -91,26 +105,78 @@ WealthArray::initialize_array(ProbDist const& p)
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
-    { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
-    da.assign(i, da[i+1] - mOmega * p(mZeroIndex-i-1) );  // note error would be: mZeroIndex-i 'banks' some wealth
+  { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
+    double bid (mOmega * p(mZeroIndex-i-1));
+    da.assign(i, da[i+1] - bid );  // note error would be: mZeroIndex-i 'banks' some wealth
   }
-  // Add padding for wealth above omega by incrementing the fixed bid b to omega over padding steps
-  double w (0.2);           // allow to grow this much
-  int    k (mPadding-2) ;   // over this many steps
-  double b (mOmega*p(0));   // incrementing this top probability bid
-  double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
-	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
-  //  std::cout << " w = " << w << "   k=" << k << "  b=" << b << "   m= " << m << std::endl;
-  for(int i=mZeroIndex+1; i < mSize-1; ++i)
-  { b *= m;
-    da.assign(i, da[i-1] + b);
-  }
-  // last increment must be omega
-  da.assign(mSize-1, da[mSize-2] + mOmega);
   mWealth=da;
+  fill_array_top();
+}
+
+
+std::string
+WealthArray::geom_name(double psi) const
+{
+  std::stringstream ss;
+  ss << "g" ;
+  if (psi < 0.1)
+  { ss << "0";
+    if (psi < 0.01)
+    { ss << "0";
+      if (psi < 0.001)
+      { ss << "0";
+        if (psi < 0.0001)
+	{ ss << "0";
+	  if (psi < 0.00001)
+	    ss << "0";
+	}
+      }
+    }
+  }
+  ss << floor(100000*psi);
+  return ss.str();
+}
+
+
+void
+WealthArray::initialize_geometric_array(double psi)
+{
+  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
+  DynamicArray<double> da(0,mSize-1);
+  da.assign(mZeroIndex,mOmega);
+  for(int i=mZeroIndex-1; 0 <= i; --i)
+  { double bid (da[i+1]*psi);
+    // std::cout << i << "   " << da[i+1]-bid << "     bid " << bid << std::endl;
+    da.assign(i, da[i+1] - bid ); 
+  }
+  mWealth=da;
+  fill_array_top();
+}
+
+
+void
+WealthArray::fill_array_top()
+{ // Add padding for wealth above omega by incrementing omega over padding steps
+  double w (0.4);                   // allow to grow this much
+  int    k (mPadding-2) ;           // over this many steps
+  double b (mWealth[mZeroIndex]);   // incrementing this initial wealth
+  double m (exp(log(w/b)/k));
+  
+  for(int i=mZeroIndex+1; i < mSize-1; ++i)
+    mWealth.assign(i, mWealth[i-1] * m);
+  // last increment must be omega
+  mWealth.assign(mSize-1, mWealth[mSize-2] + mOmega);
   // lock in indexing for finding new positions since the increment is known in advance
   mPositions.push_back( std::make_pair(0,0) ) ;
   for(int j = 1; j<mSize-1; ++j)
     mPositions.push_back( find_wealth_position(j,mOmega-bid(j)) );
 }
 
+
+
+  // alternative geometric sum
+  //   double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
+  //	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
+  //   for(int i=mZeroIndex+1; i < mSize-1; ++i)
+  //   { b *= m;
+  //     mWealth.assign(i, mWealth[i-1] + b);  }

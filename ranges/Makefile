@@ -13,8 +13,8 @@ PROJECT_NAME = ranges
 
 USES = utils random
 
-OPT = -std=c++11 -O4
-
+# OPT = -std=c++11 -O4
+OPT = -std=c++0x -O2
 
 ###########################################################################
 #

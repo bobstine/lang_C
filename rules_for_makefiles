@@ -94,6 +94,7 @@ cleanall:
 	cd /Users/bob/C/utils;	make clean
 	cd /Users/bob/C/random;	make clean
 	cd /Users/bob/C/ranges;	make clean
+	cd /Users/bob/C/eigen;	make clean
 	cd /Users/bob/C/spline;	make clean
 	cd /Users/bob/C/gsl_tools;make clean
 	cd /Users/bob/C/auctions; make clean

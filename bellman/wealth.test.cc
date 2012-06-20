@@ -8,11 +8,13 @@
 
 int  main()
 {
+
+  const int univStart (1);
   
   // test the probability function from wealth.h
   if (true)
   {
-    UniversalDist univ;
+    UniversalDist univ(univStart);
     double total (0.0);
     int count = 100000;
     std::cout << "TEST: initial 20 universal rates (" << univ.identifier() << ")  ";
@@ -33,25 +35,34 @@ int  main()
   // test extremes in geometric wealth table for underflows
   if (true)
   {
-    UniversalDist univ;
-    GeometricDist geo(0.005);
-
+    double psi(0.01);
+    UniversalDist univ(univStart);
+    GeometricDist geo(psi);
+    
     double omega ( 0.05 );
-    int    iZero ( 250 ) ;
+    int    iZero ( 500  ) ;
  
+    //    WealthArray gWealth(" Geom ", omega, iZero, geo );   // not numerically stable for long trials
     WealthArray uWealth(" Univ ", omega, iZero, univ);
-    WealthArray gWealth(" Geom ", omega, iZero, geo );
+    WealthArray gWealth(omega, iZero, psi );  // better geometric
+    std::cout << "TEST: geometric name for psi=" << psi << " is " << gWealth.name() << std::endl;
 
-    std::cout << "TEST: wealth at -200 is " << uWealth[-200] << " " << gWealth[-200] << std::endl << std::endl;
+    std::cout << "TEST: wealth at  0 is " << uWealth[ 0] << " " << gWealth[ 0] << std::endl << std::endl;
+    std::cout << "TEST: wealth at  1 is " << uWealth[ 1] << " " << gWealth[ 1] << std::endl << std::endl;
+    std::cout << "TEST: wealth at omega is " << uWealth[ iZero ] << " " << gWealth[ iZero ] << std::endl << std::endl;
+    std::cout << "TEST: Low bids " << uWealth.bid(0) << " " << gWealth.bid(0) << std::endl << std::endl;
+
+    std::cout << "TEST: Bid comparisons, geometric(0.01) and universal...\n";
+    for (int j=1; j<10; ++j)
+      std::cout << "[" << j << "]  " << gWealth.bid(iZero-j) << "   " << uWealth.bid(iZero-j) << std::endl;
     
     std::cout << "TEST: wealth array  \n" << uWealth << std::endl;
     std::cout << "TEST: wealth array  \n" << gWealth << std::endl;
-
   } 
 
 
   // test bracket function from wealth 
-  if (true)
+  if (false)
   {
     double omega (0.05);
     int  nRounds (250);
@@ -60,7 +71,7 @@ int  main()
     std::cout << "TEST: Initializing the wealth array." << std::endl;
 
     ProbDist *p;
-    UniversalDist univ;
+    UniversalDist univ(univStart);
     GeometricDist geo(0.005);
     p = &univ;
     WealthArray uWealth(" Univ ", omega, iZero, *p);

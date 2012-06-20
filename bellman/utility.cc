@@ -63,6 +63,11 @@ optimal_alpha (double mu, double omega)
   }
 }
 
+double
+neg_risk(double mu, double alpha)
+{
+  return -risk(mu,alpha);
+}
 
 double
 risk(double mu, double alpha)
@@ -146,7 +151,7 @@ RiskVectorUtility::operator()(double mu) const
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta)) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  return  neg_risk(mu,mAlpha)  - mGamma * neg_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }
 
 
@@ -154,7 +159,7 @@ double
 RiskVectorUtility::bidder_utility (double mu, double rejectValue, double noRejectValue) const
 {
   double rb (r_mu_beta(mu));
-  return -risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
+  return  neg_risk(mu,mBeta)  + rb * rejectValue + (1-rb) * noRejectValue;
 }
 
 double
@@ -162,7 +167,7 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return -risk(mu,mAlpha) + rb * rejectValue + (1-rb) * noRejectValue;
+  return  neg_risk(mu,mAlpha) + rb * rejectValue + (1-rb) * noRejectValue;
 }
 
 
@@ -271,7 +276,7 @@ RiskMatrixUtility::operator()(double mu) const
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  double util (-risk(mu,mAlpha) + mGamma * risk(mu,mBeta));  // neg risk since finds the max utility
+  double util (neg_risk(mu,mAlpha) - mGamma * neg_risk(mu,mBeta));  
   if (rAlpha > rBeta)
     return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
   else
@@ -287,9 +292,9 @@ RiskMatrixUtility::oracle_utility  (double mu, double v00, double v01, double v1
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
   if (rAlpha > rBeta)
-    return  -risk(mu,mAlpha)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+    return  neg_risk(mu,mAlpha)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
   else
-    return  -risk(mu,mAlpha)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
+    return  neg_risk(mu,mAlpha)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
 }
 
 
@@ -300,9 +305,9 @@ RiskMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
   if (rAlpha > rBeta)
-    return  -risk(mu,mBeta)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
+    return  neg_risk(mu,mBeta)  + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
   else
-    return  -risk(mu,mBeta)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
+    return  neg_risk(mu,mBeta)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
 }
 
 

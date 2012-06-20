@@ -30,8 +30,8 @@ double   z_alpha       (double a);
 
 double   optimal_alpha (double mu, double omega);
 
-double   risk          (double mu, double alpha);
-
+double   risk          (double mu, double alpha); 
+double   neg_risk      (double mu, double alpha); 
 
 
 ////   Vector utility trades off between two possible values
@@ -103,9 +103,6 @@ class RejectVectorUtility: public VectorUtility
 
 
 ////  RiskVectorUtility     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk     Risk
-
-//   Actually, computes the negative risk since the utility
-//   functions (line search) look for the max.
 
 class RiskVectorUtility: public VectorUtility
 {
