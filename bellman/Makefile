@@ -30,7 +30,6 @@ level_2 = bellman.o
 #
 ###########################################################################
 
-
 # TAGS 
 # find . | grep ".*\.\(h\|cc\)" | xargs etags -f TAGS
 
@@ -61,18 +60,23 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 
 # Test geometric oracle, universal bidder
 # With revised geometric wealth array and different top fill (19 Jun 12)
-#           g01000 univ 2 0.05   200   0.5 7     515.584 -448.759 -482.172
+#           g01000 univ  2 0.05   200   0.5 7      515.584 -448.759 -482.172
 # Done with sobolev and prior code the geometric got higher risk
-#           g01000 univ 2 0.05   200   0.5 7     500.546 -463.415 -481.981
+#           g01000 univ  2 0.05   200   0.5 7      500.546 -463.415 -481.981
 # With code set to find the minimum risk, get same answer (so make neg_risk to retain legacy figures)
-#           g01000 univ 2 0.05   200   0.5 7     -515.584 448.759 482.172
+#           g01000 univ  2 0.05   200   0.5 7     -515.584 448.759 482.172
+# With universal starting at 1, got this... geometric kills universal
+#           g01000 univ1 2 0.05   200   0.05 10     909.463 -423.46 -666.461
+# With revised (improved) tail wealth, get this [tail has more effect than I'd prefer]
+#           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
 bellman_test: bellman
-	./bellman --gamma 2.0 --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --gamma 2   --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
+# g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
 bellman_check: bellman
-	./bellman --gamma 2.0 --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --gamma 2   --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
@@ -104,7 +108,12 @@ $(pp)/.directory_built:
 	touch $@
 
 # main target with parameters that identify gamma over tasks
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/1.0 $(pp)/1.025 $(pp)/1.05 $(pp)/1.075 $(pp)/1.1 $(pp)/1.125 $(pp)/1.15 $(pp)/1.175 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0  $(pp)/100.0   $(pp)/200.0 
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-5 $(pp)/-2.4 $(pp)/-1.5 $(pp)/-1.0 $(pp)/-0.67 $(pp)/-0.41 $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/1.0 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100
+	rm -f $@
+	cat $(filter $(pp)/%,$^) >> $@
+
+
+runs/old_summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/1.0 $(pp)/1.025 $(pp)/1.05 $(pp)/1.075 $(pp)/1.1 $(pp)/1.125 $(pp)/1.15 $(pp)/1.175 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0  $(pp)/100.0   $(pp)/200.0 
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 

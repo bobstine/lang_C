@@ -20,7 +20,7 @@ imin(int a, int b)
 //
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
+solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: iOmega is omega location, iOmega+6 gives five states above omega
   const int nColumns (bidderWealth.size());   
@@ -29,7 +29,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
   const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.05,7.0));
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,10.0));
   Line_Search::GoldenSection     search(tolerance, searchInterval, initialGrid, maxIterations);
   // pad arrays since need room to collect bid; initialize to zero
   Matrix utilityMat= Matrix::Zero(nRounds+2, nColumns);   // extra 2 rows for start, stop
@@ -68,14 +68,14 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
+    int gammaInt (trunc(10 * utility.gamma()));
     ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
     write_matrix_to_file(ss.str() + "bidder" ,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
     write_matrix_to_file(ss.str() + "mean"   ,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
   }
-  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
 }
 
@@ -84,7 +84,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
 //    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails)
+solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: omega location, size includes padding for wealth above omega
   const int iOmega   (nRounds + 1);   
@@ -93,7 +93,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   const int                      maxIterations   (200);   
   const double                   tolerance       (0.0001);
   const double                   initialGrid     (0.5);
-  const std::pair<double,double> searchInterval  (std::make_pair(0.50,7.0));
+  const std::pair<double,double> searchInterval  (std::make_pair(0.05,10.0));
   Line_Search::GoldenSection search(tolerance, searchInterval, initialGrid, maxIterations);
   // pad arrays since need room to collect bid; initialize to zero
   // code flips between these on read and write using use0
@@ -105,7 +105,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
   // arrays to hold mean with oracle always at two fixed wealths identified mIndexA and mIndexB
-  // top row A holds wealth, second row the bids for oracle, with oracle bid in last col
+  // top row A holds bid, second row the wealth for oracle, with specific bid in last col
   // top row B holds information for the bidder
   const int mIndexA = iOmega -  1;
   const int mIndexB = iOmega - imin(50,iOmega/2);  // less wealth
@@ -199,7 +199,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   std::cout << std::setprecision(6);
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
+    int gammaInt (trunc(10 * utility.gamma()));
     ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
     write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );
@@ -217,7 +217,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
     }
   }
   // write summary of configuration and results to stdio
-  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
 }
 
@@ -241,7 +241,7 @@ solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRound
   const int maxIterations (200);   
   const double tolerance  (0.0001);
   const double grid       (0.5);
-  const std::pair<double,double> searchInterval = std::make_pair(0.05,7.0);
+  const std::pair<double,double> searchInterval = std::make_pair(0.05,10.0);
   Line_Search::GoldenSection search(tolerance, searchInterval, grid, maxIterations);
   ConstrainedExpertCompetitiveAlphaGain compRatio (gamma, omega, spendPct, oracleProb, bidderProb);
     

@@ -26,12 +26,41 @@ GeometricDist::identifier() const
 
 
 double
+UniformDist::operator() (int ) const
+{
+  return mP;
+}
+
+
+std::string
+UniformDist::identifier() const
+{
+  std::stringstream ss;
+  ss << "u" << trunc(1/mP);
+  return ss.str();
+}
+
+
+
+std::string
+UniversalDist::identifier() const
+{
+  std::stringstream ss;
+  ss << "univ" << mStart;
+  return ss.str();
+}
+
+// constants to make universal into density, from MMa
+double normalizingConstants[21]={0,3.3877355 , 1.3063666 , 0.8920988 , 0.7186514 , 0.6221371,
+				   0.5598396 , 0.51582439, 0.48278679, 0.45689505, 0.4359382,
+				   0.4185466 , 0.40382391, 0.39115728, 0.38011245, 0.37037246,
+ 				   0.36170009, 0.35391396, 0.34687281, 0.34046481, 0.33460018};
+
+double
 UniversalDist::operator() (int k) const
 {
-  const int start = 20;                 // where to start the code
-  const double normConst = 0.3346;      // so sums to 1 (computed in MMa)
-  double ll = log(k+1+start);
-  return 1.0/( (k+start) * ll * ll * normConst);
+  double ll = log(k+1+mStart);
+  return 1.0/( (k+mStart) * ll * ll * normalizingConstants[mStart]);
 }
 
 
@@ -128,13 +157,28 @@ WealthArray::initialize_geometric_array(double psi)
 void
 WealthArray::fill_array_top()
 { // Add padding for wealth above omega by incrementing omega over padding steps
-  double w (0.4);                   // allow to grow this much
+  double w (0.5);                   // allow to grow this much
   int    k (mPadding-2) ;           // over this many steps
-  double b (mWealth[mZeroIndex]);   // incrementing this initial wealth
-  double m (exp(log(w/b)/k));
-  
+
+  // this version does by scaling last bid, but first added bid can be less
+  //  double b (mWealth[mZeroIndex]);   // incrementing initial wealth
+  //  double m (exp(log(w/b)/k));   
+  //  for(int i=mZeroIndex+1; i < mSize-1; ++i)
+  //    mWealth.assign(i, mWealth[i-1] * m);
+
+  // geometric sum
+  double b (mWealth[mZeroIndex]-mWealth[mZeroIndex-1]);   // incrementing initial bid
+  double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,1.75))
+	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
+  if (m < 1)
+  { std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::cout;
+    std::cout << "            w=" << w << "    k=" << k << "   b=" << b << "     solves for m=" << m << std::endl;
+    m = 1.0;
+  }
   for(int i=mZeroIndex+1; i < mSize-1; ++i)
-    mWealth.assign(i, mWealth[i-1] * m);
+  { b *= m;
+    mWealth.assign(i, mWealth[i-1] + b);
+  }
   // last increment must be omega
   mWealth.assign(mSize-1, mWealth[mSize-2] + mOmega);
   // lock in indexing for finding new positions since the increment is known in advance
@@ -145,9 +189,3 @@ WealthArray::fill_array_top()
 
 
 
-  // alternative geometric sum
-  //   double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
-  //	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
-  //   for(int i=mZeroIndex+1; i < mSize-1; ++i)
-  //   { b *= m;
-  //     mWealth.assign(i, mWealth[i-1] + b);  }

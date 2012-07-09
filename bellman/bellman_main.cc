@@ -3,9 +3,14 @@
 #include <math.h>
 
 #include <iostream>
+#include <sstream>
 #include <getopt.h>
 #include "read_utils.h"     
 
+
+// Where to start the universal coder
+
+const int universalStart (1);
 
 // Need to use special order of calls to fill geometric
 // prob=0 signals universal, prob > 0 is geometric
@@ -49,13 +54,13 @@ int  main(int argc, char** argv)
   { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
     //    RejectVectorUtility utility(gamma, omega);  // need to max
     RiskVectorUtility utility(gamma, omega);    // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
     //    RejectMatrixUtility utility(gamma, omega);  // need to max
     RiskMatrixUtility utility(gamma, omega);   // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
   return 0;
 }
@@ -132,9 +137,8 @@ ProbDist*
 make_prob_dist_ptr (double prob)
 {
   ProbDist *p = NULL;
-  
   if (0 == prob)
-    p = new UniversalDist(); 
+    p = new UniversalDist( universalStart );
   else
     p = new GeometricDist(prob);
   return p;
@@ -143,8 +147,11 @@ make_prob_dist_ptr (double prob)
 WealthArray*
 make_wealth_array(double omega, int iOmega, double prob)
 {
+  std::stringstream ss;
   if(0 == prob)
-    return new WealthArray("univ", omega, iOmega, UniversalDist());
+  { ss << "univ" << universalStart;
+    return new WealthArray(ss.str(), omega, iOmega, UniversalDist(universalStart));
+  }
   else
     return new WealthArray(omega, iOmega, prob);
 }
