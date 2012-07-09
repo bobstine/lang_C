@@ -88,8 +88,8 @@ bellman_check: bellman
 n = 500
 
 # define expert by geometric rate 
-psi = 0.01000
-ptxt=   01000
+psi = 0.02500
+ptxt=   02500
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
