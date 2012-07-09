@@ -157,13 +157,28 @@ WealthArray::initialize_geometric_array(double psi)
 void
 WealthArray::fill_array_top()
 { // Add padding for wealth above omega by incrementing omega over padding steps
-  double w (0.4);                   // allow to grow this much
+  double w (0.5);                   // allow to grow this much
   int    k (mPadding-2) ;           // over this many steps
-  double b (mWealth[mZeroIndex]);   // incrementing this initial wealth
-  double m (exp(log(w/b)/k));
-  
+
+  // this version does by scaling last bid, but first added bid can be less
+  //  double b (mWealth[mZeroIndex]);   // incrementing initial wealth
+  //  double m (exp(log(w/b)/k));   
+  //  for(int i=mZeroIndex+1; i < mSize-1; ++i)
+  //    mWealth.assign(i, mWealth[i-1] * m);
+
+  // geometric sum
+  double b (mWealth[mZeroIndex]-mWealth[mZeroIndex-1]);   // incrementing initial bid
+  double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,1.75))
+	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
+  if (m < 1)
+  { std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::cout;
+    std::cout << "            w=" << w << "    k=" << k << "   b=" << b << "     solves for m=" << m << std::endl;
+    m = 1.0;
+  }
   for(int i=mZeroIndex+1; i < mSize-1; ++i)
-    mWealth.assign(i, mWealth[i-1] * m);
+  { b *= m;
+    mWealth.assign(i, mWealth[i-1] + b);
+  }
   // last increment must be omega
   mWealth.assign(mSize-1, mWealth[mSize-2] + mOmega);
   // lock in indexing for finding new positions since the increment is known in advance
@@ -174,9 +189,3 @@ WealthArray::fill_array_top()
 
 
 
-  // alternative geometric sum
-  //   double m (Line_Search::Bisection(0.00001,std::make_pair(1.00001,1.5))
-  //	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
-  //   for(int i=mZeroIndex+1; i < mSize-1; ++i)
-  //   { b *= m;
-  //     mWealth.assign(i, mWealth[i-1] + b);  }

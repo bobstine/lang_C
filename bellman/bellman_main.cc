@@ -54,13 +54,13 @@ int  main(int argc, char** argv)
   { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
     //    RejectVectorUtility utility(gamma, omega);  // need to max
     RiskVectorUtility utility(gamma, omega);    // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
     //    RejectMatrixUtility utility(gamma, omega);  // need to max
     RiskMatrixUtility utility(gamma, omega);   // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
   return 0;
 }

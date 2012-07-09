@@ -77,7 +77,7 @@ class UniversalDist: public ProbDist
 class WealthArray
 {
   const std::string     mName;
-  const int             mPadding;    // space for wealth above omega
+  const int             mPadding;    // space for wealth above omega; keep < 15 or cannot solve for multiplier.
   const int             mSize;       // number of distinct wealth values
   const double          mOmega;      // defines wealth at zeroIndex and determines how far 'up' wealth can go 
   const int             mZeroIndex;  // position of W_0, the place used for omega
@@ -90,10 +90,10 @@ class WealthArray
     : mName("empty"), mPadding(0), mSize(mPadding), mOmega(0), mZeroIndex(0), mWealth(), mPositions() { }
   
  WealthArray(std::string name, double omega, int zeroIndex, ProbDist const& pdf)
-   : mName(name), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
+   : mName(name), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
  WealthArray(double omega, int zeroIndex, double psi) // use for geometric for numerical stability
-   : mName(geom_name(psi)), mPadding(25), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
+   : mName(geom_name(psi)), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
 
 
   std::string name()               const { return mName; }

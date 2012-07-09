@@ -44,7 +44,7 @@ int  main()
  
     //    WealthArray gWealth(" Geom ", omega, iZero, geo );   // not numerically stable for long trials
     WealthArray uWealth(" Univ ", omega, iZero, univ);
-    WealthArray gWealth(omega, iZero, psi );  // better geometric
+    WealthArray gWealth(omega, iZero, psi );                   // better geometric
     std::cout << "TEST: geometric name for psi=" << psi << " is " << gWealth.name() << std::endl;
 
     std::cout << "TEST: wealth at  0 is " << uWealth[ 0] << " " << gWealth[ 0] << std::endl << std::endl;
