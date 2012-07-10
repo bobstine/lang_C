@@ -39,14 +39,15 @@ class GeometricDist: public ProbDist
   
 class UniformDist: public ProbDist
 {
-  const double  mP;  // 1/(number of tests)
+  const int     mLimit;
+  const double  mP;     // 1/(number of tests)
   
  public:
 
-  UniformDist (double n): mP(1.0/n) {}
+  UniformDist (double n): mLimit(n), mP(1.0/n) {}
   
   std::string identifier() const;
-  double operator()(int ) const;
+  double operator()(int k) const;
 };
 
 class UniversalDist: public ProbDist
@@ -89,8 +90,8 @@ class WealthArray
   WealthArray ()
     : mName("empty"), mPadding(0), mSize(mPadding), mOmega(0), mZeroIndex(0), mWealth(), mPositions() { }
   
- WealthArray(std::string name, double omega, int zeroIndex, ProbDist const& pdf)
-   : mName(name), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
+ WealthArray(double omega, int zeroIndex, ProbDist const& pdf)
+   : mName(pdf.identifier()), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
  WealthArray(double omega, int zeroIndex, double psi) // use for geometric for numerical stability
    : mName(geom_name(psi)), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}

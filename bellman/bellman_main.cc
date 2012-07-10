@@ -133,25 +133,14 @@ parse_arguments(int argc, char** argv,
   } // while
 }
 
-ProbDist*
-make_prob_dist_ptr (double prob)
-{
-  ProbDist *p = NULL;
-  if (0 == prob)
-    p = new UniversalDist( universalStart );
-  else
-    p = new GeometricDist(prob);
-  return p;
-}
 
 WealthArray*
 make_wealth_array(double omega, int iOmega, double prob)
 {
-  std::stringstream ss;
-  if(0 == prob)
-  { ss << "univ" << universalStart;
-    return new WealthArray(ss.str(), omega, iOmega, UniversalDist(universalStart));
-  }
-  else
+  if(0 == prob)         // universal
+    return new WealthArray(omega, iOmega, UniversalDist(universalStart));
+  else if (prob > 1)    // uniform
+    return new WealthArray(omega, iOmega, UniformDist( trunc(prob) ));
+  else 
     return new WealthArray(omega, iOmega, prob);
 }

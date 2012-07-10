@@ -26,8 +26,9 @@ GeometricDist::identifier() const
 
 
 double
-UniformDist::operator() (int ) const
+UniformDist::operator() (int k) const
 {
+  assert ((0 <= k) && (k <= mLimit));
   return mP;
 }
 
@@ -36,7 +37,7 @@ std::string
 UniformDist::identifier() const
 {
   std::stringstream ss;
-  ss << "u" << trunc(1/mP);
+  ss << "uniform(" << mLimit << ")";
   return ss.str();
 }
 
@@ -46,7 +47,7 @@ std::string
 UniversalDist::identifier() const
 {
   std::stringstream ss;
-  ss << "univ" << mStart;
+  ss << "univ(" << mStart << ")";
   return ss.str();
 }
 
@@ -106,8 +107,8 @@ WealthArray::initialize_array(ProbDist const& p)
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
   { // std::cout << " da[i="<<i<<"] = (da[i+1="<<i+1<<"]="<< da[i+1]<<")-("<<mOmega<<")*(p["<< mZeroIndex-i<<"]="<< p(mZeroIndex-i)<<")\n";
-    double bid (mOmega * p(mZeroIndex-i-1));
-    da.assign(i, da[i+1] - bid );  // note error would be: mZeroIndex-i 'banks' some wealth
+    double bid (mOmega * p(mZeroIndex-i-1));    // Note... error would be: mZeroIndex-i 'banks' some wealth
+    da.assign(i, da[i+1] - bid);
   }
   mWealth=da;
   fill_array_top();
@@ -168,12 +169,12 @@ WealthArray::fill_array_top()
 
   // geometric sum
   double b (mWealth[mZeroIndex]-mWealth[mZeroIndex-1]);   // incrementing initial bid
-  double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,1.75))
+  double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,3))
 	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
   if (m < 1)
-  { std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::cout;
-    std::cout << "            w=" << w << "    k=" << k << "   b=" << b << "     solves for m=" << m << std::endl;
-    m = 1.0;
+  { m = 1.0;
+    std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::endl;
+    std::cout << "            w=" << w << "    k=" << k << "   b=" << b << std::endl;
   }
   for(int i=mZeroIndex+1; i < mSize-1; ++i)
   { b *= m;
