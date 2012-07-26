@@ -141,6 +141,6 @@ make_wealth_array(double omega, int iOmega, double prob)
     return new WealthArray(omega, iOmega, UniversalDist(universalStart));
   else if (prob > 1)    // uniform
     return new WealthArray(omega, iOmega, UniformDist( trunc(prob) ));
-  else 
+  else                  // geometric
     return new WealthArray(omega, iOmega, prob);
 }

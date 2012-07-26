@@ -37,22 +37,17 @@ solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const&
   Matrix bidderMat = Matrix::Zero(nRounds+2, nColumns);
   Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
   // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
-  std::pair<double,double> maxPair;
-  double bid, utilAtMuEqualZero;
   int done = 1;
   for (int row = nRounds; row > -1; --row, ++done)
-  { // double b0 = bidderMat(row+1,0);
-    // double o0 = oracleMat(row+1,0);
-    // -1 leaves room to avoid if clause
-    for (int k=done; k<nColumns-1; ++k)  
-    { bid = bidderWealth.bid(k);
+  { for (int k=done; k<nColumns-1; ++k)    // -1 leaves room to avoid if clause
+    { double bid (bidderWealth.bid(k));
       std::pair<int,double> kp (bidderWealth.wealth_position(k));
       double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
       double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
       double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
       utility.set_constants(bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
-      utilAtMuEqualZero = utility(0.0);
-      maxPair = search.find_maximum(utility);
+      std::pair<double,double> maxPair (search.find_maximum(utility));
+      double utilAtMuEqualZero (utility(0.0));
       if (maxPair.second < utilAtMuEqualZero)
 	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
       meanMat   (row,k) = maxPair.first;
@@ -104,7 +99,8 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
-  // arrays to hold mean with oracle always at two fixed wealths identified mIndexA and mIndexB
+  // save two slices of the 'pyramid' of optimal means picked by oracle
+  // arrays to save mean chosen by oracle at two fixed wealths identified mIndexA and mIndexB
   // top row A holds bid, second row the wealth for oracle, with specific bid in last col
   // top row B holds information for the bidder
   const int mIndexA = iOmega -  1;
@@ -113,8 +109,8 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   Matrix meanMatB    = Matrix::Zero (nRounds+2, nColumns);
   for (int col=0; col<nColumns-1; ++col)
   { meanMatA(0,col) = oracleWealth.bid(col);
-    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatA(1,col) = oracleWealth[col];
+    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatB(1,col) = bidderWealth[col];
   }
   meanMatA(0,nColumns-1) = oracleWealth.bid(mIndexA);

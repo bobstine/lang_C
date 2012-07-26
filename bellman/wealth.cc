@@ -102,7 +102,7 @@ void
 WealthArray::initialize_array(ProbDist const& p)
 {
   // std::cout << "WARRAY: Building dyn array with " << mSize << " steps and wealth " << mOmega << " @ " << mZeroIndex << std::endl;
-  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
+  assert((0 < mZeroIndex) && (mZeroIndex < mSize-1));
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
@@ -142,7 +142,7 @@ WealthArray::geom_name(double psi) const
 void
 WealthArray::initialize_geometric_array(double psi)
 {
-  assert((0 < mZeroIndex) && (mZeroIndex < mSize-2));
+  assert((0 < mZeroIndex) && (mZeroIndex < mSize-1));
   DynamicArray<double> da(0,mSize-1);
   da.assign(mZeroIndex,mOmega);
   for(int i=mZeroIndex-1; 0 <= i; --i)
@@ -157,28 +157,22 @@ WealthArray::initialize_geometric_array(double psi)
 
 void
 WealthArray::fill_array_top()
-{ // Add padding for wealth above omega by incrementing omega over padding steps
-  double w (0.5);                   // allow to grow this much
-  int    k (mPadding-2) ;           // over this many steps
-
-  // this version does by scaling last bid, but first added bid can be less
-  //  double b (mWealth[mZeroIndex]);   // incrementing initial wealth
-  //  double m (exp(log(w/b)/k));   
-  //  for(int i=mZeroIndex+1; i < mSize-1; ++i)
-  //    mWealth.assign(i, mWealth[i-1] * m);
-
-  // geometric sum
-  double b (mWealth[mZeroIndex]-mWealth[mZeroIndex-1]);   // incrementing initial bid
-  double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,3))
-	    ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
-  if (m < 1)
-  { m = 1.0;
-    std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::endl;
-    std::cout << "            w=" << w << "    k=" << k << "   b=" << b << std::endl;
-  }
-  for(int i=mZeroIndex+1; i < mSize-1; ++i)
-  { b *= m;
-    mWealth.assign(i, mWealth[i-1] + b);
+{ if (mPadding > 2)                   // Add padding to accumulate wealth above omega by incrementing omega over padding steps
+  { double w (0.5);                   // allow to grow this much
+    int    k (mPadding-2) ;           // over this many steps
+    // geometric sum
+    double b (mWealth[mZeroIndex]-mWealth[mZeroIndex-1]);   // incrementing initial bid
+    double m (Line_Search::Bisection(0.00001,std::make_pair(1.000001,3))
+	      ([&w,&k,&b](double x){ double xk(x); for(int j=1;j<k;++j) xk *= x; return x*(1.0-xk)/(1-x) - w/b;}));
+    if (m < 1)
+    { m = 1.0;
+      std::cerr << "WLTH: Error. Wealth array cannot initialize upper wealth for inputs. Setting m = 1." << std::endl;
+      std::cout << "            w=" << w << "    k=" << k << "   b=" << b << std::endl;
+    }
+    for(int i=mZeroIndex+1; i < mSize-1; ++i)
+    { b *= m;
+      mWealth.assign(i, mWealth[i-1] + b);
+    }
   }
   // last increment must be omega
   mWealth.assign(mSize-1, mWealth[mSize-2] + mOmega);
