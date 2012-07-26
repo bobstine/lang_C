@@ -70,13 +70,17 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 # With revised (improved) tail wealth, get this [tail has more effect than I'd prefer]
 #           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
-bellman_test: bellman
-	./bellman --gamma 2   --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
+bellman_test: bellman 
+	./bellman --gamma 2   --rounds 400 --constrain --oracleprob 0 --bidderprob 0.01 --write
+
+#	./bellman --gamma .2   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+#	./bellman --gamma 100   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write=
+#	./bellman --gamma 2     --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 # g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
 bellman_check: bellman
-	./bellman --gamma 2   --rounds   7 --constrain --oracleprob 50 --bidderprob 0 --write
+	./bellman --gamma 2   --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path

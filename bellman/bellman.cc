@@ -99,7 +99,8 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
-  // arrays to hold mean with oracle always at two fixed wealths identified mIndexA and mIndexB
+  // save two slices of the 'pyramid' of optimal means picked by oracle
+  // arrays to save mean chosen by oracle at two fixed wealths identified mIndexA and mIndexB
   // top row A holds bid, second row the wealth for oracle, with specific bid in last col
   // top row B holds information for the bidder
   const int mIndexA = iOmega -  1;
@@ -108,8 +109,8 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   Matrix meanMatB    = Matrix::Zero (nRounds+2, nColumns);
   for (int col=0; col<nColumns-1; ++col)
   { meanMatA(0,col) = oracleWealth.bid(col);
-    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatA(1,col) = oracleWealth[col];
+    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatB(1,col) = bidderWealth[col];
   }
   meanMatA(0,nColumns-1) = oracleWealth.bid(mIndexA);
