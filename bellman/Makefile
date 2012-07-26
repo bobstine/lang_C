@@ -92,8 +92,12 @@ bellman_check: bellman
 n = 250
 
 # define expert by geometric rate 
-psi = 0.05000
-ptxt=   05000
+# psi = 0.05000
+# ptxt=   05000
+
+# define expert by uniform n (one more than n)
+psi =   251
+ptxt=   251
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
@@ -112,10 +116,6 @@ runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
-
-runs/old_summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/1.0 $(pp)/1.025 $(pp)/1.05 $(pp)/1.075 $(pp)/1.1 $(pp)/1.125 $(pp)/1.15 $(pp)/1.175 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0  $(pp)/100.0   $(pp)/200.0 
-	rm -f $@
-	cat $(filter $(pp)/%,$^) >> $@
 
 runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.675 $(pp)/0.7 $(pp)/0.705 $(pp)/0.710 $(pp)/0.715 $(pp)/0.720 $(pp)/0.725 $(pp)/0.7275 $(pp)/0.7285 $(pp)/0.7290 $(pp)/0.7295 $(pp)/0.73 $(pp)/0.7305 $(pp)/0.731 $(pp)/0.7315 $(pp)/0.7320 $(pp)/0.7325 $(pp)/0.735 $(pp)/0.740 $(pp)/0.745 $(pp)/0.75 $(pp)/0.755 $(pp)/0.760 $(pp)/0.765 $(pp)/0.770 $(pp)/0.775 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.3 $(pp)/1.4 $(pp)/1.5 $(pp)/1.6 $(pp)/1.7 $(pp)/2.0 $(pp)/2.5 $(pp)/3.0 $(pp)/3.5 $(pp)/4.0  $(pp)/4.5  $(pp)/5.0  $(pp)/5.5  $(pp)/6.0  $(pp)/6.5  $(pp)/7.0 $(pp)/7.5 $(pp)/8.0  $(pp)/9.0 $(pp)/10.0 $(pp)/15.0 $(pp)/20.0
 	rm -f $@
