@@ -71,7 +71,7 @@ class UniversalDist: public ProbDist
    to the wealth of the expert or bidder.  The wealth is monotone increasing
    in the index/position k.
 
-   Normalized to have value omega at index 0.
+   Normalized to have wealth omega at index mZeroIndex.
 
  **********************************************************************************/
 
@@ -91,10 +91,10 @@ class WealthArray
     : mName("empty"), mPadding(0), mSize(mPadding), mOmega(0), mZeroIndex(0), mWealth(), mPositions() { }
   
  WealthArray(double omega, int zeroIndex, ProbDist const& pdf)
-   : mName(pdf.identifier()), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
+   : mName(pdf.identifier()), mPadding(2), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_array(pdf);}
 
  WealthArray(double omega, int zeroIndex, double psi) // use for geometric for numerical stability
-   : mName(geom_name(psi)), mPadding(15), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
+   : mName(geom_name(psi)), mPadding(2), mSize(zeroIndex+mPadding), mOmega(omega), mZeroIndex(zeroIndex), mWealth(), mPositions() { initialize_geometric_array(psi);}
 
 
   std::string name()               const { return mName; }
