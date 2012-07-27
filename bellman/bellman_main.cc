@@ -54,13 +54,13 @@ int  main(int argc, char** argv)
   { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
     //    RejectVectorUtility utility(gamma, omega);  // need to max
     RiskVectorUtility utility(gamma, omega);    // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
     //    RejectMatrixUtility utility(gamma, omega);  // need to max
     RiskMatrixUtility utility(gamma, omega);   // need to min
-    solve_bellman_utility (gamma, omega, nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
   return 0;
 }
@@ -133,25 +133,14 @@ parse_arguments(int argc, char** argv,
   } // while
 }
 
-ProbDist*
-make_prob_dist_ptr (double prob)
-{
-  ProbDist *p = NULL;
-  if (0 == prob)
-    p = new UniversalDist( universalStart );
-  else
-    p = new GeometricDist(prob);
-  return p;
-}
 
 WealthArray*
 make_wealth_array(double omega, int iOmega, double prob)
 {
-  std::stringstream ss;
-  if(0 == prob)
-  { ss << "univ" << universalStart;
-    return new WealthArray(ss.str(), omega, iOmega, UniversalDist(universalStart));
-  }
-  else
+  if(0 == prob)         // universal
+    return new WealthArray(omega, iOmega, UniversalDist(universalStart));
+  else if (prob > 1)    // uniform
+    return new WealthArray(omega, iOmega, UniformDist( trunc(prob) ));
+  else                  // geometric
     return new WealthArray(omega, iOmega, prob);
 }

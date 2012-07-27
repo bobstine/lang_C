@@ -61,20 +61,28 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 
 # Test geometric oracle, universal bidder
 # With revised geometric wealth array and different top fill (19 Jun 12)
-#           g01000 univ 2 0.05   200   0.5 7     515.584 -448.759 -482.172
+#           g01000 univ  2 0.05   200   0.5 7      515.584 -448.759 -482.172
 # Done with sobolev and prior code the geometric got higher risk
-#           g01000 univ 2 0.05   200   0.5 7     500.546 -463.415 -481.981
+#           g01000 univ  2 0.05   200   0.5 7      500.546 -463.415 -481.981
 # With code set to find the minimum risk, get same answer (so make neg_risk to retain legacy figures)
-#           g01000 univ 2 0.05   200   0.5 7     -515.584 448.759 482.172
+#           g01000 univ  2 0.05   200   0.5 7     -515.584 448.759 482.172
 # With universal starting at 1, got this... geometric kills universal
-#           g01000 univ 2 0.05   200   0.05 10    909.463 -423.46 -666.461
+#           g01000 univ1 2 0.05   200   0.05 10     909.463 -423.46 -666.461
+# With revised (improved) tail wealth, get this [tail has more effect than I'd prefer]
+#           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
-bellman_test: bellman
-	./bellman --gamma 2 --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0 --write
+bellman_test: bellman 
+	./bellman --gamma 200   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+
+#	./bellman --gamma 2   --rounds 400 --constrain --oracleprob 0 --bidderprob 0.01 --write
+#	./bellman --gamma .2   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+#	./bellman --gamma 100   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write=
+#	./bellman --gamma 2     --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
+# g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
 bellman_check: bellman
-	./bellman --gamma 2.0 --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --gamma 2   --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
@@ -106,7 +114,7 @@ $(pp)/.directory_built:
 	touch $@
 
 # main target with parameters that identify gamma over tasks
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-5 $(pp)/-2.4 $(pp)/-1.5 $(pp)/-1.0 $(pp)/-0.67 $(pp)/-0.41 $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/1.0 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/1.0 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 

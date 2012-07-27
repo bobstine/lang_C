@@ -20,7 +20,7 @@ imin(int a, int b)
 //
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
+solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: iOmega is omega location, iOmega+6 gives five states above omega
   const int nColumns (bidderWealth.size());   
@@ -37,22 +37,17 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   Matrix bidderMat = Matrix::Zero(nRounds+2, nColumns);
   Matrix meanMat   = Matrix::Zero(nRounds+1, nColumns );
   // store intermediates in trapezoidal array; done=1 pads start; fill from bottom up
-  std::pair<double,double> maxPair;
-  double bid, utilAtMuEqualZero;
   int done = 1;
   for (int row = nRounds; row > -1; --row, ++done)
-  { // double b0 = bidderMat(row+1,0);
-    // double o0 = oracleMat(row+1,0);
-    // -1 leaves room to avoid if clause
-    for (int k=done; k<nColumns-1; ++k)  
-    { bid = bidderWealth.bid(k);
+  { for (int k=done; k<nColumns-1; ++k)    // -1 leaves room to avoid if clause
+    { double bid (bidderWealth.bid(k));
       std::pair<int,double> kp (bidderWealth.wealth_position(k));
       double utilityIfReject = utilityMat(row+1,kp.first)*kp.second + utilityMat(row+1,kp.first+1)*(1-kp.second);
       double bidderIfReject  =  bidderMat(row+1,kp.first)*kp.second +  bidderMat(row+1,kp.first+1)*(1-kp.second);
       double oracleIfReject  =  oracleMat(row+1,kp.first)*kp.second +  oracleMat(row+1,kp.first+1)*(1-kp.second);
       utility.set_constants(bid, utilityIfReject, utilityMat(row+1,k-1));   // last is util if not reject
-      utilAtMuEqualZero = utility(0.0);
-      maxPair = search.find_maximum(utility);
+      std::pair<double,double> maxPair (search.find_maximum(utility));
+      double utilAtMuEqualZero (utility(0.0));
       if (maxPair.second < utilAtMuEqualZero)
 	maxPair = std::make_pair(0.0,utilAtMuEqualZero);
       meanMat   (row,k) = maxPair.first;
@@ -68,14 +63,14 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
+    int gammaInt (trunc(10 * utility.gamma()));
     ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
     write_matrix_to_file(ss.str() + "bidder" ,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
     write_matrix_to_file(ss.str() + "mean"   ,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
   }
-  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
 }
 
@@ -84,7 +79,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, VectorUtility &
 //    solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2  solve_bellman_utility  2
 
 void
-solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility & utility, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails)
+solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const& oracleWealth, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: omega location, size includes padding for wealth above omega
   const int iOmega   (nRounds + 1);   
@@ -104,8 +99,9 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix bidderMat1 = Matrix::Zero (nColumns, nColumns);
-  // arrays to hold mean with oracle always at two fixed wealths identified mIndexA and mIndexB
-  // top row A holds wealth, second row the bids for oracle, with oracle bid in last col
+  // save two slices of the 'pyramid' of optimal means picked by oracle
+  // arrays to save mean chosen by oracle at two fixed wealths identified mIndexA and mIndexB
+  // top row A holds bid, second row the wealth for oracle, with specific bid in last col
   // top row B holds information for the bidder
   const int mIndexA = iOmega -  1;
   const int mIndexB = iOmega - imin(50,iOmega/2);  // less wealth
@@ -113,8 +109,8 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   Matrix meanMatB    = Matrix::Zero (nRounds+2, nColumns);
   for (int col=0; col<nColumns-1; ++col)
   { meanMatA(0,col) = oracleWealth.bid(col);
-    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatA(1,col) = oracleWealth[col];
+    meanMatB(0,col) = bidderWealth.bid(col);
     meanMatB(1,col) = bidderWealth[col];
   }
   meanMatA(0,nColumns-1) = oracleWealth.bid(mIndexA);
@@ -199,7 +195,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
   std::cout << std::setprecision(6);
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * gamma));
+    int gammaInt (trunc(10 * utility.gamma()));
     ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
     write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );
@@ -217,7 +213,7 @@ solve_bellman_utility  (double gamma, double omega, int nRounds, MatrixUtility &
     }
   }
   // write summary of configuration and results to stdio
-  std::cout << gamma << " " << omega << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
 }
 
