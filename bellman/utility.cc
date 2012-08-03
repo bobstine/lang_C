@@ -179,6 +179,8 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 //
 //   Note:  alpha is the first, beta is the second bid in the order supplied (not the math notation)
 // 
+
+
 double
 MatrixUtility::r_mu_beta (double mu) const
 {
@@ -262,7 +264,6 @@ RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v
     return  rBeta + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
   else
     return  rBeta + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
-  // ind version   return  rBeta + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
 }
 
 
