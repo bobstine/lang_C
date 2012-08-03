@@ -95,18 +95,21 @@ bellman_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 500
+n = 200
 
 # define expert by geometric rate 
 psi = 0.02500
 ptxt=   02500
+
+# criterion should be risk or reject (and make it so in the C++ code)
+goal = reject
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
 #--------------------------------------------------------------------------------------------
 
 # define path within runs subdirectory for each psi (oracle) and n combination; 0 ids universal
-pp = runs/risk_psi$(ptxt)_n$(n)
+pp = runs/$(goal)_psi$(ptxt)_n$(n)
 
 $(pp)/.directory_built: 
 	echo Building directory for $(pp)
@@ -114,7 +117,7 @@ $(pp)/.directory_built:
 	touch $@
 
 # main target with parameters that identify gamma over tasks
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
+runs/summary.$(goal)_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
@@ -123,7 +126,7 @@ runs/old_summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
-runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.675 $(pp)/0.7 $(pp)/0.705 $(pp)/0.710 $(pp)/0.715 $(pp)/0.720 $(pp)/0.725 $(pp)/0.7275 $(pp)/0.7285 $(pp)/0.7290 $(pp)/0.7295 $(pp)/0.73 $(pp)/0.7305 $(pp)/0.731 $(pp)/0.7315 $(pp)/0.7320 $(pp)/0.7325 $(pp)/0.735 $(pp)/0.740 $(pp)/0.745 $(pp)/0.75 $(pp)/0.755 $(pp)/0.760 $(pp)/0.765 $(pp)/0.770 $(pp)/0.775 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.3 $(pp)/1.4 $(pp)/1.5 $(pp)/1.6 $(pp)/1.7 $(pp)/2.0 $(pp)/2.5 $(pp)/3.0 $(pp)/3.5 $(pp)/4.0  $(pp)/4.5  $(pp)/5.0  $(pp)/5.5  $(pp)/6.0  $(pp)/6.5  $(pp)/7.0 $(pp)/7.5 $(pp)/8.0  $(pp)/9.0 $(pp)/10.0 $(pp)/15.0 $(pp)/20.0
+runs/old_summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.675 $(pp)/0.7 $(pp)/0.705 $(pp)/0.710 $(pp)/0.715 $(pp)/0.720 $(pp)/0.725 $(pp)/0.7275 $(pp)/0.7285 $(pp)/0.7290 $(pp)/0.7295 $(pp)/0.73 $(pp)/0.7305 $(pp)/0.731 $(pp)/0.7315 $(pp)/0.7320 $(pp)/0.7325 $(pp)/0.735 $(pp)/0.740 $(pp)/0.745 $(pp)/0.75 $(pp)/0.755 $(pp)/0.760 $(pp)/0.765 $(pp)/0.770 $(pp)/0.775 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.3 $(pp)/1.4 $(pp)/1.5 $(pp)/1.6 $(pp)/1.7 $(pp)/2.0 $(pp)/2.5 $(pp)/3.0 $(pp)/3.5 $(pp)/4.0  $(pp)/4.5  $(pp)/5.0  $(pp)/5.5  $(pp)/6.0  $(pp)/6.5  $(pp)/7.0 $(pp)/7.5 $(pp)/8.0  $(pp)/9.0 $(pp)/10.0 $(pp)/15.0 $(pp)/20.0
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
