@@ -52,14 +52,14 @@ int  main(int argc, char** argv)
   
   if(!constrain)           // unconstrained oracle 
   { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
-    //    RejectVectorUtility utility(gamma, omega);  // need to max
-    RiskVectorUtility utility(gamma, omega);    // need to min
+    RejectVectorUtility utility(gamma, omega); 
+    //    RiskVectorUtility utility(gamma, omega);
     solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
-    //    RejectMatrixUtility utility(gamma, omega);  // need to max
-    RiskMatrixUtility utility(gamma, omega);   // need to min
+    RejectMatrixUtility utility(gamma, omega); 
+    //    RiskMatrixUtility utility(gamma, omega);
     solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
   return 0;
