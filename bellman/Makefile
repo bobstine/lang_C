@@ -85,7 +85,7 @@ risk_check: bellman
 	./bellman --gamma 2   --rounds   7 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 reject_check: bellman
-	./bellman --gamma 0.01   --rounds   25 --constrain --oracleprob 0 --bidderprob 0.01 --write
+	./bellman --gamma 0.01   --rounds 13  --constrain --oracleprob 0 --bidderprob 0.01 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path

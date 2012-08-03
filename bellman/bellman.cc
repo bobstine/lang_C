@@ -63,7 +63,7 @@ solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const&
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * utility.gamma()));
+    int gammaInt (trunc(1000 * utility.gamma()));
     ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
@@ -195,7 +195,7 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   std::cout << std::setprecision(6);
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * utility.gamma()));
+    int gammaInt (trunc(1000 * utility.gamma()));
     ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
     write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );
