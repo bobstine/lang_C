@@ -82,10 +82,10 @@ bellman_test: bellman
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 # g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
 risk_check: bellman
-	./bellman --gamma 2  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk    --gamma 0  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 reject_check: bellman
-	./bellman --gamma 2 --rounds 30  --constrain --oracleprob 0 --bidderprob 0.1 --write
+	./bellman --reject  --gamma 0  --rounds 7  --constrain --oracleprob 0 --bidderprob 0.1 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
@@ -110,6 +110,10 @@ ptxt=   00500
 
 # criterion should be risk or reject (and make it so in the C++ code)
 goal = reject
+goalCmd = " --reject "
+
+# goal = risk
+# goalCmd = " --risk "
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
@@ -145,8 +149,8 @@ runs/old_summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.5
 
 # actual run command for contrained solution, with univ and geometric
 $(pp)/%: bellman bellman.sh $(pp)/.directory_built
-	./bellman --gamma $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
-	./bellman --gamma $* --constrain --oracleprob 0      --bidderprob $(psi) --rounds $(n) >> $@
+	./bellman $(goalCmd) --gamma $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
+	./bellman $(goalCmd) --gamma $* --constrain --oracleprob 0      --bidderprob $(psi) --rounds $(n) >> $@
 
 
 # ---  unconstrained
