@@ -124,7 +124,12 @@ $(pp)/.directory_built:
 	touch $@
 
 # main target with parameters that identify gamma over tasks
-runs/summary.$(goal)_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.2 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
+runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.413 $(pp)/0.51 $(pp)/0.61  $(pp)/0.73 $(pp)/0.87 $(pp)/0.88 $(pp)/0.89 $(pp)/0.90 $(pp)/0.91 $(pp)/0.92 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.5 $(pp)/4.8 $(pp)/4.9 $(pp)/5.0 $(pp)/5.1 $(pp)/5.4 $(pp)/5.9 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
+	rm -f $@
+	cat $(filter $(pp)/%,$^) >> $@
+
+
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.5 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
