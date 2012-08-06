@@ -8,6 +8,8 @@
 #include <iostream>
 #include <iomanip>
 
+// #define SHOW_PROGRESS
+
 int
 imin(int a, int b)
 { if (a < b) return a; else return b; }
@@ -63,7 +65,7 @@ solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const&
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * utility.gamma()));
+    int gammaInt (trunc(1000 * utility.gamma()));
     ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
@@ -93,7 +95,7 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   // pad arrays since need room to collect bid; initialize to zero
   // code flips between these on read and write using use0
   bool use0 = true;
-  Matrix utilityMat0= Matrix::Zero (nColumns, nColumns);
+  Matrix utilityMat0= Matrix::Zero (nColumns, nColumns);     // initialize with zero for risk, 1 for rejection
   Matrix utilityMat1= Matrix::Zero (nColumns, nColumns);
   Matrix oracleMat0 = Matrix::Zero (nColumns, nColumns);
   Matrix oracleMat1 = Matrix::Zero (nColumns, nColumns);
@@ -137,9 +139,16 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
     use0 = !use0;
     //    std::cout << " ---------  Round " << round << " ----------------------\n";
     // recursion is in 'reverse time' starting from final round, working forward
+    // ko,kb denote positions in wealth array; higher values mean higher wealth
+    // KP pairs indicate position and weight if reject
+#ifdef  SHOW_PROGRESS
+    const bool show_progress (true);
+#else
+    const bool show_progress (false);
+#endif
     for (int ko=done; ko<nColumns-1; ++ko) 
     { oracleBid = oracleWealth.bid(ko);
-      oracleKP  = oracleWealth.wealth_position(ko);         // position if rejects
+      oracleKP  = oracleWealth.wealth_position(ko);   
       for (int kb=done; kb<nColumns-1; ++kb) 
       { bidderBid = bidderWealth.bid(kb);
 	bidderKP  = bidderWealth.wealth_position(kb);
@@ -160,42 +169,58 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
 	// save mean if oracle in desired wealth state
 	if      (mIndexA == ko) meanMatA(round+1,kb) = maxPair.first;
 	else if (mIndexB == ko) meanMatB(round+1,kb) = maxPair.first; 
-	// oracle on rows of outcome, bidder on columns
 	(*pUtilityDest)(ko,kb) = maxPair.second;
+	// oracle on rows of outcome, bidder on columns, fill nests down to lower right corner _|
 	(* pOracleDest)(ko,kb) = utility.oracle_utility(maxPair.first,
 							(*pOracleSrc)(ko-1    , kb-1   ),
-							reject_value (ko-1    , bidderKP, *pOracleSrc),
-							reject_value (oracleKP, kb-1    , *pOracleSrc),
-							reject_value (oracleKP, bidderKP, *pOracleSrc));
-	(* pBidderDest)(ko,kb) = utility.bidder_utility(maxPair.first,
+							reject_value (ko-1    , bidderKP, *pOracleSrc, show_progress),
+							reject_value (oracleKP, kb-1    , *pOracleSrc, show_progress),
+							reject_value (oracleKP, bidderKP, *pOracleSrc, show_progress));  
+        (* pBidderDest)(ko,kb) = utility.bidder_utility(maxPair.first,
 							(*pBidderSrc)(ko-1    , kb-1   ),
 							reject_value (ko-1    , bidderKP, *pBidderSrc),
 							reject_value (oracleKP, kb-1    , *pBidderSrc),
 							reject_value (oracleKP, bidderKP, *pBidderSrc));
-	    /* huge debugging output... */
-	    /* std::cout << "\n " << "alpha=" << utility.alpha() << "  beta=" << utility.beta()
-	       << "  Oracle value is " << (*pOracleDest)(ko,kb) << "= Util(" << maxPair.first << " , "
-	       << (*pOracleSrc)(ko-1    , kb-1   ) << " , "
-	       << reject_value (ko-1    , bidderKP, *pOracleSrc) << " , "
-	       << reject_value (oracleKP, kb-1    , *pOracleSrc) << " , "
-	       << reject_value (oracleKP, bidderKP, *pOracleSrc) 
-	       << ")   Bidder value is " << (*pBidderDest)(ko,kb) << "= Util(" << maxPair.first << " , "
-	       << (*pBidderSrc)(ko-1    , kb-1   ) << " , "
-	       << reject_value (ko-1    , bidderKP, *pBidderSrc) << " , "
-	       << reject_value (oracleKP, kb-1    , *pBidderSrc) << " , "
-	       << reject_value (oracleKP, bidderKP, *pBidderSrc) << ")" << std::endl;  */
-	    // partial debugging output (pick up next two line feeds as well 
-	    //	std::cout << "  [" << ko << "," << kb << "] " << std::setw(5) << (*pUtilityDest)(ko,kb) << "=" << (*pOracleDest)(ko,kb) << "- gamma * " << (*pBidderDest)(ko,kb)
-	    // << "{" << oracleBid << "," << bidderBid << "," << maxPair.first << "," << maxPair.second << "}";
-	}
-	// std::cout << std::endl;
+	/* huge debugging output... */
+#ifdef  SHOW_PROGRESS
+	std::cout << std::endl
+		  << " ****  [ ko=" << ko << ", kb=" << kb << "] "
+		  << " oracle bid " << oracleBid << " with kp = (" << oracleKP.first << "," << oracleKP.second << ")   "
+		  << " bidder bid " << bidderBid << " with kp = (" << bidderKP.first << "," << bidderKP.second << ")" << std::endl;
+	std::cout << "   alpha=" << utility.alpha() << "  beta=" << utility.beta() 
+		  << "  Oracle value is " << (*pOracleDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pOracleSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pOracleSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pOracleSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pOracleSrc) 
+		  << ")   Bidder value is " << (*pBidderDest)(ko,kb) << "= Util(" << maxPair.first << " , "
+		  << (*pBidderSrc)(ko-1    , kb-1   ) << " , "
+		  << reject_value (ko-1    , bidderKP, *pBidderSrc) << " , "
+		  << reject_value (oracleKP, kb-1    , *pBidderSrc) << " , "
+		  << reject_value (oracleKP, bidderKP, *pBidderSrc) << ")" << std::endl;
+#endif
+      }
+      // fill padding column
+      (*pUtilityDest)(ko,nColumns-1) = (* pUtilityDest)(ko,nColumns-2);
+      (*pOracleDest )(ko,nColumns-1) = (* pOracleDest )(ko,nColumns-2);
+      (*pBidderDest )(ko,nColumns-1) = (* pBidderDest )(ko,nColumns-2);
     }
-    // std::cout << std::endl;
+    // fill padding row
+    for (int kb=0; kb<nColumns; ++kb) 
+    { (*pUtilityDest)(nColumns-1,kb) = (* pUtilityDest)(nColumns-2,kb);
+      (*pOracleDest )(nColumns-1,kb) = (* pOracleDest )(nColumns-2,kb);
+      (*pBidderDest )(nColumns-1,kb) = (* pBidderDest )(nColumns-2,kb);
+    }
+#ifdef  SHOW_PROGRESS
+    std::cout << "Based on using oracle source matrix " << std::endl;
+    std::cout << *pOracleSrc << std::endl;
+    std::cout << " - - - - - - - - - - - - - - - - -" << std::endl << std::endl;
+#endif
   }
   std::cout << std::setprecision(6);
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(10 * utility.gamma()));
+    int gammaInt (trunc(1000 * utility.gamma()));
     ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
     write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );

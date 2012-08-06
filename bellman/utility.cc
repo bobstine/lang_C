@@ -20,28 +20,36 @@ reject_prob(double mu, double level)    // r_mu(alpha)
 }
 
 double
-reject_value(int i, std::pair<int,double> const& kp, Matrix const& value)
+reject_value(int i, WIndex const& kp, Matrix const& value, bool show)
 {
   const int    k (kp.first);
   const double p (kp.second);
-  return value(i,k)*p + value(i,k+1)*(1-p);
+  const double v (value(i,k)*p + value(i,k+1)*(1-p));
+  if (show) std::cout << "   reject_value( i=" << i << ",kp=(" << k << "," << p << ") ) = " << value(i,k) << "*" << p << "+" << value(i,k+1) << "*" << (1-p) << "=" << v << std::endl;
+  return v;
 }
 
 double
-reject_value(std::pair<int,double> const& kp, int j, Matrix const& value)
+reject_value(WIndex const& ip, int k, Matrix const& value, bool show)
 {
-  const int    k (kp.first);
-  const double p (kp.second);
-  return value(k,j)*p + value(k+1,j)*(1-p);
+  const int    i (ip.first);
+  const double p (ip.second);
+  const double v (value(i,k)*p + value(i+1,k)*(1-p));
+  if (show) std::cout << "   reject_value( ip=(" << i << "," << p << "),k=" << k << " ) = " << value(i,k) << "*" << p << "+" << value(i+1,k) << "*" << (1-p) << "=" << v << std::endl;
+  return v;
 }
 
-double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value)
+double   reject_value(WIndex const& kp1, WIndex const& kp2, Matrix const& value,bool show)
 {
-  int r  (kp1.first);
-  int c  (kp2.first);
-  int pr (kp1.second);
-  int pc (kp2.second);
-  return pr * ( pc * value(r,c) + (1-pc) * value(r,c+1) ) + (1-pr) * ( pc * value(r+1,c) + (1-pc) * value(r+1,c+1) );
+  int    r  (kp1.first);
+  double pr (kp1.second);
+  int    c  (kp2.first);
+  double pc (kp2.second);
+  const double v (pr * ( pc * value(r,c) + (1-pc) * value(r,c+1) ) + (1-pr) * ( pc * value(r+1,c) + (1-pc) * value(r+1,c+1) ));
+  if (show)  std::cout << "   reject_value( (" << r << "," << pr << "),(" << c << "," << pc << ") ) = "
+		       << pr     << "*(" << pc << "*" << value(r  ,c) << "+" << 1-pc << "*" << value(r  ,c+1) << ")  +  "
+		       << (1-pr) << "*(" << pc << "*" << value(r+1,c) << "+" << 1-pc << "*" << value(r+1,c+1) << ") = " << v << std::endl;
+  return v;
 }
 
 double
@@ -179,6 +187,8 @@ RiskVectorUtility::oracle_utility (double mu, double rejectValue, double noRejec
 //
 //   Note:  alpha is the first, beta is the second bid in the order supplied (not the math notation)
 // 
+
+
 double
 MatrixUtility::r_mu_beta (double mu) const
 {
@@ -234,8 +244,6 @@ RejectMatrixUtility::operator()(double mu) const
     return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
   else
     return  util + mV00 * (1- rBeta) + mV01 * (rBeta-rAlpha) +  mV11 * rAlpha;
-  // independence version
-  // return (rAlpha - mGamma * rBeta)  + (1-rAlpha)*(mV00 * (1-rBeta) + mV01 * rBeta) + rAlpha*(mV10 * (1-rBeta) + mV11 * rBeta);
 }
 
 
@@ -255,6 +263,7 @@ RejectMatrixUtility::oracle_utility (double mu, double v00, double v01, double v
 double
 RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10, double v11) const
 {
+  // same recursive structure as oracle_utility, just different recursive values appear in call
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
@@ -262,7 +271,6 @@ RejectMatrixUtility::bidder_utility (double mu, double v00, double v01, double v
     return  rBeta + v00 * (1-rAlpha) + v10 * (rAlpha-rBeta) +  v11 * rBeta;
   else
     return  rBeta + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
-  // ind version   return  rBeta + (1-rAlpha)*(v00 * (1-rBeta) + v01 * rBeta) + rAlpha*(v10 * (1-rBeta) + v11 * rBeta);
 }
 
 
