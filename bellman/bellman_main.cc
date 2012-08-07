@@ -23,7 +23,7 @@ make_wealth_array(double omega, int iOmega, double prob);
 
 void
 parse_arguments(int argc, char** argv,
-		double &gamma, int &nRounds, bool &constrained,
+		bool &riskUtil, double &gamma, int &nRounds, bool &constrained,
 		double &oracleProb, double &bidderProb,  
 		double &spendPct, bool &writeTable);
 
@@ -34,6 +34,7 @@ int  main(int argc, char** argv)
   const double omega  = 0.05;
 
   // default arguments
+  bool      riskUtil  = false;    // risk or rejection, default is rejection (which is fast)
   double       gamma  = 2.5;
   int        nRounds  = 100;
   bool     constrain  = false;    // ignores oracle prob if not constrained
@@ -42,7 +43,7 @@ int  main(int argc, char** argv)
   bool     writeTable = false;    // if false, only return final value
   double    spendPct  = 0.5;
 
-  parse_arguments(argc, argv, gamma, nRounds, constrain, oracleProb, bidderProb, spendPct, writeTable);
+  parse_arguments(argc, argv, riskUtil, gamma, nRounds, constrain, oracleProb, bidderProb, spendPct, writeTable);
   if ((!constrain) && (oracleProb != 0))
     std::cout << "Warning: Unconstrained but nonzero oracle probability " << oracleProb << " assigned." << std::endl;
   
@@ -52,15 +53,25 @@ int  main(int argc, char** argv)
   
   if(!constrain)           // unconstrained oracle 
   { std::cout <<                         "uncon " << pBidderWealth->name() << " ";
-    RejectVectorUtility utility(gamma, omega); 
-    //    RiskVectorUtility utility(gamma, omega);
-    solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
+    if (riskUtil)
+    { RiskVectorUtility utility(gamma, omega);
+      solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
+    }
+    else
+    { RejectVectorUtility utility(gamma, omega);
+      solve_bellman_utility (nRounds, utility, *pBidderWealth, writeTable);
+    }
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
-    RejectMatrixUtility utility(gamma, omega); 
-    //    RiskMatrixUtility utility(gamma, omega);
-    solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    if (riskUtil)
+    { RiskMatrixUtility utility(gamma, omega);
+      solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    }
+    else
+    { RejectMatrixUtility utility(gamma, omega); 
+      solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
+    }
   }
   return 0;
 }
@@ -69,11 +80,13 @@ int  main(int argc, char** argv)
 
 void
 parse_arguments(int argc, char** argv,
-		double &gamma, int &nRounds, bool &constrain,
+		bool &riskUtil, double &gamma, int &nRounds, bool &constrain,
 		double &oracleProb, double &bidderProb,   // zero denotes universal
 		double &spendPct, bool &writeTable)
 {
   static struct option long_options[] = {
+    {"risk",             no_argument, 0, 'R'},
+    {"reject",           no_argument, 0, 'r'},
     {"gamma",      required_argument, 0, 'g'},
     {"constrain",        no_argument, 0, 'c'},
     {"oracleprob", required_argument, 0, 'o'},
@@ -85,11 +98,22 @@ parse_arguments(int argc, char** argv,
   };
   int key;
   int option_index = 0;
-  while (-1 !=(key = getopt_long (argc, argv, "g:co:b:n:s:w", long_options, &option_index))) // colon means has argument
+  bool rejectUtil = true;
+  while (-1 !=(key = getopt_long (argc, argv, "Rrg:co:b:n:s:w", long_options, &option_index))) // colon means has argument
   {
     // std::cout << "Option key " << char(key) << " for option " << long_options[option_index].name << ", option_index=" << option_index << std::endl;
     switch (key)
     {
+    case 'R' : 
+      {
+	riskUtil = true; rejectUtil = false;
+	break;
+      }
+    case 'r' : 
+      {
+	rejectUtil = true; riskUtil = false;
+	break;
+      }
     case 'g' : 
       {
 	gamma = read_utils::lexical_cast<double>(optarg);
@@ -131,6 +155,7 @@ parse_arguments(int argc, char** argv,
       }
     } // switch
   } // while
+  riskUtil = !rejectUtil;
 }
 
 
