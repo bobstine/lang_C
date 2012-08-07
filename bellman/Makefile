@@ -101,15 +101,15 @@ reject_check: bellman
 n = 250
 
 # define expert by geometric rate 
-psi = 0.01000
-ptxt=   01000
+psi = 0.05000
+ptxt=   05000
 
 # define expert by uniform n (one more than n)
 # psi =   251
 # ptxt=   251
 
 # criterion should be risk or reject (and make it so in the C++ code)
-goal = reject
+goal = risk
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
