@@ -109,11 +109,9 @@ ptxt=   05000
 # ptxt=   251
 
 # criterion should be risk or reject (and make it so in the C++ code)
-goal = reject
-goalCmd = " --reject "
+# goal = reject
 
-# goal = risk
-# goalCmd = " --risk "
+goal = risk
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   
@@ -149,8 +147,8 @@ runs/old_summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.5
 
 # actual run command for contrained solution, with univ and geometric
 $(pp)/%: bellman bellman.sh $(pp)/.directory_built
-	./bellman $(goalCmd) --gamma $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
-	./bellman $(goalCmd) --gamma $* --constrain --oracleprob 0      --bidderprob $(psi) --rounds $(n) >> $@
+	./bellman --$(goal) --gamma $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
+	./bellman --$(goal) --gamma $* --constrain --oracleprob 0      --bidderprob $(psi) --rounds $(n) >> $@
 
 
 # ---  unconstrained
