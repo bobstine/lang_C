@@ -13,11 +13,11 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O3
+OPT = -O0
 
 # OPT = -O3 -DNDEBUG
 
-USES = ranges utils random
+USES = utils random
 
 # EXTERNAL_USES = gsl
 
@@ -29,62 +29,6 @@ level_0 = dummy.o
 #
 ###########################################################################
 
-
-# -------------------------------------------------------------------
-# bellman recursion for competitive value
-# -------------------------------------------------------------------
-
-bellman.o: bellman.cc bellman.h
-
-bellman_solver.o: bellman_solver.cc
-
-bellman: bellman.o bellman_solver.o
-	$(GCC) $^ $(LDLIBS) -o  $@
-
-bellman_test: bellman
-	./bellman --constrain 0.75 --gamma 1.1 --rounds 25 --prob u --spend 0.5    # add   --write    for details
-
-
-# ---  constrained    $^ are prereq    $@ is target    $* is stem
-#      change n to change path, file names, and the length of run;  gp is gamma path
-
-n = 1000
-gp = gamma.$(n)/
-
-#  $(gp)0.6 $(gp)0.65 $(gp)0.7 $(gp)0.75 $(gp)0.8 $(gp)0.85 $(gp)0.9 $(gp)0.95 $(gp)0.960 $(gp)0.970 $(gp)0.980 $(gp)0.990 $(gp)1.0 $(gp)1.05 $(gp)1.1 $(gp)1.15 $(gp)1.2 $(gp)1.3 $(gp)1.4 $(gp)1.5 $(gp)1.6 $(gp)1.7
-#  $(gp)0.91 $(gp)0.92 $(gp)0.93 $(gp)0.94 $(gp)0.95 $(gp)0.96 $(gp)0.97 $(gp)0.98 $(gp)0.99
-#  $(gp)0.952 $(gp)0.954 $(gp)0.956 $(gp)0.958  $(gp)0.951 $(gp)0.953 $(gp)2.0 $(gp)2.2
-
-bellman_results.c$(n): bellman bellman.sh $(gp)0.6 
-	cat $(filter $(gp)%,$^) >> $@
-
-$(gp)%: bellman bellman.sh
-	./bellman --constrain 0.5 --spend 0.9 --gamma $* --rounds $(n) > $@
-
-
-# ---  unconstrained
-#   solutions for testing
-#      2.5 25 1 u 0.5 -0.0332263 0.181596 0.0859291
-#      2.5 10 1 u 0.5 -0.0651093 0.086978 0.0608351 	
-bellman_results.u500: bellman bellman.sh  
-	rm -f bellman_results.500
-	./bellman.sh u 500 >  bellman_results.500
-	./bellman.sh e 500 >> bellman_results.500
-	./bellman.sh g 500 >> bellman_results.500
-
-
-bellman_results.u1000: bellman bellman.sh
-	rm -f bellman_results.1000
-	./bellman.sh u 1000 >  bellman_results.1000
-	./bellman.sh e 1000 >> bellman_results.1000
-	./bellman.sh g 1000 >> bellman_results.1000
-
-
-bellman_results.u2000: bellman bellman.sh
-	rm -f bellman_results.2000
-	./bellman.sh u 2000 >  bellman_results.2000
-	./bellman.sh e 2000 >> bellman_results.2000
-	./bellman.sh g 2000 >> bellman_results.2000
 
 
 # -------------------------------------------------------------------
@@ -129,7 +73,7 @@ doit: random_indicator
 
 # Summary of scores on exam from scan sheet
 process_608: process_grades
-	/Users/bob/C/tools/process_grades -f/Users/bob/courses/stat608/grades/2010/ag238001.sdf -i29 -a38 -q44
+	./process_grades -f/Users/bob/courses/stat608/grades/2012/st234001.dat -o/Users/bob/courses/stat608/grades/2012/student_scores.txt -i29 -a45 -q50
 
 process_grades: process_grades.o
 	$(GCC) process_grades.o $(LDLIBS) -o $@

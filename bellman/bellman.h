@@ -30,12 +30,12 @@ solve_bellman_utility  (int nRounds, MatrixUtility & util, WealthArray const& or
 
 
 
-// --- Earlier version with the alpha-investing utility, only spending down alpha-wealth
+// --- Earlier version with the alpha-investing utility, only spending down alpha-wealth with gamma form for mixing
 void
-solve_bellman_alpha_equation             (double gamma, double omega, int nRounds, double spendPct, ProbDist const& f, bool writeDetails);
+solve_bellman_alpha_equation             (double angle, double omega, int nRounds, double spendPct, ProbDist const& f, bool writeDetails);
 
 void
-solve_constrained_bellman_alpha_equation (double gamma, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist const& bidderProb, bool printDetails);
+solve_constrained_bellman_alpha_equation (double angle, double omega, int nRounds, double spendPct, double oracleGeoProb, ProbDist const& bidderProb, bool printDetails);
 
 
 //  This guy does the optimization to find the best mu at given state

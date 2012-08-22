@@ -1,8 +1,19 @@
 /*
   Process the SDF file that comes from scanning a multiple choice exam.
 
-  First line is assumed to have the answer key, and the first question
-  is assumed to indicate a cyclic permutation of the answers.
+  Notes
+        -  '<cntl x> ='   in emacs gives cursor position (zero based)
+	- convert file to unix format with <cntl x> <return> f
+	- easier to clean answer lines so line starts with name
+	- kill any residual special character last line in answer file
+	
+  First line of the file with the answers is assumed to have the
+  answer key. If the option multVersions is set to true, then the
+  first question is assumed to indicate a cyclic permutation of the
+  answers.  Otherwise all of them use the common key defined in the
+  first line of the answers file.
+
+  Output file is tab delimited with name, penn id, score (# correct).
 
 */
 
@@ -19,52 +30,19 @@
 #include <getopt.h>
 #include <math.h>
 
+
 void
 parse_arguments(int argc, char** argv,
 		std::string &inputFile, std::string &outputFile,
-		int &idCol, int &ansCol, int &nQues)
-{
-  int key;
-  while (1)                              // read until empty key causes break
-  { int option_index = 0;
-    static struct option long_options[] = {
-      {"input-file",        required_argument, 0, 'f'},  // has arg,
-      {"output-file",       required_argument, 0, 'o'},  // has arg,
-      {"questions",         required_argument, 0, 'q'},  // has arg,
-      {"id-column",         required_argument, 0, 'i'},  // has arg,
-      {"answer-column",     required_argument, 0, 'a'},  // has arg,
-      {0, 0, 0, 0}                       // terminator 
-    };
-    key = getopt_long (argc, argv, "f:o:q:i:a:", long_options, &option_index);
-    // std::cout << "Key  " << key << "  optarg " << optarg << std::endl;
-    if (key == -1)
-      break;
-    switch (key)
-    {
-    case 'f' :                                    
-      {
-	std::string name(optarg);   inputFile = name;   break;
-      }
-    case 'o' :  
-      {
-	std::string name(optarg);   outputFile = optarg; break;
-      }
-    case 'q' :   // what the fuck is wrong with this???
-      {
-	nQues = read_utils::lexical_cast<int>(optarg);   break;
-      }
-    case 'i' :
-      {
-	idCol = read_utils::lexical_cast<int>(optarg);   break;
-      }
-    case 'a' :
-      {
-	ansCol = read_utils::lexical_cast<int>(optarg);    break;
-      }
-    }
-  }
-}
+		int &idCol, int &ansCol, int &nQues, bool &multVersions);
 
+int
+process (std::istream& input, std::ostream& output,
+	 int idColumn, int answerColumn, int nQuestions,   // zero based
+	 bool multVersions);
+
+
+// convenience output
 std::ostream&
 operator<<(std::ostream& os, std::vector<int> v)
 {
@@ -73,8 +51,45 @@ operator<<(std::ostream& os, std::vector<int> v)
   return os;
 }
 
+
+
+int 
+main(int argc, char** argv)
+{
+  // default is io via stdin and stdout
+  std::string       inputFile     ("");
+  std::string       outputFile    ("");
+  int               idColumn      (29);     // all are zero based
+  int               answerColumn  (38);
+  int               nQuestions    (44);
+  bool              multVersions  (false);
+
+  parse_arguments(argc, argv, inputFile, outputFile, idColumn, answerColumn, nQuestions, multVersions);
+  { std::string vStr ("");
+    if (multVersions) vStr = "-v";
+    std::cout << "process_grades -f " << inputFile << " -o " << outputFile
+	      <<" -i " << idColumn << " -a " << answerColumn << " -q " << nQuestions << vStr << std::endl;
+  }
+  std::ifstream input (inputFile.c_str());
+  if(!input)
+  { std::cerr << "ERROR: Could not open input file named " << inputFile << std::endl;
+    return -1;
+  }
+  std::ofstream output (outputFile.c_str());
+  if(!output)
+  { std::cout << "No output file supplied; results going to standard output." << std::endl;
+    return process(input, std::cout, idColumn, answerColumn, nQuestions, multVersions);
+  }
+  else
+  { std::cout << "Results going to file " << outputFile << std::endl;
+    return process(input, output, idColumn, answerColumn, nQuestions, multVersions);
+  }
+}
+
+///////////////////////////  process  ////////////////////////////////////////////
+
 int
-process (std::istream& input, std::ostream& output, int idColumn, int answerColumn, int nQuestions)
+process (std::istream& input, std::ostream& output, int idColumn, int answerColumn, int nQuestions, bool multVersions)
 {
   if(!input)
   { std::cerr << "Could not open the indicated input stream.\n";
@@ -82,20 +97,21 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   }
   if (!output)
     std::cerr << "Count not open the indicated output stream; writing to stdout.\n";
-  
+
+  // string used for all io
   std::string line;
   // get the answer key, store zero-based so a=0, b=1,...
   std::vector<int> answerKey (nQuestions);
   std::getline(input, line);
-  std::cout << "Key line: '" <<  line << "'" << std::endl;
+  std::cout << "Answer line: '" <<  line << "'" << std::endl;
   std::string keys (line.substr(answerColumn, nQuestions));
-  std::istringstream istrm(keys);
+  std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
+  std::istringstream istrm(keys); 
   for (int i=0; i<nQuestions; ++i)
   { char c;
     istrm >> c;
     answerKey[i] = read_utils::ctoi(c)-1;                        // convert to zero base
   }
-
   // space for results
   std::vector< std::vector<int> > answerFrequencies;
   for(int i=0; i<nQuestions; ++i)
@@ -105,23 +121,25 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   std::vector< int > studentTotal;
   std::vector< std::string > names;
   std::vector< std::string > ids;
-  
-  
   // process each student record, first 'rotating' answers, then counting number correct
   int student (0);
+  int firstQuestion(0);
   while(std::getline(input,line))
   {
-    names.push_back(line.substr(0,idColumn));
+    names.push_back(line.substr(0,20));              // 20 char for name
     ids.push_back(  line.substr(idColumn,8));
-    //    std::cout << "Processing grades for " << names[student] << std::endl;
+    std::cout << "Processing grades for " << names[student] << std::endl;
     studentTotal.push_back(0);
     correctArray.push_back(std::vector<int>(nQuestions,0));
     std::istringstream is(line.substr(answerColumn,nQuestions));
     char choice;
-    is >> choice;
     int examKey (0);
-    examKey = read_utils::ctoi(choice)-1;                        // 0 means no shift
-    for(int q=1; q<nQuestions; ++q)
+    if(multVersions)
+    { is >> choice;
+      examKey = read_utils::ctoi(choice)-1;          // 0 means no shift
+      firstQuestion = 1;
+    }
+    for(int q=firstQuestion; q<nQuestions; ++q)
     { is >> choice;
       if(('0' < choice) && choice < '6')         
       { int ans = read_utils::ctoi(choice)-1;
@@ -159,7 +177,7 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   */
   // detailed output  for each question
   std::cout << "Ques  Answer  #Correct           Choices                 Corr\n";
-  for(int q=1; q<nQuestions; ++q)
+  for(int q=firstQuestion; q<nQuestions; ++q)
   { std::cout << "Q" << std::setw(2) << q+1;
     std::cout << "      " << "abcde"[answerKey[q]] << "  "
 	      << "    " << std::setw(4) << questionTotal[q]
@@ -179,27 +197,56 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
 }
 
 
-
-int 
-main(int argc, char** argv)
-{
-  // default is io via stdin and stdout
-  std::string       inputFile ("");
-  std::string       outputFile("");
-  int               idColumn    (29);
-  int               answerColumn(38);
-  int               nQuestions  (44);
-
-  parse_arguments(argc, argv, inputFile, outputFile, idColumn, answerColumn, nQuestions);
-  std::cout << "process_grades -f " << inputFile << " -o " << outputFile
-	    <<" -i " << idColumn << " -a " << answerColumn << " -q " << nQuestions << std::endl;
-  std::ifstream input (inputFile.c_str());
-  if(!input) return -1;
-  std::ofstream output (outputFile.c_str());
-  if(!output)
-    return process(input, std::cout, idColumn, answerColumn, nQuestions);
-  else
-    return process(input, output, idColumn, answerColumn, nQuestions);
-    
-}
   
+///////////////////////////  parse_arguments  ////////////////////////////////////////////
+
+void
+parse_arguments(int argc, char** argv,
+		std::string &inputFile, std::string &outputFile,
+		int &idCol, int &ansCol, int &nQues, bool &multVersions)
+{
+  int key;
+  while (1)                              // read until empty key causes break
+  { int option_index = 0;
+    static struct option long_options[] = {
+      {"input-file",        required_argument, 0, 'f'},  // has arg,
+      {"output-file",       required_argument, 0, 'o'},  // has arg,
+      {"questions",         required_argument, 0, 'q'},  // has arg,
+      {"id-column",         required_argument, 0, 'i'},  // has arg,
+      {"answer-column",     required_argument, 0, 'a'},  // has arg,
+      {"multiple-versions",       no_argument, 0, 'v'},  //  no arg
+      {0, 0, 0, 0}                       // terminator 
+    };
+    key = getopt_long (argc, argv, "f:o:q:i:a:v", long_options, &option_index);
+    // std::cout << "Key  " << key << "  optarg " << optarg << std::endl;
+    if (key == -1)
+      break;
+    switch (key)
+    {
+    case 'f' :                                    
+      {
+	std::string name(optarg);   inputFile = name;   break;
+      }
+    case 'o' :  
+      {
+	std::string name(optarg);   outputFile = optarg; break;
+      }
+    case 'q' :
+      {
+	nQues = read_utils::lexical_cast<int>(optarg);   break;
+      }
+    case 'i' :
+      {
+	idCol = read_utils::lexical_cast<int>(optarg);   break;
+      }
+    case 'a' :
+      {
+	ansCol = read_utils::lexical_cast<int>(optarg);    break;
+      }
+    case 'v' :
+      {
+	multVersions = true;    break;
+      }
+    }
+  }
+}

@@ -133,7 +133,7 @@ RejectVectorUtility::operator()(double mu) const
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return rprob.first - mGamma * rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  return mSin*rprob.first + mCos*rb  + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }
 
 double
@@ -159,7 +159,7 @@ RiskVectorUtility::operator()(double mu) const
 {
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rb (rprob.second);
-  return  neg_risk(mu,mAlpha)  - mGamma * neg_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
+  return  mSin*neg_risk(mu,mAlpha) + mCos*neg_risk(mu,mBeta) + rb * mRejectValue + (1-rb) * mNoRejectValue;
 }
 
 
@@ -239,7 +239,7 @@ RejectMatrixUtility::operator()(double mu) const
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  double util (rAlpha - mGamma * rBeta);
+  double util (mSin*rAlpha + mCos*rBeta);
   if (rAlpha > rBeta)
     return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
   else
@@ -284,7 +284,7 @@ RiskMatrixUtility::operator()(double mu) const
   std::pair<double,double>  rprob  (reject_probabilities(mu));
   double rAlpha (rprob.first);
   double rBeta (rprob.second);
-  double util (neg_risk(mu,mAlpha) - mGamma * neg_risk(mu,mBeta));  
+  double util (mSin*neg_risk(mu,mAlpha) + mCos*neg_risk(mu,mBeta));  
   if (rAlpha > rBeta)
     return  util + mV00 * (1-rAlpha) + mV10 * (rAlpha-rBeta) +  mV11 * rBeta;
   else
@@ -317,7 +317,4 @@ RiskMatrixUtility::bidder_utility (double mu, double v00, double v01, double v10
   else
     return  neg_risk(mu,mBeta)  + v00 * (1- rBeta) + v01 * (rBeta-rAlpha) +  v11 * rAlpha;
 }
-
-
-
 
