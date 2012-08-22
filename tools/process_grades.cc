@@ -1,8 +1,19 @@
 /*
   Process the SDF file that comes from scanning a multiple choice exam.
 
-  First line is assumed to have the answer key, and the first question
-  is assumed to indicate a cyclic permutation of the answers.
+  Notes
+        -  '<cntl x> ='   in emacs gives cursor position (zero based)
+	- convert file to unix format with <cntl x> <return> f
+	- easier to clean answer lines so line starts with name
+	- kill any residual special character last line in answer file
+	
+  First line of the file with the answers is assumed to have the
+  answer key. If the option multVersions is set to true, then the
+  first question is assumed to indicate a cyclic permutation of the
+  answers.  Otherwise all of them use the common key defined in the
+  first line of the answers file.
+
+  Output file is tab delimited with name, penn id, score (# correct).
 
 */
 
@@ -26,7 +37,9 @@ parse_arguments(int argc, char** argv,
 		int &idCol, int &ansCol, int &nQues, bool &multVersions);
 
 int
-process (std::istream& input, std::ostream& output, int idColumn, int answerColumn, int nQuestions, bool multVersions);
+process (std::istream& input, std::ostream& output,
+	 int idColumn, int answerColumn, int nQuestions,   // zero based
+	 bool multVersions);
 
 
 // convenience output
@@ -46,7 +59,7 @@ main(int argc, char** argv)
   // default is io via stdin and stdout
   std::string       inputFile     ("");
   std::string       outputFile    ("");
-  int               idColumn      (29);
+  int               idColumn      (29);     // all are zero based
   int               answerColumn  (38);
   int               nQuestions    (44);
   bool              multVersions  (false);
@@ -58,13 +71,19 @@ main(int argc, char** argv)
 	      <<" -i " << idColumn << " -a " << answerColumn << " -q " << nQuestions << vStr << std::endl;
   }
   std::ifstream input (inputFile.c_str());
-  if(!input) return -1;
+  if(!input)
+  { std::cerr << "ERROR: Could not open input file named " << inputFile << std::endl;
+    return -1;
+  }
   std::ofstream output (outputFile.c_str());
   if(!output)
+  { std::cout << "No output file supplied; results going to standard output." << std::endl;
     return process(input, std::cout, idColumn, answerColumn, nQuestions, multVersions);
+  }
   else
+  { std::cout << "Results going to file " << outputFile << std::endl;
     return process(input, output, idColumn, answerColumn, nQuestions, multVersions);
-    
+  }
 }
 
 ///////////////////////////  process  ////////////////////////////////////////////
@@ -84,9 +103,10 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   // get the answer key, store zero-based so a=0, b=1,...
   std::vector<int> answerKey (nQuestions);
   std::getline(input, line);
-  std::cout << "Key line: '" <<  line << "'" << std::endl;
+  std::cout << "Answer line: '" <<  line << "'" << std::endl;
   std::string keys (line.substr(answerColumn, nQuestions));
-  std::istringstream istrm(keys);
+  std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
+  std::istringstream istrm(keys); 
   for (int i=0; i<nQuestions; ++i)
   { char c;
     istrm >> c;
@@ -106,9 +126,9 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   int firstQuestion(0);
   while(std::getline(input,line))
   {
-    names.push_back(line.substr(0,idColumn));
+    names.push_back(line.substr(0,20));              // 20 char for name
     ids.push_back(  line.substr(idColumn,8));
-    //    std::cout << "Processing grades for " << names[student] << std::endl;
+    std::cout << "Processing grades for " << names[student] << std::endl;
     studentTotal.push_back(0);
     correctArray.push_back(std::vector<int>(nQuestions,0));
     std::istringstream is(line.substr(answerColumn,nQuestions));
@@ -211,7 +231,7 @@ parse_arguments(int argc, char** argv,
       {
 	std::string name(optarg);   outputFile = optarg; break;
       }
-    case 'q' :   // what the fuck is wrong with this???
+    case 'q' :
       {
 	nQues = read_utils::lexical_cast<int>(optarg);   break;
       }

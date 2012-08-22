@@ -13,7 +13,7 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O3
+OPT = -O0
 
 # OPT = -O3 -DNDEBUG
 
@@ -73,7 +73,7 @@ doit: random_indicator
 
 # Summary of scores on exam from scan sheet
 process_608: process_grades
-	/Users/bob/C/tools/process_grades -f/Users/bob/courses/stat608/grades/2010/ag238001.sdf -i29 -a38 -q44 -v
+	./process_grades -f/Users/bob/courses/stat608/grades/2012/st234001.dat -o/Users/bob/courses/stat608/grades/2012/student_scores.txt -i29 -a45 -q50
 
 process_grades: process_grades.o
 	$(GCC) process_grades.o $(LDLIBS) -o $@

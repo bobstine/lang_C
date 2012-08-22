@@ -72,7 +72,7 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 #           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
 bellman_test: bellman 
-	./bellman --gamma 200   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --angle 45   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 #	./bellman --gamma 2   --rounds 400 --constrain --oracleprob 0 --bidderprob 0.01 --write
 #	./bellman --gamma .2   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
@@ -82,10 +82,10 @@ bellman_test: bellman
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
 # g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
 risk_check: bellman
-	./bellman --risk    --gamma 0  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk    --angle 90  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 reject_check: bellman
-	./bellman --reject  --gamma 0  --rounds 7  --constrain --oracleprob 0 --bidderprob 0.1 --write
+	./bellman --reject  --angle 0  --rounds 7  --constrain --oracleprob 0 --bidderprob 0.1 --write
 
 # ---  $^ are prereq    $@ is target    $* is stem
 #      change n to change path, file names, and the length of run;  gp is path
@@ -94,15 +94,15 @@ reject_check: bellman
 # define these constants, then use a command like
 #    make -j lots  -k runs/summary.reject_psi0090_n100
 # or
-#    make -j lots  -k runs/summary.risk_psi00100_n250
+#    make -j lots  -k runs/summary.risk_psi0010_n250
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 250
+n = 90
 
 # define expert by geometric rate 
-psi = 0.05000
-ptxt=   05000
+psi = 0.0500
+ptxt=   0500
 
 # define expert by uniform n (one more than n)
 # psi =   251
@@ -131,24 +131,15 @@ runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/0.079 $(p
 	cat $(filter $(pp)/%,$^) >> $@
 
 
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/-0.20 $(pp)/0 $(pp)/0.079 $(pp)/0.16 $(pp)/0.24 $(pp)/0.32 $(pp)/0.41 $(pp)/0.61  $(pp)/0.73 $(pp)/0.85 $(pp)/0.93 $(pp)/1.0 $(pp)/1.1 $(pp)/1.2 $(pp)/1.4 $(pp)/1.6 $(pp)/2.0 $(pp)/2.4 $(pp)/3.1 $(pp)/4.5 $(pp)/6.3 $(pp)/13 $(pp)/100 $(pp)/200 $(pp)/400 $(pp)/800 $(pp)/1600
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/15 $(pp)/30 $(pp)/45 $(pp)/60 $(pp)/75 $(pp)/90 $(pp)/105 $(pp)/120 $(pp)/135 $(pp)/150 $(pp)/165 $(pp)/180 $(pp)/195 $(pp)/210 $(pp)/225 $(pp)/240 $(pp)/255 $(pp)/270 $(pp)/285 $(pp)/300 $(pp)/315 $(pp)/330 $(pp)/345
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
-
-runs/old_summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.05 $(pp)/0.1 $(pp)/0.2 $(pp)/0.3 $(pp)/0.35 $(pp)/0.4 $(pp)/0.45 $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.7 $(pp)/0.75 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/1.0 $(pp)/1.025 $(pp)/1.05 $(pp)/1.075 $(pp)/1.1 $(pp)/1.125 $(pp)/1.15 $(pp)/1.175 $(pp)/1.2 $(pp)/1.25 $(pp)/1.3 $(pp)/1.35 $(pp)/1.4 $(pp)/1.45 $(pp)/1.5 $(pp)/1.55 $(pp)/1.6 $(pp)/1.65 $(pp)/1.7 $(pp)/1.8 $(pp)/1.9 $(pp)/2.0 $(pp)/2.25 $(pp)/2.5 $(pp)/3.0 $(pp)/4.0 $(pp)/5.0 $(pp)/7.5 $(pp)/10.0  $(pp)/15.0 $(pp)/20.0 $(pp)/30.0 $(pp)/50.0  $(pp)/100.0   $(pp)/200.0 
-	rm -f $@
-	cat $(filter $(pp)/%,$^) >> $@
-
-runs/old_summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0.5 $(pp)/0.55 $(pp)/0.6 $(pp)/0.65 $(pp)/0.675 $(pp)/0.7 $(pp)/0.705 $(pp)/0.710 $(pp)/0.715 $(pp)/0.720 $(pp)/0.725 $(pp)/0.7275 $(pp)/0.7285 $(pp)/0.7290 $(pp)/0.7295 $(pp)/0.73 $(pp)/0.7305 $(pp)/0.731 $(pp)/0.7315 $(pp)/0.7320 $(pp)/0.7325 $(pp)/0.735 $(pp)/0.740 $(pp)/0.745 $(pp)/0.75 $(pp)/0.755 $(pp)/0.760 $(pp)/0.765 $(pp)/0.770 $(pp)/0.775 $(pp)/0.8 $(pp)/0.825  $(pp)/0.85 $(pp)/0.875 $(pp)/0.9 $(pp)/0.925 $(pp)/0.95 $(pp)/0.975 $(pp)/0.990 $(pp)/1.0 $(pp)/1.01 $(pp)/1.05 $(pp)/1.1 $(pp)/1.15 $(pp)/1.2 $(pp)/1.3 $(pp)/1.4 $(pp)/1.5 $(pp)/1.6 $(pp)/1.7 $(pp)/2.0 $(pp)/2.5 $(pp)/3.0 $(pp)/3.5 $(pp)/4.0  $(pp)/4.5  $(pp)/5.0  $(pp)/5.5  $(pp)/6.0  $(pp)/6.5  $(pp)/7.0 $(pp)/7.5 $(pp)/8.0  $(pp)/9.0 $(pp)/10.0 $(pp)/15.0 $(pp)/20.0
-	rm -f $@
-	cat $(filter $(pp)/%,$^) >> $@
 
 
 # actual run command for contrained solution, with univ and geometric
 $(pp)/%: bellman bellman.sh $(pp)/.directory_built
-	./bellman --$(goal) --gamma $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
-	./bellman --$(goal) --gamma $* --constrain --oracleprob 0      --bidderprob $(psi) --rounds $(n) >> $@
+	./bellman --$(goal) --angle $* --constrain --oracleprob $(psi) --bidderprob 0      --rounds $(n) >  $@
 
 
 # ---  unconstrained

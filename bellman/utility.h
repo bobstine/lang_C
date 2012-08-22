@@ -39,19 +39,19 @@ double   neg_risk      (double mu, double alpha);
 class VectorUtility: public std::unary_function<double,double>
 {
  protected:
-  const double mGamma;
+  const double mAngle, mSin, mCos;
   const double mOmega;
   double mAlpha, mBeta;
   double mRejectValue, mNoRejectValue;
   
  public:
 
- VectorUtility(double gamma, double omega)
-   : mGamma(gamma), mOmega(omega), mAlpha(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
+ VectorUtility(double angle, double omega)
+   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)), mOmega(omega), mAlpha(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
 
   double alpha      () const { return mAlpha; }   // equal to omega unless set outside
   double beta       () const { return mBeta;  }
-  double gamma      () const { return mGamma; }
+  double angle      () const { return mAngle; }
   double omega      () const { return mOmega; }   // is alpha unless otherwise set
   
   void set_constants (double alpha, double beta, double rejectValue, double noRejectValue)
@@ -91,8 +91,8 @@ class RejectVectorUtility: public VectorUtility
 {
  public:
 
- RejectVectorUtility(double gamma, double omega)
-   : VectorUtility(gamma, omega) { }
+ RejectVectorUtility(double angle, double omega)
+   : VectorUtility(angle, omega) { }
 
   double operator()(double mu) const;
 
@@ -108,8 +108,8 @@ class RiskVectorUtility: public VectorUtility
 {
  public:
 
- RiskVectorUtility(double gamma, double omega)
-   : VectorUtility(gamma,omega) { }
+ RiskVectorUtility(double angle, double omega)
+   : VectorUtility(angle, omega) { }
   
   double operator()(double mu) const;
   
@@ -126,19 +126,19 @@ class RiskVectorUtility: public VectorUtility
 class MatrixUtility: public std::unary_function<double,double>
 {
  protected:
-  const double mGamma;
+  const double mAngle, mSin, mCos;
   const double mOmega;
   double mAlpha, mBeta;
   double mV00, mV01, mV10, mV11;  // 0 for not reject, 1 for reject
   
  public:
 
- MatrixUtility(double gamma, double omega)
-   : mGamma(gamma), mOmega(omega), mAlpha(omega), mBeta(0.0), mV00(0.0), mV01(0.0), mV10(0.0), mV11(0.0) {}
+ MatrixUtility(double angle, double omega)
+   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)), mOmega(omega), mAlpha(omega), mBeta(0.0), mV00(0.0), mV01(0.0), mV10(0.0), mV11(0.0) {}
 
   double alpha      () const { return mAlpha; }
   double beta       () const { return mBeta;  }
-  double gamma      () const { return mGamma; }
+  double angle      () const { return mAngle; }
   double omega      () const { return mOmega; }   // is alpha unless otherwise set
   
   void set_constants (double alpha, double beta, double v00, double v01, double v10, double v11)
@@ -173,8 +173,8 @@ class RejectMatrixUtility: public MatrixUtility
 {
  public:
 
- RejectMatrixUtility(double gamma, double omega)
-   : MatrixUtility(gamma, omega) { }
+ RejectMatrixUtility(double angle, double omega)
+   : MatrixUtility(angle, omega) { }
 
   double operator()(double mu) const;
 
@@ -190,8 +190,8 @@ class RiskMatrixUtility: public MatrixUtility
 {
  public:
 
- RiskMatrixUtility(double gamma, double omega)
-   : MatrixUtility(gamma,omega) { }
+ RiskMatrixUtility(double angle, double omega)
+   : MatrixUtility(angle,omega) { }
   
   double operator()(double mu) const;
   
