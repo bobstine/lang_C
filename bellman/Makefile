@@ -84,6 +84,9 @@ bellman_test: bellman
 risk_check: bellman
 	./bellman --gamma 2  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
 
+risk_test: bellman
+	./bellman --gamma 100  --rounds 100  --constrain --oracleprob 0 --bidderprob 0.05
+
 reject_check: bellman
 	./bellman --gamma 2 --rounds 30  --constrain --oracleprob 0 --bidderprob 0.1 --write
 
@@ -109,7 +112,7 @@ ptxt=   00500
 # ptxt=   251
 
 # criterion should be risk or reject (and make it so in the C++ code)
-goal = reject
+goal = risk
 
 #--------------------------------------------------------------------------------------------
 #  below here is automagic, building output in runs/   

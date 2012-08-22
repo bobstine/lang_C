@@ -58,8 +58,8 @@ int  main(int argc, char** argv)
   }
   else                     // constrained expert
   { std::cout << pOracleWealth->name() << " " << pBidderWealth->name() << " ";
-    RejectMatrixUtility utility(gamma, omega); 
-    //    RiskMatrixUtility utility(gamma, omega);
+    // RejectMatrixUtility utility(gamma, omega); 
+    RiskMatrixUtility utility(gamma, omega);
     solve_bellman_utility (nRounds, utility, *pOracleWealth, *pBidderWealth, writeTable);
   }
   return 0;
