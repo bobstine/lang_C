@@ -22,7 +22,7 @@ imin(int a, int b)
 //
 
 void
-solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const& bidderWealth, bool writeDetails)
+solve_bellman_utility  (int nRounds, VectorUtility &utility, WealthArray const& bidderWealth, bool writeDetails)
 {
   // initialize: iOmega is omega location, iOmega+6 gives five states above omega
   const int nColumns (bidderWealth.size());   
@@ -65,14 +65,14 @@ solve_bellman_utility  (int nRounds, VectorUtility & utility, WealthArray const&
   // write solution (without boundary row) to file
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(1000 * utility.gamma()));
-    ss << "bellman.g" << gammaInt << ".n" << nRounds << ".";
+    int angle (trunc(utility.angle()));
+    ss << "bellman.a" << angle << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "utility", utilityMat.topLeftCorner(nRounds+1, utilityMat.cols()-1));  // omit boundary row, col
     write_matrix_to_file(ss.str() + "oracle" ,  oracleMat.topLeftCorner(nRounds+1, oracleMat.cols()-1));
     write_matrix_to_file(ss.str() + "bidder" ,  bidderMat.topLeftCorner(nRounds+1, bidderMat.cols()-1));
     write_matrix_to_file(ss.str() + "mean"   ,    meanMat.topLeftCorner(nRounds+1, meanMat.cols()));
   }
-  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.angle() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << utilityMat(0,nRounds+1) << " " << oracleMat(0,nRounds+1) << " " << bidderMat(0,nRounds+1) << std::endl;
 }
 
@@ -220,8 +220,8 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
   std::cout << std::setprecision(6);
   if(writeDetails)
   { std::ostringstream ss;
-    int gammaInt (trunc(1000 * utility.gamma()));
-    ss << "runs/bellman2.g" << gammaInt << ".n" << nRounds << ".";
+    int angle (utility.angle());
+    ss << "runs/bellman2.g" << angle << ".n" << nRounds << ".";
     write_matrix_to_file(ss.str() + "meanA"  ,    meanMatA  );
     write_matrix_to_file(ss.str() + "meanB"  ,    meanMatB  );
     bool writeOneRow = false;
@@ -238,7 +238,7 @@ solve_bellman_utility  (int nRounds, MatrixUtility & utility, WealthArray const&
     }
   }
   // write summary of configuration and results to stdio
-  std::cout << utility.gamma() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
+  std::cout << utility.angle() << " " << bidderWealth.omega() << "   " << nRounds   << "   " << searchInterval.first << " " << searchInterval.second  << "     "
 	    << (*pUtilityDest)(nRounds,nRounds) << " " << (*pOracleDest)(nRounds,nRounds) << " " << (*pBidderDest)(nRounds,nRounds) << std::endl;
 }
 
