@@ -320,8 +320,8 @@ public:
   // value_type   operator*()        { return mF(extensible_iterator::value()); }
   value_type   operator*() const  { return mF(extensible_iterator::value()); }
   
-  extensible_iterator::operator==;                       // Identify whose == to call
-  extensible_iterator::operator!=;               
+  using extensible_iterator::operator==;                       // Identify whose == to call
+  using extensible_iterator::operator!=;               
   
   // Should these be here also? If so, then need to specialize the template for random access iterator.
   // extensible_iterator::operator<;
@@ -356,10 +356,10 @@ public:
 
   using F::operator();
   
-  extensible_iterator::operator<;                   // Identify who to call
-  extensible_iterator::operator>;                
-  extensible_iterator::operator==;               
-  extensible_iterator::operator!=;               
+  using extensible_iterator::operator<;                   // Identify who to call
+  using extensible_iterator::operator>;                
+  using extensible_iterator::operator==;               
+  using extensible_iterator::operator!=;               
 };
 
 
@@ -605,8 +605,8 @@ public
   //  value_type  operator*()        { return mF(extensible_iterator::first(), extensible_iterator::second()); }
   value_type  operator*() const  { return mF(extensible_iterator::first(), extensible_iterator::second()); }
 
-  extensible_iterator::operator==;
-  extensible_iterator::operator!=;
+  using extensible_iterator::operator==;
+  using extensible_iterator::operator!=;
 
 };
 

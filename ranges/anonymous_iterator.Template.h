@@ -354,18 +354,6 @@ public:
 
 
 
-template <class BaseIter>
-inline
-anonymous_iterator_envelope<typename std::iterator_traits<BaseIter>::iterator_category,
-			    typename std::iterator_traits<BaseIter>::value_type>
-make_anonymous_iterator (const BaseIter& iter)
-{
-  typedef typename std::iterator_traits<BaseIter>::iterator_category tag;
-  typedef typename std::iterator_traits<BaseIter>::value_type value;
-  return anonymous_iterator_envelope<tag,value>(anonymous_iterator<tag,BaseIter>(iter));
-}
-
-
 // ANONYMOUS_ITERATOR  ANONYMOUS_ITERATOR  ANONYMOUS_ITERATOR  ANONYMOUS_ITERATOR  ANONYMOUS_ITERATOR  
 //  This is the letter class
 
@@ -515,6 +503,23 @@ public:
     }
 };
 
+
+
+//  make_anonymous_iterator     make_anonymous_iterator     make_anonymous_iterator     make_anonymous_iterator
+
+template <class BaseIter>
+inline
+anonymous_iterator_envelope<typename std::iterator_traits<BaseIter>::iterator_category,
+			    typename std::iterator_traits<BaseIter>::value_type>
+make_anonymous_iterator (const BaseIter& iter)
+{
+  typedef typename std::iterator_traits<BaseIter>::iterator_category tag;
+  typedef typename std::iterator_traits<BaseIter>::value_type value;
+  return anonymous_iterator_envelope<tag,value>(anonymous_iterator<tag,BaseIter>(iter));
+}
+
+//   make_anonymous_range     make_anonymous_range     make_anonymous_range     make_anonymous_range     make_anonymous_range
+
 inline
 Ranges::range<  anonymous_iterator_envelope<std::random_access_iterator_tag,double>  >
 make_anonymous_range ()
@@ -522,5 +527,26 @@ make_anonymous_range ()
   std::vector<double> x (0);
   return make_anonymous_range(x.begin(), x.end());
 }
+
+
+template <class Iter>
+inline
+Ranges::range<anonymous_iterator_envelope<typename std::iterator_traits<Iter>::iterator_category,
+				  typename std::iterator_traits<Iter>::value_type> >
+make_anonymous_range (const Iter& b, const Iter& e)
+{
+  return Ranges::make_range(make_anonymous_iterator(b),make_anonymous_iterator(e));
+}
+
+
+template <class Range>
+inline
+Ranges::range<anonymous_iterator_envelope<typename range_traits<Range>::iterator_category,
+  typename range_traits<Range>::value_type> >
+  make_anonymous_range (const Range& r)
+{
+  return Ranges::make_range(make_anonymous_iterator(Ranges::begin(r)),make_anonymous_iterator(Ranges::end(r)));
+}
+
 
 #endif

@@ -47,7 +47,8 @@ class VectorUtility: public std::unary_function<double,double>
  public:
 
  VectorUtility(double angle, double omega)
-   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)), mOmega(omega), mAlpha(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) {}
+   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)),
+     mOmega(omega), mAlpha(omega), mBeta(0.0), mRejectValue(0.0), mNoRejectValue(0.0) { }
 
   double alpha      () const { return mAlpha; }   // equal to omega unless set outside
   double beta       () const { return mBeta;  }
@@ -134,9 +135,10 @@ class MatrixUtility: public std::unary_function<double,double>
  public:
 
  MatrixUtility(double angle, double omega)
-   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)),
+   //   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)),
+   : mAngle(angle), mSin(1), mCos(2),
      mOmega(omega), mAlpha(omega), mBeta(0.0), mV00(0.0), mV01(0.0), mV10(0.0), mV11(0.0)
-    { std::cout << mSin << " + " << mCos << std::endl; }
+    { std::cout << mSin << " " << mCos << std::endl; }
 
   double alpha      () const { return mAlpha; }
   double beta       () const { return mBeta;  }

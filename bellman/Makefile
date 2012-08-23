@@ -80,9 +80,11 @@ bellman_test: bellman
 #	./bellman --gamma 2     --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
-# g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
+#   gamma style: g01000 univ1                          2   0.05   7   0.05 10     19.4462 -20.0157 -19.731
+#   angle      : g01000 univ(1) 0.447214 -0.894427 153.435 0.05   7   0.05 10     8.50491 -19.82   -19.4188
+
 risk_check: bellman
-	./bellman --risk    --angle 90  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk --angle 153.434949  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 risk_test: bellman
 	./bellman --gamma 100  --rounds 100  --constrain --oracleprob 0 --bidderprob 0.05
