@@ -136,9 +136,9 @@ class MatrixUtility: public std::unary_function<double,double>
 
  MatrixUtility(double angle, double omega)
    //   : mAngle(angle), mSin(sin(angle * 3.1415926536/180)), mCos(cos(angle * 3.1415926536/180)),
-   : mAngle(angle), mSin(1), mCos(2),
+   : mAngle(angle), mSin(1), mCos(-2),
      mOmega(omega), mAlpha(omega), mBeta(0.0), mV00(0.0), mV01(0.0), mV10(0.0), mV11(0.0)
-    { std::cout << mSin << " " << mCos << std::endl; }
+    { std::cout << mSin << " " << mCos << " "; }
 
   double alpha      () const { return mAlpha; }
   double beta       () const { return mBeta;  }

@@ -71,6 +71,10 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 # With revised (improved) tail wealth, get this [tail has more effect than I'd prefer]
 #           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
+
+# --- using latest code, angular style with force sine and cosine
+# g01000 univ(1) 1 2       153.435 0.05   200   0.05 10     -1.35152 -0.622174 -0.364673                                                                                   
+
 bellman_test: bellman 
 	./bellman --risk --angle 153.435   --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0
 
