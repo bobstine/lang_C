@@ -42,3 +42,6 @@ details: c_flags
 auctions/auctions.test.exec:
 	-$(MAKE) -sC auctions auction.test.exec
 
+gsl/.checkout_by_make: 
+	git clone sob:/git/bob/C/gsl
+	touch gsl/.checkout_by_make
