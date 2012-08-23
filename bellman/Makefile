@@ -72,7 +72,7 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 #           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
 bellman_test: bellman 
-	./bellman --angle 45   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk --angle 153.435   --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0
 
 #	./bellman --gamma 2   --rounds 400 --constrain --oracleprob 0 --bidderprob 0.01 --write
 #	./bellman --gamma .2   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
