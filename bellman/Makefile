@@ -101,7 +101,7 @@ reject_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 90
+n = 500
 
 # define expert by geometric rate 
 psi = 0.0500
