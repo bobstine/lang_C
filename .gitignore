@@ -1,4 +1,5 @@
 .DS_Store
+bellman
 sandbox
 *.test
 *.dd
