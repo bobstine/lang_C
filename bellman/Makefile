@@ -71,8 +71,12 @@ bellman: bellman.o wealth.o utility.o bellman_main.o
 # With revised (improved) tail wealth, get this [tail has more effect than I'd prefer]
 #           g01000 univ1 2 0.05   200   0.05 10     904.399 -470.746 -687.572
 
+
+# --- using latest code, angular style with force sine and cosine
+# g01000 univ(1) 1 2       153.435 0.05   200   0.05 10     -1.35152 -0.622174 -0.364673                                                                                   
+
 bellman_test: bellman 
-	./bellman --angle 45   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk --angle 153.435   --rounds 200 --constrain --oracleprob 0.01 --bidderprob 0
 
 #	./bellman --gamma 2   --rounds 400 --constrain --oracleprob 0 --bidderprob 0.01 --write
 #	./bellman --gamma .2   --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
@@ -80,9 +84,11 @@ bellman_test: bellman
 #	./bellman --gamma 2     --rounds 500 --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 # Unconstrained 0 2.5 0.05 7 0.5 1.5 6.5 -0.0691835 0.068553 0.0550946
-# g01000 univ1 2 0.05   7   0.05 10     19.4462 -20.0157 -19.731
+#   gamma style: g01000 univ1                          2   0.05   7   0.05 10     19.4462 -20.0157 -19.731
+#   angle      : g01000 univ(1) 0.447214 -0.894427 153.435 0.05   7   0.05 10     8.50491 -19.82   -19.4188
+
 risk_check: bellman
-	./bellman --risk    --angle 90  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
+	./bellman --risk --angle 153.434949  --rounds 7  --constrain --oracleprob 0.01 --bidderprob 0 --write
 
 risk_test: bellman
 	./bellman --gamma 100  --rounds 100  --constrain --oracleprob 0 --bidderprob 0.05
@@ -101,11 +107,11 @@ reject_check: bellman
 # with these values chosen to match (don't know how to pick them from make input
 # so you have to define the constants here and match them in the make command.
 # Builds a directory in runs for these results, then files for each.
-n = 500
+n = 499
 
 # define expert by geometric rate 
-psi = 0.0500
-ptxt=   0500
+psi = 0.200
+ptxt=   2000
 
 # define expert by uniform n (one more than n)
 # psi =   251
@@ -132,7 +138,7 @@ runs/summary.reject_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/0.079 $(p
 	cat $(filter $(pp)/%,$^) >> $@
 
 
-runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/15 $(pp)/30 $(pp)/45 $(pp)/60 $(pp)/75 $(pp)/90 $(pp)/105 $(pp)/120 $(pp)/135 $(pp)/150 $(pp)/165 $(pp)/180 $(pp)/195 $(pp)/210 $(pp)/225 $(pp)/240 $(pp)/255 $(pp)/270 $(pp)/285 $(pp)/300 $(pp)/315 $(pp)/330 $(pp)/345
+runs/summary.risk_psi$(ptxt)_n$(n): bellman bellman.sh $(pp)/0 $(pp)/15 $(pp)/30 $(pp)/45 $(pp)/60 $(pp)/75 $(pp)/90 $(pp)/105 $(pp)/120 $(pp)/135 $(pp)/150 $(pp)/165 $(pp)/180 $(pp)/195 $(pp)/210 $(pp)/225 $(pp)/240 $(pp)/255 $(pp)/270 $(pp)/285 $(pp)/300 $(pp)/315 $(pp)/330 $(pp)/345 $(pp)/350 $(pp)/355
 	rm -f $@
 	cat $(filter $(pp)/%,$^) >> $@
 
