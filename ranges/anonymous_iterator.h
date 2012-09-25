@@ -19,24 +19,26 @@ template<class tag, class value>
 class anonymous_iterator_envelope;
 
 
+template <class BaseIter>
+inline
+anonymous_iterator_envelope<typename std::iterator_traits<BaseIter>::iterator_category,
+  typename std::iterator_traits<BaseIter>::value_type>
+  make_anonymous_iterator (const BaseIter& iter);
+
+
 template <class Iter>
 inline
 Ranges::range<anonymous_iterator_envelope<typename std::iterator_traits<Iter>::iterator_category,
 				  typename std::iterator_traits<Iter>::value_type> >
-make_anonymous_range (const Iter& b, const Iter& e)
-{
-  return Ranges::make_range(make_anonymous_iterator(b),make_anonymous_iterator(e));
-}
+  make_anonymous_range (const Iter& b, const Iter& e);
+
 
 
 template <class Range>
 inline
 Ranges::range<anonymous_iterator_envelope<typename range_traits<Range>::iterator_category,
   typename range_traits<Range>::value_type> >
-  make_anonymous_range (const Range& r)
-{
-  return Ranges::make_range(make_anonymous_iterator(Ranges::begin(r)),make_anonymous_iterator(Ranges::end(r)));
-}
+  make_anonymous_range (const Range& r);
 
 
 #include "anonymous_iterator.Template.h"
