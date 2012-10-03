@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
+#include <ios>
 
 namespace File_Utils {
   

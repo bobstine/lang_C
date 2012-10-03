@@ -11,14 +11,17 @@
   
 namespace File_Utils {
 
-  int count_fields (std::string const& fileName, int lineNumber = 0);
+  int
+    count_fields (std::string const& fileName, int lineNumber = 0);
 
   // Counts number of space delimited column fields on chosen line
 
   
-  int count_lines (std::string const& fileName);
+  int
+    count_lines (std::string const& fileName);
 
-  // Counts the number of lines found in the text file. 
+  // Counts the number of lines found in the text file.
+
 
 }
 
