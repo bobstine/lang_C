@@ -16,7 +16,7 @@ PROJECT_NAME = auction
 
 USES =  eigen spline ranges random utils 
 
-OPT = -O2 -fopenmp
+OPT = -O2 -fopenmp -std=c++11
 
 EXTERNAL_USES = boost_thread gomp
 
