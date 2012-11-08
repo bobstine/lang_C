@@ -4,6 +4,10 @@
 
 #include <sstream>
 
+// trim string
+#include <boost/algorithm/string.hpp>  
+
+
 FeatureABC::Arguments
 FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Arguments const& a2) const
 {
@@ -35,6 +39,7 @@ void
 FeatureABC::add_attributes_from_paired_list (std::string list)
 {
   // std::cout << "TESTING: adding attributes from space-delimited paired list " << list << std::endl;
+  boost::algorithm::trim(list);
   std::istringstream iss (list);
   iss >> std::ws;
   while (!iss.eof())

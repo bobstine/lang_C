@@ -249,7 +249,7 @@ main(int argc, char** argv)
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
-  // parasitic experts
+  // scavenger experts
   theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
@@ -290,18 +290,18 @@ main(int argc, char** argv)
   std::vector< FeatureVector> featureStreams(streamNames.size());
   { bool     hasLockStream (lockedStream.size() > 0);
     double   alphaShare    (totalAlphaToSpend/streamNames.size());
-    double   alphaMain     (alphaShare * hasLockStream ? 0.40 : 0.6 );
-    double   alphaInt      (alphaShare * hasLockStream ? 0.31 : 0.40);
-    double   alphaCP       (alphaShare * hasLockStream ? 0.29 : 0);
+    double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
+    double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
+    double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
     for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
+    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
       theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
-				   make_interaction_stream("Interactions within " + streamNames[s],
+				   make_interaction_stream("within " + streamNames[s],
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
@@ -325,7 +325,7 @@ main(int argc, char** argv)
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // number components, standardize? (0 means use sing values)
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
 						    30))) ;                                                          // bundle size
 
   //   RKHS stream

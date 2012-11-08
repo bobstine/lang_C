@@ -117,7 +117,7 @@ InteractionFeature::make_dependence_map()
     mDependenceMap[mFeature2] += 1;
   else
     std::for_each(two.begin(), two.end(),
-		  [&mDependenceMap] (DependenceMap::value_type const& p) { mDependenceMap[p.first]+=p.second; }
+		  [&] (DependenceMap::value_type const& p) { mDependenceMap[p.first]+=p.second; }
 		  );
 }
 
@@ -275,14 +275,12 @@ FeatureSource::initialize (std::vector<Column> cols)
   { Feature f(*it);                       // convert column to feature 
     if (!f->has_attribute("stream"))      // assign to default stream
       f->set_attribute("stream", "MAIN");
-    else
-    { std::string streamName (f->attribute_str_value("stream"));
-      if(streams.find(streamName) == streams.end())
-      { streams.insert(streamName);
-	mStreams.push_back(streamName);   // add new stream name to ordered list of names
-      }
-    mFeatures.push_back(f);
+    std::string streamName (f->attribute_str_value("stream"));
+    if(streams.find(streamName) == streams.end())
+    { streams.insert(streamName);
+      mStreams.push_back(streamName);     // add new stream name to ordered list of names
     }
+    mFeatures.push_back(f);
   }
 }
 

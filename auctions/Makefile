@@ -18,7 +18,8 @@ USES =  eigen spline ranges random utils
 
 OPT = -O2 -fopenmp -std=c++11
 
-EXTERNAL_USES = boost_thread gomp
+#  thread builds without gomp, but needed for auction
+EXTERNAL_USES = boost_system boost_thread gomp
 
 ###########################################################################
 #

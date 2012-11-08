@@ -57,7 +57,7 @@ LightThread<W>::LightThread(std::string name, const W& worker)
 // copy constructor operates by default via smart pointers
 template<class W>
 LightThread<W>::LightThread(const LightThread<W>& rhs)
-  : mName(rhs.name),
+  : mName(rhs.mName),
     mp_done(),
     mp_worker(),
     mp_thread(),

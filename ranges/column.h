@@ -116,9 +116,7 @@ class Column
     mData->mDescription = description;
     double *x (mData->mBegin);  
     while(n--)
-    { int result;
-      result = fscanf(fp, "%lf", x++);
-    }
+      fscanf(fp, "%lf", x++);
     mData->init_properties();
   }
 
@@ -224,7 +222,7 @@ insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap);
 
 
 
-// This version makes columns from an input file using C io ratther than C++
+// This version makes columns from an input file using C io rather than C++ (faster this way)
 
 class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 {
