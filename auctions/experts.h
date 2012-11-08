@@ -185,8 +185,9 @@ inline
 std::ostream&
 operator<< (std::ostream& os, std::vector<Expert> const& experts)
 {
+  os << "Experts: " << std::endl;
   for (int i=0; i<(int)experts.size(); ++i)
-    os << "      " << experts[i] << std::endl;
+    os << "\t" << experts[i] << std::endl;
   return os;
 }
 

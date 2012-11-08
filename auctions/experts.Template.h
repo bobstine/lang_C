@@ -23,6 +23,6 @@ void
 {
   ExpertABC::print_to(os);
   // the rest might be too much
-  os << " -- ";
+  os << ", stream ";
   mStream.print_to(os);
 }

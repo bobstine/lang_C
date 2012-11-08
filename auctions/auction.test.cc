@@ -250,11 +250,12 @@ main(int argc, char** argv)
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
   // scavenger experts
-  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
+  /*
+    theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
-  /*
+  
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree

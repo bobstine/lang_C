@@ -16,22 +16,22 @@ FeaturePredicates::mutually_exclusive_categories_from_same_parent(Feature const&
 
 
 bool
-FeaturePredicates::mutually_exclusive(Feature const& f1, Feature const& f2) 
+FeaturePredicates::share_common_parent(Feature const& f1, Feature const& f2) 
 {
   FeatureABC::DependenceMap d1 (f1->dependence_map());
   FeatureABC::DependenceMap d2 (f2->dependence_map());
-  //
+  // a feature is itself to first power
   if (d1.empty()) d1[f1]+=1;
   if (d2.empty()) d2[f2]+=1;
   // get parents of f1 and f2
+  auto pf ([](FeatureABC::DependenceMap::value_type const& p) { std::string par=p.first->attribute_str_value("parent"); return par.empty()?p.first->name():par;});
   std::set<std::string> p1;
-  std::for_each(d1.begin(), d1.end(), [&p1] (FeatureABC::DependenceMap::value_type const& p) { p1.insert(p.first->attribute_str_value("parent")); } );
+  std::for_each(d1.begin(), d1.end(), pf);
   std::set<std::string> p2;
-  std::for_each(d2.begin(), d2.end(), [&p2] (FeatureABC::DependenceMap::value_type const& p) { p2.insert(p.first->attribute_str_value("parent")); } );
-  //  std::cout << "TESTING: parents are " << p1 << " ---  " << p2 << std::endl;
-  // exclusive if share a common parent
+  std::for_each(d2.begin(), d2.end(), pf);
+  // std::cout << f1->name() << " has " << p1.size() << " parents '" << p1 << "'  ---   " << "Those of " << f2->name() << " are '" << p2 << "'" << std::endl;
   for(std::set<std::string>::const_iterator it = p1.begin(); it != p1.end(); ++it)
-    if (p2.find(*it)!=p2.end())  // mutually exclusive if we find any common parent
+    if (p2.find(*it)!=p2.end())
       return true;
   return false;
 }

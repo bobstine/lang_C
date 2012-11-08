@@ -127,8 +127,11 @@ Auction<ModelClass>::auction_next_feature ()
   }
   else
   { const unsigned int len (40);
-    debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid
-		    << " on " << features.size() << " features, led by " << features[0]->name() << std::endl;
+    if (1 == features.size())
+      debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid << " on " << features[0]->name() << std::endl;
+    else
+      debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid << " on "
+		      << features.size() << " features, starting with " << features[0]->name() << std::endl;
     debug("AUCT",3) << "Winning expert " << expert << std::endl;
   }
   // build variables for testing, conversion adjusts for initial context rows
