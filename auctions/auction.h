@@ -34,7 +34,7 @@ private:
   const double        mPayoffTaxRate;     //                       payoff
   const int           mBlockSize;
   double              mRecoveredAlpha;    // collected from experts that expired
-  bool                mHasActiveExpert;
+  bool                mTerminating;
   bool                mCalibrateFit;      // use calibration
   std::string         mCalibrationSignature;
   int                 mRound;          
@@ -55,7 +55,7 @@ private:
     }
     
   Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mHasActiveExpert(true),
+    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
   
@@ -65,7 +65,7 @@ private:
   int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
   double                 total_expert_alpha ()      const;
   double                 recovered_alpha()          const { return mRecoveredAlpha; }
-  bool                   has_active_expert()        const { return mHasActiveExpert; }
+  bool                   is_terminating()           const { return mTerminating; }
   StringVec              purged_expert_names()      const { return mPurgedExpertNames; }
 									 
   int                    number_of_predictors()     const { return mModel.dimension(); }
@@ -89,6 +89,7 @@ private:
   void                     write_header_to_progress_stream ()                            const;
 
   int                      purge_empty_experts();
+  bool                     have_available_bid();
   std::pair<Expert,double> collect_bids();
   double                   tax_bid(Expert e, double bid);
   double                   pay_winning_expert (Expert e, FeatureVector const& fv);

@@ -348,7 +348,7 @@ main(int argc, char** argv)
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     double totalTime (0.0);
-    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
+    while(round<numberRounds && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
       clock_t start;
       start = clock();

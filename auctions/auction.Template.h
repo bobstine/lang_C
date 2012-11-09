@@ -106,18 +106,18 @@ Auction<ModelClass>::auction_next_feature ()
   debug("AUCT",2) << "\n\nBeginning auction round #" << mRound << std::endl; 
   // reap empty custom experts 
   purge_empty_experts();
-  // identify expert with highest total bid; collect_bids writes name, alpha, bid to os
-  std::pair<Expert,double> winner (collect_bids());  
-  Expert  expert = winner.first;
-  double  bid    = winner.second;
-  // handle tax on bid
-  double afterTaxBid = tax_bid(expert, bid);
-  if (0.0 == afterTaxBid) 
-  { mHasActiveExpert = false;
+  if (!have_available_bid())
+  { mTerminating = true;
     debug("AUCT",0) << "Auction does not have an active expert to bid; terminating.\n";
     if (mProgressStream) mProgressStream << std::endl;
     return false;
-  } 
+  }
+  // identify expert with highest bid; collect_bids writes name, alpha, bid to os
+  std::pair<Expert,double> winner (collect_bids());  
+  Expert  expert = winner.first;
+  double  bid    = winner.second;
+  double  afterTaxBid = tax_bid(expert, bid);
+  assert(afterTaxBid > 0);
   // extract chosen features, optionally print name of first
   FeatureVector features (expert->feature_vector());
   if (features.empty())
@@ -204,6 +204,27 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature a
 }   
       
 					   
+
+template<class ModelClass>
+bool
+Auction<ModelClass>::have_available_bid()
+{
+  BiddingHistory const history  (auction_history());
+  bool haveBid          (false);
+  bool haveActiveExpert (false);
+  while( !haveBid || haveActiveExpert )
+  { haveActiveExpert = false;
+    for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
+    { if ((*it)->is_active())
+	haveActiveExpert = true;
+      else
+	haveBid = haveBid || (0 < (*it)->place_bid(history));
+    }
+  }
+  return haveBid;
+}  
+
+
 namespace {
   double maximum (double a, double b) { return (a>b)?a:b; }
 }

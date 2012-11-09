@@ -89,7 +89,7 @@ public:
 
   int            number_remaining()          const;
 
-  bool           is_busy()                   const;
+  bool           is_active()                 const;
   bool           is_empty()                  const;
   bool           has_feature();
   FeatureVector  pop();

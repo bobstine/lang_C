@@ -57,9 +57,9 @@ void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
   bool busy = false;
   bool has = false;
   // test whether has feature first, since that test might make it busy
-  while (( (has=fs.has_feature()) || (fs.is_busy()) ) && loopLimit--)
+  while (( (has=fs.has_feature()) || (fs.is_active()) ) && loopLimit--)
   {
-    std::cout << "TEST_drain: At top, is_busy=" << fs.is_busy() << "  has_feature=" << fs.has_feature() << "\n";
+    std::cout << "TEST_drain: At top, is_active=" << fs.is_active() << "  has_feature=" << fs.has_feature() << "\n";
     boost::this_thread::sleep(workTime);
     if (fs.has_feature())
     { std::vector<Feature> fv (fs.pop());

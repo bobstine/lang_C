@@ -71,8 +71,7 @@ public:
       mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   ExpertABC(std::string name, ExpertRole role, int skip, double alpha)
-    : mName(name), mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha),
-      mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+    : mName(name), mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   std::string            name()                             const { return mName; }
   std::string            name(unsigned int maxlen)          const { if(mName.size()<maxlen) return mName; else return mName.substr(0,maxlen); } 
@@ -81,14 +80,14 @@ public:
   int                    skip()                             const { return mSkip; }
   double                 alpha()                            const { return mAlpha; }
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
-  bool                   finished()                               { if(mRole!=custom) return false;  return ((mAlpha <= 0.0) || !has_feature());}
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
-
+  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || (!is_active() && !has_feature());}
+  
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   virtual std::string    description()                      const = 0;  
-  virtual double         place_bid (BiddingHistory const& state)  = 0; 
+  virtual double         place_bid(BiddingHistory const& state)  = 0; 
   virtual std::string    feature_name()                     const = 0;
   virtual FeatureVector  feature_vector()                         = 0;
   
@@ -100,8 +99,9 @@ public:
 
   virtual void           print_to(std::ostream& os) const;
 
-  double                 max_bid      ()     const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
-  virtual bool           has_feature() = 0;
+  double                 max_bid()           const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
+  virtual bool           has_feature()              = 0;
+  virtual bool           is_active()         const  = 0;
 
 private:
   std::string            role_string() const;
@@ -134,10 +134,10 @@ public:
   std::string         feature_name()                const     { return mStream.feature_name(); }       
   FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
 
-  virtual void        print_to(std::ostream& os) const;
+  virtual void        print_to(std::ostream& os)    const;
 
   bool                has_feature()                           { return mStream.has_feature(); }
-
+  bool                is_active()                   const     { return mStream.is_active(); } 
 };
 
 

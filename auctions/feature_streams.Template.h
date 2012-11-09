@@ -33,7 +33,7 @@ template<class Iterator, class Trans>
 
 template<class Iterator, class Trans>
   bool
-  FeatureStream<Iterator, Trans>::is_busy()                   const
+  FeatureStream<Iterator, Trans>::is_active()                   const
 {
   return !mpThread->done();
 }
@@ -55,7 +55,7 @@ template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator,Trans>::const_has_feature()       const
 {
-  if (is_busy() || is_empty())  // does not try to make feature
+  if (is_active() || is_empty())  // does not try to make feature
     return false;
   else
     return true;
@@ -66,7 +66,7 @@ template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator,Trans>::has_feature()
 {
-  if (is_busy())
+  if (is_active())
     return false;
   else if (is_empty())          // start to make next
   { make_features();
