@@ -231,15 +231,15 @@ LinearRegression::is_invalid_ss (double ss, double ssz)          const
   const    double    epsilon (1.0e-5);
   debugging::debug("REGR",4) << "Initial SSz = " << ss << " becomes " << ssz << " after sweeping." << std::endl; 
   if (ssz <= 0.0)
-  { debugging::debug("REGR",1) << " *** Error: SSz <= 0.0 in regresszion." << std::endl;
+  { debugging::debug("REGR",1) << " *** Error: SSz <= 0.0 in regression." << std::endl;
     return true;
   }
   if(std::isnan(ssz))
-  { debugging::debug("REGR",1) << " *** Error: SSz = NaN in regresszion." << std::endl;
+  { debugging::debug("REGR",1) << " *** Error: SSz = NaN in regression." << std::endl;
     return true;
   }
   if(std::isinf(ssz))
-  { debugging::debug("REGR",1) << " *** Error: SSz = Inf in regresszion." << std::endl;
+  { debugging::debug("REGR",1) << " *** Error: SSz = Inf in regression." << std::endl;
     return true;
   }
   if(ssz/ss < epsilon)
