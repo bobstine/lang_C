@@ -538,8 +538,9 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     { Vector row (x_row(i));
       for (int j=1; j<(numX-1); ++j)  // skip intercept
 	os << row[j] << "\t";
-      os << row[numX-1] << std::endl;
+      os << row[numX-1];
     }
+    os << std::endl;
   }
 }
 
@@ -556,7 +557,7 @@ void
 ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 {
   if(useHTML)
-    os << "Cannot do HTML version at this point" << std::endl;
+    os << "*** Note *** Code for ValidatedRegression does not implement HTML version of model summary" << std::endl;
   os.precision(6);
   os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
   if(block_size() > 0)

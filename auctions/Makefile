@@ -53,6 +53,9 @@ data/%.dat: data/%.csv
 baseball_test: auction.test data/baseball.dat
 	./auction.test -f data/baseball.dat -p 1 -r 500 -c 5
 
+quadratic_test: auction.test data/quadratic_from_R.dat
+	./auction.test -f data/quadratic_from_R.dat --protection 1 --rounds 2000 --calibration-gap 5 --alpha 0.25 --output-x 10
+
 crash_test: auction.test
 	./auction.test -f data/crash.dat -r 100 -c 5
 

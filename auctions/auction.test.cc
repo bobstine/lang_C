@@ -118,12 +118,12 @@ main(int argc, char** argv)
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
   std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
-  int           protection           (3);
-  bool          useShrinkage         (false);
-  int           shrink               (0);
-  int           blockSize            (0);                                   // no blocking implies standard testing
+  int           protection           (  3);
+  bool          useShrinkage       (false);
+  int           shrink               (  0);
+  int           blockSize            (  0);                                   // no blocking implies standard testing
   int           numberRounds         (200);
-  int           numOutputColumns     (0);
+  int           numOutputPredictors    (0);
   // int           splineDF             (0);
   int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
@@ -132,7 +132,7 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
 		  blockSize, numberRounds, totalAlphaToSpend,
-		  calibrationGap, prefixCases, debugLevel, numOutputColumns);
+		  calibrationGap, prefixCases, debugLevel, numOutputPredictors);
   if(useShrinkage) shrink = 1;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -148,7 +148,7 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
-		  << " --output-cols=" << numOutputColumns  
+		  << " --output-x=" << numOutputPredictors  
 		  << " --alpha=" << totalAlphaToSpend << " --calibration-gap=" << calibrationGap << " --extra-cases=" << prefixCases
 		  << std::endl;
   
@@ -400,7 +400,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
     } 
-    theAuction.write_model_data_to(output, numOutputColumns);
+    theAuction.write_model_data_to(output, numOutputPredictors);
     output.close();
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
@@ -419,7 +419,7 @@ parse_arguments(int argc, char** argv,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &gap,        int    &prefixCases,
-		int    &debugLevel, int    &numOutputColumns)
+		int    &debugLevel, int    &numOutputPredictors)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -431,7 +431,7 @@ parse_arguments(int argc, char** argv,
 	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
-	  {"output-columns",    1, 0, 'k'},  // has arg
+	  {"output-x",          1, 0, 'k'},  // has arg
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
@@ -474,7 +474,7 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'k' : 
 	    {
-	      numOutputColumns = read_utils::lexical_cast<int>(optarg);
+	      numOutputPredictors = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'o' :  
