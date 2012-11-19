@@ -1,5 +1,3 @@
-// $Id: cutt.cc,v 1.2 2008/01/03 04:06:15 bob Exp $
-
 /*
   This filter reads records from standard input and cuts out the
   indicated columns. The output columns are separated by a tab
