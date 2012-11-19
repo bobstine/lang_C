@@ -12,7 +12,8 @@ Line_Search::Bisection::operator()(F const& f) const
   double left  (f(mInterval.first));
   double right (f(mInterval.second));
   if (left*right > 0)
-  { std::cerr << "LINE_SEARCH: Error. Zero of input function not on this range."<< std::endl;
+  { std::cerr << "LINE_SEARCH: Error. Zero of input function not on this range; f("
+	      << mInterval.first << ")=" << left << "   f(" << mInterval.second << ")=" << right << std::endl;
     return 0;
   }
   else if (left < right)               // monotone increasing
