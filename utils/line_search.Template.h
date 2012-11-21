@@ -1,7 +1,37 @@
+#ifndef LINE_SEARCH_TEMPLATE_H
+#define LINE_SEARCH_TEMPLATE_H
+
 #include "line_search.h"
 #include "math.h"
 #include <iostream>
 
+
+template <class Vec>
+double
+Line_Search::invert_monotone(double y, int i0, Vec const& yVec)
+{
+  if (yVec[0] < yVec[1])
+    return Line_Search::invert_monotone(y,i0,yVec,std::greater<double>());
+  else
+    return Line_Search::invert_monotone(y,i0,yVec,std::less<double>());
+}
+
+template <class Vec, class Comp>
+  double
+  Line_Search::invert_monotone(double y, int i0, Vec const& yVec, Comp const& comp)
+{
+  int last (yVec.size()-1);
+  if (comp(yVec[0], y) || comp(y, yVec[last]))
+  { std::cerr << "LINE_SEARCH: " << " y=" << y << " out of bounds in vector "
+	      << yVec[0] << " to " << yVec[last] << std::endl;
+    return 0;
+  }
+  while (!comp(yVec[i0],y))  // has to be an i0 which is eventually less... should make go faster with bisection
+    ++i0;
+  double lo (yVec[i0-1]);
+  double hi (yVec[i0  ]);
+  return (i0-1)+(y-lo)/(hi-lo);
+}
 
 
 template <class F>
@@ -119,7 +149,7 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
     }
   }
   if (mMaxIterations == i)
-    std::cout << "GSRC:  Warning.  Golden section reached maximum number of iterations.\n";
+    std::clog << "GSRC:  Warning.  Golden section reached maximum number of iterations.\n";
   x = 0.5 * (xLo.first + xHi.first);
   return(std::make_pair(x,f(x)));
 }
@@ -139,3 +169,5 @@ Line_Search::GoldenSection::find_maximum(Func const& f) const
 {
   return optimize(f, std::greater<double>());
 }
+
+#endif
