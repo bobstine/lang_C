@@ -1,3 +1,6 @@
+#ifndef LINE_SEARCH_TEMPLATE_H
+#define LINE_SEARCH_TEMPLATE_H
+
 #include "line_search.h"
 #include "math.h"
 #include <iostream>
@@ -138,3 +141,5 @@ Line_Search::GoldenSection::find_maximum(Func const& f) const
 {
   return optimize(f, std::greater<double>());
 }
+
+#endif
