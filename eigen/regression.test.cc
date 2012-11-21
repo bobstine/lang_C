@@ -12,7 +12,7 @@
 
 
 
-#define USE_WLS
+// #define USE_WLS
 
 
 
@@ -92,8 +92,9 @@ int main(int, char **)
     output << data << std::endl;
   }
   
-  if (false)  // basic test of the linear regression routine, adding variables one at a time
-  {
+  if (true)
+  { std::cout << "\n\nTEST: basic test of the linear regression routine, adding variables one at a time." << std::endl;
+
     double mean (y.sum()/y.size());
     std::cout << "TEST:  y-bar is " << mean << std::endl;
     std::cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << std::endl;
@@ -111,13 +112,15 @@ int main(int, char **)
     std::cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << std::endl;
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[0] " << std::endl << regr << std::endl;
-    std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: Beta     = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: se(beta) = " << regr.se_beta().transpose() << std::endl;
     std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << std::endl;
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[1] " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: se(beta) = " << regr.se_beta().transpose() << std::endl;
     std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: Several rows of X" << std::endl;
@@ -128,6 +131,7 @@ int main(int, char **)
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
+    std::cout << "TEST: se(beta) = " << regr.se_beta().transpose() << std::endl;
     std::cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << std::endl << std::endl;
 
     std::cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << std::endl;
@@ -158,7 +162,7 @@ int main(int, char **)
   }
 
 
-  if (true)   // check validation model (dup validation and estimation cases)
+  if (false)   // check validation model (dup validation and estimation cases)
   { clock_t start;
     // assemble data
     std::cout << "TEST: Testing validated model\n";

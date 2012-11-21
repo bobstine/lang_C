@@ -41,9 +41,9 @@ int main(int, char**)
     std::cout << "main: startup" << std::endl;
 
     {
-      LightThread<Worker> w3;
+      LightThread<Worker> w3("Lt:w3");
       w3(Worker(3));
-      LightThread<Worker> w2(Worker(2));
+      LightThread<Worker> w2("Lt:w2",Worker(2));
       LightThread<Worker> w4(w3);
       if(w2.done())
 	std::cout << "Probably running without threads." << std::endl;

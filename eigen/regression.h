@@ -56,12 +56,12 @@ private:
   StringVec                mXNames;
   Vector                   mY;             // original response
   bool                     mBinary;        // y is in {0,1}
-  Vector                   mLambda;
+  Vector                   mLambda;        // shrinkage parameter
   Vector                   mGamma;         // coefficients of the orthogonal regression
   Vector                   mResiduals;
-  mutable Matrix           mQ, mR;         // only changes are in the latter columns past Kth
-  mutable StringVec        mTempNames;
-  mutable int              mTempK;         // number of predictors last tried, form last mTempDim columns of Q
+  Matrix    mutable        mQ, mR;         // only changes are in the latter columns past Kth
+  StringVec mutable        mTempNames;
+  int       mutable        mTempK;         // number of predictors last tried, these are last mTempDim columns of Q
   double                   mResidualSS;
   double                   mTotalSS;
   

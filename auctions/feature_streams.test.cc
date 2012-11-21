@@ -36,7 +36,7 @@ public:
   int n_total_cases()           const  { return mCases; }
   double y_bar()                const  { return 0.0; }
   
-  void fill_with_fit(double *x) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
+  void fill_with_fit(double *x, bool) const  { for (int i=0; i<mCases;++i) *x++ = 2*i; }
   
   std::vector<std::string> predictor_names() const { std::vector<std::string> names; names.push_back("test"); return names; }
 };
@@ -57,9 +57,9 @@ void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
   bool busy = false;
   bool has = false;
   // test whether has feature first, since that test might make it busy
-  while (( (has=fs.has_feature()) || (fs.is_busy()) ) && loopLimit--)
+  while (( (has=fs.has_feature()) || (fs.is_active()) ) && loopLimit--)
   {
-    //    std::cout << "TEST_drain: At top, is_busy=" << fs.is_busy() << "  has_feature=" << fs.has_feature() << "\n";
+    std::cout << "TEST_drain: At top, is_active=" << fs.is_active() << "  has_feature=" << fs.has_feature() << "\n";
     boost::this_thread::sleep(workTime);
     if (fs.has_feature())
     { std::vector<Feature> fv (fs.pop());
@@ -113,7 +113,7 @@ main()
   }
 
   
-  if (true)         // test dynamic stream
+  if (false)         // test dynamic stream
   {
     std::cout << "\n\nTEST: dynamic stream\n";
     FeatureVector fv;
@@ -182,11 +182,12 @@ main()
   if (false)    // test calibration stream
   {
     std::cout << "\n\nTEST: making calibration stream\n";
-    int degree = 3;
-    int skip = 0;
+    int  const degree = 3;
+    int  const skip = 0;
+    bool const binaryResponse (false);
     Model model (featureVec1, featureVec2);
 
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, "Y_hat_", skip));
+    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, "Y_hat_", skip, binaryResponse));
     std::cout << cs << std::endl;
     std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
     model.increment_q();
@@ -205,12 +206,17 @@ main()
   }
 
     
-  if (false)     // test interactions
-  { std::cout << "\n\nTEST:  Test of interaction stream.\n";
-    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, false));  // use squares?
+  if (true)     // test interactions
+  { bool const useSquares (true);
+    std::cout << "\n\nTEST:  Test of interaction stream.\n";
+    FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, useSquares));
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
-    
-    std::cout << "TEST: has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST: Cross-product stream has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST:   on second call,    has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST:       third call,    has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST:      fourth call,    has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST:       fifth call,    has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST:       sixth call,    has_feature = " << is.has_feature() << std::endl;
     is.print_to(std::cout); std::cout << std::endl;
     drain_features(is,30);
   }
@@ -218,8 +224,9 @@ main()
   
   if (false)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
-    FeatureStream< CrossProductIterator, Identity > cp (make_cross_product_stream("test", featureVec1, featureVec2));
-    std::cout << "TEST: has_feature = " << cp.has_feature() << std::endl;
+    FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity > cp (make_cross_product_stream("test", featureVec1, featureVec2));
+    std::cout << "TEST: Cross-product stream has_feature = " << cp.has_feature() << std::endl;
+    std::cout << "TEST: On second call,    has_feature = " << cp.has_feature() << std::endl;
     drain_features(cp,10);
   }
 

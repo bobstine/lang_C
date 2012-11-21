@@ -18,7 +18,7 @@
 */
 
 
-#include "read_utils.h"
+#include "/Users/bob/C/utils/read_utils.h"
 
 #include <iostream>
 #include <iomanip>
@@ -34,11 +34,11 @@
 void
 parse_arguments(int argc, char** argv,
 		std::string &inputFile, std::string &outputFile,
-		int &idCol, int &ansCol, int &nQues, bool &multVersions);
+		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions);
 
 int
 process (std::istream& input, std::ostream& output,
-	 int idColumn, int answerColumn, int nQuestions,   // zero based
+	 int nameCol, int idColumn, int answerColumn, int nQuestions,   // zero based
 	 bool multVersions);
 
 
@@ -59,16 +59,18 @@ main(int argc, char** argv)
   // default is io via stdin and stdout
   std::string       inputFile     ("");
   std::string       outputFile    ("");
+  int               nameColumn    ( 0);
   int               idColumn      (29);     // all are zero based
   int               answerColumn  (38);
   int               nQuestions    (44);
   bool              multVersions  (false);
 
-  parse_arguments(argc, argv, inputFile, outputFile, idColumn, answerColumn, nQuestions, multVersions);
+  parse_arguments(argc, argv, inputFile, outputFile, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
   { std::string vStr ("");
     if (multVersions) vStr = "-v";
     std::cout << "process_grades -f " << inputFile << " -o " << outputFile
-	      <<" -i " << idColumn << " -a " << answerColumn << " -q " << nQuestions << vStr << std::endl;
+	      << " -n " << nameColumn <<" -i " << idColumn << " -a " << answerColumn
+	      << " -q " << nQuestions << vStr << std::endl;
   }
   std::ifstream input (inputFile.c_str());
   if(!input)
@@ -78,18 +80,19 @@ main(int argc, char** argv)
   std::ofstream output (outputFile.c_str());
   if(!output)
   { std::cout << "No output file supplied; results going to standard output." << std::endl;
-    return process(input, std::cout, idColumn, answerColumn, nQuestions, multVersions);
+    return process(input, std::cout, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
   }
   else
   { std::cout << "Results going to file " << outputFile << std::endl;
-    return process(input, output, idColumn, answerColumn, nQuestions, multVersions);
+    return process(input,    output, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
   }
 }
 
 ///////////////////////////  process  ////////////////////////////////////////////
 
 int
-process (std::istream& input, std::ostream& output, int idColumn, int answerColumn, int nQuestions, bool multVersions)
+process (std::istream& input, std::ostream& output,
+	 int nameColumn, int idColumn, int answerColumn, int nQuestions, bool multVersions)
 {
   if(!input)
   { std::cerr << "Could not open the indicated input stream.\n";
@@ -126,8 +129,8 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
   int firstQuestion(0);
   while(std::getline(input,line))
   {
-    names.push_back(line.substr(0,20));              // 20 char for name
-    ids.push_back(  line.substr(idColumn,8));
+    names.push_back(line.substr(nameColumn, 20));              // 20 char for name
+    ids.push_back(  line.substr(  idColumn,  8));
     std::cout << "Processing grades for " << names[student] << std::endl;
     studentTotal.push_back(0);
     correctArray.push_back(std::vector<int>(nQuestions,0));
@@ -203,7 +206,7 @@ process (std::istream& input, std::ostream& output, int idColumn, int answerColu
 void
 parse_arguments(int argc, char** argv,
 		std::string &inputFile, std::string &outputFile,
-		int &idCol, int &ansCol, int &nQues, bool &multVersions)
+		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions)
 {
   int key;
   while (1)                              // read until empty key causes break
@@ -212,12 +215,13 @@ parse_arguments(int argc, char** argv,
       {"input-file",        required_argument, 0, 'f'},  // has arg,
       {"output-file",       required_argument, 0, 'o'},  // has arg,
       {"questions",         required_argument, 0, 'q'},  // has arg,
+      {"name-column",       required_argument, 0, 'n'},
       {"id-column",         required_argument, 0, 'i'},  // has arg,
       {"answer-column",     required_argument, 0, 'a'},  // has arg,
       {"multiple-versions",       no_argument, 0, 'v'},  //  no arg
       {0, 0, 0, 0}                       // terminator 
     };
-    key = getopt_long (argc, argv, "f:o:q:i:a:v", long_options, &option_index);
+    key = getopt_long (argc, argv, "f:o:q:n:i:a:v", long_options, &option_index);
     // std::cout << "Key  " << key << "  optarg " << optarg << std::endl;
     if (key == -1)
       break;
@@ -234,6 +238,10 @@ parse_arguments(int argc, char** argv,
     case 'q' :
       {
 	nQues = read_utils::lexical_cast<int>(optarg);   break;
+      }
+    case 'n' :
+      {
+	nameCol = read_utils::lexical_cast<int>(optarg);   break;
       }
     case 'i' :
       {

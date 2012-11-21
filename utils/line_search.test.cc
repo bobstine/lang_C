@@ -1,5 +1,6 @@
 #include "line_search.Template.h"
 
+#include <vector>
 #include <utility>   // pair
 #include <math.h>
 #include <iostream>
@@ -23,6 +24,17 @@ int  main()
 
   double searchTolerance = 0.0001;
 
+  if (true)
+  { std::cout << "\n\nTEST: invert for position in vector" << std::endl;
+    std::vector<double> v(20);
+    for (unsigned int i=0;i<v.size(); ++i) v[i] = i;
+    std::cout << "TEST: Increasing, to find y=15. then x=" << Line_Search::invert_monotone(15.0,0,v) << std::endl;
+    std::cout << "TEST:             to find y=5.2 then x=" << Line_Search::invert_monotone( 5.2,0,v) << std::endl;
+    for (unsigned int i=0; i<v.size(); ++i) v[i] = -v[i];
+     std::cout << "TEST: Decreasing, to find y=-15. then x=" << Line_Search::invert_monotone(-15.0,0,v) << std::endl;
+     std::cout << "TEST:             to find y=-5.2 then x=" << Line_Search::invert_monotone(- 5.2,0,v) << std::endl;
+  }    
+      
   if (true)  // bisection search for zero
   { std::cout << "\nTEST: bisection\n" ;
     std::pair<double,double> interval (std::make_pair(0.1,4));

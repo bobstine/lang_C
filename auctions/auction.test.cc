@@ -118,12 +118,12 @@ main(int argc, char** argv)
   double        totalAlphaToSpend    (0.1);
   std::string   inputName            ("");                                  // empty implies cin
   std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
-  int           protection           (3);
-  bool          useShrinkage         (false);
-  int           shrink               (0);
-  int           blockSize            (0);                                   // no blocking implies standard testing
+  int           protection           (  3);
+  bool          useShrinkage       (false);
+  int           shrink               (  0);
+  int           blockSize            (  0);                                   // no blocking implies standard testing
   int           numberRounds         (200);
-  int           numOutputColumns     (0);
+  int           numOutputPredictors    (0);
   // int           splineDF             (0);
   int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
@@ -132,7 +132,7 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
 		  blockSize, numberRounds, totalAlphaToSpend,
-		  calibrationGap, prefixCases, debugLevel, numOutputColumns);
+		  calibrationGap, prefixCases, debugLevel, numOutputPredictors);
   if(useShrinkage) shrink = 1;
   
   // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -148,7 +148,7 @@ main(int argc, char** argv)
   // echo startup options to log file
   debug("AUCT",0) << "Echo of arguments...    --input-name=" << inputName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		  << " --protect=" << protection << " --shrinkage=" << shrink << " --blocksize=" << blockSize << " --rounds=" << numberRounds
-		  << " --output-cols=" << numOutputColumns  
+		  << " --output-x=" << numOutputPredictors  
 		  << " --alpha=" << totalAlphaToSpend << " --calibration-gap=" << calibrationGap << " --extra-cases=" << prefixCases
 		  << std::endl;
   
@@ -249,12 +249,13 @@ main(int argc, char** argv)
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   
-  // parasitic experts
-  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
+  // scavenger experts
+  /*
+    theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
-  /*
+  
   theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
 			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
@@ -290,18 +291,18 @@ main(int argc, char** argv)
   std::vector< FeatureVector> featureStreams(streamNames.size());
   { bool     hasLockStream (lockedStream.size() > 0);
     double   alphaShare    (totalAlphaToSpend/streamNames.size());
-    double   alphaMain     (alphaShare * hasLockStream ? 0.40 : 0.6 );
-    double   alphaInt      (alphaShare * hasLockStream ? 0.31 : 0.40);
-    double   alphaCP       (alphaShare * hasLockStream ? 0.29 : 0);
+    double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
+    double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
+    double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
     for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to the source experts for stream " << streamNames[s] << std::endl;	
+    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
       theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
-				   make_interaction_stream("Interactions within " + streamNames[s],
+				   make_interaction_stream("within " + streamNames[s],
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
@@ -325,7 +326,7 @@ main(int argc, char** argv)
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // number components, standardize? (0 means use sing values)
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
 						    30))) ;                                                          // bundle size
 
   //   RKHS stream
@@ -347,7 +348,7 @@ main(int argc, char** argv)
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     double totalTime (0.0);
-    while(round<numberRounds && theAuction.has_active_expert() && theAuction.model().residual_df()>minimum_residual_df)
+    while(round<numberRounds && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
       clock_t start;
       start = clock();
@@ -399,7 +400,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
       return 2;
     } 
-    theAuction.write_model_data_to(output, numOutputColumns);
+    theAuction.write_model_data_to(output, numOutputPredictors);
     output.close();
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
@@ -418,7 +419,7 @@ parse_arguments(int argc, char** argv,
 		int    &nRounds,
 		double &totalAlpha,
 		int    &gap,        int    &prefixCases,
-		int    &debugLevel, int    &numOutputColumns)
+		int    &debugLevel, int    &numOutputPredictors)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -430,7 +431,7 @@ parse_arguments(int argc, char** argv,
 	  {"calibration-gap",   1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,
 	  {"input-file",        1, 0, 'f'},  // has arg,
-	  {"output-columns",    1, 0, 'k'},  // has arg
+	  {"output-x",          1, 0, 'k'},  // has arg
 	  {"output-path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
@@ -473,7 +474,7 @@ parse_arguments(int argc, char** argv,
 	    }
 	  case 'k' : 
 	    {
-	      numOutputColumns = read_utils::lexical_cast<int>(optarg);
+	      numOutputPredictors = read_utils::lexical_cast<int>(optarg);
 	      break;
 	    }
 	  case 'o' :  

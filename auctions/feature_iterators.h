@@ -263,8 +263,13 @@ operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { 
 
 //     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     
 
-/*  Allows combination of two dynamically growing vectors. You *must* guarantee                                 
-    that the sources remain "alive" for the duration of the application.                                        
+/*  Allows combination of two dynamically growing vectors. Since
+    accessed through a persistent const reference,
+
+         * you must guarantee *
+
+    that the sources remain "alive" for the duration of the
+    application.
                                                                                                                 
     Suppose the fast source has 4 elements.  Then                                                               
                                                                                                                 

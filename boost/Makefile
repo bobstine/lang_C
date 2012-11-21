@@ -14,18 +14,6 @@ OPT = -O2 -std=c++0x     # -DNDEBUG  this option kills benefit of assert
 
 USES = utils 
 
-# Use this for boost files that need compilation
-#
-# To build boost (it takes quite a few minutes to build)
-#
-#	cd /usr/local/src/boost.latest.version
-#   	sudo ./configure
-#   	sudo make install
-#
-# These build quite a few libraries in /usr/local/lib.  Access these libraries
-# as shown below by setting the appropriate EXTERNAL_USES names. 
-#
-
 EXTERNAL_USES = boost_regex boost_thread
 
 ###########################################################################

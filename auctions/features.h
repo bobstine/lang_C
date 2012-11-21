@@ -123,7 +123,7 @@ operator<< (std::ostream& os, Feature const& feature)
   feature->print_to(os);
   FeatureABC::DependenceMap m = feature->dependence_map();
   if (!m.empty())
-  { os << "\n                 Dependence map is   { ";
+  { os << std::endl << "                 Dependence map is   { ";
     std::for_each(m.begin(), m.end(),
 		  [&os] (FeatureABC::DependenceMap::value_type const& p)
 		  { os << " (" << p.first->name();
@@ -165,7 +165,7 @@ class ColumnFeature : public FeatureABC
   Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
- ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c) { add_attributes_from_paired_list(c->description()); }
+ ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
 
   std::string class_name()     const { return "ColumnFeature"; }
   std::string name()           const { return mColumn->name(); }
@@ -413,21 +413,17 @@ class FeatureSource
 
  FeatureSource(std::vector<Column> const& cols, int skip)    : mSkip(skip) { initialize(cols); }
 
-
   int             number_skipped_cases ()   const  { return mSkip; }
   int             number_of_streams  ()     const  { return (int) mStreams.size();  }
   std::string     stream_name(int i)        const  { return mStreams[i]; }
   StringVector    stream_names()            const  { return mStreams; }
   int             number_of_features ()     const  { return (int) mFeatures.size(); }
   
-  
   FeatureVector   features_with_attribute (std::string attr)                    const;
   FeatureVector   features_with_attributes(StringSet const& attrs)              const;
   FeatureVector   features_with_attribute (std::string attr, std::string value) const;
   
-  
   void print_summary (std::ostream& os)     const;
-  
   
  private:
   void initialize (std::vector<Column> cols);

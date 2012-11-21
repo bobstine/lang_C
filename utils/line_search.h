@@ -1,6 +1,9 @@
-/*
-  24 May 12 ... Add bisection for finding zero.
-  23 Jan 12 ... Define.  First code in long time.
+/* -*-c++-*-
+
+   20 Nov 12 ... Add invert_monotone to find x such that f[x] = y
+   24 May 12 ... Add bisection for finding zero.
+   23 Jan 12 ... Define.  First code in long time.
+
 */
 
 
@@ -15,8 +18,21 @@ namespace Line_Search
 {
   typedef std::pair<double,double>           Pair;
   typedef std::unary_function<double,double> scalar_function;
-
   
+  /*    invert_monotone     invert_monotone     invert_monotone     invert_monotone
+
+	find value x such that f[x]=w assuming f as given in vector is monotone
+  */
+
+  template <class Vec>
+    double
+    invert_monotone(double y, int i0, Vec const& yVec);
+  
+  template <class Vec, class Comp>
+    double
+    invert_monotone(double y, int i0, Vec const& yVec, Comp const& comp);
+  
+
   //     bisection     bisection     bisection     bisection     bisection     bisection     bisection     bisection     
   class Bisection        // finds zero
   {
@@ -51,11 +67,17 @@ namespace Line_Search
     
   public:
 
+    GoldenSection ()
+      : mTolerance(0), mGridSize(0), mInterval(std::make_pair(0,0)), mMaxIterations(0) { }
+    
+    GoldenSection (GoldenSection const& gs)
+      : mTolerance(gs.mTolerance), mGridSize(gs.mGridSize), mInterval(gs.mInterval), mMaxIterations(gs.mMaxIterations) { }
+    
     GoldenSection (double tolerance, Pair const& interval, double grid, int maxIterations)
       : mTolerance(tolerance), mGridSize (grid), mInterval(interval), mMaxIterations(maxIterations) { }
 
     GoldenSection (double tolerance, Pair const& interval)
-      : mTolerance(tolerance), mGridSize (0), mInterval(interval), mMaxIterations(100) { }
+      : mTolerance(tolerance), mGridSize (   0), mInterval(interval), mMaxIterations(   100       ) { }
 
     template< class Func >
       Pair find_minimum(Func const& f) const;
@@ -69,6 +91,8 @@ namespace Line_Search
       Pair optimize(Func const& f, Comp const& c) const;   // comp is comparison function
     
   };
+
+  
 }  // namespace
 
 

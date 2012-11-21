@@ -37,6 +37,8 @@ main ()
   // make columns
   Column  xColumn1  (name1.c_str(), "first column", n, x1);
   Column  xColumn2  ("duplicate", "second column", n, x1);
+  Column  xColumn3  ("has_role_x", "role x", n, x1);
+  Column  xColumn4  ("has_role_x2", "  role x ", n, x1);  // blanks were causing empty attribute
   Column  x2Column  (name2.c_str(), "x2 column",n, x2);
   Column  i1Column  ("Dummy_1", "i1", n, i1);
   Column  i2Column  ("Dummy_2", "i2", n, i2);
@@ -48,8 +50,11 @@ main ()
   std::vector<Column> colVec;
   colVec.push_back(xColumn1);
   colVec.push_back(xColumn2);
+  colVec.push_back(xColumn3);
+  colVec.push_back(xColumn4);
   colVec.push_back(x2Column);
 
+  std::cout << "TEST: Makeing Feature Source from vector of columns" << std::endl;
   FeatureSource fs(colVec,0);
   fs.print_summary(std::cout);
   
@@ -57,9 +62,9 @@ main ()
   Feature x   (xColumn1);
   Feature xx2 (x2Column);
   Feature dup (xColumn2);
-  x->add_attribute ("test", "value of test");
-  x->add_attribute ("test_int", "23423");
-  x->add_attribute ("test_dbl", "234.235");
+  x->set_attribute ("test", "value of test");
+  x->set_attribute ("test_int", "23423");
+  x->set_attribute ("test_dbl", "234.235");
   x->set_model_results(true, 0.04);
   std::cout << "TEST: average of feature is " << x->center() << std::endl;
   std::cout << "      feature attribute {test}     = " << x->has_attribute("test") << std::endl;
@@ -71,8 +76,8 @@ main ()
   // dummy variable features
   Feature d1 (i1Column);
   Feature d2 (i2Column);
-  d1->add_attribute("parent", "group");
-  d2->add_attribute("parent", "group");
+  d1->set_attribute("parent", "group");
+  d2->set_attribute("parent", "group");
   
   { // find name in feature vector
     FeatureVector fv;

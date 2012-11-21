@@ -64,8 +64,7 @@ main()
   std::cout << "TESTING: name is " << f0->name() << std::endl;
   std::cout << "TEST: Feature from column 0 is " << f0 << std::endl;
   
-  FeatureVector features;
-  FeatureVector featureVec1,  featureVec2;
+  FeatureVector features, featureVec1,  featureVec2;
   FeatureList   featureList1, featureList2;
   std::cout << "\n\nTEST: Building collections of features\n";
   const int numberOfFeatures (10);
@@ -243,7 +242,7 @@ main()
 
   
 
-  if (true)    // test dynamic cross-product iterator
+  if (false)    // test dyanamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
     FeatureVector featuresSlow, featuresFast;
     CrossProductIterator<SkipIfRelatedPair> it (featuresSlow, featuresFast, SkipIfRelatedPair());

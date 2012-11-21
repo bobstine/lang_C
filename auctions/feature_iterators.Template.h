@@ -184,7 +184,7 @@ CrossProductIterator<Pred>::operator++()
   bool keepSearching (true);
   while(keepSearching)
   { while(mSlowIndex < mSlowSource.size())
-    { if (mFastIndices[mSlowIndex] < mFastSource.size())                                                                                                                      
+    { if (mFastIndices[mSlowIndex] < mFastSource.size())
       { keepSearching = false;
 	break;
       }
