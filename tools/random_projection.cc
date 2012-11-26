@@ -1,22 +1,22 @@
 /* -*-c++-*-
 
-   RUN:  random_projection -f input.dat -o file -k (# columns) -q
+ RUN:  random_projection -f input.dat -o file -k num_pc ( -q  if quadratic )  ( -s  to set scale )
 
 
-   Input...
+ Input...
 
    Standard n x c array of columns
 
    
-   Output...
+ Output...
 
    n x k matrix of random projections of the c columns (p=1) or of the
-   (c + c choose 2) if set the quadratic option q (no arg option).
+   (c + c choose 2) quadratics alone if set quadratic option q (no arg).
 
-   If the input array has many columns, then reads the entire input
-   array so that it can more efficiently produce the output without
-   having to recycle through the random generation process over and
-   over.
+   Reads the entire input array so that it can more efficiently produce
+   the output without having to recycle through the random generation
+   process over and over.  If -s option used, normalizes the columns to
+   have length 1.
 
 */
 
@@ -47,7 +47,7 @@ std::string messageTag ("RPRJ: ");
 
 // return number of obs, number of vars written
 int
-project(int nProjections, bool quadratic, std::istream& input, std::ostream& output)
+project(int nProjections, bool standardize, bool quadratic, std::istream& input, std::ostream& output)
 {
   // read nRows and nCols from input source
   int nRows, nCols;
@@ -67,15 +67,22 @@ project(int nProjections, bool quadratic, std::istream& input, std::ostream& out
   for (int j=0; j<nCols; ++j)
   { float mean (X.col(j).sum()/nRows);
     X.col(j) = X.col(j).array() - mean;
-    // std::cout << "Input mean " << j << " =" << mean << std::endl;
   }
+
+  // optionally rescale X to norm 1
+  if (standardize)
+    for (int j=0; j<nCols; ++j)
+      X.col(j).normalize();
   
-  // make room for projections and form base linear component
+  // allocate result, choose method
   Matrix Y (nRows,nProjections);
-  Matrix C = Matrix::Random(nCols,nProjections);
-  Y = X * C;
-  if (quadratic)
-  { std::clog << messageTag << "Computing random projection with " << nCols + (nCols*(nCols-1))/2 << " quadratics." << std::endl;
+  if (! quadratic) // linear
+  { Matrix C = Matrix::Random(nCols,nProjections);
+    Y = X * C;
+  }
+  else             // quadratic
+  { Y.setZero();
+    std::clog << messageTag << "Computing random projection of " << (nCols*(nCols+1))/2 << " quadratics (excludes linear)." << std::endl;
     for (int j=0; j<nCols; ++j)
       for (int k=j; k<nCols; ++k)
       { Vector cp   = X.col(j).array() * X.col(k).array();
@@ -85,7 +92,8 @@ project(int nProjections, bool quadratic, std::istream& input, std::ostream& out
       }
   }
     
-  // write y back out
+  // write y
+  std::clog << messageTag << "Writing " << Y.rows() << " rows and " << Y.cols() << " columns to output." << std::endl;
   output << Y << std::endl;
 
   return 0;
@@ -95,7 +103,7 @@ project(int nProjections, bool quadratic, std::istream& input, std::ostream& out
 
 
 void
-parse_arguments(int argc, char** argv, int &projColumns, bool &quadratic, std::string& inputFile, std::string& outputFile );
+parse_arguments(int argc, char** argv, int &projColumns, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile );
 
 
 int
@@ -103,27 +111,28 @@ main (int argc, char** argv)
 {
   //  set default parameter values
   int projColumns                (1);
+  bool standardize           (false);
   bool quadratic             (false);
   std::string inputFileName     ("");
   std::string outputFileName    ("");
   
   // parse arguments from command line
-  parse_arguments(argc, argv, projColumns, quadratic, inputFileName, outputFileName);
-  std::clog << "MAIN: Arguments   --columns=" << projColumns << " --quadratic=" << quadratic
-	    << " --input-file=" << inputFileName << " --output-file=" << outputFileName
-	    << std::endl;
+  parse_arguments(argc, argv, projColumns, standardize, quadratic, inputFileName, outputFileName);
+  std::clog << messageTag
+	    << "random_project --columns=" << projColumns << " --standardize=" << standardize<< " --quadratic=" << quadratic 
+	    << " --input-file=" << inputFileName << " --output-file=" << outputFileName << std::endl;
 
   // 4 call variations
   if (inputFileName.size() == 0)
   { if (outputFileName.size() == 0)
-      project(projColumns, quadratic, std::cin, std::cout);                // A
+      project(projColumns, standardize, quadratic, std::cin, std::cout);                // A
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 1;
       }
-      project(projColumns, quadratic, std::cin, output);                  // B
+      project(projColumns, standardize, quadratic, std::cin, output);                  // B
     }
   }
   else
@@ -133,14 +142,14 @@ main (int argc, char** argv)
       return 2;
     }
     if (outputFileName.size() == 0)
-      project(projColumns, quadratic, input, std::cout);                   // C
+      project(projColumns, standardize, quadratic, input, std::cout);                   // C
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      project(projColumns, quadratic, input, output);                      // D
+      project(projColumns, standardize, quadratic, input, output);                      // D
     }
   }
   return 0;
@@ -149,7 +158,7 @@ main (int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv, int &nProjections, bool &quadratic, std::string& inputFile, std::string& outputFile)
+parse_arguments(int argc, char** argv, int &nProjections, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -159,10 +168,11 @@ parse_arguments(int argc, char** argv, int &nProjections, bool &quadratic, std::
 	  {"input",             1, 0, 'f'},  // has arg,
 	  {"output",            1, 0, 'o'},  // has arg,
 	  {"projections",       1, 0, 'p'},  // has arg,
+	  {"standardize",       0, 0, 's'},  // no  arg, 
 	  {"quadratic",         0, 0, 'q'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:o:p:q", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:o:p:sq", long_options, &option_index);
 	if (key == -1)
 	  break;
 	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -184,6 +194,11 @@ parse_arguments(int argc, char** argv, int &nProjections, bool &quadratic, std::
 	    {
 	      std::istringstream is(optarg);
 	      is >> nProjections;
+	      break;
+	    }
+          case 's' :
+	    {
+	      standardize = true;
 	      break;
 	    }
           case 'q' :

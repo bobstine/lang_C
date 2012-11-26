@@ -123,7 +123,8 @@ random_projection: random_projection.o
 	cp -f $@ ~/bin/random_projection
 
 random_projection.test: random_projection test_data/matrix.dat
-	./random_projection --input /Users/bob/data/Arcene/arcene.dat  -o test_data/test_projections.dat --projections 100 --quadratic
+	./random_projection --input /Users/bob/data/Arcene/arcene.dat  -o test_data/test_linear_proj.dat --projections 100 --scale
+#	./random_projection --input /Users/bob/data/Arcene/arcene.dat  -o test_data/test_quad_proj.dat   --projections 100 --scale --quadratic 
 
 mands: mands.o
 	$(GCC) mands.o $(LDLIBS) -o $@
