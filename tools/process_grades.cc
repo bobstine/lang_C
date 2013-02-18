@@ -34,12 +34,12 @@
 void
 parse_arguments(int argc, char** argv,
 		std::string &inputFile, std::string &outputFile,
-		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions);
+		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions, bool &buildIndicators);
 
 int
 process (std::istream& input, std::ostream& output,
 	 int nameCol, int idColumn, int answerColumn, int nQuestions,   // zero based
-	 bool multVersions);
+	 bool multVersions, bool buildIndicators);
 
 
 // convenience output
@@ -57,20 +57,23 @@ int
 main(int argc, char** argv)
 {
   // default is io via stdin and stdout
-  std::string       inputFile     ("");
-  std::string       outputFile    ("");
-  int               nameColumn    ( 0);
-  int               idColumn      (29);     // all are zero based
-  int               answerColumn  (38);
-  int               nQuestions    (44);
-  bool              multVersions  (false);
+  std::string       inputFile       ("");
+  std::string       outputFile      ("");
+  int               nameColumn      ( 0);
+  int               idColumn        (29);     // all are zero based
+  int               answerColumn    (38);
+  int               nQuestions      (44);
+  bool              multVersions    (false);
+  bool              buildIndicators (false);
 
-  parse_arguments(argc, argv, inputFile, outputFile, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
+  parse_arguments(argc, argv, inputFile, outputFile, nameColumn, idColumn, answerColumn, nQuestions, multVersions, buildIndicators);
   { std::string vStr ("");
     if (multVersions) vStr = "-v";
-    std::cout << "process_grades -f " << inputFile << " -o " << outputFile
+    std::string bStr ("");
+    if (multVersions) bStr = "-b";
+    std::cout << "process_grades -f " << inputFile << " -o " << outputFile 
 	      << " -n " << nameColumn <<" -i " << idColumn << " -a " << answerColumn
-	      << " -q " << nQuestions << vStr << std::endl;
+	      << " -q " << nQuestions << " " << vStr << " " << bStr << std::endl;
   }
   std::ifstream input (inputFile.c_str());
   if(!input)
@@ -80,19 +83,21 @@ main(int argc, char** argv)
   std::ofstream output (outputFile.c_str());
   if(!output)
   { std::cout << "No output file supplied; results going to standard output." << std::endl;
-    return process(input, std::cout, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
+    return process(input, std::cout, nameColumn, idColumn, answerColumn, nQuestions, multVersions, buildIndicators);
   }
   else
   { std::cout << "Results going to file " << outputFile << std::endl;
-    return process(input,    output, nameColumn, idColumn, answerColumn, nQuestions, multVersions);
+    return process(input,    output, nameColumn, idColumn, answerColumn, nQuestions, multVersions, buildIndicators);
   }
 }
 
 ///////////////////////////  process  ////////////////////////////////////////////
 
+// set build indicators to true to get the full regression data set
+
 int
 process (std::istream& input, std::ostream& output,
-	 int nameColumn, int idColumn, int answerColumn, int nQuestions, bool multVersions)
+	 int nameColumn, int idColumn, int answerColumn, int nQuestions, bool multVersions, bool buildIndicators)
 {
   if(!input)
   { std::cerr << "Could not open the indicated input stream.\n";
@@ -110,52 +115,55 @@ process (std::istream& input, std::ostream& output,
   std::string keys (line.substr(answerColumn, nQuestions));
   std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
   std::istringstream istrm(keys); 
-  for (int i=0; i<nQuestions; ++i)
-  { char c;
+  for (int i=0; i<nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
+  { char c;                                                      // and the answer key includes the leading 0 for exam key
     istrm >> c;
-    answerKey[i] = read_utils::ctoi(c)-1;                        // convert to zero base
+    answerKey[i] = read_utils::ctoi(c)-1;                        // shift all down to base 0 for easier modular arith
   }
+  const int firstQuestion( (multVersions) ? 1:0 );
   // space for results
   std::vector< std::vector<int> > answerFrequencies;
   for(int i=0; i<nQuestions; ++i)
     answerFrequencies.push_back(std::vector<int>(5));
-  std::vector< std::vector<int> > correctArray;
-  std::vector< int > questionTotal (nQuestions);
-  std::vector< int > studentTotal;
-  std::vector< std::string > names;
-  std::vector< std::string > ids;
+  std::vector< std::vector<int> > correctArray;                  // 0 if wrong, 1 if correct
+  std::vector< std::vector<int> > studentAnswers;                // aligns to common answer key
+  std::vector< int >              questionTotal (nQuestions);
+  std::vector< int >              studentTotal;
+  std::vector< std::string >      names;
+  std::vector< std::string >      ids;
   // process each student record, first 'rotating' answers, then counting number correct
-  int student (0);
-  int firstQuestion(0);
-  while(std::getline(input,line))
-  {
-    names.push_back(line.substr(nameColumn, 20));              // 20 char for name
-    ids.push_back(  line.substr(  idColumn,  8));
-    std::cout << "Processing grades for " << names[student] << std::endl;
-    studentTotal.push_back(0);
-    correctArray.push_back(std::vector<int>(nQuestions,0));
-    std::istringstream is(line.substr(answerColumn,nQuestions));
-    char choice;
-    int examKey (0);
-    if(multVersions)
-    { is >> choice;
-      examKey = read_utils::ctoi(choice)-1;          // 0 means no shift
-      firstQuestion = 1;
-    }
-    for(int q=firstQuestion; q<nQuestions; ++q)
-    { is >> choice;
-      if(('0' < choice) && choice < '6')         
-      { int ans = read_utils::ctoi(choice)-1;
-	ans = (5 + ans - examKey)%5;               // zero based simplifies this
-	++answerFrequencies[q][ans];
-	if(ans == answerKey[q])
-	{ ++studentTotal[student];
-	  ++questionTotal[q];
-	  ++correctArray[student][q];
+  { int student (0);
+    while(std::getline(input,line))
+    {
+      names.push_back(line.substr(nameColumn, 20));              // 20 char for name
+      ids.push_back(  line.substr(  idColumn,  8));
+      std::cout << "Processing grades for " << names[student] /* ": " << line.substr(answerColumn,nQuestions) */ <<  std::endl;
+      studentTotal.push_back(0);
+      correctArray.push_back(std::vector<int>(nQuestions,0));
+      studentAnswers.push_back(std::vector<int>(nQuestions,0));
+      std::istringstream is(line.substr(answerColumn,nQuestions));
+      char choice;
+      int examKey (0);
+      if(multVersions)
+      { is >> choice;
+	examKey = read_utils::ctoi(choice)-1;          // 0 means no shift
+      }
+      for(int q=firstQuestion; q<nQuestions; ++q)
+      { is >> choice;
+	if(('0' < choice) && choice < '6')         
+	{ int ans = read_utils::ctoi(choice)-1;
+	  ans = (5 + ans - examKey)%5;               // zero based simplifies this
+	  studentAnswers[student][q] = ans;
+	  ++answerFrequencies[q][ans];
+	  if(ans == answerKey[q])
+	  { ++studentTotal[student];
+	    ++questionTotal[q];
+	    ++correctArray[student][q];
+	  }
 	}
       }
+      ++student;
     }
-    ++student;
   }
   //  summary of results
   unsigned int nStudents (names.size());
@@ -169,7 +177,7 @@ process (std::istream& input, std::ostream& output,
     ss += dev * dev;
   }
   double sd = sqrt(ss/nStudents);
-  double factor = 100.0/nQuestions;
+  double factor = 100.0/(nQuestions-firstQuestion);
   std::cout << "Average score " << std::setprecision(3) << mean*factor << " with standard deviation " << std::setprecision(2) << sd*factor << std::endl;
   // check
   /*  std::cout << "Total right for Question 25 = " << questionTotal[25] << std::endl;
@@ -193,9 +201,24 @@ process (std::istream& input, std::ostream& output,
       cov += (correctArray[i][q]-pctCorrect)*(studentTotal[i]-mean);
     std::cout << std::setprecision(2) << cov/((nStudents-1)*sd*sqrt(pctCorrect*(1-pctCorrect))) << std::endl;
   }
-  // write tab delimited line for each student
+  // write tab delimited line for each student with header line for column names
+  std::ostream_iterator<int> out_it (output,"\t ");
+  output << "Name \t ID \t Total \t";
+  if(buildIndicators) 
+    for(int q=firstQuestion; q<nQuestions; ++q)
+      for (int j=0; j<5; ++j)
+	output <<  "Q" << q+1 << "_" << "abcde"[j] << "\t ";
+  output << std::endl;
   for (unsigned int i=0; i<names.size(); ++i)
-    output << names[i] << "\t" << ids[i] << "\t" << studentTotal[i] << std::endl;
+  { output << names[i] << "\t" << ids[i] << "\t" << studentTotal[i] << "\t ";
+    if (buildIndicators)
+      for (int q=firstQuestion; q<nQuestions; ++q)
+      { std::vector<int> b = {0,0,0,0,0};
+	b[studentAnswers[i][q]] = 1;
+	std::copy (b.begin(), b.end(), out_it);
+      }
+    output << std::endl;
+  }
   return 0;
 }
 
@@ -206,7 +229,7 @@ process (std::istream& input, std::ostream& output,
 void
 parse_arguments(int argc, char** argv,
 		std::string &inputFile, std::string &outputFile,
-		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions)
+		int &nameCol, int &idCol, int &ansCol, int &nQues, bool &multVersions, bool &buildIndicators)
 {
   int key;
   while (1)                              // read until empty key causes break
@@ -218,10 +241,11 @@ parse_arguments(int argc, char** argv,
       {"name-column",       required_argument, 0, 'n'},
       {"id-column",         required_argument, 0, 'i'},  // has arg,
       {"answer-column",     required_argument, 0, 'a'},  // has arg,
-      {"multiple-versions",       no_argument, 0, 'v'},  //  no arg
+      {"multiple-versions", no_argument,       0, 'v'},  //  no arg
+      {"build-indicators",  no_argument,       0, 'b'},  //  no arg
       {0, 0, 0, 0}                       // terminator 
     };
-    key = getopt_long (argc, argv, "f:o:q:n:i:a:v", long_options, &option_index);
+    key = getopt_long (argc, argv, "f:o:q:n:i:a:vb", long_options, &option_index);
     // std::cout << "Key  " << key << "  optarg " << optarg << std::endl;
     if (key == -1)
       break;
@@ -254,6 +278,10 @@ parse_arguments(int argc, char** argv,
     case 'v' :
       {
 	multVersions = true;    break;
+      }
+    case 'b' :
+      {
+	buildIndicators = true;    break;
       }
     }
   }
