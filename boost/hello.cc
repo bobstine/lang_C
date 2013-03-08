@@ -1,4 +1,6 @@
 #include <boost/lambda/lambda.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_io.hpp>
 #include <iostream>
 #include <iterator>
 #include <algorithm>
@@ -6,12 +8,19 @@
 int main()
 {
 
-  using namespace boost::lambda;
-
-  typedef std::istream_iterator<int> in;
+  {
+    boost::tuple<int, int, int> x (1,2,3);
+    std::cout << "x = " << x << std::endl;
+  }
   
-  std::for_each(
-		in(std::cin), in(), std::cout << (_1 * 3) << " " );
-
-  std::cout << "HERE\n";
+  {
+    using namespace boost::lambda;
+  
+    typedef std::istream_iterator<int> in;
+    
+    std::for_each(
+		  in(std::cin), in(), std::cout << (_1 * 3) << " " );
+    
+    std::cout << "HERE\n";
+  }
 }
