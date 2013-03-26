@@ -75,7 +75,8 @@ Line_Search::Bisection::find_zero (F const& f, Comp const& comp) const   // comp
 }
   
 
-
+#define MAX(A,B) (((A) < (B))? (B) : (A))
+#define MIN(A,B) (((A) < (B))? (A) : (B))
 
 template< class Func, class Comp >
 Line_Search::Pair
@@ -83,44 +84,34 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
 {
   const double GR = 2.0/(1 + sqrt(5.0));   // 0.618
   const double gr = 1.0 - GR;              // 0.382
-  double x;
   
   // build starting conditions
   Pair   xLo = std::make_pair(mInterval.first,  f(mInterval.first));
   Pair   xHi = std::make_pair(mInterval.second, f(mInterval.second));
   // perform optional initial grid search
   if (mGridSize > 0)
-  { int iOpt = 0;
+  { int   xOpt = xLo.first;
     double opt = xLo.second;
     int n = ceil((mInterval.second - mInterval.first)/mGridSize)-1;
-    double *pGrid  = new double[n];
-    double *pF     = new double[n];
-    x = mInterval.first;
-    for (int i=0; i<n; ++i)
+    double x=mInterval.first+mGridSize;
+    for (int i=0; i<n; ++i, x += mGridSize)
     { x += mGridSize;
-      pGrid[i] = x;
-      pF[i] = f(x);
-      if (comp(pF[i],opt)) {iOpt = i; opt = pF[i]; }
+      double fx = f(x);
+      if (comp(fx,opt)) { xOpt = x; opt = fx; }
     }
-    if(comp(xHi.second,opt)) iOpt = n;
-    if (0 == iOpt || 1 == iOpt)
-    { xHi.first=pGrid[1]; xHi.second=pF[1]; }
-    else if (n == iOpt || (n-1 == iOpt))
-    { xLo.first=pGrid[n-1]; xLo.second=pF[n-1]; }
-    else
-    { xLo.first=pGrid[iOpt-1]; xLo.second=pF[iOpt-1];
-      xHi.first=pGrid[iOpt+1]; xHi.second=pF[iOpt+1];
-    }
-    delete [] pGrid;
-    delete [] pF;
+    // update range
+    xLo.first  = MAX(xLo.first, xOpt - 2 * mGridSize);
+    xLo.second = f(xLo.first);
+    xHi.first  = MIN(xHi.first, xOpt + 2 * mGridSize);
+    xHi.second = f(xHi.first);
   }
   // init the internal positions
-  /* std::cout << "\n\n Searching interval  "
+  /* std::cout << "\n\nLINE: Searching interval  "
   	      << "<" << xLo.first << "," <<xLo.second <<  "> ... " 
-  	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
-  */
+  	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl; */
+
   double len = xHi.first-xLo.first;
-  x = xLo.first + gr*len;
+  double x = xLo.first + gr*len;
   Pair xA = std::make_pair(x, f(x));
   x = xLo.first + GR*len;
   Pair xB = std::make_pair(x, f(x));
@@ -130,11 +121,10 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
   { len = xB.first - xLo.first;              // 0.618 times prior length
     if (len < mTolerance) break;
     // use to trace optimization
-    /*    std::clog << "GSRC:  <" << xLo.first << "," << xLo.second << "> "
+    /*    std::clog << "LINE:  <" << xLo.first << "," << xLo.second << "> "
 	      <<        "<" <<  xA.first << "," << xA.second <<  "> "
 	      <<        "<" <<  xB.first << "," << xB.second <<  "> "
-	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
-    */
+	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl; */
     if(comp(xA.second,xB.second)) // < for min
     { xHi = xB;
       xB=xA;

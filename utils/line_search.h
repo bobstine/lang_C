@@ -56,7 +56,13 @@ namespace Line_Search
 
 
   
-  //     golden section     golden section     golden section     golden section     golden section     golden section     
+  //     golden section     golden section     golden section     golden section     golden section     golden section
+  /*
+    The initial grid search may be particularly useful if the function
+    is not globally unimodal.  Use the line search to find a starting
+    unimodal domain.
+  */
+  
   class GoldenSection
   {
   private:
