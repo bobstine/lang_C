@@ -8,7 +8,6 @@
 #include <functional>
 
 #include <Eigen/Dense>
-#include <Eigen/SVD>
 
 
 std::ostream&
@@ -27,8 +26,8 @@ corr(Eigen::VectorXd const& x, Eigen::VectorXd const& y)
 {
   double mx (x.sum()/x.size());
   double my (y.sum()/y.size());
-  Eigen::VectorXd xx (x.cwise() - mx);
-  Eigen::VectorXd yy (y.cwise() - my);
+  Eigen::VectorXd xx (x.array() - mx);
+  Eigen::VectorXd yy (y.array() - my);
 
   return xx.dot(yy)/sqrt(xx.dot(xx)*yy.dot(yy));
 }
@@ -59,7 +58,7 @@ int main(int, char **)
   // map data into eigen matrix and find spectrum
   std::cout << "\nFinding noise spectrum...\n";
   Eigen::Map<Eigen::MatrixXd> noise (noiseArray,nRows,nCols);
-  Eigen::SVD<Eigen::MatrixXd> svdNoise(noise);
+  Eigen::JacobiSVD<Eigen::MatrixXd> svdNoise(noise);
   Eigen::VectorXd sNoise (svdNoise.singularValues().segment(0,nKeep));
   std::cout << "    Spectrum of noise SVD" << sNoise << std::endl;
 
@@ -70,7 +69,7 @@ int main(int, char **)
   Eigen::Map<Eigen::MatrixXd> subspace (subspaceArray,nRows,nCols);
 
   std::cout << "\nSVD of subspace array...\n";
-  Eigen::SVD<Eigen::MatrixXd> svdSubspace (subspace);
+  Eigen::JacobiSVD<Eigen::MatrixXd> svdSubspace (subspace);
 
   // insert a low dimension subspace
   std::cout << "\nAdding noise to low-dim subspace...\n";
@@ -80,7 +79,7 @@ int main(int, char **)
   
   // complete SVD
   std::cout << "\nSVD of data array...\n";
-  Eigen::SVD<Eigen::MatrixXd> svdFull(data);
+  Eigen::JacobiSVD<Eigen::MatrixXd> svdFull(data);
   Eigen::MatrixXd uFull (svdFull.matrixU());
   Eigen::VectorXd sFull (svdFull.singularValues().segment(0,nKeep));
   std::cout << "    Spectrum of complete SVD" << sFull << std::endl;
