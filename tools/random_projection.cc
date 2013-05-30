@@ -187,7 +187,7 @@ parse_arguments(int argc, char** argv, int &nProjections, bool &standardize, boo
 	  case 'o' :  
 	    {
 	      std::string name(optarg);
-	      outputFile = optarg;
+	      outputFile = name;
 	      break;
 	    }
           case 'p' :
