@@ -10,6 +10,8 @@ typedef Eigen::VectorXf Vector;
 typedef Eigen::MatrixXf Matrix;
 
 
+
+
 ///////////////////////////////////////  Write data to file  /////////////////////////////
 
 int
