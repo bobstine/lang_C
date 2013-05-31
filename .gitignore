@@ -1,6 +1,7 @@
 .DS_Store
 bellman
 text
+utilities
 sandbox
 *.test
 *.dd
