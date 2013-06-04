@@ -3,3 +3,5 @@ rand_projection
 regression
 test.dat
 householder.test
+estimates.*
+stoc_grad
