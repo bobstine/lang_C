@@ -1,11 +1,11 @@
 /* -*-c++-*-
 
- RUN:  random_projection -f input.dat -o file -k num_pc ( -q  if quadratic )  ( -s  to set scale )
+ RUN:  random_projection -f input.dat -o file -k num_pc ( -p for power method ) ( -q  if quadratic )  ( -s  to set scale )
 
 
  Input...
 
-   Standard n x c array of columns
+   Standard n x c array of columns, with prefix first line giving n and p
 
    
  Output...
@@ -47,7 +47,7 @@ std::string messageTag ("RPRJ: ");
 
 // return number of obs, number of vars written
 int
-project(int nProjections, bool standardize, bool quadratic, std::istream& input, std::ostream& output)
+project(int nProjections, int powerIterations, bool standardize, bool quadratic, std::istream& input, std::ostream& output)
 {
   // read nRows and nCols from input source
   int nRows, nCols;
@@ -77,8 +77,13 @@ project(int nProjections, bool standardize, bool quadratic, std::istream& input,
   // allocate result, choose method
   Matrix Y (nRows,nProjections);
   if (! quadratic) // linear
-  { Matrix C = Matrix::Random(nCols,nProjections);
-    Y = X * C;
+  { Matrix O = Matrix::Random(nCols,nProjections);
+    Y = X * O;
+    if (powerIterations)
+    { Matrix XXt = X * X.transpose();
+      while (powerIterations--)
+	Y = XXt * Y;
+    }
   }
   else             // quadratic
   { Y.setZero();
@@ -90,6 +95,21 @@ project(int nProjections, bool standardize, bool quadratic, std::istream& input,
 	for (int i=0; i<nProjections; ++i)
 	  Y.col(i) += cp * rand(i);
       }
+    if (powerIterations)
+    { std::clog << messageTag << "Preparing for " << powerIterations << " quadratic power iterations." << std::endl;
+      Matrix XXt = Matrix::Zero(X.rows(),X.rows());
+      for (int j=0; j<nCols; ++j)
+	for (int k=j; k<nCols; ++k)
+	{ Vector x = X.col(j).array() * X.col(k).array();
+	  for (int jj=0; jj<nCols; ++jj)
+	    for (int kk=jj; kk<nCols; ++kk)
+	    { Vector y = X.col(jj).array() * X.col(kk).array();
+	      XXt = XXt + x * y.transpose();
+	    }
+	}
+      while (powerIterations--)
+	Y = XXt * Y;
+    }
   }
     
   // write y
@@ -103,7 +123,7 @@ project(int nProjections, bool standardize, bool quadratic, std::istream& input,
 
 
 void
-parse_arguments(int argc, char** argv, int &projColumns, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile );
+parse_arguments(int argc, char** argv, int &projColumns, int &powerIterations, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile );
 
 
 int
@@ -111,28 +131,30 @@ main (int argc, char** argv)
 {
   //  set default parameter values
   int projColumns                (1);
+  int powerIterations            (0);
   bool standardize           (false);
   bool quadratic             (false);
   std::string inputFileName     ("");
   std::string outputFileName    ("");
   
   // parse arguments from command line
-  parse_arguments(argc, argv, projColumns, standardize, quadratic, inputFileName, outputFileName);
+  parse_arguments(argc, argv, projColumns, powerIterations, standardize, quadratic, inputFileName, outputFileName);
   std::clog << messageTag
-	    << "random_project --columns=" << projColumns << " --standardize=" << standardize<< " --quadratic=" << quadratic 
+	    << "random_project --dimension=" << projColumns << " --power_iterations=" << powerIterations
+	    << " --standardize=" << standardize<< " --quadratic=" << quadratic 
 	    << " --input-file=" << inputFileName << " --output-file=" << outputFileName << std::endl;
 
   // 4 call variations
   if (inputFileName.size() == 0)
   { if (outputFileName.size() == 0)
-      project(projColumns, standardize, quadratic, std::cin, std::cout);                // A
+      project(projColumns, powerIterations, standardize, quadratic, std::cin, std::cout);                // A
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 1;
       }
-      project(projColumns, standardize, quadratic, std::cin, output);                  // B
+      project(projColumns, powerIterations, standardize, quadratic, std::cin, output);                  // B
     }
   }
   else
@@ -142,14 +164,14 @@ main (int argc, char** argv)
       return 2;
     }
     if (outputFileName.size() == 0)
-      project(projColumns, standardize, quadratic, input, std::cout);                   // C
+      project(projColumns, powerIterations, standardize, quadratic, input, std::cout);                   // C
     else
     { std::ofstream output (outputFileName.c_str());
       if (!output)
       { std::cerr << "CSVP: Error. Cannot open output file " << outputFileName << std::endl;
 	return 3;
       }
-      project(projColumns, standardize, quadratic, input, output);                      // D
+      project(projColumns, powerIterations, standardize, quadratic, input, output);                      // D
     }
   }
   return 0;
@@ -158,7 +180,8 @@ main (int argc, char** argv)
 
 
 void
-parse_arguments(int argc, char** argv, int &nProjections, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile)
+parse_arguments(int argc, char** argv,
+		int &nProjections, int &powerIterations, bool &standardize, bool &quadratic, std::string& inputFile, std::string& outputFile)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -167,12 +190,13 @@ parse_arguments(int argc, char** argv, int &nProjections, bool &standardize, boo
       static struct option long_options[] = {
 	  {"input",             1, 0, 'f'},  // has arg,
 	  {"output",            1, 0, 'o'},  // has arg,
-	  {"projections",       1, 0, 'p'},  // has arg,
+	  {"dimension",         1, 0, 'd'},  // has arg,
+	  {"power_iterations",  1, 0, 'p'},  // has arg,
 	  {"standardize",       0, 0, 's'},  // no  arg, 
 	  {"quadratic",         0, 0, 'q'},  // no  arg, 
 	  {0, 0, 0, 0}                       // terminator 
 	};
-	key = getopt_long (argc, argv, "f:o:p:sq", long_options, &option_index);
+	key = getopt_long (argc, argv, "f:o:d:p:sq", long_options, &option_index);
 	if (key == -1)
 	  break;
 	//	std::cout << "Option key " << char(key) << " with option_index " << option_index << std::endl;
@@ -190,10 +214,16 @@ parse_arguments(int argc, char** argv, int &nProjections, bool &standardize, boo
 	      outputFile = name;
 	      break;
 	    }
-          case 'p' :
+          case 'd' :
 	    {
 	      std::istringstream is(optarg);
 	      is >> nProjections;
+	      break;
+	    }
+          case 'p' :
+	    {
+	      std::istringstream is(optarg);
+	      is >> powerIterations;
 	      break;
 	    }
           case 's' :

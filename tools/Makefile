@@ -118,13 +118,31 @@ insert_column.test: insert_column test_data/test_stream.dat
 	./insert_column -ftest_data/test_stream.dat  -o test_data/test_added.dat -y0 -x2 -r0.8
 	cat test_data/test_added.dat
 
-random_projection: random_projection.o
-	$(GCC) $(CFLAGS) $(INCLUDES) random_projection.o $(LDLIBS) -o $@
+# quadratic distance matrix between observations
+distance_matrix: distance_matrix.o
+	$(GCC) $(CFLAGS) $(INCLUDES) $^ $(LDLIBS) -o $@
+	cp -f $@ ~/bin/$@
+
+# random projections
+random_projection: random_projection.o 
+	$(GCC) $(CFLAGS) $(INCLUDES) $^ $(LDLIBS) -o $@
 	cp -f $@ ~/bin/random_projection
 
-random_projection.test: random_projection test_data/matrix.dat
-	./random_projection --input /Users/bob/data/Arcene/arcene.dat  -o test_data/test_linear_proj.dat --projections 100 --scale
-#	./random_projection --input /Users/bob/data/Arcene/arcene.dat  -o test_data/test_quad_proj.dat   --projections 100 --scale --quadratic 
+arcene_data   = /Users/bob/data/Arcene/arcene_x.dat
+n_projections = 100
+linear        = test_data/arcene_linear_proj_$(n_projections)
+quadratic     = test_data/arcene_quadratic_proj_$(n_projections)
+
+$(linear)_%.dat : random_projection $(arcene_data)
+	./random_projection -f $(arcene_data) -o $@ -d $(n_projections) --power_iterations $* --scale
+
+$(quadratic)_%.dat : random_projection $(arcene_data) 
+	./random_projection -f $(arcene_data) -o $@ -d $(n_projections) --power_iterations $* --scale --quadratic
+
+arcene_kernel: distance_matrix $(arcene_data)
+	distance_matrix < $(arcene_data) > $@
+arcene_example: $(linear)_0.dat $(linear)_1.dat $(linear)_2.dat   $(quadratic)_0.dat $(quadratic)_1.dat
+	echo "Done"
 
 mands: mands.o
 	$(GCC) mands.o $(LDLIBS) -o $@
