@@ -61,14 +61,6 @@ distance_matrix(bool standardize, std::istream& input, std::ostream& output)
     }
   }
 
-  /*
-  std::clog << "First column of X is \n" << X.col(1).transpose() << std::endl;
-  std::clog << "First row of X is \n" << X.row(0) << std::endl;
-  std::clog << "Head of last row of X is \n" << X.row(nRows-1).head(100) << std::endl;
-  std::clog << "Tail of last row of X is \n" << X.row(nRows-1).tail(100) << std::endl;
-  std::clog << "\nLast mean and SD are " << mean << "  " << sd << std::endl;
-  */
-  
   // allocate result, choose method
   Matrix D (nRows,nRows);
   for(int i=0; i<nRows; ++i)

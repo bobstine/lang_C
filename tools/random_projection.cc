@@ -29,11 +29,13 @@
 #include <cstdio>
 
 #include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 #include <getopt.h>
 
 #include "random.h"
@@ -62,18 +64,19 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
   { for (int col=0; col<nCols; ++col)
       input >> X(row,col);
   }
-
   // center X
   for (int j=0; j<nCols; ++j)
   { float mean (X.col(j).sum()/nRows);
     X.col(j) = X.col(j).array() - mean;
   }
-
   // optionally rescale X to norm 1
   if (standardize)
     for (int j=0; j<nCols; ++j)
-      X.col(j).normalize();
-  
+    { if (X.col(j).squaredNorm()>0)
+	X.col(j).normalize();
+      else
+	std::clog << "WARNING: Column " << j << " is constant (and so zeroed out)." <<std::endl;
+    }
   // allocate result, choose method
   Matrix Y (nRows,nProjections);
   if (! quadratic) // linear
@@ -82,7 +85,7 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
     if (powerIterations)
     { Matrix XXt = X * X.transpose();
       while (powerIterations--)
-	Y = XXt * Y;
+	Y = XXt * Eigen::HouseholderQR<Matrix>(Y).householderQ();
     }
   }
   else             // quadratic
@@ -93,7 +96,13 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
       { Vector cp   = X.col(j).array() * X.col(k).array();
 	Vector rand = Vector::Random(nProjections);
 	for (int i=0; i<nProjections; ++i)
-	  Y.col(i) += cp * rand(i);
+	{ Y.col(i) += cp * rand(i);
+	  if (!std::isfinite(Y(0,i)))
+	  { std::clog << "Not finite at j=" << j << " k=" << k << " i=" << i << " cp(0)=" << cp(0) << std::endl;
+	    assert(false);
+	  }
+	}	
+	// if (j==k) std::clog << "j=k=" << j << "\n cp = " << cp.transpose() << std::endl <<  " Y.col(0) is " << Y.col(0).transpose() << std::endl;
       }
     if (powerIterations)
     { std::clog << messageTag << "Preparing for " << powerIterations << " quadratic power iterations." << std::endl;
@@ -108,7 +117,8 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
 	    }
 	}
       while (powerIterations--)
-	Y = XXt * Y;
+      	Y = XXt * Eigen::HouseholderQR<Matrix>(Y).householderQ();
+      }
     }
   }
     
