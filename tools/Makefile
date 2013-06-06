@@ -130,6 +130,11 @@ random_projection: random_projection.o
 
 arcene_data   = /Users/bob/data/Arcene/arcene_x.dat
 arcene_kernel = /Users/bob/data/Arcene/arcene_kernel.dat
+
+arcene_kernel: distance_matrix $(arcene_data)
+	distance_matrix -s < $(arcene_data) > $(arcene_kernel)
+
+
 n_projections = 100
 linear        = test_data/arcene_linear_proj_$(n_projections)
 quadratic     = test_data/arcene_quadratic_proj_$(n_projections)
@@ -140,12 +145,12 @@ $(linear)_%.dat : random_projection $(arcene_data)
 $(quadratic)_%.dat : random_projection $(arcene_data) 
 	./random_projection -f $(arcene_data) -o $@ -d $(n_projections) --power_iterations $* --standardize --quadratic
 
-arcene_kernel: distance_matrix $(arcene_data)
-	distance_matrix < $(arcene_data) > $(arcene_kernel)
-
-#  $(quadratic)_0.dat $(quadratic)_1.dat
-arcene_example: $(linear)_0.dat $(linear)_1.dat $(linear)_2.dat 
+arcene_linear_example: $(linear)_0.dat $(linear)_1.dat $(linear)_2.dat 
 	echo "Done"
+
+arcene_quad_example: $(quadratic)_0.dat $(quadratic)_1.dat  $(quadratic)_2.dat
+	echo "Done"
+
 
 # means and SDs
 

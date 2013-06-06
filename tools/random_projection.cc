@@ -118,7 +118,6 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
 	}
       while (powerIterations--)
       	Y = XXt * Eigen::HouseholderQR<Matrix>(Y).householderQ();
-      }
     }
   }
     
