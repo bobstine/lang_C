@@ -27,6 +27,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <time.h>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -39,6 +40,7 @@
 #include <getopt.h>
 
 #include "random.h"
+#include "timing.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,6 +48,7 @@ typedef Eigen::VectorXf Vector;
 typedef Eigen::MatrixXf Matrix;
 
 std::string messageTag ("RPRJ: ");
+
 
 // return number of obs, number of vars written
 int
@@ -91,41 +94,40 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
   else             // quadratic
   { Y.setZero();
     std::clog << messageTag << "Computing random projection of " << (nCols*(nCols+1))/2 << " quadratics (excludes linear)." << std::endl;
+    print_with_time_stamp("Top, with sum over cols", std::clog);
     for (int j=0; j<nCols; ++j)
       for (int k=j; k<nCols; ++k)
       { Vector cp   = X.col(j).array() * X.col(k).array();
 	Vector rand = Vector::Random(nProjections);
-	for (int i=0; i<nProjections; ++i)
+	for (int i=0; i<nProjections; ++i)   // does Y += cp * rand.transpose(), but faster this way
 	{ Y.col(i) += cp * rand(i);
 	  if (!std::isfinite(Y(0,i)))
 	  { std::clog << "Not finite at j=" << j << " k=" << k << " i=" << i << " cp(0)=" << cp(0) << std::endl;
 	    assert(false);
 	  }
-	}	
-	// if (j==k) std::clog << "j=k=" << j << "\n cp = " << cp.transpose() << std::endl <<  " Y.col(0) is " << Y.col(0).transpose() << std::endl;
+	}
       }
+    print_with_time_stamp("Complete base projection", std::clog);
     if (powerIterations)
     { std::clog << messageTag << "Preparing for " << powerIterations << " quadratic power iterations." << std::endl;
       Matrix XXt = Matrix::Zero(X.rows(),X.rows());
       for (int j=0; j<nCols; ++j)
-	for (int k=j; k<nCols; ++k)
-	{ Vector x = X.col(j).array() * X.col(k).array();
-	  for (int jj=0; jj<nCols; ++jj)
-	    for (int kk=jj; kk<nCols; ++kk)
-	    { Vector y = X.col(jj).array() * X.col(kk).array();
-	      XXt = XXt + x * y.transpose();
-	    }
+      {	for (int k=j; k<nCols; ++k)
+	{ Vector cp = X.col(j).array() * X.col(k).array();
+	  for (int i=0; i<cp.size(); ++i)   // string out XXt += cp * cp.transpose() for speed
+	    XXt.col(i) += cp * cp(i);
 	}
+      }
       while (powerIterations--)
       	Y = XXt * Eigen::HouseholderQR<Matrix>(Y).householderQ();
+      print_with_time_stamp("Complete power iterations", std::clog);
     }
   }
     
   // write y
   std::clog << messageTag << "Writing " << Y.rows() << " rows and " << Y.cols() << " columns to output." << std::endl;
   output << Y << std::endl;
-
-  return 0;
+  return Y.rows();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -248,3 +250,4 @@ parse_arguments(int argc, char** argv,
 	  }
     }
 }
+

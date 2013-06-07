@@ -148,7 +148,7 @@ $(quadratic)_%.dat : random_projection $(arcene_data)
 arcene_linear_example: $(linear)_0.dat $(linear)_1.dat $(linear)_2.dat 
 	echo "Done"
 
-arcene_quad_example: $(quadratic)_0.dat $(quadratic)_1.dat  $(quadratic)_2.dat
+arcene_quad_example: $(quadratic)_0.dat $(quadratic)_1.dat $(quadratic)_2.dat
 	echo "Done"
 
 
