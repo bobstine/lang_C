@@ -8,6 +8,7 @@
 
 int main()
 {
+  using std::string;
   const int length(5);
 
   std::vector<double> test;
@@ -17,7 +18,28 @@ int main()
     test2.push_back(1 + 2*i);
   }
 
+  { // test first of pair iterator
+    // This works, but can often use std::transform directly
+    std::list<std::pair<string,int>> theList;
+    theList.push_back( std::make_pair("AA",1) );
+    theList.push_back( std::make_pair("BB",2) );
+    theList.push_back( std::make_pair("CC",3) );
+    theList.push_back( std::make_pair("DD",4) );
 
+    std::cout << "TEST: First iterator results...\n";
+    for(auto it=make_first_iterator(theList.begin()); it!=make_first_iterator(theList.end()); ++it)
+      std::cout << *it << "   ";
+    std::cout << "\n\n";
+
+    std::cout << "TEST: Second iterator results...\n";
+    for(auto it=make_second_iterator(theList.begin()); it!=make_second_iterator(theList.end()); ++it)
+      std::cout << *it << "   ";
+    std::cout << "\n\n";
+    
+    
+  }
+  
+      
   { // test of lag iterator
     std::cout << "TEST: index iterator \n";
     std::vector<int> index1;

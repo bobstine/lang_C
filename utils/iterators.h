@@ -9,6 +9,7 @@
 
 /*
 
+  11 Jun 13 ... Add first/second iterators; seem redundant, but convenient.
   18 Jan 10 ... Add concat iterator.
    6 Dec 05 ... Add fixed-point iterator.
   26 Jan 04 ... Add the cyclic from wavelets.
@@ -105,7 +106,87 @@ template<typename Iter1, typename Iter2>
   }
 };
 
+//  Pairs     Pairs     Pairs     Pairs     Pairs     Pairs     Pairs     Pairs     Pairs     
+
+// class M must be an iterator itself that returns a pair of values
+
+template<class Iter>
+class FirstIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<Iter>::value_type::first_type>
+{
+  typedef typename std::iterator_traits<Iter>::value_type::first_type value_type;
+   
+  Iter mIt;
+
+public:
+  FirstIterator (Iter it)  : mIt (it)                 { }
   
+  bool             operator==(FirstIterator const& it) const  { return mIt == it.mIt; }
+  bool             operator!=(FirstIterator const& it) const  { return mIt != it.mIt; }
+  
+  FirstIterator&   operator++()                                { ++mIt; return *this; }
+  value_type       operator*()                          const  { return mIt->first; }
+};
+
+template<class Iter>
+FirstIterator<Iter>
+make_first_iterator( Iter it )
+{
+  return FirstIterator<Iter>(it);
+}
+
+
+template<class Iter>
+class SecondIterator: public std::iterator<std::forward_iterator_tag, typename std::iterator_traits<Iter>::value_type::second_type>
+{
+  typedef typename std::iterator_traits<Iter>::value_type::second_type value_type;
+   
+  Iter mIt;
+
+public:
+  SecondIterator (Iter it)  : mIt (it)                 { }
+  
+  bool             operator==(SecondIterator const& it) const  { return mIt == it.mIt; }
+  bool             operator!=(SecondIterator const& it) const  { return mIt != it.mIt; }
+  
+  SecondIterator&  operator++()                                { ++mIt; return *this; }
+  value_type       operator*()                          const  { return mIt->second; }
+};
+
+template<class Iter>
+SecondIterator<Iter>
+make_second_iterator( Iter it )
+{
+  return SecondIterator<Iter>(it);
+}
+
+
+
+template<class Iter, class F>
+  class FunctionIterator: public std::iterator<std::forward_iterator_tag, typename F::result_type>
+{
+  typedef typename F::result_type  value_type;
+   
+  Iter mIt;
+  F    mF;
+
+public:
+  FunctionIterator (Iter it, F f)  : mIt (it), mF(f)                 { }
+  
+  bool             operator==(FunctionIterator const& it) const  { return mIt == it.mIt; }
+  bool             operator!=(FunctionIterator const& it) const  { return mIt != it.mIt; }
+  
+  FunctionIterator&   operator++()                               { ++mIt; return *this; }
+  value_type         operator*()                          const  { return mF(*mIt); }
+};
+
+template<class Iter, class F>
+  FunctionIterator<Iter, F>
+  make_function_iterator( Iter it, F f )
+{
+  return FunctionIterator<Iter,F>(it,f);
+}
+
+
 //  Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   
 
 template <class T>
