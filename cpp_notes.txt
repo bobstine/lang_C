@@ -1,0 +1,22 @@
+Compiling with C++ notes
+
+
+---
+Checking for Nan, infinite
+
+	Use std::isfinite() from <cmath>
+
+
+
+---
+Initializing a function object  
+
+[expected primary-expression before ‘)’ token]
+	
+	Use () with the type name, as in
+
+		Foo f = Foo()
+
+	But not 
+	
+		Foo f();

@@ -172,11 +172,11 @@ template<class Iter, class F>
 public:
   FunctionIterator (Iter it, F f)  : mIt (it), mF(f)                 { }
   
-  bool             operator==(FunctionIterator const& it) const  { return mIt == it.mIt; }
-  bool             operator!=(FunctionIterator const& it) const  { return mIt != it.mIt; }
+  bool                operator==(FunctionIterator const& it) const  { return mIt == it.mIt; }
+  bool                operator!=(FunctionIterator const& it) const  { return mIt != it.mIt; }
   
-  FunctionIterator&   operator++()                               { ++mIt; return *this; }
-  value_type         operator*()                          const  { return mF(*mIt); }
+  FunctionIterator&   operator++()          { ++mIt; return *this; }
+  value_type          operator*()    const  { return mF(*mIt); }
 };
 
 template<class Iter, class F>
@@ -185,7 +185,6 @@ template<class Iter, class F>
 {
   return FunctionIterator<Iter,F>(it,f);
 }
-
 
 //  Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   Cyclic   
 
