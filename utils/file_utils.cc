@@ -7,7 +7,7 @@
 #include <fstream>
 #include <ios>
 
-namespace File_Utils {
+namespace FileUtils {
   
 int count_fields (std::string const& fileName, int lineNumber)
 {

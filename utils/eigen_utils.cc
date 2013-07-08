@@ -15,7 +15,7 @@ typedef Eigen::MatrixXf Matrix;
 ///////////////////////////////////////  Write data to file  /////////////////////////////
 
 int
-write_matrix_to_file (std::string fileName, Matrix const& x, bool append)
+EigenUtils::write_matrix_to_file (std::string fileName, Matrix const& x, bool append)
 {
   std::ios_base::openmode mode = (append) ? std::ios_base::app : std::ios_base::trunc;
   std::ofstream output (fileName.c_str(), mode);
@@ -29,7 +29,7 @@ write_matrix_to_file (std::string fileName, Matrix const& x, bool append)
 
 
 int
-write_labelled_matrix_to_file (std::string fileName, std::vector<std::string> const& rowLabels, Matrix const& x, bool append)
+EigenUtils::write_labelled_matrix_to_file (std::string fileName, std::vector<std::string> const& rowLabels, Matrix const& x, bool append)
 {
   std::ios_base::openmode mode = (append) ? std::ios_base::app : std::ios_base::trunc;
   std::ofstream output (fileName.c_str(), mode);
@@ -43,7 +43,7 @@ write_labelled_matrix_to_file (std::string fileName, std::vector<std::string> co
 }
 
 int
-write_vector_to_file (std::string fileName, Vector const& x, bool append)
+EigenUtils::write_vector_to_file (std::string fileName, Vector const& x, bool append)
 {
   std::ios_base::openmode mode = (append) ? std::ios_base::app : std::ios_base::trunc;
   std::ofstream output (fileName.c_str(), mode);
