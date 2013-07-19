@@ -1,4 +1,10 @@
-#pragma GCC optimize ("-O4")
+/*
+
+  For explanation of shrinkage, see shrinkage.tex in work/papers/notes
+  
+ */
+
+  #pragma GCC optimize ("-O4")
 
 #include "regression.h"
 
