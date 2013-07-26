@@ -61,7 +61,7 @@ LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm
 LIBRARIES = $(patsubst %,lib%.a,$(USES))
 
 # paths
-LDFLAGS = $(patsubst %,-L%,$(patsubst %, ../%, $(USES))) -L/usr/local/lib/boost
+LDFLAGS = $(patsubst %,-L%,$(patsubst %, ../%, $(USES)))
 
 
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
