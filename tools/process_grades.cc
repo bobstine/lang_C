@@ -13,6 +13,8 @@
   answers.  Otherwise all of them use the common key defined in the
   first line of the answers file.
 
+  Use * to denote any answer is correct.
+
   Output file is tab delimited with name, penn id, score (# correct).
 
 */
@@ -118,7 +120,10 @@ process (std::istream& input, std::ostream& output,
   for (int i=0; i<nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
   { char c;                                                      // and the answer key includes the leading 0 for exam key
     istrm >> c;
-    answerKey[i] = read_utils::ctoi(c)-1;                        // shift all down to base 0 for easier modular arith
+    if(c == '*')
+      answerKey[i] = -1;
+    else
+      answerKey[i] = read_utils::ctoi(c)-1;                        // shift all down to base 0 for easier modular arith
   }
   const int firstQuestion( (multVersions) ? 1:0 );
   // space for results
@@ -155,7 +160,7 @@ process (std::istream& input, std::ostream& output,
 	  ans = (5 + ans - examKey)%5;               // zero based simplifies this
 	  studentAnswers[student][q] = ans;
 	  ++answerFrequencies[q][ans];
-	  if(ans == answerKey[q])
+	  if ( (answerKey[q]<0) || (ans == answerKey[q]) )
 	  { ++studentTotal[student];
 	    ++questionTotal[q];
 	    ++correctArray[student][q];
@@ -190,7 +195,7 @@ process (std::istream& input, std::ostream& output,
   std::cout << "Ques  Answer  #Correct           Choices                 Corr\n";
   for(int q=firstQuestion; q<nQuestions; ++q)
   { std::cout << "Q" << std::setw(2) << q+1;
-    std::cout << "      " << "abcde"[answerKey[q]] << "  "
+    std::cout << "      " << "*abcde"[1+answerKey[q]] << "  "
 	      << "    " << std::setw(4) << questionTotal[q]
 	      << "    " << answerFrequencies[q] << "     ";
     // Correlations with total number right

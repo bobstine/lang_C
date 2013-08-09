@@ -39,6 +39,12 @@ rand_projection.o: rand_projection.cc
 rand_projection: rand_projection.o eigen_svd.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
+vectorize.s: vectorize.cc
+	$(GCC) -mfpmath=sse -msse2  $^ -O2 -c -S -o vectorize.s  # comment no longer appears in asm?
+
+#	$(GCC) $^ -O2 -c -S -o vectorize.s 
+
+
 stoc_grad: stoc_grad.o
 	$(GCC) $^ $(LDLIBS) -o $@
 
