@@ -86,8 +86,9 @@ test_sources = $(wildcard *.test.cc)
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 .PHONY : clean cleanall
+
 clean:
-	-rm -f     *.o *.d *.dd *.exec lib*.a
+	-rm -f     *.o *.d *.dd *.exec lib*.a $(CLEAN)
 	-rm        core
 
 cleanall:
@@ -102,8 +103,6 @@ cleanall:
 
 
 libs: $(LIBRARIES)
-
-
 
 # library file 
 lib%.a : 
