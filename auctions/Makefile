@@ -5,6 +5,7 @@ default: auction.test
 ../c_flags: 
 	ln -s ~/dot_files/c_flags.pb ../c_flags
 
+# $(warning Here we are!)
 
 ###########################################################################
 #
