@@ -34,7 +34,7 @@ level_2   = feature_predicates.o
 level_3   = feature_iterators.o      adapter.o
 level_4   = feature_streams.o
 level_5   = experts.o
-level_6   = auction.o
+level_6   = auction.o  text_auction.o
 
 ############################################################################
 #
@@ -60,6 +60,32 @@ quadratic_test: auction.test data/quadratic_from_R.dat
 crash_test: auction.test
 	./auction.test -f data/crash.dat -r 100 -c 5
 
+# ---  text processing  ---------------------------------------------------------------------------
+# 
+#  Data in built in R, with 3 orthogonal streams
+#
+
+text_auction: text_auction.o $(above_6)
+	$(GCC) $^ $(LDLIBS) -o  $@
+
+run_text_auction: text_auction
+	./text_auction   -f data/text/text_data.txt -o data/text/ -r 3000 -a .25 -p 3 --debug 3 --shrinkage 1 
+
+
+
+# ---  dean text data models  ----------------------------------------------------------------------
+#                         Note: run index.sh to put results into a file named "data"
+#
+
+theher_run: auction.test
+	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
+
+small_text_run: auction.test
+	 ./auction.test -f /data/conll03/auction_small/data -o data/text/small/ -r 10000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1 -x 10
+
+text_run: auction.test
+	 ./auction.test -f data/text/auction.data/data      -o data/text/       -r  2000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1 -x 10
+
 
 # ---  credit models  -----------------------------------------------------------------------------
 
@@ -74,8 +100,6 @@ crash_test: auction.test
 
 penn_credit_test: auction.test
 	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r 1000 -a 1.5 -p 3 -b 67 -c 3 -x 469 -d 3 -s 1
-#	 ./auction.test -f data/credit/auction_pa.data/data -o data/credit/ -r  200 -a 0.5 -p 3 -b 67 -c 3 -x 469 -d 3 -s 1
-
 
 short_credit_test: auction.test
 	 ./auction.test -f data/credit/auction.data/short.dat -o data/credit/ -r 100 -a 0.5 -p 3 -b 2886 -c 3 -x 20202 -d 3
@@ -116,32 +140,17 @@ short_cv%.data:
 	cd $(datapath); rm -f short.dat; ./short.sh > short.dat
 
 
-# ---  ann arbor models  -----------------------------------------------------------------------------
+# ---  miscellaneous test applications  -------------------------------------------------------------
+
 
 anes_run: auction.test
 	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0 -s 1
 
 
 
-# ---  dean text data models  ----------------------------------------------------------------------
-#                         Note: run index.sh to put results into a file named "data"
-#
-
-theher_run: auction.test
-	./auction.test -d 2 -f data/the_her/n10000/data -o data/the_her/ -r 1000 -a 0.05 -p 3 -c 0
-
-small_text_run: auction.test
-	 ./auction.test -f /data/conll03/auction_small/data -o data/text/small/ -r 10000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1 -x 10
-
-text_run: auction.test
-	 ./auction.test -f data/text/auction.data/data      -o data/text/       -r  2000 -a 0.25 -p 3 -k 500 -c 10 -d 0 -b 1 -s 1 -x 10
-
-
-
-# ---  miscellaneous test applications  -------------------------------------------------------------
-
 diabetes: auction.test
 	 ./auction.test -f ~/C/boost/diab.out/data -o data/diab/ -r 1000 -a 0.25 -p 3 -k 50 -c 10 -d 0 -b 1 -s 1	
+
 
 
 crunch_test: auction.test data/crunch.dat

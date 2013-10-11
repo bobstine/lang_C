@@ -1,8 +1,13 @@
 /*
+
+  Things to try:
+  * adapt subspace stream to a fixed traditional stream?
+  * spend more alpha, using spending rule from the other paper where amount to spend is f(wealth)
+
   Run using commands in the Makefile to get the data setup properly (eg, make auction__test)
   Then execute code as
                     
-           ./auction.test ... { options } 
+           ./text_auction ... { options } 
 	   
   where options are
 	-a  total alpha to distribute           (default is 0.1... might ought to be less)
@@ -15,19 +20,9 @@
 	-p  level of protection                 (default is level 3)
         -r  number of rounds for the auction    (default is 50)
 	-s  shrink the estimates                (default is 0; set to 1 to shrink)
-	-x  number of leading extra cases       (default is 0; used for lagging)
 	
-  10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
-  27 Nov 10 ... New stream types, with threads.
-  21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
-   2 Mar 10 ... Look at 'dynamically' funding experts via tax on bids and earnings
-  22 Mar 09 ... Remove validation option by recognizing file pattern; add debugging from Dean
-   5 Sep 08 ... Add the validation option.
-  14 Oct 04 ... (dpf) added make_20_geometric bidders
-   2 Aug 04 ... Force logistic model to have a spline smooth to calibrate (rather than recommender).
-  23 Mar 04 ... Revised to use the anonymous ranges and other objects; logistic regression.
-  13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
-   1 Aug 03 ... Created
+  11 Oct 13 ... Copied from main auction code with an interest in the text problem.
+
 */
    
 #include "auction.h"
@@ -124,10 +119,10 @@ main(int argc, char** argv)
   int           blockSize            (  0);                                   // no blocking implies standard testing
   int           numberRounds         (200);
   int           numOutputPredictors    (0);
-  // int           splineDF             (0);
   int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
   int           debugLevel           (3);
+  // int           splineDF             (0);
      
 
   parse_arguments(argc,argv, inputName, outputPath, protection, useShrinkage,
@@ -135,7 +130,7 @@ main(int argc, char** argv)
 		  calibrationGap, prefixCases, debugLevel, numOutputPredictors);
   if(useShrinkage) shrink = 1;
   
-  // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
+  // initialize debugging stream (write to clog if debugging is on, otherwise to auction.log file)
   std::string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
@@ -252,14 +247,13 @@ main(int argc, char** argv)
   // scavenger experts
   /*
     theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
-			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
-
-  
-  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
-			       UniversalBidder< PolynomialStream >(),
-			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
-			       ));
+    UniversalBidder<CrossProductStream>(),
+    make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+    
+    theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
+    UniversalBidder< PolynomialStream >(),
+    make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
+    ));
   */
 
   // if find neighborhood index, then build a neighborhood stream
@@ -322,20 +316,22 @@ main(int argc, char** argv)
 							 nContextCases, yIsBinary)));
 
   //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
-			       UniversalBidder<PCAStream>(),
-			       make_subspace_stream("PCA", 
-						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
-						    30))) ;                                                          // bundle size
-
+  if (false)
+    theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
+				 UniversalBidder<PCAStream>(),
+				 make_subspace_stream("PCA", 
+						      theAuction.rejected_features(),
+						      EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
+						      30))) ;                                                          // bundle size
+  
   //   RKHS stream
-  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
-			       UniversalBidder<RKHSStream>(),
-			       make_subspace_stream("RKHS", 
-						    theAuction.rejected_features(),
-						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
-						    30)));
+  if (false)
+    theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
+				 UniversalBidder<RKHSStream>(),
+				 make_subspace_stream("RKHS", 
+						      theAuction.rejected_features(),
+						      EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
+						      30)));
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;
