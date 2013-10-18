@@ -15,7 +15,7 @@
 #include <bennett.h>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
-const unsigned int numberOfAllocatedColumns(850);    
+const unsigned int numberOfAllocatedColumns(3001);    
 
 double abs_val(double x) { if (x < 0.0) return -x; else return x; }
 double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
@@ -409,6 +409,7 @@ void
 LinearRegression::add_predictors (StringVec const& xNames, Matrix const& x)
 {
   assert(x.rows() == mN);
+  mTempK = x.cols();                      // added for use in text model
   assert((int)xNames.size() == x.cols());
   mQ.block(0,mK,mN,x.cols()) =  mSqrtWeights.asDiagonal() * x;
   for(int k = 0; k<x.cols(); ++k)

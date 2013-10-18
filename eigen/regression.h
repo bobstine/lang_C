@@ -30,7 +30,7 @@
   Issues that have *not* been handled...
     -- weighted with bennett
     -- logistic loss
-
+    -- converting from data that is float to internal that is double *** conveniently ***.
 */
 
 
