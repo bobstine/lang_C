@@ -20,6 +20,12 @@
 */
 
 
+// Enable special processing of messed up questions!
+//
+// #define FUBAR
+//
+//
+
 #include "/Users/bob/C/utils/read_utils.h"
 
 #include <iostream>
@@ -95,7 +101,7 @@ main(int argc, char** argv)
 
 ///////////////////////////  process  ////////////////////////////////////////////
 
-// set build indicators to true to get the full regression data set
+// set buildIndicators = true to get the full regression data set
 
 int
 process (std::istream& input, std::ostream& output,
@@ -160,11 +166,28 @@ process (std::istream& input, std::ostream& output,
 	  ans = (5 + ans - examKey)%5;               // zero based simplifies this
 	  studentAnswers[student][q] = ans;
 	  ++answerFrequencies[q][ans];
-	  if ( (answerKey[q]<0) || (ans == answerKey[q]) )
-	  { ++studentTotal[student];
-	    ++questionTotal[q];
-	    ++correctArray[student][q];
+#ifdef FUBAR
+	  if (27 == q)                                     // fubared questions
+	  { if((ans == 1) || (ans==4))
+	    { ++studentTotal[student];
+	      ++questionTotal[q];
+	      ++correctArray[student][q];
+	    }
 	  }
+	  else if (33 == q)  
+	  { if((ans == 2) || (ans==4))
+	    { ++studentTotal[student];
+	      ++questionTotal[q];
+	      ++correctArray[student][q];
+	    }
+	  }
+	  else
+#endif
+	    if ( (answerKey[q]<0) || (ans == answerKey[q]) )  // omit negative (skip question, give credit)
+	      { ++studentTotal[student];
+		++questionTotal[q];
+		++correctArray[student][q];
+	      }
 	}
       }
       ++student;
