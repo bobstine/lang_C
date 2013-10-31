@@ -98,6 +98,7 @@ public:
   inline int       q()                 const   { return mK-1; }                                     // -1 for intercept 
   inline double    rmse()              const   { return sqrt(mResidualSS/(mN-mK)); }  
   inline double    residual_ss()       const   { return mResidualSS; }
+  inline double    aic_c()             const   { double n(mN), k(mK); return n * log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
   inline double    r_squared()         const   { return 1.0 - mResidualSS/mTotalSS; }
   inline Vector    residuals()         const   { return mResiduals; }
   inline Vector    fitted_values()     const   { return mY - mResiduals; }
