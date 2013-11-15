@@ -60,8 +60,8 @@ int main(int, char **)
   for(int i=0; i<nRows; ++i)
     y[i] = y[i] + i * 100;
   
-  // define the weight vector
 #ifdef USE_WLS
+  // define the weight vector
   for (int i=0; i<nRows; ++i)
     w[i] = 10.0; //    w[i] = 1.0 + i % 4;
   std::cout << "TEST: First 10 of weight vector = " << w.head(10).transpose() << std::endl;
