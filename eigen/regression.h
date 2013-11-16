@@ -3,6 +3,7 @@
 #define _EIGEN_REGRESSION_H_
 
 #include "fstatistic.h"
+#include "eigen_iterator.h"
 
 #include <Eigen/Core>
 
@@ -227,73 +228,10 @@ private:
 };
 
 
-//      eigen_iterator     eigen_iterator     eigen_iterator     eigen_iterator     eigen_iterator
-
-class EigenVectorIterator: public std::iterator<std::forward_iterator_tag, double>
-{
-  int mIndex;
-  Eigen::VectorXd const& mVector;
-public:
-  EigenVectorIterator (Eigen::VectorXd const& v)
-    : mIndex(0), mVector(v)            { }
-
-  EigenVectorIterator (EigenVectorIterator const& vi)
-    : mIndex(vi.mIndex), mVector(vi.mVector) {}
-
-  EigenVectorIterator & operator= (EigenVectorIterator const& other)
-    {
-      if (this != &other) // protect against invalid self-assignment
-      {
-	mIndex = other.mIndex;
-	mVector = other.mVector;
-      }
-      return *this;       // by convention, always return *this
-    }
-  
-  EigenVectorIterator& operator++()          { ++mIndex; return *this; }
-  double               operator*()    const  { return mVector[mIndex]; }
-
-  bool operator==(EigenVectorIterator const& it) const { return ((mIndex == it.mIndex) && (mVector == it.mVector)); }
-  bool operator!=(EigenVectorIterator const& it) const { return ((mIndex != it.mIndex) || (mVector != it.mVector)); }
-
-  bool operator<(EigenVectorIterator const& it) const { return mIndex < it.mIndex; }
-  bool operator>(EigenVectorIterator const& it) const { return mIndex > it.mIndex; }
-};
-
-
 //      cross-validation     cross-validation     cross-validation     cross-validation     cross-validation
 
 double
-cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed=26612)
-{
-  std::srand(randomSeed);
-  Eigen::VectorXf cvss (nFolds);
-  // construct folds
-  std::vector<int> folds (Y.size());
-  for(int i=0; i<(int)folds.size(); ++i)
-    folds[i] = i % nFolds;
-  std::random_shuffle(folds.begin(), folds.end());
-  // build validated regressions (one step at a time)
-  const int  blockSize = 0;     // no white blocking
-  const bool shrink    = false; // no shrinkage
-  const double pval    = 0.99;
-  std::vector<std::vector<bool>> selectors (nFolds);
-  std::vector< std::pair<std::string,EigenVectorIterator> > xx(1);
-  for (int fold=0; fold<nFolds; ++fold)
-  { for(int i=0; i<(int)folds.size(); ++i)
-      selectors[fold].push_back( folds[i]==fold );
-    xx[0].first = "xx";
-    ValidatedRegression regr("yy", EigenVectorIterator(Y), selectors[fold].cbegin(), (int) Y.size(), blockSize, shrink);
-    for (int k=0; k<X.cols(); ++k)
-    { xx[0].second = EigenVectorIterator(X.col(k));
-      regr.add_predictors_if_useful(xx, pval);
-    }
-    cvss[fold] = regr.validation_ss();
-  }
-  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
-  return cvss.sum();
-}
-
+cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed=26612);
 
 ///////////////////////////  Printing Operators  /////////////////////////////
 

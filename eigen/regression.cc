@@ -2,9 +2,9 @@
 
   For explanation of shrinkage, see shrinkage.tex in work/papers/notes
   
- */
+*/
 
-  #pragma GCC optimize ("-O4")
+#pragma GCC optimize ("-O4")
 
 #include "regression.h"
 
@@ -586,4 +586,38 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
       os << mValidationX(i,j) << "\t";
     os << mValidationX(i,mValidationX.cols()-1) << std::endl;
   }
+}
+
+//     cross validation     cross validation     cross validation     cross validation     cross validation
+
+double
+cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed)
+{
+  std::srand(randomSeed);
+  Eigen::VectorXd cvss (nFolds);
+  // construct folds
+  std::vector<int> folds (Y.size());
+  for(int i=0; i<(int)folds.size(); ++i)
+    folds[i] = i % nFolds;
+  std::random_shuffle(folds.begin(), folds.end());
+  // build validated regressions (one step at a time)
+  const int  blockSize = 0;     // no white blocking
+  const bool shrink    = false; // no shrinkage
+  const double pval    = 0.99;
+  std::vector<std::vector<bool>> selectors (nFolds);
+  std::vector< std::pair<std::string,EigenColumnIterator> > xx;
+  xx.push_back( std::make_pair("Empty",EigenColumnIterator(&X,-1)) );
+  for (int fold=0; fold<nFolds; ++fold)
+  { for(int i=0; i<(int)folds.size(); ++i)
+      selectors[fold].push_back( folds[i]==fold );
+    xx[0].first = "xx";
+    ValidatedRegression regr("yy", EigenVectorIterator(&Y), selectors[fold].cbegin(), (int) Y.size(), blockSize, shrink);
+    for (int k=0; k<X.cols(); ++k)
+    { xx[0].second = EigenColumnIterator(&X, k);
+      regr.add_predictors_if_useful(xx, pval);
+    }
+    cvss[fold] = regr.validation_ss();
+  }
+  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
+  return cvss.sum();
 }

@@ -21,7 +21,7 @@ EXTERNAL_USES = gomp
 #
 ###########################################################################
 
-level_0   =  fstatistic.o stoc_grad.o
+level_0   =  fstatistic.o eigen_iterator.o
 level_1   =  eigen_svd.o  regression.o 
 
 ############################################################################

@@ -91,8 +91,15 @@ int main(int, char **)
     output.precision(7);
     output << data << std::endl;
   }
-  
-  if (true)
+
+  if (true) // check out CV
+  {
+    int nFolds = 5;
+    int seed = 1232;
+    std::cout << "TEST: CVSS = " << cross_validate_regression_ss(y, X, nFolds, seed) << std::endl;
+  }
+    
+  if (false)
   { std::cout << "\n\nTEST: basic test of the linear regression routine, adding variables one at a time." << std::endl;
 
     double mean (y.sum()/y.size());
