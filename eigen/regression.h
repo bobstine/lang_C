@@ -187,10 +187,11 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
     :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
 
-  double goodness_of_fit() const  { return mModel.r_squared(); }
-  int block_size()         const  { return mModel.block_size(); }
-  int q()                  const  { return mModel.q(); }
-  int residual_df()        const  { return n_estimation_cases() - 1 - mModel.q(); }
+  double goodness_of_fit()        const  { return mModel.r_squared(); }
+  int block_size()                const  { return mModel.block_size(); }
+  int q()                         const  { return mModel.q(); }
+  int residual_df()               const  { return n_estimation_cases() - 1 - mModel.q(); }
+  LinearRegression const& model() const  { return mModel; }
 
   std::vector<std::string> predictor_names() const { return mModel.predictor_names(); }
   
@@ -232,6 +233,7 @@ private:
 
 double
 cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed=26612);
+
 
 ///////////////////////////  Printing Operators  /////////////////////////////
 

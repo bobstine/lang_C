@@ -28,7 +28,7 @@ EXTERNAL_USES = boost_system boost_thread gomp
 #
 ###########################################################################
 
-level_0   = featureABC.o      bidders.o      light_threads.o
+level_0   = featureABC.o      bidders.o  
 level_1   = features.o      feature_transformations.o
 level_2   = feature_predicates.o
 level_3   = feature_iterators.o      adapter.o

@@ -34,7 +34,7 @@ void print_time(time_t const& start)
 int main(int, char **)
 {
   std::cout << "TEST:  Test of regression begins...\n\n";
-  debugging::debug_init(std::cout,3);
+  debugging::debug_init(std::cout,1);  // Low debug level 1 avoids most messages
   std::cout.precision(4);
   
   // Time to fit regr with n = 200,000 rows  (optimization O4)       Add 3 to initial p
@@ -45,9 +45,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       (200);   
-  const int nCols        (8 );
-  const int nAdd         ( 3);
+  const int nRows       (1000);   
+  const int nCols        ( 8 );
+  const int nAdd         ( 3 );
   
   // form random matrix for response and predictors
   Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
@@ -86,7 +86,7 @@ int main(int, char **)
   { Eigen::MatrixXd data(nRows,1+nCols+nAdd);
     data << y , X , Z; 
     std::cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << std::endl;
-    std::string fileName ("test.dat");
+    std::string fileName ("/Users/bob/Desktop/test.txt");
     std::ofstream output(fileName.c_str());
     output.precision(7);
     output << data << std::endl;
@@ -96,7 +96,17 @@ int main(int, char **)
   {
     int nFolds = 5;
     int seed = 1232;
-    std::cout << "TEST: CVSS = " << cross_validate_regression_ss(y, X, nFolds, seed) << std::endl;
+    std::cout << "TEST: Cross-validate regression using " << nFolds << " folds." << std::endl;
+#ifdef USE_WLS
+    LinearRegression regr("yyy", y, w, 0);
+#else
+    LinearRegression regr("yyy", y, 0);
+#endif    
+    std::cout << "TEST: Prior to CV, F test of X " << regr.f_test_predictors(xNames, X) << std::endl;
+    regr.add_predictors();    
+    std::cout << "TEST: CV regression after adding X " << std::endl << regr << std::endl;
+    double cvss = cross_validate_regression_ss(y, X, nFolds, seed);
+    std::cout << "TEST: CVSS = " << cvss << " for CV RMSE = " << sqrt(cvss/y.size()) << std::endl;
   }
     
   if (false)

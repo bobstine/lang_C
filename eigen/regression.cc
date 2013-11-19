@@ -7,9 +7,12 @@
 #pragma GCC optimize ("-O4")
 
 #include "regression.h"
+#include "light_threads.h"
 
 #include <Eigen/LU>
 #include <Eigen/QR>
+
+#include "boost/shared_ptr.hpp"
 
 #include <iomanip>
 #include <bennett.h>
@@ -212,9 +215,7 @@ LinearRegression::predictions(Matrix const& x) const
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
   else
-  { debugging::debug("REGR",0) << "Predicting, beta ranges from " << b.minCoeff() << " to " << b.maxCoeff() << std::endl;
     return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
-  }
 }
 
 LinearRegression::Vector
@@ -590,8 +591,77 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
 
 //     cross validation     cross validation     cross validation     cross validation     cross validation
 
+
+
+
+const int    blockSize = 0;     // no white blocking
+const bool   shrink    = false; // no shrinkage
+const double pval      = 0.99;
+
+class Worker
+{
+private:
+  int                                mN, mK;
+  Eigen::VectorXd const*             mY;
+  Eigen::MatrixXd const*             mX;
+  std::vector<bool>::const_iterator  mSelector;
+  double                             mCVSS;
+
+public:    
+  Worker(int n, int k, Eigen::VectorXd const* y, Eigen::MatrixXd const* X, std::vector<bool>::const_iterator sel) :
+    mN(n), mK(k), mY(y), mX(X), mSelector(sel), mCVSS(0) { }
+    
+  Worker(const Worker& rhs) : mN(rhs.mN), mK(rhs.mK), mY(rhs.mY), mX(rhs.mX), mSelector(rhs.mSelector), mCVSS(rhs.mCVSS) { }
+    
+  void operator()()
+  {
+    std::cout << "WORK: started." << std::endl;
+    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mN, blockSize, shrink);
+    std::vector< std::pair<std::string,EigenColumnIterator> > xx;
+    xx.push_back( std::make_pair("X",EigenColumnIterator(mX,-1)) );
+    for (int k=0; k<mK; ++k)
+    { xx[0].second = EigenColumnIterator(mX, k);
+      regr.add_predictors_if_useful(xx, pval);
+    }
+    mCVSS = regr.validation_ss();
+    std::cout << "WORK: finished." << std::endl;
+  }
+  
+  double cvss() const  { return mCVSS; }
+
+};
+
+
+
 double
 cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed)
+{
+  typedef boost::shared_ptr< LightThread<Worker> > ThreadPointer;
+  
+  std::srand(randomSeed);
+  Eigen::VectorXd cvss (nFolds);
+  // construct folds
+  std::vector<int> folds (Y.size());
+  for(int i=0; i<(int)folds.size(); ++i)
+    folds[i] = i % nFolds;
+  std::random_shuffle(folds.begin(), folds.end());
+  // build validated regressions (one step at a time)
+  std::vector<std::vector< bool >> selectors (nFolds);
+  std::vector<ThreadPointer>       workers   (nFolds);
+  for (int fold=0; fold<nFolds; ++fold)
+  { for(int i=0; i<(int)folds.size(); ++i)
+      selectors[fold].push_back( folds[i] != fold );
+    workers[fold] = boost::shared_ptr<LightThread<Worker>> (new LightThread<Worker> ("thread " + std::to_string(fold),
+										     Worker((int)Y.size(), X.cols(), &Y, &X, selectors[fold].begin()))  );
+  }
+  for (int fold=0; fold<nFolds; ++fold)
+    cvss[fold] = (*workers[fold])->cvss();
+  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
+  return cvss.sum();
+}
+
+double
+unthreaded_cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed)
 {
   std::srand(randomSeed);
   Eigen::VectorXd cvss (nFolds);
@@ -609,8 +679,8 @@ cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X,
   xx.push_back( std::make_pair("Empty",EigenColumnIterator(&X,-1)) );
   for (int fold=0; fold<nFolds; ++fold)
   { for(int i=0; i<(int)folds.size(); ++i)
-      selectors[fold].push_back( folds[i]==fold );
-    xx[0].first = "xx";
+      selectors[fold].push_back( folds[i] != fold );
+    xx[0].first = "xx" + std::to_string(fold);
     ValidatedRegression regr("yy", EigenVectorIterator(&Y), selectors[fold].cbegin(), (int) Y.size(), blockSize, shrink);
     for (int k=0; k<X.cols(); ++k)
     { xx[0].second = EigenColumnIterator(&X, k);
