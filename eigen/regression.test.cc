@@ -45,9 +45,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       (1000);   
-  const int nCols        ( 8 );
-  const int nAdd         ( 3 );
+  const int nRows       (20000);   
+  const int nCols        ( 28 );
+  const int nAdd         (  3 );
   
   // form random matrix for response and predictors
   Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
