@@ -231,8 +231,13 @@ private:
 
 //      cross-validation     cross-validation     cross-validation     cross-validation     cross-validation
 
-double
-cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed=26612);
+void
+validate_regression(Eigen::VectorXd const& Y,     // response
+		    Eigen::MatrixXd const& Xi,    // initial block of Xs to initialize model
+		    Eigen::MatrixXd const& X,     // sequence to compute AIC, CVSS
+		    int nFolds,                   // how many folds for CV (0 means no CV)
+		    Eigen::MatrixXd  &result,     // 4 columns: R2, RSS, AICc, CVSS; n = cols(X) rows
+		    unsigned randomSeed=26612);   // used to control random splits (does not call srand)
 
 
 ///////////////////////////  Printing Operators  /////////////////////////////

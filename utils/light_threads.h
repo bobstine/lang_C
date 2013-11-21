@@ -43,7 +43,7 @@ class LightThread
 {
 private:
   std::string                             mName;             // use to identify if there's a problem
-  boost::shared_ptr<bool>                 mp_done;           // we are only done if the lock isn't grabbed and this is true
+  boost::shared_ptr<bool>                 mp_notWorking;           // we are only notWorking if the lock isn't grabbed and this is true
   boost::shared_ptr<W>                    mp_worker;
   boost::shared_ptr<boost::thread>        mp_thread;
   boost::shared_ptr<boost::mutex>         mp_thread_mutex;   // thread lock controls read/write values of pointers
@@ -56,12 +56,12 @@ public:
   LightThread<W>(std::string name);
   
   void     operator()(const W& worker);        // starts a new thread (waits for old to finish)
-  bool     done() const;                       // indicates whether the thread is done
+  bool     done() const;                       // indicates whether the thread is not working
   bool     has_worker() const;                 // confirm that worker is there
-  const W& operator()() const;                 // will wait for thread to finish if not done()
+  const W& operator()() const;                 // will wait for thread to finish if working()
   
-  const W* operator->() const;     // will wait for thread to finish if not done()
-        W* operator->();           // who needs const anyway???
+  const W* operator->() const;                 // blocks if thread is not done (poll status using done to avoid block)
+        W* operator->();                       // who needs const anyway???
   
 private:
   void start_thread();

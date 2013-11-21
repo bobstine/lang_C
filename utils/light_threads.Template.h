@@ -2,13 +2,13 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
-//  The key variable here is mp_done.
+//  The key variable here is mp_notWorking.
 //
-//  mp_done == true:
+//  mp_notWorking == true:
 //          we currently are in single thread mode
 //          If mp_worker != 0, we should have a valid answer in the object
 //          We can change values at will
-//  mp_done == false:
+//  mp_notWorking == false:
 //          There exists a thread running now
 //          Nothing should be touched or even read except by the thread
 //
@@ -32,24 +32,24 @@
 template<class W>
 LightThread<W>::~LightThread() 
 {
-  if (mp_thread.unique() && !*mp_done)
+  if (mp_thread.unique() && !*mp_notWorking)
   {  mp_thread->join();
     std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
   }
-  assert(!mp_thread.unique() || *mp_done);
+  assert(!mp_thread.unique() || *mp_notWorking);
 }
 
 template<class W>
 LightThread<W>::LightThread(std::string name, const W& worker)
   : mName(name),
-    mp_done(new bool), // we have no work to do in the queue and no thread running
+    mp_notWorking(new bool), // we have no work to do in the queue and no thread running
     mp_worker(),
     mp_thread(),
     mp_thread_mutex(new boost::mutex()),
     m_object_mutex()
 {
   //  std::cout << "LT: initialize with a worker.\n";
-  (*mp_done) = true;
+  (*mp_notWorking) = true;
   (*this)(worker);
 }
 
@@ -58,7 +58,7 @@ LightThread<W>::LightThread(std::string name, const W& worker)
 template<class W>
 LightThread<W>::LightThread(const LightThread<W>& rhs)
   : mName(rhs.mName),
-    mp_done(),
+    mp_notWorking(),
     mp_worker(),
     mp_thread(),
     mp_thread_mutex(),
@@ -69,7 +69,7 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
   m_object_mutex.lock();
   rhs.m_object_mutex.lock();
   // copy pointers
-  mp_done   = rhs.mp_done;
+  mp_notWorking   = rhs.mp_notWorking;
   mp_worker = rhs.mp_worker;
   mp_thread = rhs.mp_thread;
   mp_thread_mutex = rhs.mp_thread_mutex;
@@ -83,7 +83,7 @@ LightThread<W>::LightThread(const LightThread<W>& rhs)
 template<class W>
 LightThread<W>::LightThread(std::string name)
   : mName(name),
-    mp_done(),
+    mp_notWorking(),
     mp_worker(),
     mp_thread(),
     mp_thread_mutex(),
@@ -102,8 +102,8 @@ LightThread<W>::operator()(W const& worker)
   m_object_mutex.lock();
   // the following should all be changed "atomically"
   mp_thread_mutex = boost::shared_ptr<boost::mutex> (new boost::mutex);
-  mp_done = boost::shared_ptr<bool> (new bool);
-  (*mp_done) = false;
+  mp_notWorking = boost::shared_ptr<bool> (new bool);
+  (*mp_notWorking) = false;
   mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
   mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
   m_object_mutex.unlock();
@@ -120,7 +120,7 @@ bool
 LightThread<W>::done() const
 {
   m_object_mutex.lock();
-  if (mp_done == 0)                              // make sure we have a non-zero pointer
+  if (mp_notWorking == 0)                              // make sure we have a non-zero pointer
   { m_object_mutex.unlock();
     return true;
   }
@@ -129,7 +129,7 @@ LightThread<W>::done() const
     return false;
   }
   else  // we have the thread lock
-  { bool result = (*mp_done);
+  { bool result = (*mp_notWorking);
     mp_thread_mutex->unlock();
     m_object_mutex.unlock();
     return result;
@@ -156,9 +156,9 @@ LightThread<W>::operator->() const
   m_object_mutex.lock();
   assert(mp_worker);
   mp_thread_mutex->lock();
-  if(!*mp_done)
+  if(!*mp_notWorking)
   { mp_thread_mutex->unlock(); // Unlock mutexes so that running thread
-    m_object_mutex.unlock();   // can set things, such as done
+    m_object_mutex.unlock();   // can set things, such as notWorking
     mp_thread->join();
     m_object_mutex.lock();
     mp_thread_mutex->lock();
@@ -178,7 +178,7 @@ LightThread<W>::operator->()
   m_object_mutex.lock();
   assert(mp_worker);
   mp_thread_mutex->lock();
-  if(!*mp_done)
+  if(!*mp_notWorking)
   { mp_thread_mutex->unlock();
     m_object_mutex.unlock();
     mp_thread->join();
@@ -198,14 +198,14 @@ void
 LightThread<W>::start_thread()
 {
   m_object_mutex.lock();
-  assert(mp_done != 0);
+  assert(mp_notWorking != 0);
   assert(mp_worker != 0);
   boost::shared_ptr<W> pLocalWorker = mp_worker;
-  boost::shared_ptr<bool> pLocalDone = mp_done;
+  boost::shared_ptr<bool> pLocalNotWorking = mp_notWorking;
   m_object_mutex.unlock();
-  (*pLocalWorker)(); // no one looks at mp_worker until it is "done".  So we don't have to protect it further
+  (*pLocalWorker)(); // no one looks at mp_worker until it is "notWorking".  So we don't have to protect it further
   mp_thread_mutex->lock();
-  (*pLocalDone) = true;
+  (*pLocalNotWorking) = true;
   mp_thread_mutex->unlock();
 }
 

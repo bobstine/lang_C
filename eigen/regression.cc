@@ -3,11 +3,15 @@
   For explanation of shrinkage, see shrinkage.tex in work/papers/notes
   
 */
+#include "debug.h"
+
+using debugging::debug;
 
 #pragma GCC optimize ("-O4")
 
 #include "regression.h"
 #include "light_threads.h"
+#include "bennett.h"
 
 #include <Eigen/LU>
 #include <Eigen/QR>
@@ -15,7 +19,7 @@
 #include "boost/shared_ptr.hpp"
 
 #include <iomanip>
-#include <bennett.h>
+#include <random>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(3001);    
@@ -55,10 +59,10 @@ LinearRegression::is_binary_vector(Vector const& y)  const
 {
   for(int i=0; i<y.size(); ++i)
     if( (y[i] != 0) && (y[i] != 1) )
-    { debugging::debug("REGR",4) << "Response vector in regression is not binary; found value v[" << i << "] = " << y[i] << std::endl;
+    { debug("REGR",4) << "Response vector in regression is not binary; found value v[" << i << "] = " << y[i] << std::endl;
       return false;
     }
-  debugging::debug("REGR",4) << "Response vector in regression is binary." << std::endl;
+  debug("REGR",4) << "Response vector in regression is binary." << std::endl;
   return true;
 }
 
@@ -591,103 +595,168 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
 
 //     cross validation     cross validation     cross validation     cross validation     cross validation
 
+const int    blockSize     = 0;     // no white blocking
+const bool   shrink        = false; // no shrinkage
+const double singularPval  = 0.99;
 
 
-
-const int    blockSize = 0;     // no white blocking
-const bool   shrink    = false; // no shrinkage
-const double pval      = 0.99;
-
-class Worker
+class RegressionWorker
 {
 private:
-  int                                mN, mK;
-  Eigen::VectorXd const*             mY;
-  Eigen::MatrixXd const*             mX;
-  std::vector<bool>::const_iterator  mSelector;
-  double                             mCVSS;
+  Eigen::VectorXd const*   mY;
+  Eigen::MatrixXd const*   mXi;
+  Eigen::MatrixXd const*   mX;
+  int                      mSkipped;
+  Eigen::MatrixXd      *   mResults;
 
 public:    
-  Worker(int n, int k, Eigen::VectorXd const* y, Eigen::MatrixXd const* X, std::vector<bool>::const_iterator sel) :
-    mN(n), mK(k), mY(y), mX(X), mSelector(sel), mCVSS(0) { }
+  RegressionWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X, Eigen::MatrixXd *results)
+    :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results)
+    {
+      assert( (mX->cols()==mResults->rows()) && (mResults->cols() >= 3));  // fills first 3 columns
+    }
     
-  Worker(const Worker& rhs) : mN(rhs.mN), mK(rhs.mK), mY(rhs.mY), mX(rhs.mX), mSelector(rhs.mSelector), mCVSS(rhs.mCVSS) { }
+  RegressionWorker(const RegressionWorker& rhs) : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSkipped(rhs.mSkipped), mResults(rhs.mResults) { }
+  
+  void operator()()
+  {
+    debug("REGR",3) << "WORK: Regression worker started." << std::endl;
+    std::vector<std::string> xNames;
+    for(int i=0; i<mXi->cols(); ++i) xNames.push_back("Xi_"+std::to_string(i));
+    LinearRegression regr("Y", *mY, xNames, *mXi, blockSize);
+    for (int k=0; k<mX->cols(); ++k)
+    { FStatistic f = regr.f_test_predictor("X_"+std::to_string(k),mX->col(k));
+      if(f.f_stat() > 0.0001)
+	regr.add_predictors();
+      else
+	++mSkipped;
+      (*mResults)(k,0) = regr.r_squared();
+      (*mResults)(k,1) = regr.residual_ss();
+      (*mResults)(k,2) = regr.aic_c();
+    }
+    debug("REGR",3) << "WORK: Regression worker finished." << std::endl;
+  }
+
+  int number_skipped() const { return mSkipped; }
+  
+};
+
+
+class ValidationWorker
+{
+private:
+  Eigen::VectorXd const*             mY;
+  Eigen::MatrixXd const*             mXi;
+  Eigen::MatrixXd const*             mX;
+  std::vector<bool>::const_iterator  mSelector;
+  int                                mSkipped;
+  Eigen::VectorXd                 *  mCVSS;
+
+public:    
+  ValidationWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X,
+		   std::vector<bool>::const_iterator sel, Eigen::VectorXd *cvss)
+    : mY(y), mXi(Xi), mX(X), mSelector(sel), mSkipped(0), mCVSS(cvss)
+    {
+      assert( mX->cols()== (int)mCVSS->size() );
+    }
+  
+  ValidationWorker(const ValidationWorker& rhs)
+    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSelector(rhs.mSelector), mSkipped(rhs.mSkipped), mCVSS(rhs.mCVSS) { }
     
   void operator()()
   {
-    std::cout << "WORK: started." << std::endl;
-    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mN, blockSize, shrink);
-    std::vector< std::pair<std::string,EigenColumnIterator> > xx;
-    xx.push_back( std::make_pair("X",EigenColumnIterator(mX,-1)) );
-    for (int k=0; k<mK; ++k)
-    { xx[0].second = EigenColumnIterator(mX, k);
-      regr.add_predictors_if_useful(xx, pval);
+    debug("REGR",4) << "WORK: Validator started." << std::endl;
+    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), blockSize, shrink);
+    std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
+    namedIter.push_back( std::make_pair("Xi",EigenColumnIterator(mXi,-1)) );
+    for (int k=0; k<mXi->cols(); ++k)
+    { namedIter[0].second = EigenColumnIterator(mXi, k);
+      regr.add_predictors_if_useful(namedIter, singularPval);
     }
-    mCVSS = regr.validation_ss();
-    std::cout << "WORK: finished." << std::endl;
+    namedIter[0].first = "XX";
+    for (int k=0; k<mX->cols(); ++k)
+    { namedIter[0].second = EigenColumnIterator(mX, k);
+      std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, singularPval);
+      if (fAndP.first < 0.0001) ++mSkipped;
+      (*mCVSS)[k] = regr.validation_ss();
+    }
+    debug("REGR",4) << "WORK: finished." << std::endl;
   }
   
-  double cvss() const  { return mCVSS; }
+  int number_skipped() const { return mSkipped; }
 
 };
 
 
+void
+validate_regression(Eigen::VectorXd const& Y,
+		    Eigen::MatrixXd const& Xi, Eigen::MatrixXd const& X, 
+		    int nFolds,
+		    Eigen::MatrixXd  &results,
+		    unsigned randomSeed)
+{
+  assert( (results.rows() == X.cols()) && (results.cols()==4) );
+  typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
+  typedef boost::shared_ptr< Eigen::VectorXd > VectorPtr;
+  // fit main model, filling first 3 columns of results with R2, RSS, AICc
+  debug("REGR",2) << "Building main regression thread" << std::endl;
+  LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results));
+  // construct random folds
+  std::vector<int> folds (Y.size());
+  for(int i=0; i<(int)folds.size(); ++i)
+    folds[i] = i % nFolds;
+  shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
+  // build validated regressions (one step at a time)
+  std::vector<std::vector<bool>>       selectors (nFolds);
+  std::vector<VectorPtr>               cvss      (nFolds);
+  std::vector<ValidationThreadPointer> workers   (nFolds);
+  debug("REGR",2) << "Building validation threads" << std::endl;
+  for (int fold=0; fold<nFolds; ++fold)
+  { for(int i=0; i<(int)folds.size(); ++i)
+      selectors[fold].push_back( folds[i] != fold );
+    cvss[fold]    = VectorPtr(new Eigen::VectorXd(nFolds));
+    workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker> ("thread " + std::to_string(fold),
+							   ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
+  }
+  debug("REGR",2) << "Waiting for validation threads" << std::endl;
+  int totalSkipped = regrThread->xnumber_skipped();
+  for (int fold=0; fold<nFolds; ++fold)
+    totalSkipped += (*workers[fold])->number_skipped();
+  debug("REGR",2) << "Total number of terms skipped was " << totalSkipped << std::endl;
+  //  accumulate CVSS over folds
+  for(int j=0; j<results.rows(); ++j)
+  { double sum = 0;
+    for(int fold=0; fold<nFolds; ++fold)
+      sum += (*cvss[fold])[j]; 
+    (*results)(j,3)=sum;
+  }
+}
+
 
 double
-cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed)
+cross_validation_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& Xi, Eigen::MatrixXd const& X,
+		    int nFolds, unsigned randomSeed)  
 {
   typedef boost::shared_ptr< LightThread<Worker> > ThreadPointer;
-  
-  std::srand(randomSeed);
-  Eigen::VectorXd cvss (nFolds);
-  // construct folds
+  // construct random folds
   std::vector<int> folds (Y.size());
   for(int i=0; i<(int)folds.size(); ++i)
     folds[i] = i % nFolds;
-  std::random_shuffle(folds.begin(), folds.end());
+  shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
   // build validated regressions (one step at a time)
-  std::vector<std::vector< bool >> selectors (nFolds);
-  std::vector<ThreadPointer>       workers   (nFolds);
+  std::vector<std::vector<bool>> selectors (nFolds);
+  std::vector<ThreadPointer>     workers   (nFolds);
   for (int fold=0; fold<nFolds; ++fold)
   { for(int i=0; i<(int)folds.size(); ++i)
       selectors[fold].push_back( folds[i] != fold );
-    workers[fold] = boost::shared_ptr<LightThread<Worker>> (new LightThread<Worker> ("thread " + std::to_string(fold),
-										     Worker((int)Y.size(), X.cols(), &Y, &X, selectors[fold].begin()))  );
+    workers[fold] = ThreadPointer(new LightThread<Worker> ("thread " + std::to_string(fold),
+							   Worker((int)Y.size(), X.cols(), &Y, &X, selectors[fold].begin()))  );
   }
+  double cvss = 0.0;
   for (int fold=0; fold<nFolds; ++fold)
-    cvss[fold] = (*workers[fold])->cvss();
-  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
-  return cvss.sum();
+    cvss += (*workers[fold])->cvss();
+  //  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
+  return cvss;
 }
 
-double
-unthreaded_cross_validate_regression_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& X, int nFolds, int randomSeed)
-{
-  std::srand(randomSeed);
-  Eigen::VectorXd cvss (nFolds);
-  // construct folds
-  std::vector<int> folds (Y.size());
-  for(int i=0; i<(int)folds.size(); ++i)
-    folds[i] = i % nFolds;
-  std::random_shuffle(folds.begin(), folds.end());
-  // build validated regressions (one step at a time)
-  const int  blockSize = 0;     // no white blocking
-  const bool shrink    = false; // no shrinkage
-  const double pval    = 0.99;
-  std::vector<std::vector<bool>> selectors (nFolds);
-  std::vector< std::pair<std::string,EigenColumnIterator> > xx;
-  xx.push_back( std::make_pair("Empty",EigenColumnIterator(&X,-1)) );
-  for (int fold=0; fold<nFolds; ++fold)
-  { for(int i=0; i<(int)folds.size(); ++i)
-      selectors[fold].push_back( folds[i] != fold );
-    xx[0].first = "xx" + std::to_string(fold);
-    ValidatedRegression regr("yy", EigenVectorIterator(&Y), selectors[fold].cbegin(), (int) Y.size(), blockSize, shrink);
-    for (int k=0; k<X.cols(); ++k)
-    { xx[0].second = EigenColumnIterator(&X, k);
-      regr.add_predictors_if_useful(xx, pval);
-    }
-    cvss[fold] = regr.validation_ss();
-  }
-  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
-  return cvss.sum();
-}
+

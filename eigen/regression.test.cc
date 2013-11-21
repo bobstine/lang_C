@@ -45,9 +45,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       (1000);   
-  const int nCols        ( 8 );
-  const int nAdd         ( 3 );
+  const int nRows       (1000 );   
+  const int nCols        (  3 );
+  const int nAdd         ( 10 );
   
   // form random matrix for response and predictors
   Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
@@ -92,22 +92,6 @@ int main(int, char **)
     output << data << std::endl;
   }
 
-  if (true) // check out CV
-  {
-    int nFolds = 5;
-    int seed = 1232;
-    std::cout << "TEST: Cross-validate regression using " << nFolds << " folds." << std::endl;
-#ifdef USE_WLS
-    LinearRegression regr("yyy", y, w, 0);
-#else
-    LinearRegression regr("yyy", y, 0);
-#endif    
-    std::cout << "TEST: Prior to CV, F test of X " << regr.f_test_predictors(xNames, X) << std::endl;
-    regr.add_predictors();    
-    std::cout << "TEST: CV regression after adding X " << std::endl << regr << std::endl;
-    double cvss = cross_validate_regression_ss(y, X, nFolds, seed);
-    std::cout << "TEST: CVSS = " << cvss << " for CV RMSE = " << sqrt(cvss/y.size()) << std::endl;
-  }
     
   if (false)
   { std::cout << "\n\nTEST: basic test of the linear regression routine, adding variables one at a time." << std::endl;
@@ -144,7 +128,7 @@ int main(int, char **)
     for (int i=0; i<10; ++i)
       std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
 
-    std::cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << std::endl;               // ??? Why does it not detect singularity
+    std::cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << std::endl;    // ??? Why does it not detect singular
     regr.add_predictors();
     std::cout << "TEST: regression after adding X[1] a second time " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
@@ -162,24 +146,29 @@ int main(int, char **)
 #else
     LinearRegression regr("yyy", y, 0);
 #endif
-
     std::cout << "TEST: Initialized regression " << std::endl << regr << std::endl;
-    
     std::cout << "TEST: F test of X " << regr.f_test_predictors(xNames, X) << std::endl;
     regr.add_predictors();
-    
     std::cout << "TEST: regression after adding X " << std::endl << regr << std::endl;
     std::cout << "TEST: Beta  = " << regr.beta().transpose() << std::endl;
     std::cout << "      SE    = " << regr.se_beta_ols().transpose() << std::endl;
     std::cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << std::endl << std::endl;
-
     std::cout << "TEST: Several rows of X" << std::endl;
     for (int i=0; i<10; ++i)
       std::cout << "      [" << i << "]   " << regr.x_row(i).transpose() << std::endl;
   }
 
-
-  if (false)   // check validation model (dup validation and estimation cases)
+    
+  if(true)   // test threads for regression
+  { int nFolds = 5;
+    Eigen::MatrixXd results(Z.cols(), 4);
+    validate_regression( y, X, Z, nFolds,results);
+  }
+  
+  // --------------  from here below
+  //     check validation model (dup validation and estimation cases)
+  // --------------
+  if (false)
   { clock_t start;
     // assemble data
     std::cout << "TEST: Testing validated model\n";
@@ -207,8 +196,8 @@ int main(int, char **)
       { xPtr[2*i] = Z(i,j); xPtr[2*i+1] = Z(i,j); }
       zcollection.push_back(make_pair(zNames[j],xPtr));
     }
-
-    if(true) //  validated regression, standard F test
+  
+    if(false) //  validated regression, standard F test
     { std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
 #ifdef USE_WLS
       ValidatedRegression vregr("Y", yPtr, cv, wts, 2*nRows, 0, true);
@@ -236,12 +225,12 @@ int main(int, char **)
       // test the writing of data
       //      vregr.write_data_to (std::cout);
     }
-
+    
     if(false) // validated regression, white tests
     { bool shrink (false);
       const int blockSize (1);
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
-      std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
+      std::cout << "\n\n----------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
@@ -260,7 +249,7 @@ int main(int, char **)
     { bool shrink (false);
       const int blockSize (5);
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
-      std::cout << "\n\n-----------------------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
+      std::cout << "\n\n--------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       std::cout << vregr << std::endl;
       std::pair<double,double> result;
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
