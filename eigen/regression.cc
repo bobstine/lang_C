@@ -623,32 +623,32 @@ public:
   
   void operator()()
   {
-    debug("REGR",3) << "WORK: Regression worker started." << std::endl;
+    debug("REGR",2) << "WORK: Regression worker started." << std::endl;
     std::vector<std::string> xNames;
     for(int j=0; j<mXi->cols(); ++j) xNames.push_back("Xi_"+std::to_string(j));
-    LinearRegression regr("Y", *mY, xNames, *mXi, noBlocking);
-    /*
-      { FStatistic f = regr.f_test_predictors(xNames, *mXi);
-      if (f.f_stat() > 0.0001)
-	regr.add_predictors();
-      else
-	mSkipped += mXi->cols();
-    }
-    */
-    for (int k=0; k<mX->cols(); ++k)
-    { FStatistic f = regr.f_test_predictor("X_"+std::to_string(k),mX->col(k));
-      if(f.f_stat() > 0.0001)
-	regr.add_predictors();
-      else
-	++mSkipped;
+    LinearRegression regr("Y", *mY, noBlocking);
+    // check one at a time in case of singular model
+    for (int k=0; k<mXi->cols(); ++k)
+    { add_predictor_if_useful(regr, "Xi_"+std::to_string(k), mXi->col(k)); }
+    for (int k=0; k<mX ->cols(); ++k)
+    { add_predictor_if_useful(regr, "X_" +std::to_string(k), mX ->col(k));
       (*mResults)(k,0) = regr.r_squared();
       (*mResults)(k,1) = regr.residual_ss();
       (*mResults)(k,2) = regr.aic_c();
     }
-    debug("REGR",3) << "WORK: Regression worker finished." << std::endl;
+    debug("REGR",2) << "WORK: Regression worker finished." << std::endl;
   }
 
   int number_skipped() const { return mSkipped; }
+  
+private:
+  void add_predictor_if_useful(LinearRegression &regr, std::string name, Eigen::VectorXd const& x)
+    { FStatistic f = regr.f_test_predictor(name, x);
+      if(f.f_stat() > 0.0001)
+	regr.add_predictors();
+      else
+	++mSkipped;
+    }
   
 };
 
@@ -677,7 +677,7 @@ public:
     
   void operator()()
   {
-    debug("REGR",4) << "WORK: Validator started." << std::endl;
+    debug("REGR",2) << "WORK: Validator started." << std::endl;
     ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
     namedIter.push_back( std::make_pair("Xi",EigenColumnIterator(mXi,-1)) );
@@ -692,7 +692,7 @@ public:
       if (fAndP.first < 0.0001) ++mSkipped;
       (*mCVSS)[k] = regr.validation_ss();
     }
-    debug("REGR",4) << "WORK: finished." << std::endl;
+    debug("REGR",2) << "WORK: Validator finished." << std::endl;
   }
   
   int number_skipped() const { return mSkipped; }
@@ -715,14 +715,14 @@ validate_regression(Eigen::VectorXd const& Y,
   // fit main model, filling first 3 columns of results with R2, RSS, AICc
   debug("REGR",2) << "Building main regression thread" << std::endl;
   LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results));
-  // Move this line after debugged
-  debug("REGR",2) << "Completed main thread, skipping " << regrThread->number_skipped() << std::endl;
-  /*
   // construct random folds
   std::vector<int> folds (Y.size());
   for(int i=0; i<(int)folds.size(); ++i)
     folds[i] = i % nFolds;
-  shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
+  
+  // dont foget to uncomment this after testing
+  // shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
+
   // build validated regressions (one step at a time)
   typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
   std::vector<std::vector<bool>>       selectors (nFolds);
@@ -733,14 +733,17 @@ validate_regression(Eigen::VectorXd const& Y,
   { for(int i=0; i<(int)folds.size(); ++i)
       selectors[fold].push_back( folds[i] != fold );
     cvss[fold]    = new Eigen::VectorXd(X.cols());
-    workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker> ("thread " + std::to_string(fold),
-							   ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
+    workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker>
+					    ("thread " + std::to_string(fold),
+					     ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
   }
-  // -> operator blocks until thread finishes (don't really need num skipped)
+  // deref operator blocks until thread finishes (don't really need num skipped)
   debug("REGR",2) << "Waiting for validation threads" << std::endl;
+  int totalSkipped = regrThread->number_skipped();
+  debug("REGR",3) << "Completed main thread, skipping " << totalSkipped << std::endl;
   for (int fold=0; fold<nFolds; ++fold)
     totalSkipped += (*workers[fold])->number_skipped();
-  debug("REGR",2) << "Total number of terms skipped was " << totalSkipped << std::endl;
+  debug("REGR",3) << "Total number of terms skipped was " << totalSkipped << std::endl;
   //  accumulate CVSS over folds
   for(int fold=1; fold<nFolds; ++fold)
     (*cvss[0]) += *cvss[fold];
@@ -748,7 +751,6 @@ validate_regression(Eigen::VectorXd const& Y,
   // free space
   for(int fold=0; fold<nFolds; ++fold)
     delete cvss[fold];
-  */
 }
 
 /*

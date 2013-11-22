@@ -46,7 +46,7 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       (1000 );   
+  const int nRows       ( 300 );   
   const int nCols        (  3 );
   const int nAdd         ( 10 );
   
@@ -59,7 +59,11 @@ int main(int, char **)
 
   // shift the y's by 100 to check ordering in train/test data
   for(int i=0; i<nRows; ++i)
-    y[i] = y[i] + i * 100;
+    y[i] = y[i] + 100;
+  // add some signal to the Z's for checking validation
+  Z(0,0) = y(0);
+  Z(1,1) = y(1);
+  Z(2,2) = y(2);
   
 #ifdef USE_WLS
   // define the weight vector
@@ -87,7 +91,7 @@ int main(int, char **)
   { Eigen::MatrixXd data(nRows,1+nCols+nAdd);
     data << y , X , Z; 
     cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << endl;
-    std::string fileName ("/Users/bob/Desktop/test.txt");
+    std::string fileName ("/Users/bob/Desktop/regr_test_data.txt");
     std::ofstream output(fileName.c_str());
     output.precision(7);
     output << data << endl;

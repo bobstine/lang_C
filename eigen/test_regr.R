@@ -2,7 +2,7 @@
 
 # --- read data file that is written when fewer than 1000 obs
 
-Data <- read.table("~/C/eigen/test.dat") # cols are y, X, Z
+Data <- read.table("~/Desktop/regr_test_data.txt") # cols are y, X, Z
 n <- dim(Data)[1]
 
 
@@ -40,6 +40,50 @@ wX <- cbind(wINT, wX0, wX1, wX2); t(wX) %*% wX
 
 #################################################################################
 #
+# check CV results
+#
+#################################################################################
+
+Y <- Data[,1]
+X <- as.matrix(Data[,2:4])
+Z <- as.matrix(Data[,5:14])
+
+sr<- summary(regr <- lm(Y ~ X + Z[,1]))
+sr$r.squared; aov(regr)
+
+sr<- summary(regr <- lm(Y ~ X + Z[,1:3]))
+sr$r.squared; aov(regr)
+
+sr<- summary(regr <- lm(Y ~ X + Z))
+sr$r.squared; aov(regr)
+
+n.folds <- 5;
+fold <- rep(1:5, ceiling(n/n.folds))[1:n]
+
+# fit 3 of the Xs
+cvss <- 0;
+for(f in 1:n.folds) {
+	use  <- which(fold!=f)
+	skip <- which(fold==f)
+	y <- Y[use]; x <- X[use,] ; z <-Z[use,1:3]
+	regr <- lm(y ~ x + z);
+	err <- Y[skip] - cbind(1,X[skip,],Z[skip,1:3]) %*% coefficients(regr)
+	cvss <- cvss + as.numeric(t(err) %*% err)
+	}
+
+# fit all of the Xs
+cvss <- 0;
+for(f in 1:n.folds) {
+	use  <- which(fold!=f)
+	skip <- which(fold==f)
+	y <- Y[use]; x <- X[use,] ; z <-Z[use,]
+	regr <- lm(y ~ x + z);
+	err <- Y[skip] - cbind(1,X[skip,],Z[skip,]) %*% coefficients(regr)
+	cvss <- cvss + as.numeric(t(err) %*% err)
+	}
+	
+#################################################################################
+#
 # basic regression example
 #
 #################################################################################
@@ -48,7 +92,7 @@ wX <- cbind(wINT, wX0, wX1, wX2); t(wX) %*% wX
 
 summary(r <- lm(Y ~ INT-1)); aov(r)
 
-summary(r <- lm(Y ~ INT + X0 - 1)); aov(r)
+summary(r <- lm(Y ~ INT + X0 - 1))
 
 summary(r <- lm(Y ~ INT + X0 + X1 - 1)); aov(r)
 
