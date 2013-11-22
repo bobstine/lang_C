@@ -712,72 +712,44 @@ validate_regression(Eigen::VectorXd const& Y,
 	      << ") with input data X having " << X.cols() << " columns." << std::endl;
     return;
   }
+  int totalSkipped = 0;  // used to block threads till finish
   // fit main model, filling first 3 columns of results with R2, RSS, AICc
   debug("REGR",2) << "Building main regression thread" << std::endl;
   LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results));
   // construct random folds
-  std::vector<int> folds (Y.size());
-  for(int i=0; i<(int)folds.size(); ++i)
-    folds[i] = i % nFolds;
-  
-  // dont foget to uncomment this after testing
-  // shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
-
-  // build validated regressions (one step at a time)
-  typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
-  std::vector<std::vector<bool>>       selectors (nFolds);
-  std::vector<Eigen::VectorXd *>       cvss      (nFolds);
-  std::vector<ValidationThreadPointer> workers   (nFolds);
-  debug("REGR",2) << "Building validation threads" << std::endl;
-  for (int fold=0; fold<nFolds; ++fold)
-  { for(int i=0; i<(int)folds.size(); ++i)
-      selectors[fold].push_back( folds[i] != fold );
-    cvss[fold]    = new Eigen::VectorXd(X.cols());
-    workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker>
-					    ("thread " + std::to_string(fold),
-					     ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
+  if (nFolds > 0)
+  { std::vector<int> folds (Y.size());
+    for(int i=0; i<(int)folds.size(); ++i)
+      folds[i] = i % nFolds;
+    shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
+    // build validated regressions (one step at a time)
+    typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
+    std::vector<std::vector<bool>>       selectors (nFolds);
+    std::vector<Eigen::VectorXd *>       cvss      (nFolds);
+    std::vector<ValidationThreadPointer> workers   (nFolds);
+    debug("REGR",2) << "Building validation threads" << std::endl;
+    for (int fold=0; fold<nFolds; ++fold)
+    { for(int i=0; i<(int)folds.size(); ++i)
+	selectors[fold].push_back( folds[i] != fold );
+      cvss[fold]    = new Eigen::VectorXd(X.cols());
+      workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker>
+					      ("thread " + std::to_string(fold),
+					       ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
+    }
+    debug("REGR",2) << "Waiting for validation threads" << std::endl;
+    for (int fold=0; fold<nFolds; ++fold)
+      totalSkipped += (*workers[fold])->number_skipped();
+    debug("REGR",3) << "Total number of terms skipped during cross-validation was " << totalSkipped << std::endl;
+    //  accumulate CVSS over folds
+    for(int fold=1; fold<nFolds; ++fold)
+      (*cvss[0]) += *cvss[fold];
+    results.col(3) = *cvss[0];
+    // free space
+    for(int fold=0; fold<nFolds; ++fold)
+      delete cvss[fold];
   }
   // deref operator blocks until thread finishes (don't really need num skipped)
-  debug("REGR",2) << "Waiting for validation threads" << std::endl;
-  int totalSkipped = regrThread->number_skipped();
-  debug("REGR",3) << "Completed main thread, skipping " << totalSkipped << std::endl;
-  for (int fold=0; fold<nFolds; ++fold)
-    totalSkipped += (*workers[fold])->number_skipped();
-  debug("REGR",3) << "Total number of terms skipped was " << totalSkipped << std::endl;
-  //  accumulate CVSS over folds
-  for(int fold=1; fold<nFolds; ++fold)
-    (*cvss[0]) += *cvss[fold];
-  results.col(3) = *cvss[0];
-  // free space
-  for(int fold=0; fold<nFolds; ++fold)
-    delete cvss[fold];
+  totalSkipped = regrThread->number_skipped();
+  debug("REGR",3) << "Completed main thread, skipped " << totalSkipped << std::endl;
 }
-
-/*
-double
-cross_validation_ss(Eigen::VectorXd const& Y, Eigen::MatrixXd const& Xi, Eigen::MatrixXd const& X,
-		    int nFolds, unsigned randomSeed)  
-{
-  typedef boost::shared_ptr< LightThread<ValidationWorker> > ThreadPointer;
-  // construct random folds
-  std::vector<int> folds (Y.size());
-  for(int i=0; i<(int)folds.size(); ++i)
-    folds[i] = i % nFolds;
-  shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
-  // build validated regressions (one step at a time)
-  std::vector<std::vector<bool>> selectors (nFolds);
-  std::vector<ThreadPointer>     workers   (nFolds);
-  for (int fold=0; fold<nFolds; ++fold)
-  { for(int i=0; i<(int)folds.size(); ++i)
-      selectors[fold].push_back( folds[i] != fold );
-    workers[fold] = ThreadPointer(new LightThread<ValidationWorker> ("thread " + std::to_string(fold),
-							   Worker((int)Y.size(), X.cols(), &Y, &X, selectors[fold].begin()))  );
-  }
-  double cvss = 0.0;
-  for (int fold=0; fold<nFolds; ++fold)
-    cvss += (*workers[fold])->cvss();
-  //  std::clog << "REGR: CVSS vector is " << cvss.transpose() << std::endl;
-  return cvss;
-}
-
-*/
+  
