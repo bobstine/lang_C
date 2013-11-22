@@ -81,7 +81,7 @@ public:
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
     :  mN(y.size()), mK(0), mBlockSize(blockSize),
        mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
-       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames, x); }
+       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames, x); }
 
   
   // WLS: if weighted, all things held are weighted by square root of input weights in w
@@ -91,7 +91,7 @@ public:
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
     :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
-       mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_predictors(xNames,x); }  
+       mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames,x); }  
 
   inline bool      is_binary()         const   { return mBinary; }
   inline int       block_size()        const   { return mBlockSize; }
