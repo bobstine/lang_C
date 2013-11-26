@@ -631,7 +631,7 @@ public:
     for (int k=0; k<mXi->cols(); ++k)
     { add_predictor_if_useful(regr, "Xi_"+std::to_string(k), mXi->col(k)); }
     for (int k=0; k<mX ->cols(); ++k)
-    { add_predictor_if_useful(regr, "X_" +std::to_string(k), mX ->col(k));
+    { add_predictor_if_useful(regr, "XX_" +std::to_string(k), mX ->col(k));
       (*mResults)(k,0) = regr.r_squared();
       (*mResults)(k,1) = regr.residual_ss();
       (*mResults)(k,2) = regr.aic_c();
@@ -680,12 +680,12 @@ public:
     debug("REGR",2) << "WORK: Validator started." << std::endl;
     ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
-    namedIter.push_back( std::make_pair("Xi",EigenColumnIterator(mXi,-1)) );
+    namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
     for (int k=0; k<mXi->cols(); ++k)
     { namedIter[0].second = EigenColumnIterator(mXi, k);
       regr.add_predictors_if_useful(namedIter, singularPval);
     }
-    namedIter[0].first = "XX";
+    namedIter[0].first = "vXX";
     for (int k=0; k<mX->cols(); ++k)
     { namedIter[0].second = EigenColumnIterator(mX, k);
       std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, singularPval);
