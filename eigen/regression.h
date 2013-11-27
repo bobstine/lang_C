@@ -201,9 +201,9 @@ public:
   double estimation_ss()   const  { return mModel.residual_ss(); }
   double validation_ss()   const  { return mValidationSS; }
 
-  std::pair<double, double> sums_of_squares() { return std::make_pair(estimation_ss(), mValidationSS); }
+  std::pair<double,double> sums_of_squares() { return std::make_pair(estimation_ss(), mValidationSS); }
 
-  template <class Iter>                                                  // iterators must include training and test cases, ordered as in initial y
+  template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
   double                     y_bar()                               const  { return mModel.y_bar(); }

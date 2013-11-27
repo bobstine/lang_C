@@ -11,7 +11,7 @@ void LinearRegression::fill_with_beta (Iter begin) const
 
 
 //     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression
-
+  
 template <class Iter>
 std::pair<double,double>
   ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
@@ -25,13 +25,11 @@ std::pair<double,double>
     predictors.col(j) = permuted_vector_from_iterator(c[j].second);
   }
   if (k == 1)
-  { f = mModel.f_test_predictor(xNames[0], predictors.col(0).head(mN));
-    debugging::debug("VALM",3) << "Predictor obtains p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << block_size() << std::endl;
-  } else
-  { f = mModel.f_test_predictors(xNames, predictors.topLeftCorner(mN,k));           // was top right... same but weird
-    debugging::debug("VALM",3) << k << " predictors obtain p-value " << f.p_value() << " with bid " << pToEnter << " and std error block size " << block_size() << std::endl;
-  }
-  if (f.p_value() > pToEnter)
+    f = mModel.f_test_predictor(xNames[0], predictors.col(0).head(mN));
+  else
+    f = mModel.f_test_predictors(xNames, predictors.topLeftCorner(mN,k));           // was top right... same but weird
+  debugging::debug("VALM",3) << k << " predictors; p-value=" << f.p_value() << " with bid=" << pToEnter << ". SE block size=" << block_size() << std::endl;
+  if((f.f_stat() == 0) || (f.p_value() > pToEnter))
     return std::make_pair(f.f_stat(), f.p_value());
   debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
   if (0 == mModel.q())  // first added variables; rows & cols relative to a corner

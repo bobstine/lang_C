@@ -18,7 +18,22 @@ int main(int, char **)
     std::cout << "TEST: sample a random vector " << x.transpose() << std::endl;  // vecs are columns
     std::cout << "TEST: <x,x> = " << x.dot(x) << " with norm squared = " << x.squaredNorm() << std::endl;
   }
-    
+
+  // check what eigen does for an identity that is not square
+  {
+    Eigen::MatrixXd x = Eigen::MatrixXd::Identity(6,3);
+    std::cout << "\nTEST: Partial identity \n" << x << std::endl;
+  }
+  
+  // check that householder produces orthogonal matrix
+  {
+    Eigen::MatrixXd x = Eigen::MatrixXd::Random(1000,10);
+    // block does not work for Q matrix; use partial identity to get leading 5 cols
+    Eigen::MatrixXd q = Eigen::HouseholderQR<Eigen::MatrixXd>(x).householderQ() * Eigen::MatrixXd::Identity(x.rows(),5);
+    std::cout << "\nTEST: Leading q vector begins "        << q.col(0).head(6).transpose() << std::endl;
+    std::cout << "TEST: q'q for leading 5 cols is \n"      << q.transpose() * q << std::endl << std::endl;
+  }
+  
   // form random matrix
   Eigen::MatrixXd data (Eigen::MatrixXd::Random(nRows,nCols));
 
@@ -26,7 +41,7 @@ int main(int, char **)
   int nBasisElements (0);
   bool standardize   (true);
   Eigen::MatrixXd basis (PCA(nBasisElements,standardize)(data));
-  std::cout << "Basis of data-determined count and standardized:\n" << basis.block(0,0,5,basis.cols()) << std::endl;
+  std::cout << "\nTEST: Basis of data-determined count and standardized:\n" << basis.block(0,0,5,basis.cols()) << std::endl;
 
   // othrwise choose externally
   nBasisElements = 3;
