@@ -20,13 +20,12 @@
   minimizes the sum w_i(y_i-y^_i)^2.  Weights initialized to 1's when
   input weights are not defined.
 
-  
+  25 Nov 2013 ... Introduction of CV using multithreads  
    4 Jul 2011 ... Use weighed version in all cases rather than two versions of code.
   20 Mar 2011 ... In place gram-schmidt branch; port to Eigen3
   14 Oct 2010 ... Split out fstatistic, using boost in place of gsl.
   30 Sep 2010 ... Playing with how to do shrinkage reasonably.
   24 Sep 2010 ... Created to start removing GSL components
-
 
   Issues that have *not* been handled...
     -- weighted with bennett
@@ -237,7 +236,8 @@ validate_regression(Eigen::VectorXd const& Y,     // response
 		    Eigen::MatrixXd const& X,     // sequence to compute AIC, CVSS
 		    int nFolds,                   // how many folds for CV (0 means no CV)
 		    Eigen::MatrixXd  &result,     // 4 columns: R2, RSS, AICc, CVSS; n = cols(X) rows
-		    unsigned randomSeed=26612);   // used to control random splits (does not call srand)
+		    unsigned randomSeed=26612);   // used to control random splits (does not call srand).
+                                                  // 0 forces deterministic split 0 1 2 3 0 1 2 3 etc for 4 fold
 
 
 ///////////////////////////  Printing Operators  /////////////////////////////

@@ -610,16 +610,18 @@ private:
   Eigen::MatrixXd const*   mX;
   int                      mSkipped;
   Eigen::MatrixXd      *   mResults;
+  bool                     mTrace;
 
 public:    
-  RegressionWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X, Eigen::MatrixXd *results)
-    :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results)
+  RegressionWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X, Eigen::MatrixXd *results, bool trace)
+    :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results), mTrace(trace)
     {
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
       assert( (mX->cols()==mResults->rows()) && (mResults->cols() >= 3));  // fills first 3 columns
     }
     
-  RegressionWorker(const RegressionWorker& rhs) : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSkipped(rhs.mSkipped), mResults(rhs.mResults) { }
+  RegressionWorker(const RegressionWorker& rhs)
+    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSkipped(rhs.mSkipped), mResults(rhs.mResults), mTrace(rhs.mTrace) { }
   
   void operator()()
   {
@@ -629,7 +631,7 @@ public:
     LinearRegression regr("Y", *mY, noBlocking);
     // check one at a time in case of singular model
     for (int k=0; k<mXi->cols(); ++k)
-    { add_predictor_if_useful(regr, "Xi_"+std::to_string(k), mXi->col(k)); }
+      add_predictor_if_useful(regr, "Xi_"+std::to_string(k), mXi->col(k));
     for (int k=0; k<mX ->cols(); ++k)
     { add_predictor_if_useful(regr, "XX_" +std::to_string(k), mX ->col(k));
       (*mResults)(k,0) = regr.r_squared();
@@ -644,10 +646,13 @@ public:
 private:
   void add_predictor_if_useful(LinearRegression &regr, std::string name, Eigen::VectorXd const& x)
     { FStatistic f = regr.f_test_predictor(name, x);
-      if(f.f_stat() > 0.0001)
+      if(f.f_stat() != 0.0)
 	regr.add_predictors();
       else
 	++mSkipped;
+      if (mTrace) std::clog << "REGR: Trace of regression worker, q = " << regr.q() << " predictors (" << mSkipped << " skipped)" << std::endl
+			    << "      beta = " << regr.beta().transpose() << std::endl
+			    << "      r^2 = " << regr.r_squared() << "   RSS = " << regr.residual_ss() << std::endl;
     }
   
 };
@@ -715,13 +720,15 @@ validate_regression(Eigen::VectorXd const& Y,
   int totalSkipped = 0;  // used to block threads till finish
   // fit main model, filling first 3 columns of results with R2, RSS, AICc
   debug("REGR",2) << "Building main regression thread" << std::endl;
-  LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results));
+  bool trace = (randomSeed == 0);
+  LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results, trace));
   // construct random folds
   if (nFolds > 0)
   { std::vector<int> folds (Y.size());
     for(int i=0; i<(int)folds.size(); ++i)
       folds[i] = i % nFolds;
-    shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
+    if (randomSeed != 0)
+      shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
     // build validated regressions (one step at a time)
     typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
     std::vector<std::vector<bool>>       selectors (nFolds);
