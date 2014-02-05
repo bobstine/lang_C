@@ -100,6 +100,7 @@ public:
   inline double    residual_ss()       const   { return mResidualSS; }
   inline double    aic_c()             const   { double n(mN), k(mK); return n * log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
   inline double    r_squared()         const   { return 1.0 - mResidualSS/mTotalSS; }
+  inline double    adj_r_squared()     const   { return 1.0 - (mResidualSS/(mN-mK)) / (mTotalSS/(mN-1)); }
   inline Vector    residuals()         const   { return mResiduals; }
   inline Vector    fitted_values()     const   { return mY - mResiduals; }
   inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }  // raw versions remove the internal weights
