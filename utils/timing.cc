@@ -11,7 +11,7 @@ print_with_time_stamp(std::string str, std::ostream &os)
   struct tm * timeinfo;
   time ( &rawtime );
   timeinfo = localtime ( &rawtime );
-  os << "TIME: " << str << " @ " << std::string(  asctime (timeinfo) ) << std::endl;
+  os << "TIME: " << str << " @ " << std::string(  asctime (timeinfo) );  // includes new line
 }
 
 
