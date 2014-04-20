@@ -83,13 +83,12 @@ get_word_from_string(std::string const& s)
 //  This section is the scanf style input
 
 #include <cstdio>
-const int maxNameLength = 255;
 
 int
 read_file_line (char *s, int maxLength, FILE *fp)
 {
   int count (0);
-  register char c;
+  char c;
   while (--maxLength > 0 && (c = getc(fp)) != EOF)
   { *s = c;
     if (c == '\n')
@@ -103,10 +102,10 @@ read_file_line (char *s, int maxLength, FILE *fp)
 
 
 bool
-read_string(char *s, int n, register FILE *iop)
+read_string(char *s, int n, FILE *iop)
 {
-  register int c;
-  register char *cs;
+  int c;
+  char *cs;
   cs = s;
   while (--n > 0 && (c = getc(iop)) != EOF)
   {

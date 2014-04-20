@@ -23,4 +23,4 @@ polyshrink (Container const& input, Container & output);
 
 #include "polyshrink.Template.h"
 
-#endif  _POLYSHRINK_H_
+#endif

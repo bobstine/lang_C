@@ -14,11 +14,11 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-OPT = -O3 -fopenmp -std=c++11
+OPT = -O3 -std=c++11
 
 # USES = 
 
-EXTERNAL_USES = boost_system boost_thread
+# EXTERNAL_USES = 
 
 
 ###########################################################################

@@ -12,6 +12,14 @@ int main()
     boost::tuple<int, int, int> x (1,2,3);
     std::cout << "x = " << x << std::endl;
   }
+
+  {
+    std::cout << "Type name at prompt: " ;
+    std::string name;
+    std::getline (std::cin, name);
+    std::cout << "Read the name " << name << std::endl;
+  }
+  
   
   {
     using namespace boost::lambda;
