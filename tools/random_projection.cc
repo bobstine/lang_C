@@ -1,6 +1,6 @@
 /* -*-c++-*-
 
- RUN:  random_projection -f input.dat -o file -k num_pc ( -p for power method ) ( -q  if quadratic )  ( -s  to set scale )
+ RUN:  random_projection -f input.dat -o file -k num_pc -p power_iter -s standardize ( -q  if quadratic )
 
 
  Input...
@@ -68,30 +68,46 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
       input >> X(row,col);
   }
   // center X
+  std::clog << messageTag << "Centering input columns.\n";
   for (int j=0; j<nCols; ++j)
   { float mean (X.col(j).sum()/nRows);
     X.col(j) = X.col(j).array() - mean;
   }
   // optionally rescale X to norm 1
   if (standardize)
+  { std::clog << messageTag << "Standarizing input columns to unit length.\n";
     for (int j=0; j<nCols; ++j)
     { if (X.col(j).squaredNorm()>0)
 	X.col(j).normalize();
       else
 	std::clog << "WARNING: Column " << j << " is constant (and so zeroed out)." <<std::endl;
     }
-  // allocate result, choose method
-  Matrix Y (nRows,nProjections);
-  if (! quadratic) // linear
-  { Matrix O = Matrix::Random(nCols,nProjections);
-    Y = X * O;
-    if (powerIterations)
-    { Matrix XXt = X * X.transpose();
-      while (powerIterations--)
-	Y = XXt * Eigen::HouseholderQR<Matrix>(Y).householderQ();
-    }
   }
-  else             // quadratic
+  // allocate result, choose method
+  Matrix Y (nRows,nProjections);     // U of SVD of reduced matrix
+  Vector D (nProjections);           // Diagonal of singular values of reduced matrix
+  if (! quadratic) // linear
+  { std::clog << messageTag << "Computing left singular vectors of matrix by random projection";
+    if (powerIterations) std::clog << " with power iterations.\n" ; else std::clog << ".\n";
+    print_with_time_stamp("Starting base linear random projection", std::clog);
+    Matrix localP = X * Matrix::Random(nCols, nProjections);         // local version to avoid later potential aliasing problem
+    while (powerIterations--)
+    { print_with_time_stamp("Performing X X' multiplication for power iteration", std::clog);
+      Matrix R = X * (X.transpose() * localP);
+      print_with_time_stamp("Performing Householder step of iterated random projection", std::clog);
+      localP = Eigen::HouseholderQR<Matrix>(R).householderQ() * Matrix::Identity(localP.rows(),localP.cols());  // block fails; gets left P.cols()
+    }
+    std::clog << messageTag << "Checking norms after Householder; 0'0="
+	      << localP.col(0).dot(localP.col(0)) << "   0'1=" << localP.col(0).dot(localP.col(1))
+	      << "   1'1=" << localP.col(1).dot(localP.col(1)) << std::endl;
+    Matrix rX = localP.transpose() * X;
+    print_with_time_stamp("Computing SVD of reduced matrix", std::clog);
+    Eigen::JacobiSVD<Matrix> svd(rX, Eigen::ComputeThinU|Eigen::ComputeThinV);
+    Y = localP * svd.matrixU();                         // n x nProjections
+    D = svd.singularValues();
+    print_with_time_stamp("Completed random projection", std::clog);
+  }
+  else             // quadratic has not been revised for proper power iterations or subsequent SVD
   { Y.setZero();
     std::clog << messageTag << "Computing random projection of " << (nCols*(nCols+1))/2 << " quadratics (excludes linear)." << std::endl;
     print_with_time_stamp("Top, with sum over cols", std::clog);
@@ -124,7 +140,9 @@ project(int nProjections, int powerIterations, bool standardize, bool quadratic,
     }
   }
     
-  // write y
+  // write diagonal singular values, then Y
+  std::clog << messageTag << "Writing " << D.size() << " singular values to output.\n";
+  output << D << std::endl;
   std::clog << messageTag << "Writing " << Y.rows() << " rows and " << Y.cols() << " columns to output." << std::endl;
   output << Y << std::endl;
   return Y.rows();

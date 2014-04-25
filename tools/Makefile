@@ -87,6 +87,19 @@ process_grades: process_grades.o
 
 
 # -------------------------------------------------------------------
+#  Process CRSP data from WRDS
+# -------------------------------------------------------------------
+
+stack_crsp: stack_crsp.o
+	$(GCC) $< $(LDLIBS) -o $@
+
+
+do_crsp: stack_crsp ~/Desktop/crsp.txt
+	rm -rf ~/Desktop/done.txt
+	head -n 1000 $(word 2,$^) | ./$< > ~/Desktop/done.txt
+
+
+# -------------------------------------------------------------------
 #  Manipulate tables
 # -------------------------------------------------------------------
 
