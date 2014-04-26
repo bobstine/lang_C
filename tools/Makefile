@@ -93,11 +93,23 @@ process_grades: process_grades.o
 stack_crsp: stack_crsp.o
 	$(GCC) $< $(LDLIBS) -o $@
 
+project_crsp: project_crsp.o
+	$(GCC) $< $(LDLIBS) -o $@
 
-do_crsp: stack_crsp ~/Desktop/crsp.txt
-	rm -rf ~/Desktop/done.txt
-	head -n 1000 $(word 2,$^) | ./$< > ~/Desktop/done.txt
+#	head of crsp data, filter, pull off complete lines
+~/Desktop/crsp_out.txt: stack_crsp ~/Desktop/crsp_in.txt
+	rm -rf ~/Desktop/crsp_out.txt
+	head -n 2500000 $(word 2,$^) | ./$<    | grep -e '^502'     >  $@
 
+#	build random projection
+nProj = 50
+
+~/Desktop/crsp_proj_$(nProj).txt: project_crsp ~/Desktop/crsp_out.txt
+	./$< -f $(word 2,$^) -o $@ -k $(nProj)  -p 4 
+
+do_crsp: ~/Desktop/crsp_proj_$(nProj).txt
+	echo Done
+ 
 
 # -------------------------------------------------------------------
 #  Manipulate tables
@@ -141,6 +153,7 @@ random_projection: random_projection.o
 	$(GCC) $(CFLAGS) $(INCLUDES) $^ $(LDLIBS) -o $@
 	cp -f $@ ~/bin/random_projection
 
+# Arcene examples
 arcene_data   = /Users/bob/data/Arcene/arcene_x.dat
 arcene_kernel = /Users/bob/data/Arcene/arcene_kernel.dat
 
