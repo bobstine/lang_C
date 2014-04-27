@@ -1,16 +1,19 @@
 /* -*-c++-*-
 
- RUN:  project_crsp -f input.file -o output.file -k num_pc -p power_iter -w 
+ RUN:  project_crsp -f input.file -o output.prefix -k num_pc -p power_iter -w 
 
 
  Input...
 
-   Output from stack_crsp, with
+   Expects output as produced by running the filter stack_crsp, with
 
    #rows (constant), value (used as weight), idnum, date, returns... (of length #rows)
      
  Output...
 
+   Pads the output file name with _sv.txt and _u.txt for singular values and u matrix;
+   adds a _w_ if the analysis is weighted.
+   
    n x k matrix of random projections of the optionally weighted
 
    If the w option is used, then the weights are used to weight the returns prior to
@@ -45,8 +48,8 @@ using std::string;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef Eigen::VectorXf Vector;
-typedef Eigen::MatrixXf Matrix;
+typedef Eigen::VectorXd Vector;    // float will be faster/less memory, but need double for dynamic
+typedef Eigen::MatrixXd Matrix;    // range when doing the analysis with weights; SV is all nan if float.
 
 
 string messageTag ("CRSP: ");
@@ -72,13 +75,13 @@ main (int argc, char** argv)
   int powerIterations       (0);
   bool weightCols           (false);
   string inputFileName      ("");
-  string outputFileName     ("");
+  string outputFilePrefix   ("");
   
   // parse arguments from command line
-  parse_arguments(argc, argv, nProjections, powerIterations, weightCols, inputFileName, outputFileName);
+  parse_arguments(argc, argv, nProjections, powerIterations, weightCols, inputFileName, outputFilePrefix);
   std::clog << messageTag
 	    << "random_project --dimension=" << nProjections << " --power_iterations=" << powerIterations << " --weight=" << weightCols
-	    << " --input-file=" << inputFileName << " --output-file=" << outputFileName << std::endl;
+	    << " --input-file=" << inputFileName << " --output-file=" << outputFilePrefix << std::endl;
 
   // get sizes
   std::pair<int,int> dim = get_dimensions(inputFileName);
@@ -88,20 +91,25 @@ main (int argc, char** argv)
   float weight;
   Matrix X (dim.first, dim.second);
   std::ifstream input (inputFileName.c_str());
+  if (weightCols) std::clog << messageTag << "Using weights... " ;
   for (int col=0; col<dim.second; ++col)                   // file is column major layout
   { int nRow;
     string id, date;
     input >> nRow >> weight >> id >> date;                 // special parse for first four colums
     if (weightCols)
+    { std::clog << " " << weight;
       for(int row=0; row<dim.first; ++row)
       { float x;
 	input >> x;
 	X(row,col) = weight * x;
       }
+    }
     else
-      for(int row=0; row<dim.first; ++row)
+    { for(int row=0; row<dim.first; ++row)
 	input >> X(row,col);
+    }
   }
+  if (weightCols) std::clog << std::endl;
   std::clog << messageTag << "Top left corner of X " << std::endl
 	    << X.topLeftCorner(10,10)<< std::endl;
   Vector sums = X.colwise().sum();
@@ -111,7 +119,8 @@ main (int argc, char** argv)
   // compute projection
   Matrix U (dim.first,nProjections);     // U of SVD of reduced matrix
   Vector D (nProjections);           // Diagonal of singular values of reduced matrix
-  { std::clog << messageTag << "Computing left singular vectors of matrix by random projection";
+  {
+    std::clog << messageTag << "Computing left singular vectors of matrix by random projection";
     if (powerIterations) std::clog << " with power iterations.\n" ; else std::clog << ".\n";
     print_with_time_stamp("Starting base linear random projection", std::clog);
     Matrix localP = X * Matrix::Random(X.cols(), nProjections);         // local version to avoid later potential aliasing problem
@@ -133,11 +142,19 @@ main (int argc, char** argv)
   }
     
   // write diagonal singular values, then U
-  std::ofstream output (outputFileName.c_str());
-  std::clog << messageTag << "Writing " << D.size() << " singular values to output.\n";
-  output << D.transpose() << std::endl;
-  std::clog << messageTag << "Writing " << U.rows() << " rows and " << U.cols() << " columns to output." << std::endl;
-  output << U << std::endl;
+  if (weightCols) outputFilePrefix += "_w";
+  {
+    string fileName = outputFilePrefix + "_sv.txt";
+    std::ofstream output (fileName.c_str());
+    std::clog << messageTag << "Writing " << D.size() << " singular values to output.\n";
+    output << D.transpose() << std::endl;
+  }
+  {
+    string fileName = outputFilePrefix + "_u.txt";
+    std::ofstream output (fileName.c_str());
+    std::clog << messageTag << "Writing " << U.rows() << " rows and " << U.cols() << " columns to output." << std::endl;
+    output << U << std::endl;
+  }
   return 0;
 }
 

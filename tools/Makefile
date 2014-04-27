@@ -90,6 +90,8 @@ process_grades: process_grades.o
 #  Process CRSP data from WRDS
 # -------------------------------------------------------------------
 
+crsp_path = ~/data/crsp/
+
 stack_crsp: stack_crsp.o
 	$(GCC) $< $(LDLIBS) -o $@
 
@@ -97,17 +99,18 @@ project_crsp: project_crsp.o
 	$(GCC) $< $(LDLIBS) -o $@
 
 #	head of crsp data, filter, pull off complete lines
-~/Desktop/crsp_out.txt: stack_crsp ~/Desktop/crsp_in.txt
-	rm -rf ~/Desktop/crsp_out.txt
+$(crsp_path)crsp_out.txt: stack_crsp $(crsp_path)crsp_in.txt
+	rm -rf $@
 	head -n 2500000 $(word 2,$^) | ./$<    | grep -e '^502'     >  $@
 
 #	build random projection
 nProj = 50
 
-~/Desktop/crsp_proj_$(nProj).txt: project_crsp ~/Desktop/crsp_out.txt
-	./$< -f $(word 2,$^) -o $@ -k $(nProj)  -p 4 
+$(crsp_path)crsp_proj_$(nProj): project_crsp $(crsp_path)crsp_out.txt
+	./$< -f $(word 2,$^) -o $@ -k $(nProj)  -p 4  -w
+	touch $@            # remove empty target to rebuild files
 
-do_crsp: ~/Desktop/crsp_proj_$(nProj).txt
+do_crsp: $(crsp_path)crsp_proj_$(nProj)
 	echo Done
  
 
