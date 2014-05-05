@@ -17,78 +17,106 @@
 */
 
 #include <iostream>
+#include <fstream>
+
 #include <vector>
+#include <algorithm>
+
 #include <string>
 
 using std::string;
+using std::vector;
 
-float
-get_float_from_string(std::string s, size_t i0, size_t i1, std::string label);
-  
+string messageTag = "MMOV: ";
+
+
+
+int
+write_ratings_with_reviews(string path, string reviewer);
+
+vector<int>
+read_integer_vector_from_file(string filename);
+
+string
+process_line(string line);
+
+
+
 int
 main()
 {
-  string messageTag = "STACK: ";
-  string priorPermno, permno, firstDate ;
-  int    numCompanies = 0;
-  float  openPrice  = 0;
-  float  ret        = 0;
-  float  shareOut   = 0;
-  string restOfLine;
-  std::vector<float> returns;
+  string path = "/data/movies/";
+  
+  vector<string> reviewerVec;
+  reviewerVec.push_back("Dennis+Schwartz");
+  reviewerVec.push_back("James+Berardinelli");
+  reviewerVec.push_back("Scott+Renshaw");
+  reviewerVec.push_back("Steve+Rhodes");
 
-  getline(std::cin, restOfLine);   // toss first line with headers
-  std::clog << messageTag << "Dumping first line, with text '" << restOfLine << "' \n";
-  while(! std::cin.eof() )
-  { string date;
-    std::cin >> permno >> date;
-    std::getline(std::cin, restOfLine);
-    // get items from rest of line
-    size_t i0, i1;
-    i0 = 1; i1 = restOfLine.find('\t',i0);
-    ret = get_float_from_string(restOfLine, i0, i1, permno+"@"+date);
-    if (permno != priorPermno)
-    { ++numCompanies;
-      std::clog << messageTag << "Starting to read data for company " << permno << std::endl;
-      if(!returns.empty())
-      {	std::cout << returns.size() << "\t" << openPrice * shareOut << "\t" << priorPermno << "\t" << firstDate;
-	for (size_t i=0; i<returns.size(); ++i)
-	  std::cout << "\t" << returns[i];
-	std::cout << std::endl;
-      }
-      // read opening shares and price
-      i0 = i1+1;
-      i1 = restOfLine.find('\t',i0);
-      shareOut = get_float_from_string (restOfLine, i0, i1, permno+"@"+date);
-      openPrice = get_float_from_string (restOfLine, i1+1, std::string::npos, permno+"@"+date);
-      priorPermno = permno;
-      firstDate = date;
-      returns.clear();
-    }
-    returns.push_back(ret);
-  }
-  // write last one
-  std::cout << returns.size() << "\t" << openPrice * shareOut << "\t" <<  permno << "\t" << firstDate;
-  for (size_t i=0; i<returns.size(); ++i)
-    std::cout << "\t" << returns[i];
-  std::cout << std::endl;
-  // done
-  std::clog << messageTag << "Read data for " << numCompanies << " companies." << std::endl;
+  int numberReviews = 0;
+  for (auto reviewer = reviewerVec.cbegin(); reviewer != reviewerVec.end(); ++ reviewer)
+    numberReviews += write_ratings_with_reviews(path, *reviewer);
+  std::clog << messageTag << "Wrote total of " << numberReviews << " to standard output with prefix ratings.\n";
+  
   return 0;
 }
-    
-float
-get_float_from_string(std::string str, size_t i0, size_t i1, std::string label)
+
+int
+write_ratings_with_reviews(string path, string reviewer)
 {
-  float x;
-  try
-  {
-    x = std::stof( str.substr(i0,i1) );
+  string filename;
+
+  filename = path + "scale_data/" + reviewer + "/id." + reviewer;
+  vector<int> ids     = read_integer_vector_from_file(filename);
+  if (0 == ids.size()) return 0;
+  filename = path + "scale_data/" + reviewer + "/rating." + reviewer;
+  vector<int> ratings = read_integer_vector_from_file(filename);
+  if (0 == ratings.size() || ids.size() != ratings.size()) return 0;
+
+  for(size_t i=0; i<ids.size(); ++i)
+  { std::cout << ratings[i] << "\t";
+    string tag = std::to_string(ids[i]);
+    string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
+    std::ifstream textFile (filename);
+    if(textFile)
+    { string line;
+      getline(textFile, line);
+      std::cout << process_line(line);
+    }
+    else
+    { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
+      return 0;
+    }
+    std::cout << std::endl;
   }
-  catch (std::exception &e)
-  { std::clog << "PARSE: " << label << " Exception " << e.what() << " parsing `" << str << "'" << std::endl;
-    x = 0;
-  }
-  return x;
+  return (int) ids.size();
 }
-  
+
+
+vector<int>
+read_integer_vector_from_file(string filename)
+{
+  vector<int> result;
+  std::ifstream file (filename);
+  if (file)
+  { while(!file.eof())
+    { int tag;
+      file >> tag;
+      result.push_back(tag);
+    }
+    std::clog << messageTag << "Read " << result.size() << " integers from file " << filename << std::endl;
+    return result;
+  }
+  else
+  { std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
+    return result;
+  }
+}
+
+
+string
+process_line(string line)
+{
+  std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+  return line;
+}

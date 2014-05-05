@@ -86,6 +86,14 @@ process_grades: process_grades.o
 	$(GCC) process_grades.o $(LDLIBS) -o $@
 
 
+
+# -------------------------------------------------------------------
+#  Process movie data into 'real-estate' format
+# -------------------------------------------------------------------
+
+merge_movies: merge_movies.o
+	$(GCC) $< $(LDLIBS) -o $@
+
 # -------------------------------------------------------------------
 #  Process CRSP data from WRDS
 # -------------------------------------------------------------------
