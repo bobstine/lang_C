@@ -1,7 +1,8 @@
 /*
   Merges the movie ratings, adding a prefix rating to the text of the
   review and writes merged lines into a separate file suitable for
-  input to the random projection code.
+  input to the random projection code.  The merged text goes to the
+  std output.  Two other files are also created.
 
   Steps...  for each rater
 
@@ -12,7 +13,7 @@
      (c) Read all text from scale_whole_review/reviewer/number.txt
            Do some minor processing: downcase, remove internal eol
 	   
-     (d) Write the rating followed by parsed text
+     (d) Write the rater, the rating and then the processed text
      
 */
 
@@ -34,8 +35,9 @@ string messageTag = "MMOV: ";
 int
 write_ratings_with_reviews(string path, string reviewer);
 
-vector<int>
-read_integer_vector_from_file(string filename);
+template <class C>
+int
+fill_vector_from_file(string filename, vector<C> *pVec);
 
 string
 process_line(string line);
@@ -67,49 +69,56 @@ write_ratings_with_reviews(string path, string reviewer)
   string filename;
 
   filename = path + "scale_data/" + reviewer + "/id." + reviewer;
-  vector<int> ids     = read_integer_vector_from_file(filename);
+  vector<int> ids;
+  fill_vector_from_file(filename, &ids);
   if (0 == ids.size()) return 0;
   filename = path + "scale_data/" + reviewer + "/rating." + reviewer;
-  vector<int> ratings = read_integer_vector_from_file(filename);
+  vector<float> ratings;
+  fill_vector_from_file(filename, &ratings);
   if (0 == ratings.size() || ids.size() != ratings.size()) return 0;
 
   for(size_t i=0; i<ids.size(); ++i)
-  { std::cout << ratings[i] << "\t";
-    string tag = std::to_string(ids[i]);
-    string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
-    std::ifstream textFile (filename);
-    if(textFile)
-    { string line;
-      getline(textFile, line);
-      std::cout << process_line(line);
-    }
+  { if(0 == ratings[i])
+      std::clog << messageTag << "Drop zero-rated movie #" << ids[i] << " for reviewer " << reviewer << std::endl;
     else
-    { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
-      return 0;
+    { std::cout << reviewer << "\t" << ratings[i] << "\t";              // put reviewer then rating at head of output line
+      string tag = std::to_string(ids[i]);
+      string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
+      std::ifstream textFile (filename);
+      if(textFile)
+      { while(!textFile.eof())                                          // suck down whole file, write to one line
+	{ string line;
+	  getline(textFile, line);
+	  std::cout << process_line(line);                              // add text after rating
+	}
+      }
+      else
+      { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
+	return 0;
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
   }
   return (int) ids.size();
 }
 
-
-vector<int>
-read_integer_vector_from_file(string filename)
+template <class C>
+int
+fill_vector_from_file(string filename, vector<C> *pVec)
 {
-  vector<int> result;
   std::ifstream file (filename);
   if (file)
   { while(!file.eof())
-    { int tag;
+    { C tag;
       file >> tag;
-      result.push_back(tag);
+      pVec->push_back(tag);
     }
-    std::clog << messageTag << "Read " << result.size() << " integers from file " << filename << std::endl;
-    return result;
+    std::clog << messageTag << "Read " << pVec->size() << " items from file " << filename << std::endl;
+    return (int) pVec->size();
   }
   else
   { std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
-    return result;
+    return 0;
   }
 }
 
