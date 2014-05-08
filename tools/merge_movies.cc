@@ -34,8 +34,11 @@ string messageTag = "MMOV: ";
 int
 write_ratings_with_reviews(string path, string reviewer);
 
-vector<int>
-read_integer_vector_from_file(string filename);
+
+template <class C>
+void
+fill_vector_from_file(string filename, vector<C> *vec);
+
 
 string
 process_line(string line);
@@ -66,11 +69,14 @@ write_ratings_with_reviews(string path, string reviewer)
 {
   string filename;
 
+  std::clog << messageTag << "Processing data for reviewer " << reviewer << std::endl;
   filename = path + "scale_data/" + reviewer + "/id." + reviewer;
-  vector<int> ids     = read_integer_vector_from_file(filename);
+  vector<int> ids;
+  fill_vector_from_file(filename, &ids);
   if (0 == ids.size()) return 0;
   filename = path + "scale_data/" + reviewer + "/rating." + reviewer;
-  vector<int> ratings = read_integer_vector_from_file(filename);
+  vector<float> ratings;
+  fill_vector_from_file(filename, &ratings);
   if (0 == ratings.size() || ids.size() != ratings.size()) return 0;
 
   for(size_t i=0; i<ids.size(); ++i)
@@ -78,10 +84,12 @@ write_ratings_with_reviews(string path, string reviewer)
     string tag = std::to_string(ids[i]);
     string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
     std::ifstream textFile (filename);
-    if(textFile)
-    { string line;
-      getline(textFile, line);
-      std::cout << process_line(line);
+    if (textFile)
+    { while(!textFile.eof())
+      { string line;
+	getline(textFile, line);
+	std::cout << process_line(line) << " ";
+      }
     }
     else
     { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
@@ -92,25 +100,21 @@ write_ratings_with_reviews(string path, string reviewer)
   return (int) ids.size();
 }
 
-
-vector<int>
-read_integer_vector_from_file(string filename)
+template <class C>
+void
+fill_vector_from_file(string filename, vector<C> *vec)
 {
-  vector<int> result;
   std::ifstream file (filename);
   if (file)
   { while(!file.eof())
-    { int tag;
+    { C tag;
       file >> tag;
-      result.push_back(tag);
+      vec->push_back(tag);
     }
-    std::clog << messageTag << "Read " << result.size() << " integers from file " << filename << std::endl;
-    return result;
+    std::clog << messageTag << "Read " << vec->size() << " values from file " << filename << std::endl;
   }
   else
-  { std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
-    return result;
-  }
+    std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
 }
 
 
