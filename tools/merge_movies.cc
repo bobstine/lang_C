@@ -1,7 +1,8 @@
 /*
   Merges the movie ratings, adding a prefix rating to the text of the
   review and writes merged lines into a separate file suitable for
-  input to the random projection code.
+  input to the random projection code.  The merged text goes to the
+  std output.  Two other files are also created.
 
   Steps...  for each rater
 
@@ -12,7 +13,7 @@
      (c) Read all text from scale_whole_review/reviewer/number.txt
            Do some minor processing: downcase, remove internal eol
 	   
-     (d) Write the rating followed by parsed text
+     (d) Write the rater, the rating and then the processed text
      
 */
 
@@ -36,8 +37,8 @@ write_ratings_with_reviews(string path, string reviewer);
 
 
 template <class C>
-void
-fill_vector_from_file(string filename, vector<C> *vec);
+int
+fill_vector_from_file(string filename, vector<C> *pVec);
 
 
 string
@@ -80,41 +81,48 @@ write_ratings_with_reviews(string path, string reviewer)
   if (0 == ratings.size() || ids.size() != ratings.size()) return 0;
 
   for(size_t i=0; i<ids.size(); ++i)
-  { std::cout << ratings[i] << "\t";
-    string tag = std::to_string(ids[i]);
-    string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
-    std::ifstream textFile (filename);
-    if (textFile)
-    { while(!textFile.eof())
-      { string line;
-	getline(textFile, line);
-	std::cout << process_line(line) << " ";
-      }
-    }
+  { if(0 == ratings[i])
+      std::clog << messageTag << "Drop zero-rated movie #" << ids[i] << " for reviewer " << reviewer << std::endl;
     else
-    { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
-      return 0;
+    { std::cout << reviewer << "\t" << ratings[i] << "\t";              // put reviewer then rating at head of output line
+      string tag = std::to_string(ids[i]);
+      string filename = path + "scale_whole_review/" + reviewer + "/" + tag + ".txt";
+      std::ifstream textFile (filename);
+      if(textFile)
+      { while(!textFile.eof())                                          // suck down whole file, write to one line
+	{ string line;
+	  getline(textFile, line);
+	  std::cout << process_line(line);                              // add text after rating
+	}
+      }
+      else
+      { std::clog << messageTag << "Could not open text file " << filename << " for reviewer " << reviewer << std::endl;
+	return 0;
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
   }
   return (int) ids.size();
 }
 
 template <class C>
-void
-fill_vector_from_file(string filename, vector<C> *vec)
+int
+fill_vector_from_file(string filename, vector<C> *pVec)
 {
   std::ifstream file (filename);
   if (file)
   { while(!file.eof())
     { C tag;
       file >> tag;
-      vec->push_back(tag);
+      pVec->push_back(tag);
     }
-    std::clog << messageTag << "Read " << vec->size() << " values from file " << filename << std::endl;
+    std::clog << messageTag << "Read " << pVec->size() << " items from file " << filename << std::endl;
+    return (int) pVec->size();
   }
   else
-    std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
+  { std::clog << messageTag << "Could not open file " << filename << " for reading integers.\n";
+    return 0;
+  }
 }
 
 
