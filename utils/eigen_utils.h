@@ -14,7 +14,7 @@ namespace EigenUtils {
 
   template<class Value1, class Value2>
     void
-    fill_sparse_matrix (Eigen::SparseMatrix<Value1,Eigen::RowMajor> &B, std::map<std::pair<int,int>,Value2> const& indexValueMap)
+    fill_sparse_matrix (Eigen::SparseMatrix<Value1,Eigen::ColMajor> &B, std::map<std::pair<int,int>,Value2> const& indexValueMap)
   {
     typedef Eigen::Triplet<Value1> T;
     std::vector<T> triplets(indexValueMap.size());

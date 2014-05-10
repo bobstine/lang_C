@@ -10,9 +10,9 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-OPT = -O3 -fopenmp -std=c++11
+OPT = -O3  -std=c++11
 
-EXTERNAL_USES = boost_system boost_thread mpi
+EXTERNAL_USES = boost_system boost_thread gomp
 
 
 ###########################################################################
@@ -31,6 +31,10 @@ level_1   =  eigen_svd.o  regression.o
 ############################################################################
 
 include ../rules_for_makefiles
+
+
+perm_test: perm_test.o
+	$(GCC) $^ $(LDLIBS)  -o  $@
 
 
 rand_projection.o: rand_projection.cc 
