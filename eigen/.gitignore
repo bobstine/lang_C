@@ -5,3 +5,4 @@ test.dat
 householder.test
 estimates.*
 stoc_grad
+perm_test
