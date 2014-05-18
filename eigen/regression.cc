@@ -617,12 +617,12 @@ public:
     :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results), mTrace(trace)
     {
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
-      assert( (mX->cols()==mResults->rows()) && (mResults->cols() >= 3));  // fills first 3 columns
+      assert( (mResults->rows() == (1+mX->cols())) && (mResults->cols() >= 3));  // fills first 3 columns of results; add row for initial model
     }
     
   RegressionWorker(const RegressionWorker& rhs)
     : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSkipped(rhs.mSkipped), mResults(rhs.mResults), mTrace(rhs.mTrace) { }
-  
+
   void operator()()
   {
     debug("REGR",2) << "WORK: Regression worker started." << std::endl;
@@ -631,12 +631,11 @@ public:
     LinearRegression regr("Y", *mY, noBlocking);
     // check one at a time in case of singular model
     for (int k=0; k<mXi->cols(); ++k)
-      add_predictor_if_useful(regr, "Xi_"+std::to_string(k), mXi->col(k));
+      add_predictor_if_useful(&regr, "Xi_"+std::to_string(k), mXi->col(k));
+    fill_results(regr, 0);
     for (int k=0; k<mX ->cols(); ++k)
-    { add_predictor_if_useful(regr, "XX_" +std::to_string(k), mX ->col(k));
-      (*mResults)(k,0) = regr.r_squared();
-      (*mResults)(k,1) = regr.residual_ss();
-      (*mResults)(k,2) = regr.aic_c();
+    { add_predictor_if_useful(&regr, "XX_" +std::to_string(k), mX ->col(k));
+      fill_results(regr,k+1);
     }
     debug("REGR",2) << "WORK: Regression worker finished." << std::endl;
   }
@@ -644,15 +643,22 @@ public:
   int number_skipped() const { return mSkipped; }
   
 private:
-  void add_predictor_if_useful(LinearRegression &regr, std::string name, Eigen::VectorXd const& x)
-    { FStatistic f = regr.f_test_predictor(name, x);
+
+  void fill_results(LinearRegression const& regr, int k)
+    { (*mResults)(k,0) = regr.r_squared();
+      (*mResults)(k,1) = regr.residual_ss();
+      (*mResults)(k,2) = regr.aic_c();
+    }
+  
+  void add_predictor_if_useful(LinearRegression *regr, std::string name, Eigen::VectorXd const& x, bool verbose=false)
+    { FStatistic f = regr->f_test_predictor(name, x);
       if(f.f_stat() != 0.0)
-	regr.add_predictors();
+	regr->add_predictors();
       else
 	++mSkipped;
-      if (mTrace) std::clog << "REGR: Trace of regression worker, q = " << regr.q() << " predictors (" << mSkipped << " skipped)" << std::endl
-			    << "      beta = " << regr.beta().transpose() << std::endl
-			    << "      r^2 = " << regr.r_squared() << "   RSS = " << regr.residual_ss() << std::endl;
+      if (verbose) std::clog << "REGR: Trace of regression worker, q = " << regr->q() << " predictors (" << mSkipped << " skipped)" << std::endl
+			    << "      beta = " << regr->beta().transpose() << std::endl
+			    << "      r^2 = " << regr->r_squared() << "   RSS = " << regr->residual_ss() << std::endl;
     }
   
 };
@@ -674,7 +680,7 @@ public:
     : mY(y), mXi(Xi), mX(X), mSelector(sel), mSkipped(0), mCVSS(cvss)
     {
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
-      assert( mX->cols()== (int)mCVSS->size() );
+      assert( (1+mX->cols())== (int)mCVSS->size() );   // need room for intial model
     }
   
   ValidationWorker(const ValidationWorker& rhs)
@@ -686,16 +692,19 @@ public:
     ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
     namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
-    for (int k=0; k<mXi->cols(); ++k)
-    { namedIter[0].second = EigenColumnIterator(mXi, k);
-      regr.add_predictors_if_useful(namedIter, singularPval);
+    if(mXi->cols()>0)
+    { for (int k=0; k<mXi->cols(); ++k)
+      { namedIter[0].second = EigenColumnIterator(mXi, k);
+	regr.add_predictors_if_useful(namedIter, singularPval);
+      }
     }
+    (*mCVSS)[0] = regr.validation_ss();
     namedIter[0].first = "vXX";
     for (int k=0; k<mX->cols(); ++k)
     { namedIter[0].second = EigenColumnIterator(mX, k);
       std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, singularPval);
       if (fAndP.first < 0.0001) ++mSkipped;
-      (*mCVSS)[k] = regr.validation_ss();
+      (*mCVSS)[k+1] = regr.validation_ss();   // offset by 1 to accomodate first model
     }
     debug("REGR",2) << "WORK: Validator finished." << std::endl;
   }
@@ -707,12 +716,13 @@ public:
 
 void
 validate_regression(Eigen::VectorXd const& Y,
-		    Eigen::MatrixXd const& Xi, Eigen::MatrixXd const& X, 
+		    Eigen::MatrixXd const& Xi,      // preconditioning variables
+		    Eigen::MatrixXd const& X,       // variables to add one-at-a-time
 		    int nFolds,
 		    Eigen::MatrixXd  &results,
 		    unsigned randomSeed)
 {
-  if ((results.rows() != X.cols()) || (results.cols()!=4) )
+  if ((results.rows() != (1+X.cols())) || (results.cols()!=4) )
   { std::cerr << "REGR: Arguments to validate_regression misformed. dim(result)= (" << results.rows() << "," << results.cols()
 	      << ") with input data X having " << X.cols() << " columns." << std::endl;
     return;
@@ -738,7 +748,7 @@ validate_regression(Eigen::VectorXd const& Y,
     for (int fold=0; fold<nFolds; ++fold)
     { for(int i=0; i<(int)folds.size(); ++i)
 	selectors[fold].push_back( folds[i] != fold );
-      cvss[fold]    = new Eigen::VectorXd(X.cols());
+      cvss[fold]    = new Eigen::VectorXd(1+X.cols());   // add one for initial space
       workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker>
 					      ("thread " + std::to_string(fold),
 					       ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
