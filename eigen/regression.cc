@@ -673,18 +673,19 @@ private:
   std::vector<bool>::const_iterator  mSelector;
   int                                mSkipped;
   Eigen::VectorXd                 *  mCVSS;
+  const double                       mPtoEnter = 0.99;
 
 public:    
   ValidationWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X,
 		   std::vector<bool>::const_iterator sel, Eigen::VectorXd *cvss)
     : mY(y), mXi(Xi), mX(X), mSelector(sel), mSkipped(0), mCVSS(cvss)
-    {
+    { 
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
       assert( (1+mX->cols())== (int)mCVSS->size() );   // need room for intial model
     }
   
   ValidationWorker(const ValidationWorker& rhs)
-    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSelector(rhs.mSelector), mSkipped(rhs.mSkipped), mCVSS(rhs.mCVSS) { }
+    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSelector(rhs.mSelector), mSkipped(rhs.mSkipped), mCVSS(rhs.mCVSS), mPtoEnter(rhs.mPtoEnter) { }
     
   void operator()()
   {
@@ -702,9 +703,9 @@ public:
     namedIter[0].first = "vXX";
     for (int k=0; k<mX->cols(); ++k)
     { namedIter[0].second = EigenColumnIterator(mX, k);
-      std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, singularPval);
-      if (fAndP.first < 0.0001) ++mSkipped;
-      (*mCVSS)[k+1] = regr.validation_ss();   // offset by 1 to accomodate first model
+      std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, mPtoEnter);
+      if (fAndP.first == 0) ++mSkipped;  
+      (*mCVSS)[k+1] = regr.validation_ss();           // offset by 1 to accomodate first model
     }
     debug("REGR",2) << "WORK: Validator finished." << std::endl;
   }
