@@ -11,6 +11,11 @@ int main(int argc, char *argv[])
 
   typedef Eigen::VectorXd Vector;
   typedef Eigen::MatrixXd Matrix;
+
+  {
+    Vector X;
+    std::cout << "MAIN: X.size is " << X.size() << std::endl;
+  }
   
   // ras... element by element insertion
   {
@@ -46,7 +51,7 @@ int main(int argc, char *argv[])
     Vector mean (mat.colwise().sum());
     mean = mean / mat.rows();
     for (int j=0; j<mat.cols(); ++j)
-      mat.col(j) = mat.col(j).cwise() - mean(j);
+      mat.col(j) = mat.col(j).array() - mean(j);
     std::cout << "Matrix after centering \n" << mat << std::endl;
     Vector ss (mat.colwise().squaredNorm());
     ss = ss / (mat.rows() - 1);
@@ -58,7 +63,7 @@ int main(int argc, char *argv[])
     std::cout << "Sqrt(SS) -- not div by n -- of first column is " << mat.col(0).norm() << std::endl;
     
     // SVD operations
-    Eigen::SVD<Matrix> svd(mat);
+    Eigen::JacobiSVD<Matrix> svd(mat, Eigen::ComputeThinU|Eigen::ComputeThinV);
     Matrix u (svd.matrixU());
     Matrix v (svd.matrixV());
 
@@ -89,7 +94,7 @@ int main(int argc, char *argv[])
   // demo dynamic-size block()
   {
     int rows = 3, cols = 3;
-    m4.block(0,1,3,3).setIdentity();
+    m4.block(0,1,rows,cols).setIdentity();
     std::cout << "\n*** Step 4 ***\nm4:\n" << m4 << std::endl;
   }
 
@@ -97,12 +102,12 @@ int main(int argc, char *argv[])
   // this did not compile... m4.diagonal().block(1,2).setOnes();
   m4.diagonal().setOnes();
   std::cout << "\n*** Step 5 ***\nm4.diagonal():\n" << m4.diagonal() << std::endl;
-  std::cout << "m4.diagonal().start(3)\n" << m4.diagonal().start(3) << std::endl;
+  std::cout << "m4.diagonal().head(3)\n" << m4.diagonal().head(3) << std::endl;
 
   
   // demo coeff-wise operations
-  m4 = m4.cwise()*m4;
-  m3 = m3.cwise().cos();
+  m4 = m4.array() * m4.array();
+  m3 = m3.array().cos();
   std::cout << "*** Step 6 ***\nm3:\n" << m3 << "\nm4:\n" << m4 << std::endl;
 
   // sums of coefficients   RAS: accummulate an arbirary function along an axis???

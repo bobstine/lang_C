@@ -33,9 +33,11 @@ level_1   =  eigen_svd.o  regression.o
 include ../rules_for_makefiles
 
 
-perm_test: perm_test.o
+tutorial: tutorial.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
 
+perm_test: perm_test.o
+	$(GCC) $^ $(LDLIBS)  -o  $@
 
 rand_projection.o: rand_projection.cc 
 	$(GCC) $(CFLAGS) -std=c++0x -c $^ -o $@
