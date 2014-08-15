@@ -1,11 +1,10 @@
 // -*- c++ -*-
-
-#ifndef INCLUDED_LIGHT_THREADS
-#define INCLUDED_LIGHT_THREADS
-
+#ifndef _LIGHT_THREADS_H_
+#define _LIGHT_THREADS_H_
 
 #include <iostream>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -41,13 +40,14 @@
 template<class W>
 class LightThread
 {
+  
 private:
-  std::string                             mName;             // use to identify if there's a problem
-  boost::shared_ptr<bool>                 mp_notWorking;           // we are only notWorking if the lock isn't grabbed and this is true
-  boost::shared_ptr<W>                    mp_worker;
-  boost::shared_ptr<boost::thread>        mp_thread;
-  boost::shared_ptr<boost::mutex>         mp_thread_mutex;   // thread lock controls read/write values of pointers
-  mutable boost::mutex                    m_object_mutex;    // object lock controls read/write pointers
+  std::string                           mName;             // use to identify if there's a problem
+  std::shared_ptr<bool>                 mp_notWorking;     // we are only notWorking if the lock isn't grabbed and this is true
+  std::shared_ptr<W>                    mp_worker;
+  std::shared_ptr<std::thread>        mp_thread;
+  std::shared_ptr<std::mutex>         mp_thread_mutex;   // thread lock controls read/write values of pointers
+  mutable std::mutex                    m_object_mutex;    // object lock controls read/write pointers
   
 public:
   ~LightThread<W>();                                         // Waits for thread to finish 
@@ -66,7 +66,5 @@ public:
 private:
   void start_thread();
 };
-
-#include "light_threads.Template.h"
 
 #endif

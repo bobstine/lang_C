@@ -1,4 +1,8 @@
-//  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out   -*- c++ -*- 
+#ifndef _LIGHT_THREADS_TEMPLATE_
+#define _LIGHT_THREADS_TEMPLATE_
+
+#include "light_threads.h"
+#include <assert.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -45,7 +49,7 @@ LightThread<W>::LightThread(std::string name, const W& worker)
     mp_notWorking(new bool), // we have no work to do in the queue and no thread running
     mp_worker(),
     mp_thread(),
-    mp_thread_mutex(new boost::mutex()),
+    mp_thread_mutex(new std::mutex()),
     m_object_mutex()
 {
   //  std::cout << "LT: initialize with a worker.\n";
@@ -101,11 +105,11 @@ LightThread<W>::operator()(W const& worker)
   // lock object, but not thread since we are about to launch it
   m_object_mutex.lock();
   // the following should all be changed "atomically"
-  mp_thread_mutex = boost::shared_ptr<boost::mutex> (new boost::mutex);
-  mp_notWorking = boost::shared_ptr<bool> (new bool);
+  mp_thread_mutex = std::shared_ptr<std::mutex> (new std::mutex);
+  mp_notWorking = std::shared_ptr<bool> (new bool);
   (*mp_notWorking) = false;
-  mp_worker = boost::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
-  mp_thread = boost::shared_ptr<boost::thread>(new boost::thread(&LightThread<W>::start_thread,this));
+  mp_worker = std::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
+  mp_thread = std::shared_ptr<std::thread>(new std::thread(&LightThread<W>::start_thread,this));
   m_object_mutex.unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.
@@ -200,8 +204,8 @@ LightThread<W>::start_thread()
   m_object_mutex.lock();
   assert(mp_notWorking != 0);
   assert(mp_worker != 0);
-  boost::shared_ptr<W> pLocalWorker = mp_worker;
-  boost::shared_ptr<bool> pLocalNotWorking = mp_notWorking;
+  std::shared_ptr<W> pLocalWorker = mp_worker;
+  std::shared_ptr<bool> pLocalNotWorking = mp_notWorking;
   m_object_mutex.unlock();
   (*pLocalWorker)(); // no one looks at mp_worker until it is "notWorking".  So we don't have to protect it further
   mp_thread_mutex->lock();
@@ -209,3 +213,4 @@ LightThread<W>::start_thread()
   mp_thread_mutex->unlock();
 }
 
+#endif

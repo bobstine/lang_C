@@ -55,7 +55,7 @@ vpath %.a $(patsubst %, ../%, $(USES))
 INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
 
 # names of libraries
-LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm 
+LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
 
 # file names of libraries
 LIBRARIES = $(patsubst %,lib%.a,$(USES))

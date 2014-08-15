@@ -1,7 +1,8 @@
 //  g++ easy_threads.cc -lboost_thread -L/usr/local/lib;./a.out
 
-#include "light_threads.h"
+#include "light_threads.Template.h"
 
+#include <chrono>
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Sample worker object.
@@ -22,10 +23,8 @@ public:
     
   void operator()()
   {
-    float ms = m_N * 1e3;
-    boost::posix_time::milliseconds workTime(ms);
-    std::cout << "Worker: started, will work for " << ms << "ms\n";
-    boost::this_thread::sleep(workTime);
+    std::cout << "Worker: started, will work for 1 sec" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     std::cout << "Worker: completed" << std::endl;
     m_results = "Worker: completed";
   }
