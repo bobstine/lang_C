@@ -12,8 +12,8 @@ USES = random utils
 
 OPT = -O3  -std=c++11
 
-EXTERNAL_USES = boost_system boost_thread gomp
-
+# EXTERNAL_USES = boost_system boost_thread gomp
+EXTERNAL_USES = 
 
 ###########################################################################
 #

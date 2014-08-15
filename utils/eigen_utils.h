@@ -12,6 +12,8 @@
 
 namespace EigenUtils {
 
+  using std::string;
+  
   template<class Value1, class Value2>
     void
     fill_sparse_matrix (Eigen::SparseMatrix<Value1,Eigen::ColMajor> &B, std::map<std::pair<int,int>,Value2> const& indexValueMap)
@@ -25,15 +27,21 @@ namespace EigenUtils {
 
 
   // return number of elements or rows written to file.  Zero signals error.
+
+  inline string
+    version ()
+    {
+      return std::to_string(EIGEN_WORLD_VERSION) + "." + std::to_string(EIGEN_MAJOR_VERSION) + "." + std::to_string(EIGEN_MINOR_VERSION);
+    }
+
+  int
+    write_matrix_to_file (string fileName, Eigen::MatrixXf const& x, bool append=false);
   
   int
-    write_matrix_to_file (std::string fileName, Eigen::MatrixXf const& x, bool append=false);
+    write_labelled_matrix_to_file (string fileName, std::vector<string> const& rowLabels, Eigen::MatrixXf const& x, bool append=false);
   
   int
-    write_labelled_matrix_to_file (std::string fileName, std::vector<std::string> const& rowLabels, Eigen::MatrixXf const& x, bool append=false);
-  
-  int
-    write_vector_to_file (std::string fileName, Eigen::VectorXf const& x, bool append=false);
+    write_vector_to_file (string fileName, Eigen::VectorXf const& x, bool append=false);
 }
 
 #endif
