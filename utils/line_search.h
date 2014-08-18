@@ -67,23 +67,23 @@ namespace Line_Search
   {
   private:
     const double  mTolerance;
-    const double  mGridSize;      // do initial grid search at this spacing  (0 implies none)
+    const double  mGridSpacing;      // do initial grid search at this spacing  (0 implies none)
     const Pair    mInterval;
     const int     mMaxIterations;
     
   public:
 
     GoldenSection ()
-      : mTolerance(0), mGridSize(0), mInterval(std::make_pair(0,0)), mMaxIterations(0) { }
+      : mTolerance(0), mGridSpacing(0), mInterval(std::make_pair(0,0)), mMaxIterations(0) { }
     
     GoldenSection (GoldenSection const& gs)
-      : mTolerance(gs.mTolerance), mGridSize(gs.mGridSize), mInterval(gs.mInterval), mMaxIterations(gs.mMaxIterations) { }
+      : mTolerance(gs.mTolerance), mGridSpacing(gs.mGridSpacing), mInterval(gs.mInterval), mMaxIterations(gs.mMaxIterations) { }
     
     GoldenSection (double tolerance, Pair const& interval, double grid, int maxIterations)
-      : mTolerance(tolerance), mGridSize (grid), mInterval(interval), mMaxIterations(maxIterations) { }
+      : mTolerance(tolerance), mGridSpacing (grid), mInterval(interval), mMaxIterations(maxIterations) { }
 
     GoldenSection (double tolerance, Pair const& interval)
-      : mTolerance(tolerance), mGridSize (   0), mInterval(interval), mMaxIterations(   100       ) { }
+      : mTolerance(tolerance), mGridSpacing (   0), mInterval(interval), mMaxIterations(   100       ) { }
 
     template< class Func >
       Pair find_minimum(Func const& f) const;

@@ -88,28 +88,38 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
   // build starting conditions
   Pair   xLo = std::make_pair(mInterval.first,  f(mInterval.first));
   Pair   xHi = std::make_pair(mInterval.second, f(mInterval.second));
+  // std::cout << "\n\nLINE: GS searching interval  "
+  //	      << "<" << xLo.first << "," <<xLo.second <<  ">  to   " 
+  //	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
   // perform optional initial grid search
-  if (mGridSize > 0)
+  if (mGridSpacing > 0)
   { int   xOpt = xLo.first;
     double opt = xLo.second;
-    int n = ceil((mInterval.second - mInterval.first)/mGridSize)-1;
-    double x=mInterval.first+mGridSize;
-    for (int i=0; i<n; ++i, x += mGridSize)
-    { x += mGridSize;
+    int n = ceil((mInterval.second - mInterval.first)/mGridSpacing)-1;
+    double x=mInterval.first+mGridSpacing;
+    for (int i=0; i<n; ++i)
+    { x += mGridSpacing;
       double fx = f(x);
       if (comp(fx,opt)) { xOpt = x; opt = fx; }
     }
-    // update range
-    xLo.first  = MAX(xLo.first, xOpt - 2 * mGridSize);
-    xLo.second = f(xLo.first);
-    xHi.first  = MIN(xHi.first, xOpt + 2 * mGridSize);
-    xHi.second = f(xHi.first);
+    // update range with boundary check
+     if (xOpt == xLo.first)
+    { xLo.first = xOpt;                      xLo.second = opt;
+      xHi.first = xOpt + 2 * mGridSpacing;   xHi.second = f(xHi.first);
+    } else if (xOpt == xHi.first)
+    { xLo.first = xOpt - 2 * mGridSpacing;   xLo.second = f(xLo.first);
+      xHi.first = xOpt;                      xHi.second = opt;
+    } else
+    { xLo.first  = MAX(xLo.first, xOpt - 2 * mGridSpacing);
+      xLo.second = f(xLo.first);
+      xHi.first  = MIN(xHi.first, xOpt + 2 * mGridSpacing);
+      xHi.second = f(xHi.first);
+    }
+     // std::cout << "LINE: After grid adjustment searching interval  "
+     // 	      << "<" << xLo.first << "," <<xLo.second <<  ">  to   " 
+     //  	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl;
   }
   // init the internal positions
-  /* std::cout << "\n\nLINE: Searching interval  "
-  	      << "<" << xLo.first << "," <<xLo.second <<  "> ... " 
-  	      << "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl; */
-
   double len = xHi.first-xLo.first;
   double x = xLo.first + gr*len;
   Pair xA = std::make_pair(x, f(x));
@@ -121,10 +131,10 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
   { len = xB.first - xLo.first;              // 0.618 times prior length
     if (len < mTolerance) break;
     // use to trace optimization
-    /*    std::clog << "LINE:  <" << xLo.first << "," << xLo.second << "> "
-	      <<        "<" <<  xA.first << "," << xA.second <<  "> "
-	      <<        "<" <<  xB.first << "," << xB.second <<  "> "
-	      <<        "<" << xHi.first << "," <<xHi.second <<  "> " << std::endl; */
+    // std::clog << "LINE:  Lo <" << xLo.first << "," << xLo.second << "> "
+    //	      <<       "  A <" <<  xA.first << "," << xA.second <<  "> "
+    //	      <<       "  B <" <<  xB.first << "," << xB.second <<  "> "
+    //	      <<       " Hi <" << xHi.first << "," <<xHi.second <<  "> " << std::endl; 
     if(comp(xA.second,xB.second)) // < for min
     { xHi = xB;
       xB=xA;
@@ -139,7 +149,7 @@ Line_Search::GoldenSection::optimize(Func const& f, Comp const& comp) const
     }
   }
   if (mMaxIterations == i)
-    std::clog << "GSRC:  Warning.  Golden section reached maximum number of iterations.\n";
+    std::clog << "GSLS:  Warning.  Golden section reached maximum number of iterations.\n";
   x = 0.5 * (xLo.first + xHi.first);
   return(std::make_pair(x,f(x)));
 }
