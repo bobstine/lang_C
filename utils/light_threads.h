@@ -28,11 +28,11 @@
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  The following will turn off threads when debugging.  This will make GDB easier to work with
-//  But clearly won't allow debugging issues with treads and locks.
+//  But clearly won't allow debugging issues with threads and locks.
+//
+//  #define NOTHREADS
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-
-// #define NOTHREADS
 
 
 template<class W>
@@ -41,11 +41,11 @@ class LightThread
   
 private:
   std::string                     mName;             // use to identify if there's a problem
-  std::shared_ptr<bool>           mp_notWorking;     // we are only notWorking if the lock isn't grabbed and this is true
+  std::shared_ptr<bool>           mp_notWorking;     // we are notWorking only if the lock isn't grabbed and this is true
   std::shared_ptr<W>              mp_worker;
   std::shared_ptr<std::thread>    mp_thread;
-  std::shared_ptr<std::mutex>     mp_thread_mutex;   // thread lock controls read/write values of pointers
-  mutable std::mutex              m_object_mutex;    // object lock controls read/write pointers
+  std::shared_ptr<std::mutex>     mp_thread_mutex;   // thread lock controls read/write *values* pointed at by pointers
+  mutable std::mutex              m_object_mutex;    // object lock controls read/write pointers themselves
   
 public:
   ~LightThread<W>();                                         // Waits for thread to finish 

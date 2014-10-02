@@ -163,6 +163,7 @@ LightThread<W>::operator->() const
   if(!*mp_notWorking)
   { mp_thread_mutex->unlock(); // Unlock mutexes so that running thread
     m_object_mutex.unlock();   // can set things, such as notWorking
+    std::cout << "LT: Joining light thread " << mName << " (const)" << std::endl;
     mp_thread->join();
     m_object_mutex.lock();
     mp_thread_mutex->lock();
