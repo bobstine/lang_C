@@ -185,6 +185,7 @@ LightThread<W>::operator->()
   if(!*mp_notWorking)
   { mp_thread_mutex->unlock();
     m_object_mutex.unlock();
+    std::cout << "LT: Joining light thread " << mName << std::endl;
     mp_thread->join();
     m_object_mutex.lock();
     mp_thread_mutex->lock();

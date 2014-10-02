@@ -3,6 +3,8 @@
 #include "light_threads.Template.h"
 
 #include <chrono>
+#include <math.h>
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Sample worker object.
@@ -28,7 +30,6 @@ public:
     std::cout << "Worker: completed" << std::endl;
     m_results = "Worker: completed";
   }
-
   
   std::string results() const  { return m_results; }
 
@@ -37,25 +38,34 @@ public:
 
 int main(int, char**)
 {
-    std::cout << "main: startup" << std::endl;
+    std::cout << "MAIN: startup" << std::endl;
 
     {
-      LightThread<Worker> w3("Lt:w3");
-      w3(Worker(3));
       LightThread<Worker> w2("Lt:w2",Worker(2));
-      LightThread<Worker> w4(w3);
+      LightThread<Worker> w3("Lt:w3",Worker(3));
+      
       if(w2.done())
-	std::cout << "Probably running without threads." << std::endl;
+	std::cout << "MAIN: Probably running without threads." << std::endl;
       else
-	std::cout << "Probably running with threads." << std::endl;
-	
-      std::cout << "main: waiting for thread" << std::endl;
+	std::cout << "MAIN: Probably running with threads." << std::endl;
+      
+      // other startup...
+      // w3(Worker(3));
+      // LightThread<Worker> w4(w2);
 
       // get information from threaded worker via ->
-      std::cout << "Results from W2:" << w2->results() << std::endl;
-      std::cout << "             W3:" << w3->results() << std::endl;
-      std::cout << "             W4:" << w4->results() << std::endl;
+      std::cout << "MAIN: Results from W2 = `" << w2->results() << "'" << std::endl;
+      std::cout << "MAIN:              W3 = `" << w3->results() << "'" << std::endl;
 
+      // ras std::cout << "             W4 = " << w4->results() << std::endl;
+
+      // put this in to delay to threads can finish
+      /*
+	float total;
+	for (int i=0; i< 20000; ++i)
+	total += sqrt( (float)i );
+      */
+      
       // put them into a list
       /*
 	std::vector< LightThread<Worker> > workers;
