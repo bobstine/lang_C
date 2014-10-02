@@ -8,8 +8,6 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
-//  Interface to Boost::threads
-//
 //  The primary value-added of the Threaded class below is that it uses creation and destruction
 //  as the mechanism for controling the threads.  This avoids memory issues, dead lock, etc.
 //  But it disallows some fancier threading.  So if you can write code that works with this
@@ -42,12 +40,12 @@ class LightThread
 {
   
 private:
-  std::string                           mName;             // use to identify if there's a problem
-  std::shared_ptr<bool>                 mp_notWorking;     // we are only notWorking if the lock isn't grabbed and this is true
-  std::shared_ptr<W>                    mp_worker;
-  std::shared_ptr<std::thread>        mp_thread;
-  std::shared_ptr<std::mutex>         mp_thread_mutex;   // thread lock controls read/write values of pointers
-  mutable std::mutex                    m_object_mutex;    // object lock controls read/write pointers
+  std::string                     mName;             // use to identify if there's a problem
+  std::shared_ptr<bool>           mp_notWorking;     // we are only notWorking if the lock isn't grabbed and this is true
+  std::shared_ptr<W>              mp_worker;
+  std::shared_ptr<std::thread>    mp_thread;
+  std::shared_ptr<std::mutex>     mp_thread_mutex;   // thread lock controls read/write values of pointers
+  mutable std::mutex              m_object_mutex;    // object lock controls read/write pointers
   
 public:
   ~LightThread<W>();                                         // Waits for thread to finish 

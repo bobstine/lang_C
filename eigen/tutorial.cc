@@ -5,7 +5,7 @@
 #include <Eigen/SVD>
 
 
-int main(int argc, char *argv[])
+int main(int, char **)
 {
   std::cout.precision(2);
 
@@ -22,14 +22,14 @@ int main(int argc, char *argv[])
     const int dim (10);
     std::vector<float> sv;
     for(int i = 0; i<dim; ++i)
-      sv.push_back(-i);
+      sv.push_back(-(float)i);
 
     // insert columns into matrix
     Vector vec (dim);
     for(int i = 0; i<dim; ++i)
       vec[i] = sv[i];
 
-    std::cout << "TEST: vec[1] = " << vec(1) << "   abs val = " << abs(vec(1)) << std::endl;
+    std::cout << "TEST: vec[1] = " << vec(1) << "   abs val = " << fabs(vec(1)) << std::endl;
 
 
     Matrix mat (dim,3);
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     mat.col(1) = vec; // odd that this does not work ... vec + 3... need vec.cwise() + scalar
     mat.col(2) = vec * 3;
 
-    std::cout << "TEST: mat[1,1] = " << mat(1,1) << "   abs val = " << abs(mat(1,1)) << std::endl;
+    std::cout << "TEST: mat[1,1] = " << mat(1,1) << "   abs val = " << fabs(mat(1,1)) << std::endl;
 
     std::cout << "\nElement by element assignment:\n" << vec << "\nmat\n" <<  mat << std::endl;
 
@@ -49,12 +49,12 @@ int main(int argc, char *argv[])
 
     // try centering and scaling the matrix
     Vector mean (mat.colwise().sum());
-    mean = mean / mat.rows();
+    mean = mean / (float)mat.rows();
     for (int j=0; j<mat.cols(); ++j)
       mat.col(j) = mat.col(j).array() - mean(j);
     std::cout << "Matrix after centering \n" << mat << std::endl;
     Vector ss (mat.colwise().squaredNorm());
-    ss = ss / (mat.rows() - 1);
+    ss = ss / (float)(mat.rows() - 1);
     for (int j=0; j<mat.cols(); ++j)
     { double sd (sqrt(ss(j)));
       mat.col(j) = mat.col(j) / sd;

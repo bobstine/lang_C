@@ -21,7 +21,7 @@ namespace EigenUtils {
     typedef Eigen::Triplet<Value1> T;
     std::vector<T> triplets(indexValueMap.size());
     for(auto it = indexValueMap.cbegin(); it != indexValueMap.cend(); ++it)
-      triplets.push_back(T(it->first.first, it->first.second, it->second));
+      triplets.push_back(T(it->first.first, it->first.second, (float)it->second));
     B.setFromTriplets(triplets.begin(), triplets.end());
   }
 

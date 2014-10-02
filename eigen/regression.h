@@ -73,23 +73,23 @@ public:
 
   
   LinearRegression (std::string yName, Vector const& y, int blockSize) 
-    : mN(y.size()), mK(0), mBlockSize(blockSize),
+    : mN((int)y.size()), mK(0), mBlockSize(blockSize),
       mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
   
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize),
+    :  mN((int)y.size()), mK(0), mBlockSize(blockSize),
        mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
        mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames, x); }
 
   
   // WLS: if weighted, all things held are weighted by square root of input weights in w
   LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
+    :  mN((int)y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
        mY(y.array()*w.array().sqrt()), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
 
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
-    :  mN(y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
+    :  mN((int)y.size()), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
        mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames,x); }  
 
   inline bool      is_binary()         const   { return mBinary; }
