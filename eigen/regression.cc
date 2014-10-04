@@ -10,7 +10,7 @@ using debugging::debug;
 #pragma GCC optimize ("-O4")
 
 #include "regression.h"
-#include "light_threads.h"
+#include "light_threads.Template.h"
 #include "bennett.h"
 
 #include <Eigen/LU>
@@ -741,7 +741,7 @@ validate_regression(Eigen::VectorXd const& Y,
     if (randomSeed != 0)
       shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
     // build validated regressions (one step at a time)
-    typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
+    typedef std::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
     std::vector<std::vector<bool>>       selectors (nFolds);
     std::vector<Eigen::VectorXd *>       cvss      (nFolds);
     std::vector<ValidationThreadPointer> workers   (nFolds);

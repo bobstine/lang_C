@@ -14,7 +14,9 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-OPT = -O3 # -pthread
+ # -pthread
+
+OPT = -O3
 
 # USES = 
 
