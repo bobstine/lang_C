@@ -46,9 +46,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       ( 300 );   
-  const int nCols        (  3 );
-  const int nAdd         ( 10 );
+  const int nRows       ( 25000 );   
+  const int nCols       (     5 );
+  const int nAdd        (    25 );
   
   // form random matrix for response and predictors
   Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
@@ -60,7 +60,7 @@ int main(int, char **)
   // shift the y's by 100 to check ordering in train/test data
   for(int i=0; i<nRows; ++i)
     y[i] = y[i] + 100;
-  // add some signal to the Z's for checking validation
+  // add some signal to the Z's for checking validation    (this puts some huge leverage points into the data)
   Z(0,0) = y(0);
   Z(1,1) = y(1);
   Z(2,2) = y(2);
@@ -87,14 +87,17 @@ int main(int, char **)
   }
 
   //  write data so that can check in JMP/R
-  if (nRows < 1000)
+  if (false && nRows < 1000)
   { Eigen::MatrixXd data(nRows,1+nCols+nAdd);
     data << y , X , Z; 
     cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << endl;
-    std::string fileName ("/Users/bob/Desktop/regr_test_data.txt");
+    std::string fileName ("regr_test_data.txt");
     std::ofstream output(fileName.c_str());
+    output << "y";
+    for(int i=0; i<X.cols(); ++i) output << "\tX_" << i;
+    for(int i=0; i<Z.cols(); ++i) output << "\tZ_" << i;
     output.precision(7);
-    output << data << endl;
+    output << std::endl << data << endl;
   }
 
     
@@ -165,9 +168,9 @@ int main(int, char **)
 
     
   if(true)   // test threads for regression
-  { cout << "TEST: Testing threads code for CV." << endl;
-    int nFolds = 5;
-    Eigen::MatrixXd results(Z.cols(), 4);
+  { cout << "\n\nTEST: Testing threads code for CV." << endl;
+    int nFolds = 20;
+    Eigen::MatrixXd results(1+Z.cols(), 4);           // extra row for base model
     validate_regression( y, X, Z, nFolds, results);
     cout << "TEST: Thread results for columns R2, RSS, AICc, and CVSS\n" << results << endl;
   }

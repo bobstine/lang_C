@@ -10,8 +10,9 @@ using debugging::debug;
 #pragma GCC optimize ("-O4")
 
 #include "regression.h"
-#include "light_threads.h"
 #include "bennett.h"
+
+#include <thread>
 
 #include <Eigen/LU>
 #include <Eigen/QR>
@@ -595,12 +596,23 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
   }
 }
 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 //     cross validation     cross validation     cross validation     cross validation     cross validation
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 const int    noBlocking    = 0;     // no white blocking
 const bool   noShrinkage   = false; // no shrinkage
-const double singularPval  = 0.99;
+const double singularPval  = 0.995; // threshold for deciding if added variable is 'too close' to singular
 
+
+/*
+  Regression worker fills a pre-allocated matrix with summary statistics from fitting a sequence
+  of progressively larger regression models constructed -- in given order -- from the input X
+  matrix.  The model is inialized with the columns in Xi (and included a constant).  The summary
+  statistics are RSS, R2 and AIC.
+*/
 
 class RegressionWorker
 {
@@ -625,7 +637,6 @@ public:
 
   void operator()()
   {
-    debug("REGR",2) << "WORK: Regression worker started." << std::endl;
     std::vector<std::string> xNames;
     for(int j=0; j<mXi->cols(); ++j) xNames.push_back("Xi_"+std::to_string(j));
     LinearRegression regr("Y", *mY, noBlocking);
@@ -637,7 +648,6 @@ public:
     { add_predictor_if_useful(&regr, "XX_" +std::to_string(k), mX ->col(k));
       fill_results(regr,k+1);
     }
-    debug("REGR",2) << "WORK: Regression worker finished." << std::endl;
   }
 
   int number_skipped() const { return mSkipped; }
@@ -664,6 +674,11 @@ private:
 };
 
 
+/*
+  Validation worker is similar to a regression worker, but rather than compute summary
+  statistics, it computes a CVSS based on the input iteratorr that tells it which cases
+  to exclude from the analysis.  The results are placed in the external CVSS array.
+*/
 class ValidationWorker
 {
 private:
@@ -673,7 +688,7 @@ private:
   std::vector<bool>::const_iterator  mSelector;
   int                                mSkipped;
   Eigen::VectorXd                 *  mCVSS;
-  const double                       mPtoEnter = 0.99;
+  const double                       mPtoEnter = 0.995;  // avoid singular variables
 
 public:    
   ValidationWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X,
@@ -689,7 +704,6 @@ public:
     
   void operator()()
   {
-    debug("REGR",2) << "WORK: Validator started." << std::endl;
     ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
     namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
@@ -707,7 +721,6 @@ public:
       if (fAndP.first == 0) ++mSkipped;  
       (*mCVSS)[k+1] = regr.validation_ss();           // offset by 1 to accomodate first model
     }
-    debug("REGR",2) << "WORK: Validator finished." << std::endl;
   }
   
   int number_skipped() const { return mSkipped; }
@@ -730,9 +743,10 @@ validate_regression(Eigen::VectorXd const& Y,
   }
   int totalSkipped = 0;  // used to block threads till finish
   // fit main model, filling first 3 columns of results with R2, RSS, AICc
-  debug("REGR",2) << "Building main regression thread" << std::endl;
   bool trace = (randomSeed == 0);
-  LightThread<RegressionWorker> regrThread("main", RegressionWorker(&Y, &Xi, &X, &results, trace));
+  RegressionWorker regrWorker(&Y, &Xi, &X, &results, trace);
+  debug("REGR",2) << "Starting main regression thread" << std::endl;
+  std::thread regrThread(regrWorker);
   // construct random folds
   if (nFolds > 0)
   { std::vector<int> folds (Y.size());
@@ -740,34 +754,52 @@ validate_regression(Eigen::VectorXd const& Y,
       folds[i] = i % nFolds;
     if (randomSeed != 0)
       shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
-    // build validated regressions (one step at a time)
-    typedef boost::shared_ptr< LightThread<ValidationWorker> > ValidationThreadPointer;
-    std::vector<std::vector<bool>>       selectors (nFolds);
-    std::vector<Eigen::VectorXd *>       cvss      (nFolds);
-    std::vector<ValidationThreadPointer> workers   (nFolds);
+    // write data to check code
+    if (false)
+    { Eigen::MatrixXd data(X.rows(),2+Xi.cols()+X.cols());
+      Eigen::VectorXd dFold(folds.size());
+      for(int i=0; i<(int)folds.size(); ++i) dFold[i] = folds[i];
+      data << dFold, Y , Xi , X; 
+      std::cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << std::endl;
+      std::string fileName ("regr_test_data.txt");
+      std::ofstream output(fileName.c_str());
+      output << "folds \t y";
+      for(int i=0; i<Xi.cols(); ++i) output << "\tXi_" << i;
+      for(int i=0; i<X.cols(); ++i) output << "\tX_" << i;
+      output.precision(7);
+      output << std::endl << data << std::endl;
+    }
+    // build validated regressions (construct each worker then launch thread)
     debug("REGR",2) << "Building validation threads" << std::endl;
+    std::vector<std::vector<bool>>  selectors (nFolds);
+    std::vector<Eigen::VectorXd *>  cvss      (nFolds);
+    std::vector<ValidationWorker *> workers   (nFolds);
+    std::vector<std::thread>        validationThreads(nFolds);
     for (int fold=0; fold<nFolds; ++fold)
     { for(int i=0; i<(int)folds.size(); ++i)
 	selectors[fold].push_back( folds[i] != fold );
-      cvss[fold]    = new Eigen::VectorXd(1+X.cols());   // add one for initial space
-      workers[fold] = ValidationThreadPointer(new LightThread<ValidationWorker>
-					      ("thread " + std::to_string(fold),
-					       ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold])));
+      cvss[fold]    = new Eigen::VectorXd(1+X.cols());   // +1 for initial model results
+      workers[fold] = new ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold]);
+      debug("REGR",2) << "Starting validation thread #" << fold << std::endl;
+      validationThreads[fold] = std::thread(*workers[fold]);
     }
-    debug("REGR",2) << "Waiting for validation threads" << std::endl;
     for (int fold=0; fold<nFolds; ++fold)
-      totalSkipped += (*workers[fold])->number_skipped();
+    { validationThreads[fold].join();
+      totalSkipped += workers[fold]->number_skipped();
+    }
     debug("REGR",3) << "Total number of terms skipped during cross-validation was " << totalSkipped << std::endl;
-    //  accumulate CVSS over folds
+    //  accumulate CVSS vectors over folds
     for(int fold=1; fold<nFolds; ++fold)
       (*cvss[0]) += *cvss[fold];
+    // join initial thread that writes into results before adding cvss to results
+    regrThread.join();
     results.col(3) = *cvss[0];
     // free space
     for(int fold=0; fold<nFolds; ++fold)
-      delete cvss[fold];
+    { delete cvss[fold];
+      delete workers[fold];
+    }
+
   }
-  // deref operator blocks until thread finishes (don't really need num skipped)
-  totalSkipped = regrThread->number_skipped();
-  debug("REGR",3) << "Completed main thread, skipped " << totalSkipped << std::endl;
 }
   

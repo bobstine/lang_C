@@ -6,3 +6,4 @@ householder.test
 estimates.*
 stoc_grad
 perm_test
+regr_test_data.txt
