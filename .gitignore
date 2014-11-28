@@ -2,6 +2,7 @@
 bellman
 text
 utilities
+stepwise
 GCC4.9
 sandbox
 *.test
