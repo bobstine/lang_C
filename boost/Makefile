@@ -52,6 +52,7 @@ csv_parser: csv_parser.o
 
 
 test_parser: csv_parser csv_test_data.txt
+	mkdir -p csv.out
 	rm csv.out/*; ./csv_parser -f csv_test_data.txt -d csv.out
 
 parse_diabetes: csv_parser
