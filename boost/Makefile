@@ -51,9 +51,14 @@ csv_parser: csv_parser.o
 	$(GCC) $< $(LDLIBS) -o $@
 
 
-test_parser: csv_parser csv_test_data.txt
+# writes variables to separate files within indicated subdirectory
+test_parser_dir: csv_parser csv_test_data.txt
 	mkdir -p csv.out
 	rm csv.out/*; ./csv_parser -f csv_test_data.txt -d csv.out
+
+# writes variables to one file
+test_parser_file: csv_parser csv_test_data.txt
+	rm csv.out/*; ./csv_parser -f csv_test_data.txt -o csv_test_out.txt
 
 parse_diabetes: csv_parser
 	rm diab.out/*; ./csv_parser -f ~foster/diab_smaller.csv -d diab.out

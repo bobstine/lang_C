@@ -3,7 +3,7 @@
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
 
    EXECUTE:  csv_parser < input.csv > output.data
-             csv_parser -f input.csv -o output-file-name     # bob_format_1.0  writes into one file
+             csv_parser -f input.csv -o output-file-name     # bob_format_1.0  writes into one file (3 lines per var)
 	     cvs_parser -f input.csv -d output-directory     # bob_format_2.0  tar style into one directory
 
    The first version uses standard io.  The second uses a supplied
@@ -523,7 +523,7 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
   int nObs  (data.size());
   
   int column = 0;
-  if (hasSelector)
+  if (hasSelector)  // defines cross-validation role
   { StringVector role;
     role.push_back("role context");
     write_categorical_column("cv.indicator", role, data, column, true, output, tarPath);  // true = drop last label
