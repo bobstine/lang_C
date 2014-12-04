@@ -122,8 +122,10 @@ int
 read_int_from_file(FILE *input)
 {
 	int i(0);
-	fscanf(input, "%d", &i);
-	return i;
+	if (1 == fscanf(input, "%d", &i))
+	  return i;
+	else
+	  return -1;
 }
 
 
