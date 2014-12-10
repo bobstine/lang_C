@@ -41,6 +41,8 @@ regex: regex.o
 	$(GCC) $< $(LDLIBS) -o $@
 	echo "subject: these\n" "from joe\n" "help\n" "Subject: Re:test message\n"| ./regex
 
+spirit: spirit.o
+	$(GCC) $< -o $@
 
 csv_parser_demo: csv_parser_demo 
 	$(GCC) $< $(LDLIBS) -o $@
