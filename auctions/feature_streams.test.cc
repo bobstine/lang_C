@@ -1,5 +1,5 @@
 /*
- *  feature_streams.test.cc
+ *  feature_streams.tes.cc
  *  auctions
  *
  *  Created by Robert Stine on 6/3/10.
@@ -223,6 +223,7 @@ main()
     is.print_to(std::cout); std::cout << std::endl;
     drain_features(is,30);
   }
+  std::cout << "TEST: Completed draining of features from interactions\n";
 
   
   if (false)    // test dynamic cross-product stream

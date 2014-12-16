@@ -36,12 +36,16 @@
 template<class W>
 LightThread<W>::~LightThread() 
 {
-  if (mp_thread.unique() && !*mp_notWorking)
-  { std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
-    mp_thread->join();
+  if (mp_thread)
+  { if (mp_thread.unique() && !*mp_notWorking)
+    { std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
+      mp_thread->join();
+    }
+    assert(!mp_thread.unique() || *mp_notWorking);
+    // don't see why next needs to be here
+    if(mp_thread->joinable())  // smart pointer will then delete the thread itself.
+      mp_thread->detach();
   }
-  assert(!mp_thread.unique() || *mp_notWorking);
-  if(mp_thread->joinable()) mp_thread->detach();   // boost different from C++11 standard on need to detach before dispose
 }
 
 template<class W>
