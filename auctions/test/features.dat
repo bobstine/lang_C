@@ -30,8 +30,3 @@ FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [t
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 FeatureABC 0   tried=0  inModel=0  bid=0
-UnaryFeature S 3 -0.001 19.001 22 68.731 65.591 59.3108 50.0297 41.1104 32.8155 25.4141 19.158 14.264 10.9033 9.19305 9.19305 10.9033 14.264 19.158 25.4141 32.8155 41.1104 50.0297 59.3108 65.591 68.731 
-5.2626e-05 5.2626e-05 5.2626e-05 5.2626e-05 0.0526787 0.105305 0.157931 0.210557 0.263183 0.315809 0.368435 0.421061 0.473687 0.526313 0.578939 0.631565 0.684191 0.736817 0.789443 0.842069 0.894695 0.947321 0.999947 0.999947 0.999947 0.999947 
-ColumnFeature x1
-FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
-FeatureABC 0   tried=0  inModel=0  bid=0

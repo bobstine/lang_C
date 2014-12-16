@@ -5,8 +5,6 @@
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 
-#include <gsl/gsl_vector.h>
-
 #include <iostream>
 #include <fstream>
 
@@ -165,12 +163,13 @@ main ()
 
   
   // and a spline feature (a very messy unary feature)
+  /*
   std::cout << "\nTEST: Making the spline feature ... \n";
   SmoothingSpline ss(3, begin(x->range()), begin(xx->range()), n);  // 3 df
   Feature spline (ss.spline_operator(), x);
   std::cout <<   "      " << spline << std::endl;
   spline->write_to(std::cout);
-  
+  */
   
   // write features to a file
   std::ofstream output("test/features.dat");
@@ -178,7 +177,7 @@ main ()
   xx->write_to(output);
   xxxx->write_to(output);
   xpx->write_to(output);
-  spline->write_to(output);
+  // spline->write_to(output);
   output.close();
 
 
@@ -187,23 +186,13 @@ main ()
   std::pair<int,int> dim;
   std::vector<Column> yColumns;
   std::vector<Column> xColumns;
-  dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+  dim = insert_columns_from_file("/home/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
   Feature xCol0 (xColumns[0]);
   Feature xCol1 (xColumns[1]);
   std::cout << xCol0 << std::endl;
   std::cout << "TEST: average of feature is "  << xCol0->center()                         << std::endl;
   std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
   
-
-  /*
-  // make a feature derived from a gsl_vector
-    gsl_vector * gv (gsl_vector_alloc(n));
-    for (int i=0; i<n; ++i)
-    gsl_vector_set(gv,i, x1[i]);
-    gslVectorFeature g (gv);
-    std::cout << "TEST: " <<  &g << std::endl;
-    std::cout << "TEST: average of gsl feature is " << g.center() << std::endl;
-  */
   
   delete [] x1;
   return 0;

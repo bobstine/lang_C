@@ -44,6 +44,9 @@ regex: regex.o
 spirit: spirit.o
 	$(GCC) $< -o $@
 
+spirit.test: spirit spirit_test.txt
+	./spirit < spirit_test.txt
+
 csv_parser_demo: csv_parser_demo 
 	$(GCC) $< $(LDLIBS) -o $@
 	./csv_parser_demo
