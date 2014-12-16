@@ -12,10 +12,11 @@
 #include "column.h"
 
 #include "feature_streams.h"
+#include "light_threads.Template.h"
 
 #include <iostream>
 #include <algorithm>
-
+#include <chrono>
 
 // Source needs to supply the accept and reject streams
 
@@ -45,11 +46,11 @@ public:
 template<class Iterator, class Transformation>
 void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
 {
-  float ms = 0.010 * 1e3;
-  boost::posix_time::milliseconds workTime(ms);
-  std::cout << "\nTEST_drain: Loop pauses for " << ms << "ms\n";
-  ms = 0.25 * 1e3;
-  boost::posix_time::milliseconds pause(ms);
+  unsigned int ms = 200;
+  std::chrono::milliseconds workTime(ms);
+  std::cout << "\nTEST_drain: Loop pauses for " << 200 << "ms\n";
+  ms = 250;
+  std::chrono::milliseconds pause(ms);
   
   int nPopped (0);
   int nIdle   (0);
@@ -60,17 +61,19 @@ void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
   while (( (has=fs.has_feature()) || (fs.is_active()) ) && loopLimit--)
   {
     std::cout << "TEST_drain: At top, is_active=" << fs.is_active() << "  has_feature=" << fs.has_feature() << "\n";
-    boost::this_thread::sleep(workTime);
+    std::this_thread::sleep_for(workTime);
     if (fs.has_feature())
-    { std::vector<Feature> fv (fs.pop());
+    { std::cout << "TEST_drain: About to pop off feature\n";
+      std::vector<Feature> fv (fs.pop());
       ++nPopped;
+      std::cout << "TEST_drain: popped off feature nPopped\n";
       std::for_each(fv.begin(), fv.end(), [&saved](Feature const& f) { saved.push_back(f); });
       if (fv.size()) std::cout << "TEST_drain: feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
       else           std::cout << "TEST_drain: stream has_feature=true, but popped empty feature vector.\n"; 
     }
     else ++nIdle;
   }
-  boost::this_thread::sleep(pause);
+  std::this_thread::sleep_for(pause);
   std::cout << "TEST_drain: exiting feature pop loop after popping " << nPopped << " features with " << nIdle << " idle cycles; more = " << loopLimit 
 	    << " iterations left with  busy=" << busy << "  and  has_feature=" << has << std::endl;
   std::cout << "TEST_drain: popped features are: \n";
@@ -84,7 +87,7 @@ main()
   debugging::debug_init(std::cout,4);
   
   // build vector of columns from file
-  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
+  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
@@ -231,11 +234,12 @@ main()
   }
 
   
-  float ms = 0.5 * 1e3;
-  boost::posix_time::milliseconds delay(ms);
+
+  unsigned int ms = 500;
+  std::chrono::milliseconds delay(ms);
   
-  std::cout << "\n\nDONE:\n";
-  boost::this_thread::sleep(delay);   // try to avoid exiting with running thread
+  std::cout << "\n\nDONE: Delay for " << ms << "ms \n";
+  std::this_thread::sleep_for(delay);   // try to avoid exiting with running thread
   return 0;
 }
 

@@ -17,10 +17,10 @@ PROJECT_NAME = auction
 
 USES =  eigen spline ranges random utils 
 
-OPT = -O2 -fopenmp -std=c++11
+OPT = -O2 -std=c++11
 
 #  thread builds without gomp, but needed for auction
-EXTERNAL_USES = boost_system boost_thread gomp
+#  EXTERNAL_USES = boost_system boost_thread gomp
 
 ###########################################################################
 #
