@@ -1,23 +1,31 @@
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 InteractionFeature
- Dependence map is   {  (x1 [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]  (tried; used; bid 0.04).  Values 0 1 2 3 4 5 ... 14 more^2)
+ Dependence map is   {  (ColumnFeature x1
+FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
+^2)
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 FeatureABC 0   tried=0  inModel=0  bid=0
 InteractionFeature
- Dependence map is   {  (x1 [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]  (tried; used; bid 0.04).  Values 0 1 2 3 4 5 ... 14 more^4)
+ Dependence map is   {  (ColumnFeature x1
+FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
+^4)
 InteractionFeature
- Dependence map is   {  (x1 [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]  (tried; used; bid 0.04).  Values 0 1 2 3 4 5 ... 14 more^2)
+ Dependence map is   {  (ColumnFeature x1
+FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
+^2)
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 FeatureABC 0   tried=0  inModel=0  bid=0
 InteractionFeature
- Dependence map is   {  (x1 [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]  (tried; used; bid 0.04).  Values 0 1 2 3 4 5 ... 14 more^2)
+ Dependence map is   {  (ColumnFeature x1
+FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
+^2)
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_dbl (234.235)]  [test_int (23423)]   tried=1  inModel=1  bid=0.04
 ColumnFeature x1

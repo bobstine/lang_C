@@ -1,4 +1,4 @@
-#include "features.h"
+#include "features.Template.h"
 
 #include "range_stats.h"
 
@@ -44,7 +44,47 @@ Feature::operator=(Feature const& f)
   return *this;
 }
 
+
+void
+Feature::write_to (std::ostream& os) const
+{
+  mFP->write_to(os);
+  FeatureABC::DependenceMap m = mFP->dependence_map();
+  if (!m.empty())
+  { os << std::endl << "                 Dependence map is   { ";
+    std::for_each(m.begin(), m.end(),
+		  [&os] (FeatureABC::DependenceMap::value_type const& p)
+		  { os << " (" << p.first->name();
+		    if(p.second>1)
+		      os << "^" << p.second;
+		    os << ")"; }
+		  );
+    os << " } ";
+  }
+}
+
+
 //  utilities     utilities     utilities     utilities     utilities     utilities     utilities     utilities
+
+
+void
+write_feature_vector_to (std::ostream& os, FeatureVector const& featureVec)
+{
+  int max (10);
+  int n   (featureVec.size());
+  int show = (max < n) ? max : n;
+  for (int i = 0; i < show; ++i)
+  { featureVec[i]->write_to(os);
+    os << std::endl;
+  }
+  if (max < n)
+  { os << "   ..... " << n-show-1 << " .....\n";
+    featureVec[n-1]->write_to(os);
+    os << std::endl;
+  }
+}
+
+
 
 
 FeatureVector
@@ -177,6 +217,90 @@ ColumnFeature::write_to(std::ostream& os) const
 
 //  Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature     Lag Feature
 
+
+std::string
+LagFeature::class_name()     const
+{
+  return "LagFeature";
+}
+
+std::string
+LagFeature::name()           const
+{
+  return "Lag(" + mFeature->name() + ",t-" + mLagStr +")";
+}
+
+std::string
+LagFeature::operator_name()  const
+{
+  return "[-" + mLagStr + "]";
+}
+
+int
+LagFeature::degree()         const
+{
+  return mFeature->degree();
+}
+
+FeatureABC::Arguments
+LagFeature::arguments()      const
+{
+  return mFeature->arguments();
+}
+
+FeatureABC::DependenceMap
+LagFeature::dependence_map() const
+{
+  return DependenceMap();
+}
+  
+int
+LagFeature::lag()            const
+{ return mLag; }
+
+FeatureABC::Iterator
+LagFeature::begin()          const
+{
+  return make_anonymous_iterator(make_lag_iterator(mFeature->begin(), mLag));
+}
+
+FeatureABC::Iterator
+LagFeature::end()            const
+{
+  return make_anonymous_iterator(make_lag_iterator(mFeature->end()  , mLag));
+}
+
+FeatureABC::Range
+LagFeature::range()                      const
+{
+  return make_anonymous_range(   make_lag_iterator(mFeature->begin(), mLag),
+				 make_lag_iterator(mFeature->end()  , mLag));
+}
+
+bool
+LagFeature::is_dummy()       const
+{
+  return mFeature->is_dummy();
+}
+
+bool
+LagFeature::is_constant()    const
+{
+  return mFeature->is_constant();
+}
+
+double
+LagFeature::average()        const
+{ return mFeature->average(); }
+
+double
+LagFeature::center()         const
+{ return mFeature->average(); }
+
+double
+LagFeature::scale()          const
+{ return mFeature->scale(); }
+
 void
 LagFeature::write_to(std::ostream& os) const
 {
@@ -186,6 +310,70 @@ LagFeature::write_to(std::ostream& os) const
 
 
 //  InteractionFeature     InteractionFeature     InteractionFeature     InteractionFeature
+
+
+std::string
+InteractionFeature::class_name()     const { return "InteractionFeature"; }
+
+std::string
+InteractionFeature::name()           const { return mName; }
+
+std::string
+InteractionFeature::operator_name()  const { return "*"; }
+
+int
+InteractionFeature::degree()         const { return mFeature1->degree() + mFeature2->degree(); }
+
+FeatureABC::Arguments
+InteractionFeature::arguments()      const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
+
+FeatureABC::DependenceMap
+InteractionFeature::dependence_map() const { return mDependenceMap; }
+
+FeatureABC::Iterator
+InteractionFeature::begin()          const
+{
+  return make_anonymous_iterator(
+				 make_binary_iterator(
+						      Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						      mFeature1->begin(),
+						      mFeature2->begin()));
+}
+
+FeatureABC::Iterator
+InteractionFeature::end()            const
+{
+  return make_anonymous_iterator(
+				 make_binary_iterator(
+						      Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						      mFeature1->end(),
+						      mFeature2->end()));
+}
+
+FeatureABC::Range
+InteractionFeature::range()          const
+{
+  return make_anonymous_range(
+			      make_binary_range(
+						Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						mFeature1->range(),
+						mFeature2->range()));
+}
+
+double
+InteractionFeature::average()        const { return range_stats::average(range(), size()); }
+
+double
+InteractionFeature::center()         const { return mFeature1->center()*mFeature2->center(); }
+
+double
+InteractionFeature::scale()          const { return mFeature1->scale()*mFeature2->scale(); }
+
+bool
+InteractionFeature::is_dummy()       const { return (mFeature1->is_dummy() && mFeature2->is_dummy()) ; }
+
+bool
+InteractionFeature::is_constant()    const { return (mFeature1->is_constant() && mFeature2->is_constant()); }
 
 void
 InteractionFeature::make_dependence_map()
@@ -227,7 +415,6 @@ InteractionFeature::collect_attributes()
   }
 }
 
-
 void
 InteractionFeature::make_name()
 {
@@ -243,8 +430,6 @@ InteractionFeature::make_name()
   }
   mName[mName.size()-1]=' ';
 }
-    
-
 
 void
 InteractionFeature::write_to (std::ostream& os) const
@@ -260,38 +445,47 @@ InteractionFeature::write_to (std::ostream& os) const
   FeatureABC::write_to(os);
 }
 
-// Unary feature
+//  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature
 
-std::vector<Feature>
-powers_of_column (Column const& col, std::vector<int> const& powers)
-{
-  std::vector<Feature> fv;
-  Feature  base(col);
-  for (size_t i=0; i<powers.size(); ++i)
-  { switch( powers[i] )
-    {
-    case 2:
-      fv.push_back(Feature(Function_Utils::CenteredSquare(col->average()), base));
-      break;
-    case 3:
-      fv.push_back(Feature(Function_Utils::CenteredCube(col->average()), base));
-      break;
-    case 4:
-      fv.push_back(Feature(Function_Utils::CenteredQuad(col->average()), base));
-      break;
-    case 5:
-      fv.push_back(Feature(Function_Utils::CenteredQuint(col->average()), base));
-      break;
-    default:
-      std::cout << "FETR: Error. Requested power outside of supported range.\n";
-    }
-  }
-  return fv;    
-}
+std::string
+LinearCombinationFeature::class_name()     const { return "LinearCombinationFeature"; }
 
+std::string
+LinearCombinationFeature::name()           const { return mName; }
 
+int
+LinearCombinationFeature::degree()         const { return (int) mFeatures.size(); }
 
-//  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature  LinearCombinationFeature  
+FeatureABC::Arguments
+LinearCombinationFeature::arguments()      const { Arguments a; a[name()]=1; return a;}
+
+FeatureABC::DependenceMap
+LinearCombinationFeature::dependence_map() const { return DependenceMap(); }
+
+FeatureABC::Iterator
+LinearCombinationFeature::begin()          const { return make_anonymous_iterator(mColumn->begin()); }
+
+FeatureABC::Iterator
+LinearCombinationFeature::end()            const { return make_anonymous_iterator(mColumn->end()); }
+
+FeatureABC::Range
+LinearCombinationFeature::range()          const { return make_anonymous_range(mColumn->range()); }
+
+double
+LinearCombinationFeature::average()        const { return mColumn->average(); }
+
+double
+LinearCombinationFeature::center()         const { return mColumn->average(); }
+
+double
+LinearCombinationFeature::scale()          const { return mColumn->scale(); }
+
+bool
+LinearCombinationFeature::is_dummy()       const { return mColumn->is_dummy(); }
+
+bool
+LinearCombinationFeature::is_constant()    const { return (1 == mColumn->num_unique()); }
+
 
 bool
 LinearCombinationFeature::valid_args()    const 
@@ -344,6 +538,34 @@ LinearCombinationFeature::write_to (std::ostream& os) const
   for (unsigned int j=0; j<mBeta.size()-1; ++j)
     mFeatures[j]->write_to(os);
   FeatureABC::write_to(os);
+}
+
+
+std::vector<Feature>
+powers_of_column (Column const& col, std::vector<int> const& powers)
+{
+  std::vector<Feature> fv;
+  Feature  base(col);
+  for (size_t i=0; i<powers.size(); ++i)
+  { switch( powers[i] )
+    {
+    case 2:
+      fv.push_back(Feature(Function_Utils::CenteredSquare(col->average()), base));
+      break;
+    case 3:
+      fv.push_back(Feature(Function_Utils::CenteredCube(col->average()), base));
+      break;
+    case 4:
+      fv.push_back(Feature(Function_Utils::CenteredQuad(col->average()), base));
+      break;
+    case 5:
+      fv.push_back(Feature(Function_Utils::CenteredQuint(col->average()), base));
+      break;
+    default:
+      std::cout << "FETR: Error. Requested power outside of supported range.\n";
+    }
+  }
+  return fv;    
 }
 
 
