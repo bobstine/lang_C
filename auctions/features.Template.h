@@ -116,7 +116,7 @@ UnaryFeature<Op>::write_to (std::ostream& os) const
 
 template<class Op>
 std::string
-BinaryFeature::class_name()     const { return "BinaryFeature"; }
+BinaryFeature<Op>::class_name()     const { return "BinaryFeature"; }
 
 template<class Op>
 std::string
