@@ -1,4 +1,50 @@
 
+// operator<<
+
+inline
+std::ostream&
+operator<< (std::ostream& os, Feature const& feature)
+{
+  feature->print_to(os);
+  FeatureABC::DependenceMap m = feature->dependence_map();
+  if (!m.empty())
+  { os << std::endl << "                 Dependence map is   { ";
+    std::for_each(m.begin(), m.end(),
+		  [&os] (FeatureABC::DependenceMap::value_type const& p)
+		  { os << " (" << p.first->name();
+		    if(p.second>1)
+		      os << "^" << p.second;
+		    os << ")"; }
+		  );
+    os << " } ";
+  }
+  return os;
+}
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, FeatureVector const& featureVec)
+{
+  int max (10);
+  int n   (featureVec.size());
+  int show = (max < n) ? max : n;
+  for (int i = 0; i < show; ++i)
+  { featureVec[i]->print_to(os);
+    os << std::endl;
+  }
+  if (max < n)
+  { os << "   ..... " << n-show-1 << " .....\n";
+    featureVec[n-1]->print_to(os);
+    os << std::endl;
+  }
+  return os;
+}
+
+
+
+////  Column     Column     Column     Column     Column     Column     Column     Column     Column     Column     
+
 //  Feature constructors  (define after defining the different types of features)
 
 template<class Op>

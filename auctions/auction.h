@@ -109,8 +109,4 @@ std::ostream&
 operator<<(std::ostream& os, Auction<Model> const& auction);
 
 
-
-
-#include "auction.Template.h"
-  
 #endif

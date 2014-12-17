@@ -8,6 +8,8 @@
 
 // #include <functional>  mem_fun
 
+#include "auction.h"
+
 #include "debug.h"
 using debugging::debug;
 

@@ -51,9 +51,6 @@
 #include <vector>
 #include <list>
 
-//template<class Op> class UnaryFeature;
-
-
 ////  Envelope class
 
 class Feature
@@ -64,7 +61,6 @@ class Feature
 
  public:
   ~Feature() { if(--mFP->mRefCount <= 0) delete mFP; }
-
   
   // copy
   Feature(Feature const& f)    : mFP(f.mFP)     { ++f.mFP->mRefCount;  }
@@ -100,6 +96,7 @@ class Feature
 };
 
 
+////  Convenience functions for collections
 
 typedef  std::vector<Feature>  FeatureVector;
 typedef  std::list  <Feature>  FeatureList;
@@ -114,50 +111,20 @@ powers_of_column (Column const& col, std::vector<int> const& powers);
 Feature
 make_indexed_feature (Feature const& f, IntegerColumn const& i);
 
-		       
+
+////  Output operator
 
 inline
 std::ostream&
-operator<< (std::ostream& os, Feature const& feature)
-{
-  feature->print_to(os);
-  FeatureABC::DependenceMap m = feature->dependence_map();
-  if (!m.empty())
-  { os << std::endl << "                 Dependence map is   { ";
-    std::for_each(m.begin(), m.end(),
-		  [&os] (FeatureABC::DependenceMap::value_type const& p)
-		  { os << " (" << p.first->name();
-		    if(p.second>1)
-		      os << "^" << p.second;
-		    os << ")"; }
-		  );
-    os << " } ";
-  }
-  return os;
-}
-
+operator<< (std::ostream& os, Feature const& feature);
 
 inline
 std::ostream&
-operator<< (std::ostream& os, FeatureVector const& featureVec)
-{
-  int max (10);
-  int n   (featureVec.size());
-  int show = (max < n) ? max : n;
-  for (int i = 0; i < show; ++i)
-  { featureVec[i]->print_to(os);
-    os << std::endl;
-  }
-  if (max < n)
-  { os << "   ..... " << n-show-1 << " .....\n";
-    featureVec[n-1]->print_to(os);
-    os << std::endl;
-  }
-  return os;
-}
+operator<< (std::ostream& os, FeatureVector const& featureVec);
 
 
-////  Column feature
+
+////  Column     Column     Column     Column     Column     Column     Column     Column     Column     Column     
 
 class ColumnFeature : public FeatureABC
 {
@@ -167,25 +134,25 @@ class ColumnFeature : public FeatureABC
  public:
  ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
 
-  std::string class_name()     const { return "ColumnFeature"; }
-  std::string name()           const { return mColumn->name(); }
-  std::string operator_name()  const { return ""; }
+  std::string class_name()       const;
+  std::string name()             const;
+  std::string operator_name()    const;
 
-  DependenceMap dependence_map() const { return DependenceMap(); }
+  DependenceMap dependence_map() const;
 
-  int         degree()         const { return 1; }
-  Arguments   arguments()      const {        Arguments a; a[name()] = 1; return a; }
+  int         degree()           const;
+  Arguments   arguments()        const;
   
-  Column      column()         const { return mColumn; }
+  Column      column()           const;
 
-  Iterator    begin()          const { return make_anonymous_iterator(mColumn->begin()); }
-  Iterator    end()            const { return make_anonymous_iterator(mColumn->end()); }
-  Range       range()          const { return make_anonymous_range(mColumn->range()); }
-  bool        is_dummy()       const { return mColumn->is_dummy(); }
-  bool        is_constant()    const { return (1 == mColumn->num_unique()); }
-  double      average()        const { return mColumn->average(); }
-  double      center()         const { return mColumn->average(); }
-  double      scale()          const { return mColumn->scale(); }  // defaults to range/6
+  Iterator    begin()            const;
+  Iterator    end()              const;
+  Range       range()            const;
+  bool        is_dummy()         const;
+  bool        is_constant()      const;
+  double      average()          const; 
+  double      center()           const;
+  double      scale()            const;
 
   void        write_to(std::ostream& os) const;
 };

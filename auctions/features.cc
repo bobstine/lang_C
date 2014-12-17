@@ -85,6 +85,88 @@ make_indexed_feature(Feature const& f, IntegerColumn const& i)
 
 //  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  ColumnFeature  
 
+std::string
+ColumnFeature::class_name()     const
+{ return "ColumnFeature"; }
+
+std::string
+ColumnFeature::name()           const
+{ return mColumn->name(); }
+
+std::string
+ColumnFeature::operator_name()  const
+{ return ""; }
+
+FeatureABC::DependenceMap
+ColumnFeature::dependence_map() const
+{ return DependenceMap(); }
+
+int
+ColumnFeature::degree()         const
+{ return 1; }
+
+FeatureABC::Arguments
+ColumnFeature::arguments()      const
+{
+  Arguments a;
+  a[name()] = 1;
+  return a;
+}
+  
+Column
+ColumnFeature::column()         const
+{
+  return mColumn;
+}
+
+FeatureABC::Iterator
+ColumnFeature::begin()          const
+{
+  return make_anonymous_iterator(mColumn->begin());
+}
+
+FeatureABC::Iterator
+ColumnFeature::end()            const
+{
+  return make_anonymous_iterator(mColumn->end());
+}
+
+FeatureABC::Range
+ColumnFeature::range()          const
+{
+  return make_anonymous_range(mColumn->range());
+}
+
+bool
+ColumnFeature::is_dummy()       const
+{
+  return mColumn->is_dummy();
+}
+
+bool
+ColumnFeature::is_constant()    const
+{
+  return (1 == mColumn->num_unique());
+}
+
+double
+ColumnFeature::average()        const
+{
+  return mColumn->average();
+}
+
+double
+ColumnFeature::center()         const
+{
+  return mColumn->average();
+}
+
+double
+ColumnFeature::scale()          const
+{
+  return mColumn->scale();
+}  // defaults to range/6
+
 void
 ColumnFeature::write_to(std::ostream& os) const
 {
