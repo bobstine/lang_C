@@ -1,4 +1,49 @@
-Next... 
+Things to add ...
+
+       Make an 'eigen' branch of the auction.
+
+       Clean up the creation of the feature streams, something more like
+       a parameter file rather than all of the code coming/going in the
+       auction.test file.  (read these as pairs, then extract using names)
+
+       		    data_path <path>
+		    output_path <path>  (for logs, output)
+		    response_data <filename>
+		    stream_data <filename> <stream_name>
+		     ...
+		    stream_data <filename> <stream_name>
+		    expert <name> bidder_name <name> bidder_type <type> stream_name <name (from above)> alpha <value> <optional parms>
+
+       Question: How do you build 'data directed' objects?
+
+       Part of that is to have several streams.  One would have the Y
+variable, along with 'control' variables like weights, cross
+validation indicators and context features.  Then other files for the
+various types of inputs, such as various eigenword streams.
+       
+       File stream that reads variables as needed.  Separate data
+files for each input stream rather than separating the data as one
+file is read.  For now, just read them all (put off dealing with more
+features than can fit in memory).
+
+       Wealth based bidder, using only current wealth of the item.
+Bidder should be an operator, with three arguments (a) current wealth,
+(b) stream and (c) the bid history.  Try to *simplify* the
+construction a bidder to require less of a parameter list.
+Concentrate everything in a bid history object (possible then to get
+'my' history by some sort of registration process).
+
+       Implemement the adaptive bidder on a stream of eigen features.
+       Bidder will shift to bundles as cannot reject.
+     
+       Crossing feature bundles.  If known that two variables came as
+a bundle, then keep them bundled when interacting with others.
+       
+
+       
+       
+
+Next...
 
 	Segmented time model requires 
 
