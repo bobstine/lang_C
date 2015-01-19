@@ -89,7 +89,7 @@ public:
     BidHistory ()    : mResults(), mBidsSinceLastSuccess(0), mNumSuccessfulBids(0) { }
   
   std::vector<int> const&  results()                        const { return mResults; }
-  std::pair<int,int>       bid_results_summary()            const { int n (mResults.size());
+  std::pair<int,int>       bid_results_summary()            const { int n ((int)mResults.size());
                                                                     return std::make_pair(mNumSuccessfulBids, n-mNumSuccessfulBids); }
   int                      number_bids_since_last_success() const { return mBidsSinceLastSuccess; }
 

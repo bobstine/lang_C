@@ -17,7 +17,7 @@ std::pair<double,double>
   ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
 {
   FStatistic f;
-  int k (c.size());                                                                  // k denotes the number of added variables
+  int k ((int)c.size());                                                                  // k denotes the number of added variables
   std::vector<std::string> xNames;
   LinearRegression::Matrix predictors(mLength,k);
   for(int j=0; j<k; ++j)

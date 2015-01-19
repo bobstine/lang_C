@@ -61,8 +61,8 @@ private:
   
   double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
-  int                    number_of_experts ()       const { return mExperts.size(); }
-  int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
+  int                    number_of_experts ()       const { return (int) mExperts.size(); }
+  int                    add_expert(Expert e)             { mExperts.push_back(e); return (int)mExperts.size(); }
   double                 total_expert_alpha ()      const;
   double                 recovered_alpha()          const { return mRecoveredAlpha; }
   bool                   is_terminating()           const { return mTerminating; }

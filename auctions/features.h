@@ -177,7 +177,7 @@ class LagFeature : public FeatureABC
  public:
   virtual ~LagFeature() {};
   
- LagFeature(Feature f, size_t lag, size_t blockSize=1) : FeatureABC(f->size()), mFeature(f), mLag(lag*blockSize)
+ LagFeature(Feature f, size_t lag, size_t blockSize=1) : FeatureABC(f->size()), mFeature(f), mLag((int)lag*(int)blockSize)
     { std::ostringstream ss; ss << lag; mLagStr = ss.str(); }
 
   string        class_name()       const;
@@ -375,13 +375,13 @@ class FeatureSource
   typedef std::vector<std::string> StringVector;
   typedef std::set<std::string>    StringSet;
   
-  int                      mSkip;           // skip this count of leading cases when transfer to model
+  const int                mSkip;           // skip this count of leading cases when transfer to model
   std::vector<std::string> mStreams;        // use vector to keep ordered
   FeatureVector            mFeatures;
   
  public:
 
- FeatureSource(std::vector<Column> const& cols, int skip)    : mSkip(skip) { initialize(cols); }
+ FeatureSource(std::vector<Column> const& cols, int skip = 0)    : mSkip(skip) { initialize(cols); }
 
   int             number_skipped_cases ()   const  { return mSkip; }
   int             number_of_streams  ()     const  { return (int) mStreams.size();  }

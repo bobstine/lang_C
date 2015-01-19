@@ -67,7 +67,7 @@ Auction<ModelClass>::add_initial_features (FeatureVector const& f)
     mModelFeatures.push_back(f[j]);
   }
   debug("AUCT",2) << "Test of initial features gives  <" << result.first << "," << result.second << ">\n";
-  return f.size();
+  return (unsigned int)f.size();
 }
 
 
@@ -309,7 +309,7 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
   double tax = mPayoffTaxRate * mPayoff;
   expert->payoff(mPayoff-tax);
   if (expert->role() != calibrate)
-  { const double taxForEach = tax/features.size();
+    { const double taxForEach = tax/(double)features.size();
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)       // add expert for interaction with other added features
     { // each added feature can potentially add several experts to the auction
       std::vector<Expert> spawned;
@@ -344,7 +344,7 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
 			       UniversalBoundedBidder< ProductStream >(),
 			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
-      double alpha = taxForEach/spawned.size();
+      double alpha = taxForEach/(double)spawned.size();
       /*  used to have a global "in model/in model" interaction expert.  That's now replaced by these for each variable...
 	  the new interaction stream does not allow dynamic growth, which is needed for this
 	  Do we need both "individual" expert as well as the global expert for smoothing this out???

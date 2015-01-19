@@ -279,7 +279,7 @@ SmoothingSpline::setup_unique_values()
     mUniqueX[i] = x;
     mUniqueY[i] = range_ops::inner_product(Ranges::make_range(yMap[x]),Ranges::make_range(wMap[x]),0.0) / mUniqueW[i];
   }
-  mNUnique = uniq.size();
+  mNUnique = (int)uniq.size();
   mMinX = mUniqueX[0];
   mMaxX = mUniqueX[mNUnique-1];
   if (mMinX == mMaxX)
