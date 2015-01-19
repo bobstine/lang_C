@@ -30,7 +30,7 @@
    1 Aug 03 ... Created
 */
    
-#include "auction.h"
+#include "auction.Template.h"
       
 // from ranges
 #include "range.h" 
