@@ -30,13 +30,14 @@
    1 Aug 03 ... Created
 */
    
-#include "auction.h"
+#include "auction.Template.h"
       
 // from ranges
 #include "range.h" 
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 #include "feature_streams.h"
+#include "light_threads.Template.h"
 
 // for constant iterator 
 #include "iterators.h"
@@ -116,16 +117,16 @@ main(int argc, char** argv)
 
   // build vector of columns from file; set default parameter values
   double        totalAlphaToSpend    (0.1);
-  std::string   inputName            ("");                                  // empty implies cin
-  std::string   outputPath           ("/Users/bob/C/auctions/test/log/"); 
+  std::string   inputName            ("");                             // empty implies cin
+  std::string   outputPath           ("/home/bob/C/auctions/test/log/"); 
   int           protection           (  3);
   bool          useShrinkage       (false);
   int           shrink               (  0);
-  int           blockSize            (  0);                                   // no blocking implies standard testing
+  int           blockSize            (  0);                            // no blocking implies standard testing
   int           numberRounds         (200);
   int           numOutputPredictors    (0);
   // int           splineDF             (0);
-  int           calibrationGap       (0);                                   // 0 means no calibration; otherwise gap between models offered calibration
+  int           calibrationGap       (0);                              // 0 means no calibration; otherwise gap between models offered calibration
   int           prefixCases          (0);
   int           debugLevel           (3);
      
@@ -243,9 +244,9 @@ main(int argc, char** argv)
   typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
   typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
   typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
-  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
+  //  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
   typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>,BuildNeighborhoodFeature>             NeighborhoodStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  //  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
   typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
   

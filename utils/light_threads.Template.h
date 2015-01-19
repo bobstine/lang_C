@@ -36,11 +36,16 @@
 template<class W>
 LightThread<W>::~LightThread() 
 {
-  if (mp_thread.unique() && !*mp_notWorking)
-  {  mp_thread->join();
-    std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
+  if (mp_thread)
+  { if (mp_thread.unique() && !*mp_notWorking)
+    { std::cout << "ERROR: LightThread " << mName << " attempted to delete a working thread you dummy!" << std::endl;
+      mp_thread->join();
+    }
+    assert(!mp_thread.unique() || *mp_notWorking);
+    // don't see why next needs to be here
+    if(mp_thread->joinable())  // smart pointer will then delete the thread itself.
+      mp_thread->detach();
   }
-  assert(!mp_thread.unique() || *mp_notWorking);
 }
 
 template<class W>
@@ -109,7 +114,14 @@ LightThread<W>::operator()(W const& worker)
   mp_notWorking = std::shared_ptr<bool> (new bool);
   (*mp_notWorking) = false;
   mp_worker = std::shared_ptr<W>(new W(worker));  // note: counted pointers, so we don't delete it
-  mp_thread = std::shared_ptr<std::thread>(new std::thread(&LightThread<W>::start_thread,this));
+
+  // RAS  HERE
+  if (mp_thread && mp_thread->joinable())
+  { mp_thread->join();    //  C++ differs from boost here
+    mp_thread = std::shared_ptr<std::thread>(new std::thread(&LightThread<W>::start_thread,this));
+  }
+  else     mp_thread = std::shared_ptr<std::thread>(new std::thread(&LightThread<W>::start_thread,this));
+
   m_object_mutex.unlock();
 #ifdef NOTHREADS
   // force thread to finish if we have been asked not to use threads.

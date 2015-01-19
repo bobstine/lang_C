@@ -1,5 +1,3 @@
-// $Id: cache.h,v 3.1 2007/12/15 00:34:38 bob Exp $
-
 #ifndef _CACHE_H_
 #define _CACHE_H_
 

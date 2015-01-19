@@ -8,6 +8,8 @@
 
 // #include <functional>  mem_fun
 
+#include "auction.h"
+
 #include "debug.h"
 using debugging::debug;
 
@@ -225,11 +227,6 @@ Auction<ModelClass>::have_available_bid()
 }  
 
 
-namespace {
-  double maximum (double a, double b) { return (a>b)?a:b; }
-}
-
-
 template <class ModelClass>
 std::pair<Expert,double>
 Auction<ModelClass>::collect_bids ()
@@ -302,15 +299,6 @@ Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
   }
 }
 
-namespace {
-  int count_occurences (std::string const& s, char c)
-  {
-    int count (0);
-    for (std::string::const_iterator it=s.begin(); it!=s.end(); ++it)
-      if (*it == c) ++count;
-    return count;
-  }
-}
 
 template<class ModelClass>
 double

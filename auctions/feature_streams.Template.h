@@ -82,6 +82,7 @@ template<class Iterator, class Trans>
 {
   assert (has_feature());
   FeatureVector fv ((*mpThread)->output_features());
+  std::cout << "FSTR: Feature stream " << name() << " returning " << fv.size() << " features.\n";
   make_features();
   return fv;
 }
