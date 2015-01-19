@@ -6,7 +6,7 @@ LIBTOOL_CMD = ar -rc $@ $(above_infinity)                 # linux
 # -fexcess-precision=fast   is to keep fp speed, avoiding c99 compliance
 # -mtune core2  for Core 2 processor
 # -msse4 for more SSE optimization (-O3)
-CFLAGS = -g -std=c++11 -Wall -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0 -fexcess-precision=fast
+CFLAGS = -g -std=c++11 -Wall -Wconversion -USINGLE -W -Woverloaded-virtual $(OPT) -fmessage-length=0 -fexcess-precision=fast
 GCC = g++-4.9 $(INCLUDES) $(LDFLAGS) 
 CC  = g++-4.9 $(INCLUDES) $(LDFLAGS)
 
