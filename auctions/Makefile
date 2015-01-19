@@ -17,10 +17,10 @@ PROJECT_NAME = auction
 
 USES =  eigen spline ranges random utils 
 
-OPT = -O2 -fopenmp -std=c++11
+OPT = -O2 -std=c++11
 
 #  thread builds without gomp, but needed for auction
-EXTERNAL_USES = boost_system boost_thread gomp
+#  EXTERNAL_USES = boost_system boost_thread gomp
 
 ###########################################################################
 #
@@ -44,15 +44,18 @@ level_6   = auction.o  text_auction.o
 include ../rules_for_makefiles
 
 
-logistic_test: auction.test
-	./auction.test -f test/logistic_test.dat -r 10 -c 0 -a 2
-
+# make data file from csv file
 data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
+
+
+logistic_test: auction.test
+	./auction.test -f test/logistic_test.dat -r 10 -c 0 -a 2
+
 baseball_test: auction.test data/baseball.dat
-	./auction.test -f data/baseball.dat -p 1 -r 500 -c 5
+	./auction.test -f data/baseball.dat -p 1 -r 200 -c 5 --output-x 25
 
 quadratic_test: auction.test data/quadratic_from_R.dat
 	./auction.test -f data/quadratic_from_R.dat --protection 1 --rounds 2000 --calibration-gap 5 --alpha 0.25 --output-x 10

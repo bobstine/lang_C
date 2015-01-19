@@ -51,9 +51,6 @@
 #include <vector>
 #include <list>
 
-//template<class Op> class UnaryFeature;
-
-
 ////  Envelope class
 
 class Feature
@@ -64,7 +61,6 @@ class Feature
 
  public:
   ~Feature() { if(--mFP->mRefCount <= 0) delete mFP; }
-
   
   // copy
   Feature(Feature const& f)    : mFP(f.mFP)     { ++f.mFP->mRefCount;  }
@@ -92,6 +88,9 @@ class Feature
   template<class Op>
     Feature(Op const& op, Feature const &x1, Feature const& x2);
 
+  //  output
+  void write_to(std::ostream& os) const;
+
   bool operator==(Feature const& f)        const  { return mFP == f.mFP; }
   bool operator< (Feature const& f)        const  { return mFP->name() < f.mFP->name(); }
   
@@ -100,6 +99,12 @@ class Feature
 };
 
 
+inline
+std::ostream&
+operator<< (std::ostream& os, Feature const& feature) { feature.write_to(os); return os; }
+
+
+////  Convenience functions for collections
 
 typedef  std::vector<Feature>  FeatureVector;
 typedef  std::list  <Feature>  FeatureList;
@@ -114,118 +119,85 @@ powers_of_column (Column const& col, std::vector<int> const& powers);
 Feature
 make_indexed_feature (Feature const& f, IntegerColumn const& i);
 
-		       
+
+void
+write_feature_vector_to (std::ostream& os, FeatureVector const& fv);
 
 inline
 std::ostream&
-operator<< (std::ostream& os, Feature const& feature)
-{
-  feature->print_to(os);
-  FeatureABC::DependenceMap m = feature->dependence_map();
-  if (!m.empty())
-  { os << std::endl << "                 Dependence map is   { ";
-    std::for_each(m.begin(), m.end(),
-		  [&os] (FeatureABC::DependenceMap::value_type const& p)
-		  { os << " (" << p.first->name();
-		    if(p.second>1)
-		      os << "^" << p.second;
-		    os << ")"; }
-		  );
-    os << " } ";
-  }
-  return os;
-}
+operator<< (std::ostream& os, FeatureVector const& featureVec) { write_feature_vector_to(os, featureVec); return os; }
 
 
-inline
-std::ostream&
-operator<< (std::ostream& os, FeatureVector const& featureVec)
-{
-  int max (10);
-  int n   (featureVec.size());
-  int show = (max < n) ? max : n;
-  for (int i = 0; i < show; ++i)
-  { featureVec[i]->print_to(os);
-    os << std::endl;
-  }
-  if (max < n)
-  { os << "   ..... " << n-show-1 << " .....\n";
-    featureVec[n-1]->print_to(os);
-    os << std::endl;
-  }
-  return os;
-}
 
-
-////  Column feature
+////  Column     Column     Column     Column     Column     Column     Column     Column     Column     Column     
 
 class ColumnFeature : public FeatureABC
 {
+  typedef std::string string;
+  
  private:
   Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
+  virtual ~ColumnFeature() {};
+  
  ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
 
-  std::string class_name()     const { return "ColumnFeature"; }
-  std::string name()           const { return mColumn->name(); }
-  std::string operator_name()  const { return ""; }
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
 
-  DependenceMap dependence_map() const { return DependenceMap(); }
-
-  int         degree()         const { return 1; }
-  Arguments   arguments()      const {        Arguments a; a[name()] = 1; return a; }
-  
-  Column      column()         const { return mColumn; }
-
-  Iterator    begin()          const { return make_anonymous_iterator(mColumn->begin()); }
-  Iterator    end()            const { return make_anonymous_iterator(mColumn->end()); }
-  Range       range()          const { return make_anonymous_range(mColumn->range()); }
-  bool        is_dummy()       const { return mColumn->is_dummy(); }
-  bool        is_constant()    const { return (1 == mColumn->num_unique()); }
-  double      average()        const { return mColumn->average(); }
-  double      center()         const { return mColumn->average(); }
-  double      scale()          const { return mColumn->scale(); }  // defaults to range/6
-
-  void        write_to(std::ostream& os) const;
-};
-  
+};  
 
 
-////  Lag feature
+////  LagFeature     LagFeature     LagFeature     LagFeature     LagFeature     LagFeature     LagFeature     
 
 class LagFeature : public FeatureABC
 {
+  typedef std::string string;
+  
  private:
   Feature     mFeature;
   int         mLag;
-  std::string mLagStr;
+  string      mLagStr;
   
  public:
+  virtual ~LagFeature() {};
+  
  LagFeature(Feature f, size_t lag, size_t blockSize=1) : FeatureABC(f->size()), mFeature(f), mLag(lag*blockSize)
     { std::ostringstream ss; ss << lag; mLagStr = ss.str(); }
 
-  std::string class_name()     const { return "LagFeature"; }
-  std::string name()           const { return "Lag(" + mFeature->name() + ",t-" + mLagStr +")"; }
-  std::string operator_name()  const { return "[-" + mLagStr + "]"; }
-  int         degree()         const { return mFeature->degree(); }
-  Arguments   arguments()      const { return mFeature->arguments(); }
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
 
-  DependenceMap dependence_map() const { return DependenceMap(); }
-  
-  int         lag()            const { return mLag; }
-
-  Iterator    begin()          const { return make_anonymous_iterator(make_lag_iterator(mFeature->begin(), mLag)); }
-  Iterator    end()            const { return make_anonymous_iterator(make_lag_iterator(mFeature->end()  , mLag)); }
-  Range       range()          const { return make_anonymous_range(   make_lag_iterator(mFeature->begin(), mLag),
-								      make_lag_iterator(mFeature->end()  , mLag)); }
-  bool        is_dummy()       const { return mFeature->is_dummy(); }
-  bool        is_constant()    const { return mFeature->is_constant(); }
-  double      average()        const { return mFeature->average(); }
-  double      center()         const { return mFeature->average(); }
-  double      scale()          const { return mFeature->scale(); }
-
-  void        write_to(std::ostream& os) const;
+  int           lag ()             const;
 };
   
 
@@ -233,42 +205,37 @@ class LagFeature : public FeatureABC
 
 class InteractionFeature : public FeatureABC
 {
+  typedef std::string string;
+
   Feature       mFeature1;
   Feature       mFeature2;
   DependenceMap mDependenceMap;
   double        mCtr1, mCtr2;
-  std::string   mName;
+  string        mName;
 
  public:
   virtual ~InteractionFeature() {}
   
   InteractionFeature(Feature const& f1, Feature const& f2)                              // names built in using map to define canonical order
     : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mDependenceMap(), mCtr1(0.0), mCtr2(0.0)
-    { make_dependence_map(); center_features();  collect_attributes(); make_name();  } 
+    { make_dependence_map(); center_features();  collect_attributes(); make_name();  }
 
-  std::string class_name()    const { return "InteractionFeature"; }
-  std::string name()          const { return mName; }
-  std::string operator_name() const { return "*"; }
-  int         degree()        const { return mFeature1->degree() + mFeature2->degree(); }
-  Arguments   arguments()     const { return join_arguments(mFeature1->arguments(), mFeature2->arguments()); }
-
-  DependenceMap dependence_map() const { return mDependenceMap; }
-  
-  Iterator    begin()         const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
-                                                                                          mFeature1->begin(),
-                                                                                          mFeature2->begin())); }
-  Iterator    end()           const { return make_anonymous_iterator(make_binary_iterator(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
-                                                                                          mFeature1->end(),
-                                                                                          mFeature2->end())); }
-  Range       range()         const { return make_anonymous_range   (make_binary_range(Function_Utils::CenteredMultiply(mCtr1,mCtr2),
-										       mFeature1->range(),
-										       mFeature2->range())); }
-  double      average()       const { return range_stats::average(range(), size()); }
-  double      center()        const { return mFeature1->center()*mFeature2->center(); }
-  double      scale()         const { return mFeature1->scale()*mFeature2->scale(); }
-  bool        is_dummy()      const { return (mFeature1->is_dummy() && mFeature2->is_dummy()) ; }
-  bool        is_constant()   const { return (mFeature1->is_constant() && mFeature2->is_constant()); }
-  void        write_to (std::ostream& os) const;
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
 
  private:
   void        make_dependence_map();
@@ -282,9 +249,11 @@ class InteractionFeature : public FeatureABC
 
 class LinearCombinationFeature : public FeatureABC
 {
+  typedef std::string string;
+  
   std::vector<double>  mBeta;      // b[0] is constant, as in regr
   std::vector<Feature> mFeatures;
-  std::string          mName;
+  string               mName;
   Column               mColumn;    // place to store the lin comb
   
  public:
@@ -294,26 +263,25 @@ class LinearCombinationFeature : public FeatureABC
     :                                                      
     FeatureABC(n), 
       mBeta(b), mFeatures(fv), mName(), mColumn(Column("Linear Comb", n)) { if (valid_args()) { make_name(); fill_column();} }
+    
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
 
-  std::string class_name()    const { return "LinearCombinationFeature"; }
-  std::string name()          const { return mName; }
-  std::string long_name()     const;
-  int         degree()        const { return (int) mFeatures.size(); }
-  Arguments   arguments()     const {        Arguments a; a[name()]=1; return a;}
-
-  DependenceMap dependence_map() const { return DependenceMap(); }
-
-  
-  Iterator    begin()         const { return make_anonymous_iterator(mColumn->begin()); }
-  Iterator    end()           const { return make_anonymous_iterator(mColumn->end()); }
-  Range       range()         const { return make_anonymous_range(mColumn->range()); }
-  double      average()       const { return mColumn->average(); }
-  double      center()        const { return mColumn->average(); }
-  double      scale()         const { return mColumn->scale(); }
-  bool        is_dummy()      const { return mColumn->is_dummy(); }
-  bool        is_constant()   const { return (1 == mColumn->num_unique()); }
-  void        write_to (std::ostream& os) const;
-
+  string        long_name()        const;
  private:
   bool        valid_args()    const ;
   void        make_name();
@@ -328,34 +296,35 @@ class LinearCombinationFeature : public FeatureABC
 template<class Op>
 class UnaryFeature : public FeatureABC
 {
+  typedef std::string string;
+
   Op             mOp;
   Feature        mFeature;
-  double         mMean;  // cache
+  mutable double mMean;  // cache
 
  public:
   virtual ~UnaryFeature() {}
   
   UnaryFeature(Op const& op, Feature const& f)
-    : FeatureABC(f->size()), mOp(op), mFeature(f), mMean(range_stats::average(range(), size())) { }
+    : FeatureABC(f->size()), mOp(op), mFeature(f), mMean(std::nan("")) { }
+  
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
 
-  std::string class_name() const { return "UnaryFeature"; }
-  std::string name()       const { return operator_traits<Op>::name() + "[" + mFeature->name() + "]"; }
-  int         degree()     const { return mFeature->degree(); }
-  Arguments   arguments()  const;
-  
-  DependenceMap dependence_map() const { return DependenceMap(); }
-
-  Iterator    begin()      const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->begin()));    }
-  Iterator    end()        const { return make_anonymous_iterator(make_unary_iterator(mOp,mFeature->end()));    }
-  Range       range()      const { return make_anonymous_range(make_unary_range(mOp,mFeature->range()));    }
-  
-  bool        is_dummy()   const { return mFeature->is_dummy(); }
-  bool        is_constant()const { return mFeature->is_constant(); }
-  double      average()    const { return mMean; }
-  double      center()     const { return mMean; }
-  double      scale()      const { return range_stats::standard_deviation(range(),mMean,size()); }
-  
-  void        write_to (std::ostream& os) const;
 };
 
 
@@ -364,6 +333,8 @@ class UnaryFeature : public FeatureABC
 template<class Op>
 class BinaryFeature : public FeatureABC
 {
+  typedef std::string string;
+
   Op mOp;
   Feature   mFeature1;
   Feature   mFeature2;
@@ -372,24 +343,23 @@ class BinaryFeature : public FeatureABC
   BinaryFeature(Op const& op, Feature const& f1, Feature const& f2)
     : FeatureABC(f1->size()), mOp(op), mFeature1(f1), mFeature2(f2) { }
 
-  std::string class_name()  const { return "BinaryFeature"; }
-  std::string name()        const { return operator_traits<Op>::name() + "[ (" + mFeature1->name() + ")" + operator_traits<Op>::symbol() + "(" + mFeature2->name() + ") ]"; }
-  int         degree()      const { return mFeature1->degree() + mFeature2->degree(); }
-  Arguments   arguments()   const { return Arguments(); }
+  string        class_name()       const;
+  string        name()             const;
+  string        operator_name()    const;
+  DependenceMap dependence_map()   const;
+  int           degree()           const;
+  Arguments     arguments()        const;
+  Column        column()           const;
+  Iterator      begin()            const;
+  Iterator      end()              const;
+  Range         range()            const;
+  bool          is_dummy()         const;
+  bool          is_constant()      const;
+  double        average()          const; 
+  double        center()           const;
+  double        scale()            const;
+  void          write_to(std::ostream& os) const;
   
-  DependenceMap dependence_map() const { return DependenceMap(); }
-
-  Iterator    begin()       const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->begin(),mFeature2->begin())); }
-  Iterator    end()         const { return make_anonymous_iterator(make_binary_iterator(mOp,mFeature1->end(),mFeature2->end())); }
-  Range       range()       const { return make_anonymous_range(make_binary_range(mOp,mFeature1->range(),mFeature2->range())); }
-
-  bool        is_dummy()    const { return (mFeature1->is_dummy() && mFeature2->is_dummy()); }
-  bool        is_constant() const { return (mFeature1->is_constant() && mFeature2->is_constant()); }
-  double      average()    const  { return range_stats::average(range(), size()); }
-  double      center()      const { return mOp(mFeature1->center(),mFeature2->center()); }
-  double      scale()       const { return mOp(mFeature1->scale() ,mFeature2->scale()); }
-
-  void        write_to (std::ostream& os) const;
 };
 
 
@@ -430,8 +400,5 @@ class FeatureSource
 
 };
 
-
-#include "features.Template.h"
-  
 #endif
 

@@ -53,6 +53,8 @@ public:
   LightThread<W>(const LightThread<W>&);                     // "copy" a new thread via default
   LightThread<W>(std::string name);
   
+  std::string name() const { return mName; }
+  
   void     operator()(const W& worker);        // starts a new thread (waits for old to finish)
   bool     done() const;                       // indicates whether the thread is not working
   bool     has_worker() const;                 // confirm that worker is there

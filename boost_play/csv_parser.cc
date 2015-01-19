@@ -3,7 +3,7 @@
    MAKE:  make -d csv_parser  # also runs with input from test-data.csv
 
    EXECUTE:  csv_parser < input.csv > output.data
-             csv_parser -f input.csv -o output-file-name     # bob_format_1.0  writes into one file
+             csv_parser -f input.csv -o output-file-name     # bob_format_1.0  writes into one file (3 lines per var)
 	     cvs_parser -f input.csv -d output-directory     # bob_format_2.0  tar style into one directory
 
    The first version uses standard io.  The second uses a supplied
@@ -25,6 +25,7 @@
    output variables identify variables generated during processing
    (e.g., V1[missing] or Location[SC]).
 
+    4 Dec 14 ... Update for revised boost engine.
    16 Dec 08 ... Created for converting data in CSV format into data suitable for auction models.
 
 */
@@ -49,10 +50,13 @@
 #include <numeric>
 #include <getopt.h>
 
-#include <boost/spirit/core.hpp>
-#include <boost/spirit/utility/confix.hpp>
-#include <boost/spirit/utility/lists.hpp>
-#include <boost/spirit/utility/escape_char.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/home/classic/utility/confix.hpp>
+#include <boost/spirit/home/classic/utility/lists.hpp>
+#include <boost/spirit/home/classic/utility/escape_char.hpp>
+// new ones
+#include <boost/spirit/home/classic/core/non_terminal/rule.hpp>
+#include <boost/spirit/home/classic/core/scanner/skipper.hpp>
 // #include <boost/filesystem.hpp>
 
 
@@ -169,14 +173,22 @@ template <class OpName, class OpAttribute>
 bool
 parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f is bound to parse action for name, g for attribute
 {
+  using classic::rule;
+  using classic::ch_p;
+  using classic::alpha_p;
+  using classic::space_p;
+  using classic::alnum_p;
+  using classic::phrase_scanner_t;
+    
   rule<phrase_scanner_t> name_rule, name_item;               // phrase_scanner_t allows space_p in parser
   rule<phrase_scanner_t> attribute_rule, attribute_pair, attribute_term;
   rule<phrase_scanner_t> token;
 
   name_item =
      (                                                       // char first in name without quotes
-      (alpha_p >> *(space_p | alnum_p | ch_p('.') | ch_p('_') | ch_p('/') | ch_p("[") | ch_p("]") | ch_p("=")))
-      |  confix_p('\"', *c_escape_ch_p, '\"')                // string with quotes around it
+      (alpha_p >> *(space_p | alnum_p
+			     | ch_p('.') | ch_p('_') | ch_p('/') | ch_p("[") | ch_p("]") | ch_p("=")))
+      |  classic::confix_p('\"', *classic::c_escape_ch_p, '\"')                // string with quotes around it
      );
 
   attribute_term = (alnum_p >> *(alnum_p));
@@ -185,9 +197,9 @@ parse_variable_names (char const* str, OpName f, OpAttribute g)         // Op f 
 
   token = (name_item[f] >> !attribute_rule);                 // opName operator does the work; zero or one attributes
   
-  name_rule = list_p(token, ',');                            // call the operator f for each parsed string
+  name_rule = classic::list_p(token, ',');                            // call the operator f for each parsed string
 
-  parse_info<> result = parse(str, name_rule, space_p);      // binding 3rd argument produces a phrase scanner  
+  classic::parse_info<> result = parse(str, name_rule, space_p);      // binding 3rd argument produces a phrase scanner  
   if (result.hit)
   { // clog << "Debug: Parsing names from input line: " << endl<< "\t" << str << endl;
     if (!result.full)
@@ -207,18 +219,18 @@ template <class OpName>
 bool
 parse_data_line (char const* str, OpName f)
 {
-  rule<phrase_scanner_t> data_rule, data_item;
+  classic::rule<classic::phrase_scanner_t> data_rule, data_item;
 
   data_item =
      (       
-      (alpha_p >> *(space_p | alnum_p))                    // char first in name without quotes
-      |   confix_p('\"', *c_escape_ch_p, '\"')             // string with quotes around it
-      |   longest_d[real_p | int_p]                        // numbers
-      |   eps_p                                            // no missing values
+      (classic::alpha_p >> *(classic::space_p | classic::alnum_p))                    // char first in name without quotes
+      |   classic::confix_p('\"', *classic::c_escape_ch_p, '\"')             // string with quotes around it
+      |   classic::longest_d[classic::real_p | classic::int_p]                        // numbers
+      |   classic::eps_p                                            // no missing values
       );
-  data_rule =  list_p( ! data_item[f], ',');               // ! matches 0 or 1 of the following  ... Why do we need it?
+  data_rule =  classic::list_p( ! data_item[f], ',');               // ! matches 0 or 1 of the following  ... Why do we need it?
 
-  parse_info<> result = parse(str, data_rule, space_p);    // binding 3rd argument produces a phrase scanner  
+  classic::parse_info<> result = parse(str, data_rule, classic::space_p);    // binding 3rd argument produces a phrase scanner  
   if (!result.full) {
     cout << "ERROR: Incomplete data parse ...  Parsing stopped at  " ;
     char const* s = result.stop;
@@ -236,7 +248,7 @@ parse_data_line (char const* str, OpName f)
 bool
 can_parse_number (std::string const& str)
 {
-  parse_info<> result = parse(str.c_str(), real_p);
+  classic::parse_info<> result = parse(str.c_str(), classic::real_p);
   //  cannot return result.hit since leading number will be parsed (ie, 777x can parse leading digits)
   return result.full;
 }
@@ -511,7 +523,7 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
   int nObs  (data.size());
   
   int column = 0;
-  if (hasSelector)
+  if (hasSelector)  // defines cross-validation role
   { StringVector role;
     role.push_back("role context");
     write_categorical_column("cv.indicator", role, data, column, true, output, tarPath);  // true = drop last label

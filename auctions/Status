@@ -3,16 +3,17 @@ Things to add ...
        Make an 'eigen' branch of the auction.
 
        Clean up the creation of the feature streams, something more like
-              a parameter file rather than all of the code coming/going in the
-	             auction.test file.  (read these as pairs, then extract using names)
+       a parameter file rather than all of the code coming/going in the
+       auction.test file.  (read these as pairs, then extract using names)
 
-       		     		      data_path <path>
-							    output_path <path>  (for logs, output)
-							    			    response_data <filename>
-													    stream_data <filename> <stream_name>
-													    			        ...
-																			    stream_data <filename> <stream_name>
-																			    			       expert <name> bidder_name <name> bidder_type <type> stream_name <name (from above)> alpha <value> <optional parms>
+       		    data_path <path>
+		    output_path <path>  (for logs, output)
+		    response_data <filename>
+		    stream_data <filename> <stream_name>
+		     ...
+		    stream_data <filename> <stream_name>
+		    expert <name> bidder_name <name> bidder_type <type> stream_name <name (from above)> alpha <value> <optional parms>
+
 
        Question: How do you build 'data directed' objects?
 
@@ -42,6 +43,7 @@ Things to add ...
 
 
 Next... 
+=======
 
 	Segmented time model requires 
 
