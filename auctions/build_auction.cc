@@ -77,54 +77,63 @@ int
 main(int argc, char** argv)
 {
   using debugging::debug;
+  using std::string;
   typedef std::vector<Feature> FeatureVector;
 
-  // build vector of columns from file; set default parameter values
+  debug("AUCT",0) << "Version build 1.7 (18 Jan 2015)\n";
+
+  // Parse command line options
+  
   double        totalAlphaToSpend    (0.1);
-  std::string   responseFileName    ("y.dat");
-  std::string   contextFileName     ("c.dat");
-  std::string   xFileName           ("x.dat");
-  std::string   outputPath           ("/home/bob/C/auctions/test/log/"); 
+  string   responseFileName    ("y.dat");
+  string   contextFileName     ("c.dat");
+  string   xFileName           ("x.dat");
+  string   outputPath           ("/home/bob/C/auctions/test/log/"); 
   int           protection           (  3);
   bool          useShrinkage       (false);
-  int           shrink               (  0);
   int           numberRounds         (200);
   int           numOutputPredictors    (0);
-  int           calibration            (0);                              // 0 means no calibration; otherwise gap between models offered calibration
+  int           calibration            (0);      // 0 means no calibration; otherwise gap between models offered calibration
   int           debugLevel             (3);
-     
+
+  // lock these options
+
+  const int  nPrefixCases = 0;
+  const int  nContextCases = 0;
+  const int  blockSize   = 1;
 
   parse_arguments(argc,argv, responseFileName, contextFileName, xFileName, outputPath,
 		  protection, useShrinkage, numberRounds, totalAlphaToSpend,
 		  calibration, debugLevel, numOutputPredictors);
-  if(useShrinkage) shrink = 1;
   
-  // initialize bugging stream (write to clog if debugging is on, otherwise to auction.log file)
-  std::string   debugFileName (outputPath + "progress.log");
+  // initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
+  
+  string   debugFileName (outputPath + "progress.log");
   std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
   debugging::debug_init(logStream, debugLevel);
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
-  debug("AUCT",0) << "Version build 1.5 (1 Apr 2011)\n";
-   
-  // echo startup options to log file
-  debug("AUCT",0) << "Echo of arguments...    --y-name=" << responseFileName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
-		  << " --protect=" << protection << " --shrinkage=" << shrink << " --rounds=" << numberRounds << " --output-x=" << numOutputPredictors
-		  << " --alpha=" << totalAlphaToSpend 
-		  << std::endl;
   
+  debug("AUCT",0)   << "Echo of arguments...    --y-name=" << responseFileName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
+		    << " --protect=" << protection << " --rounds=" << numberRounds << " --output-x=" << numOutputPredictors
+		    << " --alpha=" << totalAlphaToSpend;
+  if (useShrinkage)
+    debug("AUCT",0) << " --shrink";
+  debug("AUCT",0)   << std::endl;
+   
   // open additional files for output
-  std::string progressCSVFileName (outputPath + "progress.csv");
+  
+  string progressCSVFileName (outputPath + "progress.csv");
   std::ofstream progressStream (progressCSVFileName.c_str());
   if (!progressStream)
   { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
     return -1;
   }
-  std::string modelHTMLFileName  (outputPath + "model.html"); 
-  std::string modelTextFileName  (outputPath + "model.txt");
-  std::string modelDataFileName  (outputPath + "model_data.csv");
+  string modelHTMLFileName  (outputPath + "model.html"); 
+  string modelTextFileName  (outputPath + "model.txt");
+  string modelDataFileName  (outputPath + "model_data.csv");
   debug("AUCT",2) << "Output going to these files:\n"
 #ifdef NDEBUG
 		  << "             log  --> " << debugFileName  << std::endl
@@ -150,7 +159,7 @@ main(int argc, char** argv)
   */
 
   // Read response and associated control variables; read returns <n,k>
-
+  
   typedef std::vector<Column> ColumnVector;
   ColumnVector yColumns, xColumns, cColumns;
   { std::pair<int,int> dim;
@@ -166,33 +175,31 @@ main(int argc, char** argv)
 		    << cColumns.size() << " context columns.\n";
   }
 
-  // organize data into feature streams
-  const int prefixCases = 0;
-  const int blockSize = 1;
-  FeatureSource featureSrc (xColumns, prefixCases);
-  featureSrc.print_summary(debug("MAIN",1));
+  // Parse binary Y and partition X data into feature streams  (const settings lock out other features)
   
-  // set up calibration options
-  std::string calibrationSignature ("Y_hat_");
   bool yIsBinary  (yColumns[0]->is_dummy());
   if (yIsBinary)
-    debug("AUCT",1) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
+    debug("AUCT",1) << "Response " << yColumns[0]->name() << " is binary; truncating calibration estimates." << std::endl;
 
   // build model and initialize auction with csv stream for tracking progress
-  ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], prefixCases, blockSize, useShrinkage, debug("MAIN",2));
-  Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibration, calibrationSignature, blockSize, progressStream);
+
+  ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
+  const string calibrationSignature ("Y_hat_");
+  Auction<  ValidatedRegression > theAuction(theRegr, calibration, calibrationSignature, blockSize, progressStream);
   
-  // create the experts that control bidding in the auction
+  // add experts to auction
+  
   debug("AUCT",3) << "Assembling experts"  << std::endl;
-  int nContextCases (featureSrc.number_skipped_cases());
-  typedef FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity>                             FiniteStream;
-  typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
-  typedef FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>                                  CrossProductStream;
-  //  typedef FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures >            PolynomialStream;
-  //  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<PCA> >                   PCAStream;
-  typedef FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
+  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>                    FiniteStream;
+  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  typedef FeatureStream< DynamicIterator     <FeatureVector, SkipIfDerived    >, BuildPolynomialFeatures >    PolynomialStream;
+  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<PCA> >          PCAStream;
+  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
+  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>                    CrossProductStream;
+  typedef FeatureStream< ModelIterator       <ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >     CalibrationStream;
   
+  add_experts_to_auction(xColumns, nPrefixCases, nContextCases, totalAlpha, theAuction);
+
   // scavenger experts
   /*
     theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
@@ -205,46 +212,7 @@ main(int argc, char** argv)
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
   */
-
-  // build a source and interaction expert for each stream with role=x, but not for the locked stream
-  std::vector<std::string> streamNames (featureSrc.stream_names());
-  FeatureVector lockedStream;
-  for(std::vector<std::string>::iterator it = streamNames.begin(); it!=streamNames.end(); ++it)
-  { if (*it == "LOCKED")
-    { debug("MAIN",4) << "Note that the locked stream is not a bidding stream.\n";
-      streamNames.erase(it);
-      lockedStream =  featureSrc.features_with_attribute("stream", "LOCKED");
-      break;
-    }
-  }
-  debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; locked stream has " << lockedStream.size() << " features." << std::endl;
-  // allocate alpha for main, interaction and cross-product with locked input source streams
-  std::vector< FeatureVector> featureStreams(streamNames.size());
-  { bool     hasLockStream (lockedStream.size() > 0);
-    double   alphaShare    (totalAlphaToSpend/(double)streamNames.size());
-    double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
-    double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
-    double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
-    for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
-      featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
-      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
-				   UniversalBoundedBidder<FiniteStream>(), 
-				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
-				   UniversalBoundedBidder<InteractionStream>(),
-				   make_interaction_stream("within " + streamNames[s],
-							   featureStreams[s], true)                                  // true means to include squared terms
-				   ));
-      if (hasLockStream)                                                                                             // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
-				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
-							       featureStreams[s], lockedStream )                     
-				     ));
-    }
-  }
-   
+  
   //  Calibration expert
   if(calibration > 0)
     theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
@@ -292,7 +260,7 @@ main(int argc, char** argv)
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
 	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
-    { std::vector<std::string> names (theAuction.purged_expert_names());
+    { std::vector<string> names (theAuction.purged_expert_names());
       std::cout << "\n During the auction, there were " << names.size() << " purged experts: \n";
       for(unsigned int i=0; i<names.size(); ++i)
 	std::cout << "  [" << i+1 << "]  " << names[i] << std::endl;
@@ -341,10 +309,10 @@ main(int argc, char** argv)
 
 void
 parse_arguments(int argc, char** argv,
-		std::string& yFileName,
-		std::string& cFileName,
-		std::string& xFileName,
-		std::string& outputPath,
+		string & yFileName,
+		string & cFileName,
+		string & xFileName,
+		string & outputPath,
 		int    &protection,
 		bool   &shrink,
 		int    &nRounds,
@@ -454,27 +422,3 @@ identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 }
 
  
-// reads in response, initialized data object
-ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
-{
-  bool                      useSubset    (0 != inOut->size());
-  constant_iterator<double> equalWeights (1.0);
-  int                       nRows        ((int)y->size()-prefixRows);
-  
-  os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y;
-  if (useShrinkage)
-    os << " with shrinkage." << std::endl;
-  else
-    os << " without shrinkage." << std::endl;
-  if (useSubset)
-  { os << "        Validation cases identified by " << inOut << std::endl;
-    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);
-  } 
-  else
-  { os << "        No validation.\n";
-    constant_iterator<bool>   noSelection(true);
-    return ValidatedRegression (y->name(), y->begin()+prefixRows, noSelection             , nRows, blockSize, useShrinkage);  
-  } 
-}
-

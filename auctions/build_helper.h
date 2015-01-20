@@ -21,11 +21,17 @@ public:
 };
 
 
+ValidatedRegression
+build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
+
+
 double
 time_since(time_t const& start);
 
+
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
+
 
 
 #endif

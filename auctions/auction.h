@@ -45,7 +45,6 @@ private:
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
   FeatureVector       mRejectedFeatures;  // tried and not used
-  FeatureSource       mFeatureSource; 
   std::ostream&       mProgressStream;    // tracks progress by rounds
   
  public:
@@ -57,7 +56,7 @@ private:
   Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
-      mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
+      mModelFeatures(), mRejectedFeatures(), mProgressStream(progressStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
