@@ -1,6 +1,9 @@
 #ifndef __build_helper__
 #define __build_helper__
 
+#include "auction.h"
+#include "regression.h"
+
 
 class FiniteCauchyShare
 {
@@ -17,13 +20,15 @@ public:
   
  private:
   void init();
-  double p(int j);
+  double p(int j) const;
 };
 
 
 ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
+build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
 
+void
+add_source_experts_to_auction (std::vector<Column> const& xColumns, int prefixCases, int contextCases, double wealth, Auction<ValidatedRegression> &auction);
 
 double
 time_since(time_t const& start);

@@ -26,7 +26,6 @@ class Auction
   typedef typename std::set<std::string>     StringSet;
   typedef typename std::vector<std::string>  StringVec;
   typedef typename std::pair<double,double>  TestResult;
-
   
 private:
   const double        mPayoff;            // payoff for a winning bid
@@ -53,7 +52,7 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
+  Auction (Model& m, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mProgressStream(progressStream) {  } 

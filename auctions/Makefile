@@ -50,7 +50,7 @@ data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
-auction: build_auction.o
+auction: $(above_8)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
 logistic_test: auction.test

@@ -28,6 +28,7 @@
 */
    
 #include "auction.Template.h"
+#include "build_helper.h"
 
 // from ranges
 #include "range.h" 
@@ -56,7 +57,6 @@
 #include <time.h> 
 #include <assert.h>
    
-#include "build_helper.h"
 
 
 
@@ -78,23 +78,22 @@ main(int argc, char** argv)
 {
   using debugging::debug;
   using std::string;
-  typedef std::vector<Feature> FeatureVector;
 
   debug("AUCT",0) << "Version build 1.7 (18 Jan 2015)\n";
 
   // Parse command line options
   
-  double        totalAlphaToSpend    (0.1);
+  double   totalAlphaToSpend    (0.1);
   string   responseFileName    ("y.dat");
   string   contextFileName     ("c.dat");
   string   xFileName           ("x.dat");
   string   outputPath           ("/home/bob/C/auctions/test/log/"); 
-  int           protection           (  3);
-  bool          useShrinkage       (false);
-  int           numberRounds         (200);
-  int           numOutputPredictors    (0);
-  int           calibration            (0);      // 0 means no calibration; otherwise gap between models offered calibration
-  int           debugLevel             (3);
+  int      protection           (  3);
+  bool     useShrinkage       (false);
+  int      numberRounds         (200);
+  int      numOutputPredictors    (0);
+  int      calibration            (0);      // 0 means no calibration; otherwise gap between models offered calibration
+  int      debugLevel             (3);
 
   // lock these options
 
@@ -190,19 +189,17 @@ main(int argc, char** argv)
   // add experts to auction
   
   debug("AUCT",3) << "Assembling experts"  << std::endl;
-  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>                    FiniteStream;
-  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>                    InteractionStream;
+  add_source_experts_to_auction(xColumns, nPrefixCases, nContextCases, totalAlphaToSpend, theAuction);
+
+  /*
   typedef FeatureStream< DynamicIterator     <FeatureVector, SkipIfDerived    >, BuildPolynomialFeatures >    PolynomialStream;
   typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<PCA> >          PCAStream;
   typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
-  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>                    CrossProductStream;
   typedef FeatureStream< ModelIterator       <ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >     CalibrationStream;
   
-  add_experts_to_auction(xColumns, nPrefixCases, nContextCases, totalAlpha, theAuction);
-
   // scavenger experts
-  /*
-    theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
+
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
@@ -211,7 +208,6 @@ main(int argc, char** argv)
 			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
-  */
   
   //  Calibration expert
   if(calibration > 0)
@@ -235,15 +231,11 @@ main(int argc, char** argv)
 						    theAuction.rejected_features(),
 						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
 						    30)));
+  */
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;
   {
-    FeatureVector lockIn = featureSrc.features_with_attribute ("stream", "LOCKED");
-    if(lockIn.size() > 0)
-    { theAuction.add_initial_features(lockIn);
-      debug("AUCT",1) << theAuction << std::endl << std::endl;
-    }
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     double totalTime (0.0);
@@ -309,17 +301,17 @@ main(int argc, char** argv)
 
 void
 parse_arguments(int argc, char** argv,
-		string & yFileName,
-		string & cFileName,
-		string & xFileName,
-		string & outputPath,
-		int    &protection,
-		bool   &shrink,
-		int    &nRounds,
-		double &totalAlpha,
-		int    &calibrate,
-		int    &debugLevel,
-		int    &numOutputPredictors)
+		std::string & yFileName,
+		std::string & cFileName,
+		std::string & xFileName,
+		std::string & outputPath,
+		int         &protection,
+		bool        &shrink,
+		int         &nRounds,
+		double      &totalAlpha,
+		int         &calibrate,
+		int         &debugLevel,
+		int         &numOutputPredictors)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -392,6 +384,8 @@ parse_arguments(int argc, char** argv,
 Column
 identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
 { // have some weird allocation/bad pointer issues around assigning an empty column; problem was here; avoid by returning Column()
+  using debugging::debug;
+  
   debug("MAIN",3) << "Checking for CV indicator variable among " << columns.size() << " columns. "
 		  << " First column is named " << columns[0]->name() << " with size = " << columns[0]->size() << std::endl
 		  << columns[0] << std::endl;

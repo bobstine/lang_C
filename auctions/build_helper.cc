@@ -1,3 +1,11 @@
+#include "build_helper.h"
+
+#include "feature_streams.h"
+#include "light_threads.Template.h"
+#include "auction.Template.h"
+#include "column.h"
+#include "debug.h"
+
 
 void
 FiniteCauchyShare::init()
@@ -16,9 +24,9 @@ FiniteCauchyShare::operator()(int j) const
 
 
 double
-FiniteCauchyShare::p(int j)
+FiniteCauchyShare::p(int j) const
 {
-  return 1.0/(double)((j+1)*(j+1)); }
+  return 1.0/(double)((j+1)*(j+1)); 
 }
 
 //     build_regression_model     build_regression_model     build_regression_model     build_regression_model
@@ -48,25 +56,34 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bo
 
 //     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     
 
-int
-add_experts_to_auction (std::vector<Column> const& xColumns, int prefixCases, int contextCases, double wealth, Auction &auction)
+void
+add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixCases, int nContextCases, double wealth, Auction<ValidatedRegression> &auction)
 {
   using std::string;
+  using debugging::debug;
   
-  FeatureSource featureSource (xColumns, prefixCases);
+  FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
 
-  std::vector<string> streamNames (featureSrc.stream_names());
+  std::vector<string> streamNames (featureSource.stream_names());
   FeatureVector lockedStream;
   for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream
   { if (*it == "LOCKED")
     { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
       streamNames.erase(it);
-      lockedStream =  featureSrc.features_with_attribute("stream", "LOCKED");
+      lockedStream =  featureSource.features_with_attribute("stream", "LOCKED");
       break;
     }
   }
   debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; locked stream has " << lockedStream.size() << " features." << std::endl;
+  if(lockedStream.size()>0) 
+  { FeatureVector lockIn = featureSource.features_with_attribute ("stream", "LOCKED");
+    auction.add_initial_features(lockIn);
+    debug("AUCT",1) << auction << std::endl << std::endl;
+  }
+  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
+  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
+  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
   std::vector<FeatureVector> featureStreams(streamNames.size());
   {
     bool     hasLockStream (lockedStream.size() > 0);
@@ -76,17 +93,17 @@ add_experts_to_auction (std::vector<Column> const& xColumns, int prefixCases, in
     double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
-      featureStreams[s] = featureSrc.features_with_attribute("stream", streamNames[s]);
-      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
+      featureStreams[s] = featureSource.features_with_attribute("stream", streamNames[s]);
+      auction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+      auction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("within " + streamNames[s],
 							   featureStreams[s], true)                                  // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
+	auction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
 				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureStreams[s], lockedStream )                     
