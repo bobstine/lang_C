@@ -120,7 +120,7 @@ MarsagliaGenerator::operator()(void)
   d[J] = j;
   
   d[1] = k;
-  return ((double) k) / m1;
+  return ((double) k) /(double) m1;
 }
 
 /////////////////  Super Duper Generator  ////////////////////////////
@@ -176,7 +176,7 @@ SuperDuperGenerator::operator()(void)
   d[4] = HPART(JT);
   d[5] = LPART(JT);
   
-  return k * Norm;
+  return (double)k * Norm;
 }
 
 
@@ -241,7 +241,7 @@ WichmanHillGenerator::operator()(void)
   d[3] = J3;
   
   /* Put it on the interval (0,1) */
-  return k * Norm;
+  return (double)k * Norm;
 }
 
 ////////////////////  Tausworthe  /////////////////////////////////
@@ -296,7 +296,7 @@ TauswortheGenerator::operator()(void)
   d[2] = I1;
   d[3] = I2;
   
-  return  b * Norm;
+  return  (double)b * Norm;
 }
 
 #define ROOT2OVERE 0.8577638849607068

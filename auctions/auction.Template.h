@@ -67,7 +67,7 @@ Auction<ModelClass>::add_initial_features (FeatureVector const& f)
     mModelFeatures.push_back(f[j]);
   }
   debug("AUCT",2) << "Test of initial features gives  <" << result.first << "," << result.second << ">\n";
-  return f.size();
+  return (unsigned int)f.size();
 }
 
 
@@ -304,23 +304,23 @@ template<class ModelClass>
 double
 Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& features)
 {
-  typedef FeatureStream<LagIterator, Identity>                                              LagStream;
   typedef FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature>  ProductStream;
   double tax = mPayoffTaxRate * mPayoff;
   expert->payoff(mPayoff-tax);
   if (expert->role() != calibrate)
-  { const double taxForEach = tax/features.size();
+    { const double taxForEach = tax/(double)features.size();
     for(FeatureVector::const_iterator f = features.begin(); f!=features.end(); ++f)       // add expert for interaction with other added features
     { // each added feature can potentially add several experts to the auction
       std::vector<Expert> spawned;
       // interact feature with those that have indicated parent
-      if ((*f)->has_attribute("interact_with_parent"))
+      /*
+	if ((*f)->has_attribute("interact_with_parent"))
       { std::istringstream istr ((*f)->attribute_str_value("interact_with_parent"));
 	std::set<std::string> parentNames;
 	std::string name;
 	while (istr >> name) parentNames.insert(name);
 	FeatureVector fv;
-	for(std::set<std::string>::const_iterator it=parentNames.begin(); it != parentNames.end(); ++it)      // could interact with children of many
+	for(auto it=parentNames.begin(); it != parentNames.end(); ++it)      // could interact with children of many
 	{ std::string parent (*it);  
 	  FeatureVector toAppend = mFeatureSource.features_with_attribute("parent",parent);
 	  debug("AUCT",4) << toAppend.size() << " features derived from interact_with attribute for parent " << parent << ".\n";
@@ -334,17 +334,22 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
 				     UniversalBidder< ProductStream >(),
 				     make_feature_product_stream("interactor", *f, fv)  ));
       }
-      if ((*f)->has_attribute("max_lag"))
-      { int maxLag = (*f)->attribute_int_value("max_lag");  
-	spawned.push_back(Expert("Lag_"+(*f)->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
+      */
+      /*
+	typedef FeatureStream<LagIterator, Identity>                                              LagStream;
+	if ((*f)->has_attribute("max_lag"))
+        { int maxLag = (*f)->attribute_int_value("max_lag");  
+  	  spawned.push_back(Expert("Lag_"+(*f)->name(), custom, mFeatureSource.number_skipped_cases(), 0.0,      // interacts winning feature with others in model stream
 				 UniversalBoundedBidder< LagStream >(),
 				 make_lag_stream("Lag stream", *f, maxLag, 2, mBlockSize) ));                  // 2 cycles over lags
       }
+      */
       // interact winning feature with rest of model stream
-      spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", custom, mFeatureSource.number_skipped_cases(), 0.0,
+      const int nSkippedCases = 0;
+      spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", custom, nSkippedCases, 0.0,
 			       UniversalBoundedBidder< ProductStream >(),
 			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
-      double alpha = taxForEach/spawned.size();
+      double alpha = taxForEach/(double)spawned.size();
       /*  used to have a global "in model/in model" interaction expert.  That's now replaced by these for each variable...
 	  the new interaction stream does not allow dynamic growth, which is needed for this
 	  Do we need both "individual" expert as well as the global expert for smoothing this out???

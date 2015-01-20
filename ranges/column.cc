@@ -278,12 +278,17 @@ insert_columns_from_file (std::string const& fileName,
   FileColumnStream colStream(fileName);
   int k (0);
   int n (colStream.n());
-  for (Column col = *colStream; col->size()>0; ++k, ++it)
-  { *it = col;
-    ++colStream;
-    col = *colStream;
+  if (n>0)
+  { for (Column col = *colStream; col->size()>0; ++k, ++it)
+    { *it = col;
+      ++colStream;
+      col = *colStream;
+    }
   }
-  debugging::debug("CLMN",4) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+  if ((0 == n) || (0 == k))
+    std::cerr << "CLMN: *** ERROR *** Read " << n << " cases and " << k << " columns from file " << fileName << std::endl;
+  else
+    debugging::debug("CLMN",4) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -362,5 +367,5 @@ IntegerColumn::transfer_from_double (double *pDouble)
 {
   int counter (mData->size());
   int *pDest  (mData->begin()); 
-  while(counter--) *pDest++ = floor(*pDouble++);
+  while(counter--) *pDest++ = (int) floor(*pDouble++);
 }

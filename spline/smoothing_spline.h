@@ -158,13 +158,13 @@ class SmoothingSpline
     mNCoef(0), mKnots(0), mCoefs(0), mLambda(0.0), mSmooth(), mMap()  {    }
 
   SmoothingSpline (int df, Vector const& x, Vector const& y)
-    : mN(x.size()), mX(0), mY(0), mW(0), mMinX(0.0), mMaxX(0.0), mRngX(0.0), mDF(df), 
+    : mN((int)x.size()), mX(0), mY(0), mW(0), mMinX(0.0), mMaxX(0.0), mRngX(0.0), mDF(df), 
     mNUnique(0), mUniqueX(0), mUniqueY(0), mUniqueW(0),
     mMappedX(0), mNCoef(0), mKnots(0), mCoefs(0), mLambda(0.0), mSmooth(0), mMap()
     { initialize(x.begin(), y.begin()); }
 
   SmoothingSpline (int df, Vector const& x, Vector const& y, Vector const& w)
-    : mN(x.size()), mX(0), mY(0), mW(0), mMinX(0.0), mMaxX(0.0), mRngX(0.0), mDF(df), 
+    : mN((int)x.size()), mX(0), mY(0), mW(0), mMinX(0.0), mMaxX(0.0), mRngX(0.0), mDF(df), 
     mNUnique(0), mUniqueX(0), mUniqueY(0), mUniqueW(0),
     mMappedX(0), mNCoef(0), mKnots(0), mCoefs(0), mLambda(0.0), mSmooth(0), mMap()
     { initialize(x.begin(), y.begin(), w.begin()); }

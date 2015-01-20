@@ -10,7 +10,7 @@ template<class EigenVec>
 typename EigenVec::Scalar
 SVD::mean (EigenVec const& x)
 {
-  return x.sum()/x.size();
+  return x.sum()/(typename EigenVec::Scalar)x.size();
 }
 
 
@@ -18,8 +18,9 @@ template<class EigenVec>
 typename EigenVec::Scalar
 SVD::standard_deviation (EigenVec const& x)
 {
-  typename EigenVec::Scalar m (mean(x));
-  return sqrt( (x.array()-m).matrix().squaredNorm()/(x.size()-1) );
+  typedef typename EigenVec::Scalar Scalar;
+  Scalar m = mean(x);
+  return (Scalar)sqrt( (x.array()-m).matrix().squaredNorm()/(Scalar)(x.size()-1) );
 }
 
 
@@ -29,7 +30,7 @@ SVD::sample_rows(EigenMatrix const& m, int nRows)
 {
   EigenMatrix result (nRows,m.cols());
   int slotsLeft (nRows);
-  int rowsLeft  (m.rows());
+  int rowsLeft  ((int)m.rows());
   while (rowsLeft && slotsLeft)
   {
     if ( ((double)(rand())/RAND_MAX) <  (((double)slotsLeft) / rowsLeft)  )
@@ -46,16 +47,17 @@ template<class EigenMatrix>
 EigenMatrix
 SVD::standardize_columns (EigenMatrix const& data, bool useSD)
 {
+  typedef typename EigenMatrix::Scalar Scalar;
   EigenMatrix result (data.rows(), data.cols());
   // center cols, moving into result
-  EigenMatrix mean (data.colwise().sum()/data.rows());   // vector
+  EigenMatrix mean (data.colwise().sum()/(Scalar)data.rows());   // vector
   for (int j=0; j<data.cols(); ++j)
     result.col(j) = data.col(j).array() - mean(j);
   // scale
   EigenMatrix ss (data.colwise().squaredNorm());         // vector
   for (int j=0; j<data.cols(); ++j)
-  { typename EigenMatrix::Scalar s = ss(j);
-    if (useSD) s /= data.rows()-1;  // sample var
+  { Scalar s = ss(j);
+    if (useSD) s /= (Scalar)(data.rows()-1);  // sample var
     result.col(j) = result.col(j) / sqrt(s);
   }
   return result;
@@ -66,16 +68,17 @@ template<class EigenMatrix>
 void
 SVD::standardize_columns_in_place (EigenMatrix& data, bool useSD)
 {
+  typedef typename EigenMatrix::Scalar Scalar;
   // center cols
-  EigenMatrix mean (data.colwise().sum()/data.rows());   // vector
+  EigenMatrix mean (data.colwise().sum()/(Scalar)data.rows());   // vector
   for (int j=0; j<data.cols(); ++j)
     data.col(j) = data.col(j).array() - mean(j);
   // scale
   EigenMatrix ss (data.colwise().squaredNorm());         // vector
   for (int j=0; j<data.cols(); ++j)
-  { typename EigenMatrix::Scalar s = ss(j);
-    if (useSD) s /= data.rows()-1;  
-    data.col(j) = data.col(j) / sqrt(s);
+  { Scalar s = ss(j);
+    if (useSD) s /= (Scalar)data.rows()-1;  
+    data.col(j) = data.col(j) /(Scalar) sqrt(s);
   }
 }
 
@@ -84,8 +87,8 @@ template<class EigenMatrix>
 EigenMatrix
 SVD::random_linear_combinations (EigenMatrix const& data,int k)
 {
-  EigenMatrix rand (EigenMatrix::Random(data.cols(), k));
-  return  data * rand;
+  EigenMatrix rand = EigenMatrix::Random(data.cols(), k);
+  return  rand * data;
 }
 
 
@@ -98,7 +101,7 @@ RKHS<K>::operator()(Eigen::MatrixXd const& input) const
 {
   using debugging::debug;
   
-  int n (input.rows());
+  int n ((int)input.rows());
   // standardize to mean 0, var 1 or kernel makes no sense; use float 
   Eigen::MatrixXf data = input.cast<float>();
   if (mStandardize) SVD::standardize_columns_in_place(data);

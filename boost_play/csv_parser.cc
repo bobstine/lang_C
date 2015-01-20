@@ -122,7 +122,7 @@ public:
   template <class It>
   void operator()(It first, It last) const
   { std::string s(first, last);
-    int position (mpStrings->size()-1);     // shift by one for index 0 since attaching attribute to parsed name
+    int position ((int)mpStrings->size()-1);     // shift by one for index 0 since attaching attribute to parsed name
     (*mpMap)[position].push_back(s);
   }
 };
@@ -323,7 +323,7 @@ write_missing_column (std::string const& varName, StringVector const& attributes
 void
 write_numerical_data (StringDataMatrix const& data, int column, int numberMissing, std::ostream& output)
 {
-  int nObs (data.size());
+  int nObs ((int)data.size());
   if (0 == numberMissing)                                // write directly to output
     for(int i=0; i<nObs; ++i)
       output << data[i][column] << " ";
@@ -389,7 +389,7 @@ bool
 data_has_selection_indicator(StringDataMatrix const& data)
 {
   // find the collection of unique values in first column
-  int nObs (data.size());
+  int nObs ((int)data.size());
   std::set< std::string > uniqueLabels;
   for (int i=0; i<nObs; ++i)
   { if (data[i][0].size() > 0)
@@ -434,7 +434,7 @@ write_categorical_column (std::string const& varName, StringVector const& attrib
     std::clog << "CSVP: Variable " << varName << " has preassigned role.\n";
   }
   // find the collection of unique values
-  int nObs (data.size());
+  int nObs ((int)data.size());
   std::set< std::string > uniqueValues;
   for (int i=0; i<nObs; ++i)
   { if (data[i][column].size() > 0)
@@ -471,8 +471,8 @@ int
 number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 		      std::vector<int> const& varMissingCount, std::vector<int> const& varNumericCount)
 {
-  int nInputCols (varMissingCount.size()); 
-  int nObs       (data.size());
+  int nInputCols ((int)varMissingCount.size()); 
+  int nObs       ((int)data.size());
   // number of missing indicators
   int nColsWithMissing (0);
   for (int j=0; j<nInputCols; ++j)
@@ -489,7 +489,7 @@ number_output_columns(StringDataMatrix const& data, bool hasSubsetSelector,
 	if (data[i][j].size() > 0)                   // empty -> missing
 	  uniqueValues.insert(data[i][j]);
       }
-      int nCats (uniqueValues.size());
+      int nCats ((int)uniqueValues.size());
       std::clog << nCats << " ";
       --nCats;   // already counted 1 for input
       nColsForCategorical += nCats;
@@ -519,8 +519,8 @@ write_numerical_data_file (std::vector<std::string> const& varNames, AttributeMa
   if (tarPath.size()>0)    output << "#!/bin/sh\n";
   output << prefixes.first << data.size() <<  endl;
 
-  int nVars (varNames.size());
-  int nObs  (data.size());
+  int nVars ((int)varNames.size());
+  int nObs  ((int)data.size());
   
   int column = 0;
   if (hasSelector)  // defines cross-validation role
@@ -562,8 +562,8 @@ csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
 			     MappedStringCatcher( &inputColumnNames, &inputAttributes ) ))
     { std::clog <<  "\nParser: Read " << inputColumnNames.size() << " variable names from the input data.  These are:\n" << endl;
       peel_quotes_from_string_vector(inputColumnNames);
-      for (std::vector<std::string>::iterator it = inputColumnNames.begin(); it != inputColumnNames.end(); ++it)
-	std::clog << " |" << *it << "| " << endl;
+      for (auto name : inputColumnNames)
+	std::clog << " |" << name << "| " << endl;
       for (int i=0; i<(int)inputColumnNames.size(); ++i)
 	if (!inputAttributes[i].empty())
 	{ std::clog << "Attributes[" << inputColumnNames[i] << ", var #" << i << "]  ";
@@ -587,7 +587,7 @@ csv_parser(std::istream& input, std::ostream& output, std::string tarPath="")
   //  for(unsigned int j=0; j<inputColumnNames.size(); ++j)
   //     inputAttributes[j] = set_default_stream_name ("main", inputAttributes[j]);
   // set up vectors to count types of data in columns (# missing in each column, # numbers in each)
-  int nVars (inputColumnNames.size());
+  int nVars ((int)inputColumnNames.size());
   std::vector< int > numeric (nVars);
   std::vector< int > missing (nVars);
   // iterate through remaining lines of data in order to build the matrix of strings

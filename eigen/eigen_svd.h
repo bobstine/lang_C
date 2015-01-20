@@ -23,6 +23,7 @@
 
 namespace SVD
 {
+
   template<class EigenVec>
     typename EigenVec::Scalar
     mean (EigenVec const& x);

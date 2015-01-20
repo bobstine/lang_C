@@ -5,5 +5,7 @@ penn_credit_test.sh
 testlist
 expander
 quicktest
+auction
+csv_parser
 cv*.indicator
 text_auction

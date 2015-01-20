@@ -26,7 +26,6 @@ class Auction
   typedef typename std::set<std::string>     StringSet;
   typedef typename std::vector<std::string>  StringVec;
   typedef typename std::pair<double,double>  TestResult;
-
   
 private:
   const double        mPayoff;            // payoff for a winning bid
@@ -45,7 +44,6 @@ private:
   Model&              mModel;
   FeatureVector       mModelFeatures;     // those in the model
   FeatureVector       mRejectedFeatures;  // tried and not used
-  FeatureSource       mFeatureSource; 
   std::ostream&       mProgressStream;    // tracks progress by rounds
   
  public:
@@ -54,15 +52,15 @@ private:
       debugging::debug("AUCT",0) << "Deleting auction. \n";
     }
     
-  Auction (Model& m, FeatureSource const& featureSrc, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
+  Auction (Model& m, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
     : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
-      mModelFeatures(), mRejectedFeatures(), mFeatureSource(featureSrc), mProgressStream(progressStream) {  } 
+      mModelFeatures(), mRejectedFeatures(), mProgressStream(progressStream) {  } 
   
   double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
-  int                    number_of_experts ()       const { return mExperts.size(); }
-  int                    add_expert(Expert e)             { mExperts.push_back(e); return mExperts.size(); }
+  int                    number_of_experts ()       const { return (int) mExperts.size(); }
+  int                    add_expert(Expert e)             { mExperts.push_back(e); return (int)mExperts.size(); }
   double                 total_expert_alpha ()      const;
   double                 recovered_alpha()          const { return mRecoveredAlpha; }
   bool                   is_terminating()           const { return mTerminating; }

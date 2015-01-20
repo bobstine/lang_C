@@ -8,7 +8,7 @@ include ../c_flags
 
 PROJECT_NAME = boost
 
-OPT = -O2 -std=c++0x     # -DNDEBUG  this option kills benefit of assert
+OPT = -O2     # -DNDEBUG  this option kills benefit of assert
 
 USES = utils 
 
@@ -69,10 +69,10 @@ parse_diabetes: csv_parser
 	rm diab.out/*; ./csv_parser -f ~foster/diab_smaller.csv -d diab.out
 #	rm diab.out/*; ./csv_parser -f diabetes_test.csv -d diab.out
 
-test_parser_data: csv_parser.o test-data.csv
-	$(GCC) $< $(LDLIBS) -o $@
-	./csv_parser -o model.dat -f test-data.csv
-
+test_parser_data: csv_parser test-data.csv
+	mkdir -p data_dir
+	./csv_parser -f test-data.csv -d data_dir
+#	./csv_parser -o model.dat -f test-data.csv # combined file
 
 ###########################################################################
 

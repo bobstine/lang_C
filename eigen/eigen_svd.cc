@@ -13,7 +13,7 @@ Eigen::MatrixXd
 PCA::operator()(Eigen::MatrixXd const& data) const
 {
   // m controls the number of random projections: at least 5 or number requested
-  int m (floor(sqrt(data.cols())));
+  int m ((int)floor(sqrt((double)data.cols())));
   m = (m > mNumComponents) ? m : mNumComponents;  
   m = (m > 5) ? m : 5;
   // std::cout << "TESTING: Given " << mNumComponents << " requested, returning " << m << std::endl;
@@ -67,7 +67,7 @@ float
 Kernel::Radial::operator()(Eigen::VectorXf const& x, Eigen::VectorXf const& y) const
 {
   Eigen::VectorXf diff (x - y);
-  return exp(-0.5 * diff.squaredNorm()/mScale2);
+  return (float)exp(-0.5 * diff.squaredNorm()/mScale2);
 }
 
 

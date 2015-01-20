@@ -1237,7 +1237,6 @@ sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb)
     double vnikx[12]	/* was [4][3] */;
     int  ii, jj;
     double yw1[4], yw2[4];
-    int  ilo;
     double wpt;
 
     /* Parameter adjustments */
@@ -1255,7 +1254,6 @@ sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb)
 		sg2[i] = (double)0.;
 		sg3[i] = (double)0.;
     }
-    ilo = 1;
     i_1 = *nb;
     for (i = 1; i <= i_1; ++i) {
 		i_2 = *nb + 1;
@@ -1570,11 +1568,10 @@ sslvrg_(double *penalt, double *dofoff, double *x, double *y, double *w, int *n,
 	double *hs0, *hs1, *hs2, *hs3, *sg0, *sg1, *sg2, *sg3;
 	
     /* Local variables */
-    double work[16], sumw;
+	double work[16];
     int  i, j;
-    int  icoef, mflag, ileft;
+    int   mflag, ileft;
     double b0, b1, b2, b3, vnikx[4], df, xv;
-    int  ilo;
     double eps, rss;
 
     /* Parameter adjustments */
@@ -1615,7 +1612,6 @@ sslvrg_(double *penalt, double *dofoff, double *x, double *y, double *w, int *n,
     --x;
 
     /* Function Body */
-    ilo = 1;
     eps = 1e-11;
     i_1 = *nk;
     for (i = 1; i <= i_1; ++i)
@@ -1637,7 +1633,6 @@ sslvrg_(double *penalt, double *dofoff, double *x, double *y, double *w, int *n,
     return 0;
 L23010:
     dpbsl_(&abd[abd_offset], ld4, nk, &c__3, &coef[1]);
-    icoef = 1;
     i_1 = *n;
     for (i = 1; i <= i_1; ++i) {
 		xv = x[i];
@@ -1690,7 +1685,6 @@ L23020:
     if (! (*icrit == 1)) goto L23022;
     rss = 0.;
     df = 0.;
-    sumw = 0.;
     i_1 = *n;
     for (i = 1; i <= i_1; ++i) {
 		/* Computing 2nd power */
@@ -1739,7 +1733,6 @@ stxwx_(double *x, double *z, double *w, int *k, double *xknot,
     double work[16];
     int  i, j, mflag, ileft;
     double vnikx[4]	/* was [4][1] */;
-    int  ilo;
     double eps;
 
     /* Parameter adjustments */
@@ -1762,7 +1755,6 @@ stxwx_(double *x, double *z, double *w, int *k, double *xknot,
 		hs2[i] = 0.;
 		hs3[i] = 0.;
     }
-    ilo = 1;
     eps = 1e-10;
     i_1 = *k;
     for (i = 1; i <= i_1; ++i) {

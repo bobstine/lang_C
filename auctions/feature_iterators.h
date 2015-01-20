@@ -47,7 +47,7 @@ public:
   QueueIterator(Collection const& c, SkipPredicate p) : mpQueue(new RefCountedQueue(c)), mSkipPred(p) { }
   QueueIterator(QueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
 
-  int    number_remaining()             const { return mpQueue->mQueue.size(); }
+  int    number_remaining()             const { return (int) mpQueue->mQueue.size(); }
   bool   valid()                        const { return !mpQueue->mQueue.empty(); }
   
   QueueIterator&   operator++()               { assert(valid()); mpQueue->mQueue.pop();
@@ -113,7 +113,7 @@ class CyclicIterator
   
 public:
   CyclicIterator(Collection const& source, SkipPredicate pred)
-    : mSource(source), mIter(source.begin()), mSize(source.size()), mSkipFeature(pred) { }
+    : mSource(source), mIter(source.begin()), mSize((int)source.size()), mSkipFeature(pred) { }
   
   int   number_remaining()              const { return mSize; }             // number not used in model
   bool  valid()                         const { return !mSource.empty() && (mSize > 0); }
@@ -237,7 +237,7 @@ public:
   
   InteractionIterator(Collection const& src, bool useSquares, SkipPred pred)
     : mSource(src), mIncludeDiagonal(useSquares), mSkipPred(pred),
-      mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count(src.size())) { initialize(); }
+    mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count((int)src.size())) { initialize(); }
   
   int   number_remaining()           const { return mRemain; }
   bool  valid ()                     const { return mRemain > 0; }

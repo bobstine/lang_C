@@ -70,28 +70,35 @@
 
 \subsection*{Parsing a csv file}
 
- The first line of the input csv file holds the names of the variables and any
+ The first line of the input CSV file holds the names of the variables and any
  descriptive information, basically the sort of named columns used by JMP or R.
   Names can consist of characters, numbers, spaces and the characters:
- \begin{verbatim} ., _, [, ], / \end{verbatim}
+  \begin{verbatim} 
+     .  _  [  ]  /  
+  \end{verbatim}
  Others might ought to be added the in later parsing of variables.  If the same
  name is used for two (or more columns), the second occurance will have ``\_2''
- appended, then ``\_3'', and so forth for others.
+ appended, then ``\_3'', and so forth.
 
- The first input column is used to identify an indicator for cross-validation.
+ The first column in the CSV file identifies an indicator for cross-validation.
   If the first input column is a list of the labels ``in'' and ``out'', then
  this variable will be flagged as indicating which cases to use in the model,
  and which to reserve for validation.  Rather than generate 2 indicators (one
- for every symbol as done for explantory categorical variables), it will only
- generate 1.  These boolean variables will be placed first in the file sent to
- the auction for modeling with a flag to be used for validation rather than as a
- response or explanatory variable.  In the auction, only those cases marked "in"
- will be used for estimation.  All cases will be predicted.
+ for every symbol as done for explantory categorical variables), this step will
+ only generate 1.  This indicator will be placed in a file called {\tt
+ context.dat} to be distinguished from the response and from the explanatory
+ variables.  In the auction, only those cases marked "in" will be used for
+ estimation.  All cases will be predicted.
 
- In addition to supplying names, this first line also assigns attributes to
- variables.  This is done by listing name=value pairs of attributes within
- curly brackets and separated by semi-colons.  No spaces are allowed within the
- attributes.  Currently used attributes defined by the software are
+ In addition to supplying names, the first line of the CSV file also assigns
+ attributes to variables.  This is done by listing name=value pairs of
+ attributes within curly brackets and separated by semi-colons.  No spaces are
+ allowed within the attributes.  For example, the first line of the file might
+ look like this:
+ \begin{verbatim}
+   Variable_x {role=x;stream=eigen1;type=real}
+ \end{verbatim}
+ Currently used attributes defined by the software are
 
  \begin{tabular}{cl}
    role   &  One of ``x'', ``y'' or ``context'' (defaults to x).     \cr
@@ -104,39 +111,38 @@
  use the bracketed option {stream=main} for every variable in the file.
  As an example, an input csv file with 3 variables might begin as follows
  \begin{verbatim}
-      Var1, a/b, Var.3{stream=sub;priority=2;knots=4}
-       1, 2, 3
-       3, 4, 5
-       a,  , 5
+      cv, Y, Var1, a/b, Var.3{stream=sub;priority=2;knots=4}
+       out, 2, 1, 2, 3
+       in, 6, 3, 4, 5
+       in, 3, a,  , 5
  \end{verbatim}
  The presence of a non-numerical symbol (in the example, the 'a' in the 3rd row)
  in the data for Var1 converts Var1 into a categorical variable. Every unique
  value found in this column will cause the software to generate an indicator
  (so, you'll get a lot of these if this was an accident and the column really is
- numerical).
-
- Identify missing data in the csv file by empty fields, as shown on the last
- line of the prior example.  (You don't need to leave a blank space; ``,,''
- would work on the third line of the example just as well.  {\tt csv\_parser}
- automatically builds an indicator for any variable that has missing data and
- fills the missing values with the mean of the observed values.
-
- Known limitations:
+ numerical).  Blanks indicate missing values, as shown on the last line of the
+ prior example.  {\tt csv\_parser} automatically builds an indicator for any
+ variable that has missing data and fills the missing values with the mean of
+ the observed values.  (You don't need to leave a space; ``,,'' would work on
+ the third line of the example just as well).  Known limitations of the CVS
+ parser include these:
  \begin{itemize}
    \item No blanks at the end of the line are allowed!
-   \item  You need a *mix* of in/out for the leading indicator (not all in).
+   \item You {\em must} have a cross-validation indicator, and it must mix
+ ``in'' and ``out'' values (not all in).
  \end{itemize}
-   
+
+
 \subsection*{Output of the csv parsing}
 
- The parsed data are written into a named directory (which is creatded if it
- does not exist).  The key file in this directory is a shell script named {\tt
- index.sh}.  Executing this script produces the streaming style input expected
- by the auction.  You can edit this script to produce test input, shorter data
- series, or limit the number of variables.  Three lines in the script define the
- data for each variable:
+ The parsed data are written into a named directory (which is created if it does
+ not exist).  The key file in this directory is a shell script named {\tt
+ index.sh}.  Executing this script produces streaming input in the format
+ expected by the auction.  You can edit this script to produce test input,
+ shorter data series, or limit the number of variables.  Three lines in the
+ script define the data for each variable:
 \begin{enumerate}
-    \item  name of the variable (square brackets denote an indicator)
+    \item  name of the variable
     \item  attributes for this variable as space delimited strings/numbers
     \item  command that sends the variable to standard output (usually {\tt
            echo}.
@@ -145,12 +151,12 @@
  a category. 
 
  As a last step, it will be convenient to later stream the data into the auction
- by cat'ing a compressed version of the data.  To build this file, make the
- shell script executable ({\tt chmod +x index.sh}) and then run the script with
- output to a file, {\tt .\/index.sh > data}).  Then compress the data using gzip
- into {\tt data.gz}.  When the auction is run below, simply cat the compressed
- data via stdin to the auction.  Several examples in the makefile in auctions
- illustrate how this works.
+ by concatenating a compressed version of the data.  To build the compressed
+ archive, make the shell script executable ({\tt chmod +x index.sh}) and then
+ run the script with output to a file, {\tt .\/index.sh > data}).  Then compress
+ the data using gzip into {\tt data.gz}.  When the auction is run below, simply
+ cat the compressed data via stdin to the auction.  Several examples in the
+ makefile in the {\tt auction} directory illustrate how this works.
 
 
 \subsection{Data processing within the Auction} 

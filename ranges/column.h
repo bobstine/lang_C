@@ -114,9 +114,11 @@ class Column
   { mData->mName = name;
     mData->mRole = extract_role_from_string(description);
     mData->mDescription = description;
-    double *x (mData->mBegin);  
+    double *x (mData->mBegin);
+    int result = 0;
     while(n--)
-      fscanf(fp, "%lf", x++);
+      result = fscanf(fp, "%lf", x++);
+    if (result != 1) std::cerr << "CLMN: *** ERROR *** Could not read sought column element.\n";
     mData->init_properties();
   }
 
@@ -288,7 +290,7 @@ class IntegerColumnData
   
   ~IntegerColumnData()   { delete[] mBegin; }
 
- IntegerColumnData(size_t n, std::string name = " ")  : mName(name), mSize(n), mBegin(new int[n]), mEnd(mBegin+n), mRefCount(1) { assert(mBegin != NULL); }
+ IntegerColumnData(size_t n, std::string name = " ")  : mName(name), mSize((int)n), mBegin(new int[n]), mEnd(mBegin+n), mRefCount(1) { assert(mBegin != NULL); }
   
  public:
   std::string     name()     const { return mName; }
