@@ -161,9 +161,9 @@ diabetes: auction.test
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
 
-jason_dat: ../boost/csv_parser data/jason_97.csv
+jason_dat: csv_parser data/jason_97.csv
 	rm -rf data/jason.tar; mkdir data/jason.tar
-	../boost/csv_parser -f data/jason_97.csv -d data/jason.tar
+	./csv_parser -f data/jason_97.csv -d data/jason.tar
 	cd data/jason.tar; chmod +x index.sh; ./index.sh > jason.dat
 
 jason_test: auction.test data/jason.tar/index.sh

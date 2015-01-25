@@ -56,9 +56,6 @@
 #include <getopt.h>
 #include <time.h> 
 #include <assert.h>
-   
-
-
 
 void
 parse_arguments(int argc, char** argv,

@@ -69,11 +69,13 @@ random_indicator: random_indicator.o
 	$(GCC) random_indicator.o $(LDLIBS) -o $@
 
 doit: random_indicator
-	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s1772
-	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s345
-	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s5634
-	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s2639
-	/Users/bob/C/tools/random_indicator -p8 -n63 -c8 -b1 -s4675
+	./random_indicator --header -n 10 -c 5 
+	./random_indicator --header -n 10 -c 5 -s 353
+	./random_indicator -p8 -n63 -c8 -b1 -s1772
+	./random_indicator -p8 -n63 -c8 -b1 -s345
+	./random_indicator -p8 -n63 -c8 -b1 -s5634
+	./random_indicator -p8 -n63 -c8 -b1 -s2639
+	./random_indicator -p8 -n63 -c8 -b1 -s4675
 
 
 # -------------------------------------------------------------------
