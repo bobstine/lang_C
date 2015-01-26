@@ -107,21 +107,24 @@ class CyclicIterator
   typedef typename Collection::const_iterator Iterator;
 
   Collection const& mSource;         // someone else maintains
+  SkipPredicate     mSkipFeature;
   Iterator          mIter;
   int               mSize;
-  SkipPredicate     mSkipFeature;
   
 public:
   CyclicIterator(Collection const& source, SkipPredicate pred)
-    : mSource(source), mIter(source.begin()), mSize((int)source.size()), mSkipFeature(pred) { }
+    : mSource(source), mSkipFeature(pred), mIter(source.begin()), mSize((int)source.size()) { initialize(); }
   
-  int   number_remaining()              const { return mSize; }             // number not used in model
+  int   number_remaining()              const { return mSize; }
   bool  valid()                         const { return !mSource.empty() && (mSize > 0); }
 
   CyclicIterator& operator++();
   Feature         operator*()           const { return *mIter; }
 
   void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (valid()) os << *mIter << " ";  else os << " empty "; }
+
+ private:
+  void initialize();
 };
 
 template <class Collection, class Pred>

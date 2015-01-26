@@ -98,11 +98,11 @@ main()
   FeatureVector empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  const int numFeatures (20);
+  const int numFeatures (3);
   for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
-    featureVec2.push_back(Feature(columns[i+numFeatures]));
+    // featureVec2.push_back(Feature(columns[i+numFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
   std::cout << "  -------------------------------------------------------\n\n";
@@ -112,12 +112,14 @@ main()
   if (true)         // test cyclic streams
   { 
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
-    FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
-    drain_features(fs, 30);
+    features[0] -> set_model_results(true, 0.05);
+    std::cout << "TEST: status of first feature is " << features[0] << std::endl;
+    FeatureStream< CyclicIterator<FeatureVector, SkipIfInModel>, Identity> fs (make_finite_stream ("test", features, SkipIfInModel()));
+    drain_features(fs, 10);
   }
 
   
-  if (true)         // test dynamic stream
+  if (false)         // test dynamic stream
   {
     std::cout << "\n\nTEST: dynamic stream\n";
     FeatureVector fv;

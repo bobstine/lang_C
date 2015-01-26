@@ -192,8 +192,59 @@ main(int argc, char** argv)
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
-  std::vector<FeatureVector> featureStreams;
-  add_source_experts_to_auction(featureSource, nContextCases, totalAlphaToSpend, featureStreams, theAuction);
+  std::vector<FeatureVector> featureVectors;
+  ///  add_source_experts_to_auction(featureSource, nContextCases, totalAlphaToSpend, featureVectors, theAuction);
+
+  std::vector<string> streamNames (featureSource.stream_names());
+  FeatureVector lockedFeatures;
+  for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream
+  { if (*it == "LOCKED")
+    { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
+      streamNames.erase(it);
+      lockedFeatures = featureSource.features_with_attribute("stream", "LOCKED");
+      break;
+    }
+  }
+  debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; " << lockedFeatures.size() << " features are locked." << std::endl;
+  if(lockedFeatures.size()>0) 
+  { theAuction.add_initial_features(lockedFeatures);
+    debug("AUCT",1) << theAuction << std::endl << std::endl;
+  }
+  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
+  //  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
+  //  double   alphaInt       (alphaShare * (hasLockFeatures ? 0.31 : 0.40 ));  //                        interactions of given
+  //  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
+  //  double   alphaCP        (alphaShare * (hasLockFeatures ? 0.29 : 0    ));  //                        cross products
+  {
+    bool     hasLockFeatures(lockedFeatures.size() > 0);
+    double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
+    double   alphaMain      (alphaShare * (hasLockFeatures ? 0.40 : 0.60 ));  // percentage of alpha to features as given
+    assert (featureVectors.size() == 0);
+    if (featureVectors.size() > 0)
+    { std::clog << "MAIN:  *** Warning *** Input feature stream will be emptied.\n";
+      featureVectors.empty();
+    } 
+    for (int s=0; s < (int)streamNames.size(); ++s)
+    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
+      featureVectors.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
+      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
+				   UniversalBoundedBidder<FiniteStream>(), 
+				   make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
+      /*
+      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+				   UniversalBoundedBidder<InteractionStream>(),
+				   make_interaction_stream("within " + streamNames[s],
+							   featureVectors[s], true)                                  // true means to include squared terms
+				   ));
+      if (hasLockFeatures)                                                                                           // cross with locked stream
+	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
+				     UniversalBoundedBidder<CrossProductStream>(),
+				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
+							       featureVectors[s], lockedFeatures) 
+				     ));
+      */
+    }
+  }
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;
@@ -210,6 +261,11 @@ main(int argc, char** argv)
       double time = time_since(start);
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
+      std::cout << "Current features are \n";
+      for (auto f : featureVectors[0])
+      { std::cout << "   " << f;
+	if (f->is_used_in_model()) std::cout << "In Model\n" ; else std::cout << "Not in model\n";
+      }
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds

@@ -7,15 +7,30 @@
 //  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator
 
 template<class Collection, class Pred>
+  void
+  CyclicIterator<Collection, Pred>::initialize()
+{
+  while(mSkipFeature(*mIter))
+  { --mSize;
+    ++mIter;
+    if (mIter == mSource.end())
+    { std::cerr << "FITR: *** ERROR *** Source for cyclic iterator is empty.\n";
+      mIter = mSource.begin();
+    }
+  }
+}
+
+template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
   CyclicIterator<Collection, Pred>::operator++()
 {
+  if (mSkipFeature(*mIter))  // current choice no longer good (ie, was used in model)
+    --mSize;
   ++mIter;
   if(mIter == mSource.end())
     mIter = mSource.begin();
-  while(mSkipFeature(*mIter) && (mSize > 0))
-  { --mSize;
-    ++mIter;
+  while(mSkipFeature(*mIter))
+  { ++mIter;
     if (mIter == mSource.end())
       mIter = mSource.begin();
   }

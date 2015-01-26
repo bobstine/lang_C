@@ -1,3 +1,4 @@
+
 template<class Iterator, class Trans>
   std::string
   FeatureStream<Iterator,Trans>::name()              const
@@ -50,7 +51,6 @@ template<class Iterator, class Trans>
 }
 
 
-
 template<class Iterator, class Trans>
   bool
   FeatureStream<Iterator,Trans>::const_has_feature()       const
@@ -68,11 +68,13 @@ template<class Iterator, class Trans>
 {
   if (is_active())
     return false;
-  else if (is_empty())          // start to make next
+  if (!mIterator.valid())
+    return false;
+  if (is_empty())          // start to make next
   { make_features();
     return false;
   }
-  else return true;
+  return true;
 }
 
 

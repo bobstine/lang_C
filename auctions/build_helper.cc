@@ -70,7 +70,6 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
     { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
       streamNames.erase(it);
       lockedStream =  featureSource.features_with_attribute("stream", "LOCKED");
-      featureStreams.push_back(lockedStream);
       break;
     }
   }
@@ -89,6 +88,11 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
     double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
     double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
     double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
+    assert (featureStreams.size() == 0);
+    if (featureStreams.size() > 0)
+    { std::clog << "MAIN:  *** Warning *** Input feature stream will be emptied.\n";
+      featureStreams.empty();
+    }
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureStreams.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
@@ -107,6 +111,7 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
 							       featureStreams[s], lockedStream )                     
 				     ));
     }
+    if (hasLockStream) featureStreams.push_back(lockedStream);
   }
 }
 
