@@ -220,10 +220,6 @@ main(int argc, char** argv)
     double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
     double   alphaMain      (alphaShare * (hasLockFeatures ? 0.40 : 0.60 ));  // percentage of alpha to features as given
     assert (featureVectors.size() == 0);
-    if (featureVectors.size() > 0)
-    { std::clog << "MAIN:  *** Warning *** Input feature stream will be emptied.\n";
-      featureVectors.empty();
-    } 
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureVectors.push_back( featureSource.features_with_attribute("stream", streamNames[s]));

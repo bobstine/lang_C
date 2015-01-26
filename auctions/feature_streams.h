@@ -114,6 +114,7 @@ template<class Collection, class Pred>
 FeatureStream< CyclicIterator<Collection, Pred>, Identity>
 make_finite_stream (std::string const& name, Collection const& source, Pred pred)
 {
+  std::cout << " +++ makeing finite stream from source of size " << source.size() << std::endl;
   return FeatureStream< CyclicIterator<Collection, Pred>, Identity>
     ("CyclicStream::"+name, CyclicIterator<Collection,Pred>(source, pred), Identity());
 }

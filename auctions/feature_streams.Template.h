@@ -22,8 +22,6 @@ template<class Iterator, class Trans>
   os <<  mName << " @ " << feature_name() << " [" << number_remaining() << " left]";
 }
 
-
-
 template<class Iterator, class Trans>
   int
   FeatureStream<Iterator, Trans>::number_remaining()          const
