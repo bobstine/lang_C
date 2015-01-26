@@ -24,15 +24,18 @@ template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
   CyclicIterator<Collection, Pred>::operator++()
 {
-  if (mSkipFeature(*mIter))  // current choice no longer good (ie, was used in model)
-    --mSize;
-  ++mIter;
-  if(mIter == mSource.end())
-    mIter = mSource.begin();
-  while(mSkipFeature(*mIter))
+  mSize = (int)mSource.size() - std::count_if(mSource.begin(), mSource.end(), mSkipFeature);
+  if (mSize == 0)
+    std::cerr << "FITR: Warning. Cyclic iterator has no more elements to increment\n";
+  else
   { ++mIter;
-    if (mIter == mSource.end())
+    if(mIter == mSource.end())
       mIter = mSource.begin();
+    while(mSkipFeature(*mIter))
+    { ++mIter;
+      if (mIter == mSource.end())
+	mIter = mSource.begin();
+    }
   }
   return *this;
 }

@@ -262,6 +262,8 @@ main(int argc, char** argv)
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      for(auto fv : featureVectors)
+	std::cout << "Current features \n" << fv << std::endl;
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
 	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;

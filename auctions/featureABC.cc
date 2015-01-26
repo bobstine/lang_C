@@ -125,7 +125,7 @@ FeatureABC::write_to (std::ostream& os)     const
   if (!mAttributes.empty())
     for (Attributes::const_iterator pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
       os << " [" << pA->first << " (" << pA->second << ")] ";
-  os << "  tried=" << mTried << "  inModel=" << mInModel << "  bid=" << mEntryBid << std::endl;
+  os << "  tried=" << mTried << "  inModel=" << mInModel << "  bid=" << mEntryBid;
 }
 
 
