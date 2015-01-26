@@ -87,7 +87,8 @@ main()
   debugging::debug_init(std::cout,4);
   
   // build vector of columns from file
-  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
+  //  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
+  const std::string columnFileName ("/home/bob/C/text/prep_error/auction_data/in_to/X");
   std::vector<Column> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
@@ -97,7 +98,7 @@ main()
   FeatureVector empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  const int numFeatures (100);
+  const int numFeatures (20);
   for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
@@ -108,7 +109,7 @@ main()
 
 
 
-  if (false)         // test cyclic streams
+  if (true)         // test cyclic streams
   { 
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
     FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity> fs (make_finite_stream ("test", features, SkipNone()));
@@ -116,7 +117,7 @@ main()
   }
 
   
-  if (false)         // test dynamic stream
+  if (true)         // test dynamic stream
   {
     std::cout << "\n\nTEST: dynamic stream\n";
     FeatureVector fv;

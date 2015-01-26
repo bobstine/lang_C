@@ -57,14 +57,12 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bo
 //     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     
 
 void
-add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixCases, int nContextCases, double wealth, Auction<ValidatedRegression> &auction)
+add_source_experts_to_auction (FeatureSource const& featureSource, int nContextCases, double wealth,
+			       std::vector<FeatureVector> &featureStreams, Auction<ValidatedRegression> &auction)
 {
   using std::string;
   using debugging::debug;
   
-  FeatureSource featureSource (xColumns, nPrefixCases);
-  featureSource.print_summary(debug("MAIN",1));
-
   std::vector<string> streamNames (featureSource.stream_names());
   FeatureVector lockedStream;
   for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream
@@ -72,6 +70,7 @@ add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixC
     { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
       streamNames.erase(it);
       lockedStream =  featureSource.features_with_attribute("stream", "LOCKED");
+      featureStreams.push_back(lockedStream);
       break;
     }
   }
@@ -84,7 +83,6 @@ add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixC
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
-  std::vector<FeatureVector> featureStreams(streamNames.size());
   {
     bool     hasLockStream (lockedStream.size() > 0);
     double   alphaShare    (wealth/(double)streamNames.size());
@@ -93,7 +91,7 @@ add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixC
     double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
-      featureStreams[s] = featureSource.features_with_attribute("stream", streamNames[s]);
+      featureStreams.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
       auction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
@@ -111,6 +109,51 @@ add_source_experts_to_auction (std::vector<Column> const& xColumns, int nPrefixC
     }
   }
 }
+
+
+
+  /*
+  typedef FeatureStream< DynamicIterator     <FeatureVector, SkipIfDerived    >, BuildPolynomialFeatures >    PolynomialStream;
+  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<PCA> >          PCAStream;
+  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
+  typedef FeatureStream< ModelIterator       <ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >     CalibrationStream;
+  
+  // scavenger experts
+
+  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
+			       UniversalBidder<CrossProductStream>(),
+			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
+
+  
+  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
+			       UniversalBidder< PolynomialStream >(),
+			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
+			       ));
+  
+  //  Calibration expert
+  if(calibration > 0)
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
+				 FitBidder(0.000005, calibrationSignature),                  
+				 make_calibration_stream("fitted_values", theRegr, calibration, calibrationSignature,
+							 nContextCases, yIsBinary)));
+
+  //   Principle component type features
+  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
+			       UniversalBidder<PCAStream>(),
+			       make_subspace_stream("PCA", 
+						    theAuction.rejected_features(),
+						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
+						    30))) ;                                                          // bundle size
+
+  //   RKHS stream
+  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
+			       UniversalBidder<RKHSStream>(),
+			       make_subspace_stream("RKHS", 
+						    theAuction.rejected_features(),
+						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
+						    30)));
+  */
+
 
 //     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     
 double

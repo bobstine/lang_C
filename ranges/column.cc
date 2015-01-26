@@ -267,7 +267,7 @@ FileColumnStream::read_next_column_from_file()
     if (read_name_and_desc_after_skip(mCurrentName, maxColumnNameLength,
 				      mCurrentDesc, maxColumnDescLength, mFile)) // don't gobble trailing /n; leave for next read
     { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
-      debug("CLMN",3) << "Current column from file has name `" << mCurrentName << "' with size " << mCurrentColumn->size() << std::endl;
+      debug("CLMN",4) << "Current column from file has name `" << mCurrentName << "' with size " << mCurrentColumn->size() << std::endl;
       return true;
     }
     else

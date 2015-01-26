@@ -156,7 +156,7 @@ main(int argc, char** argv)
   */
 
   // Read response and associated control variables; read returns <n,k>
-  
+    
   typedef std::vector<Column> ColumnVector;
   ColumnVector yColumns, xColumns, cColumns;
   { std::pair<int,int> dim;
@@ -190,49 +190,10 @@ main(int argc, char** argv)
   // add experts to auction
   
   debug("AUCT",3) << "Assembling experts"  << std::endl;
-  add_source_experts_to_auction(xColumns, nPrefixCases, nContextCases, totalAlphaToSpend, theAuction);
-
-  /*
-  typedef FeatureStream< DynamicIterator     <FeatureVector, SkipIfDerived    >, BuildPolynomialFeatures >    PolynomialStream;
-  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<PCA> >          PCAStream;
-  typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<RKHS<Kernel::Radial> > > RKHSStream;
-  typedef FeatureStream< ModelIterator       <ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >     CalibrationStream;
-  
-  // scavenger experts
-
-  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
-			       UniversalBidder<CrossProductStream>(),
-			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
-
-  
-  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
-			       UniversalBidder< PolynomialStream >(),
-			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
-			       ));
-  
-  //  Calibration expert
-  if(calibration > 0)
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
-				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibration, calibrationSignature,
-							 nContextCases, yIsBinary)));
-
-  //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
-			       UniversalBidder<PCAStream>(),
-			       make_subspace_stream("PCA", 
-						    theAuction.rejected_features(),
-						    EigenAdapter<PCA>(PCA(0, true), "PCA", nContextCases),           // # components, standardize? (0 means sing values)
-						    30))) ;                                                          // bundle size
-
-  //   RKHS stream
-  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
-			       UniversalBidder<RKHSStream>(),
-			       make_subspace_stream("RKHS", 
-						    theAuction.rejected_features(),
-						    EigenAdapter<RKHS<Kernel::Radial> >(RKHS<Kernel::Radial>(0, true), "RKHS", nContextCases),
-						    30)));
-  */
+  FeatureSource featureSource (xColumns, nPrefixCases);
+  featureSource.print_summary(debug("MAIN",1));
+  std::vector<FeatureVector> featureStreams;
+  add_source_experts_to_auction(featureSource, nContextCases, totalAlphaToSpend, featureStreams, theAuction);
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;

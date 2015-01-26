@@ -80,7 +80,7 @@ public:
   DynamicIterator(Collection const& source, SkipPredicate pred)
     : mSource(source), mPosition(0), mNeedToCheck(true), mSkipFeature(pred) { advance_position(); }
 
-  int   number_remaining()              const { return mSource.size() - mPosition; }
+  int   number_remaining()              const { return (int)mSource.size() - (int)mPosition; }
   bool  valid()                               { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
 
   DynamicIterator& operator++()               { assert(mPosition < mSource.size()); ++mPosition; advance_position(); return *this;}

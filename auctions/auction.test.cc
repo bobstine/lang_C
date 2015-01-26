@@ -236,7 +236,7 @@ main(int argc, char** argv)
 
   // build model and initialize auction with csv stream for tracking progress
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], inOut, prefixCases, blockSize, useShrinkage, debug("MAIN",2));
-  Auction<  ValidatedRegression > theAuction(theRegr, featureSrc, calibrationGap, calibrationSignature, blockSize, progressStream);
+  Auction<  ValidatedRegression > theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   // create the experts that control bidding in the auction
   debug("AUCT",3) << "Assembling experts"  << std::endl;
@@ -291,7 +291,7 @@ main(int argc, char** argv)
   // allocate alpha for main, interaction and cross-product with locked input source streams
   std::vector< FeatureVector> featureStreams(streamNames.size());
   { bool     hasLockStream (lockedStream.size() > 0);
-    double   alphaShare    (totalAlphaToSpend/streamNames.size());
+    double   alphaShare    (totalAlphaToSpend/(double)streamNames.size());
     double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
     double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
     double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
