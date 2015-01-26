@@ -119,9 +119,11 @@ main()
       // std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
 
       dim = insert_columns_from_file("/home/bob/C/text/prep_error/auction_data/in_to/Y",  std::back_inserter(yColumns));
-      std::cout << "TEST: Read file with dim = " << dim.first << "x" << dim.second << std::endl;
+      std::cout << "TEST: Read Y file with dim = " << dim.first << "x" << dim.second << std::endl;
       int nRows (yColumns[0]->size());
       std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
+      dim = insert_columns_from_file("/home/bob/C/text/prep_error/auction_data/in_to/X",  std::back_inserter(yColumns));
+      std::cout << "TEST: Read X file with dim = " << dim.first << "x" << dim.second << std::endl;
     }
       
       

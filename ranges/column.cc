@@ -12,6 +12,8 @@
 #include <sstream>
 
 
+using debugging::debug;
+
 //   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column   Column
 
 
@@ -94,7 +96,7 @@ ColumnStream::initialize()
   getline(mStream, line);
   std::istringstream ss(line);
   ss >> mN;
-  debugging::debug("CLMN",4) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
+  debug("CLMN",4) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
 }
 
 bool
@@ -107,7 +109,7 @@ ColumnStream::read_next_column()
     mCurrentName = read_utils::remove_special_chars(mCurrentName, "*^");     // no special chars
   }
   if (mCurrentName.empty())
-  { debugging::debug("CLMN",4) << "Stream '" << mStreamName << "' now empty.\n";
+  { debug("CLMN",4) << "Stream '" << mStreamName << "' now empty.\n";
     mCurrentColumn = Column();
     return false;
   }
@@ -130,7 +132,7 @@ insert_columns_from_stream (std::istream& is,
     ++colStream;
     col = *colStream;
   }
-  debugging::debug("CLMN",3) << "Inserted " << k << " columns from input stream, each of length " << n << std::endl;
+  debug("CLMN",3) << "Inserted " << k << " columns from input stream, each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -143,12 +145,12 @@ insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap)
   while(true) 
   { Column col = *colStream;
     if(col->size() == 0) break;
-    debugging::debug("CLMN",3) << "Reading column " << col->name() << " with description " << col->description()
+    debug("CLMN",3) << "Reading column " << col->name() << " with description " << col->description()
 			       << "  [0]=" << *(col->begin()) << "  [n]=" << *(col->end()-1) << std::endl;
     ++colStream;
     std::string role (col->role());
     if (role.empty())
-    { debugging::debug("CLMN",4) << "Column '" << col->name() << "' lacks a role for the analysis; role x assigned.\n";
+    { debug("CLMN",4) << "Column '" << col->name() << "' lacks a role for the analysis; role x assigned.\n";
       role = "x";
     }
     NamedColumnInsertMap::iterator it (insertMap.find(role));
@@ -158,9 +160,9 @@ insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap)
       ++(it->second);
     }
     else
-      debugging::debug("CLMN",-1) << "Inserter for column '" << col->name() << "' with role '" << role << "' not found; not inserted.\n";
+      debug("CLMN",-1) << "Inserter for column '" << col->name() << "' with role '" << role << "' not found; not inserted.\n";
   }
-  debugging::debug("CLMN",2) << "Inserted " << k << " columns, each of length " << n << std::endl;
+  debug("CLMN",2) << "Inserted " << k << " columns, each of length " << n << std::endl;
 }
 
 
@@ -176,7 +178,7 @@ FileColumnStream::open_file()
     mN = 0;
     int count = fscanf (mFile, "%d", &mN);
     if ( (count==1) && (mN > 0) )
-    { debugging::debug("CLMN",3) << "File " << mFileName << " opened; n = " << mN << std::endl;
+    { debug("CLMN",3) << "File " << mFileName << " opened; n = " << mN << std::endl;
       return true;
     }
     else
@@ -265,12 +267,12 @@ FileColumnStream::read_next_column_from_file()
     if (read_name_and_desc_after_skip(mCurrentName, maxColumnNameLength,
 				      mCurrentDesc, maxColumnDescLength, mFile)) // don't gobble trailing /n; leave for next read
     { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
-      std::clog << "CLMN: Current column from file has name `" << mCurrentName << "' with size " << mCurrentColumn->size() << std::endl;
+      debug("CLMN",3) << "Current column from file has name `" << mCurrentName << "' with size " << mCurrentColumn->size() << std::endl;
       return true;
     }
     else
     { mCurrentColumn = Column();
-      std::clog << "CLMN: Current column from file is empty with size " << mCurrentColumn->size() << std::endl;
+      debug("CLMN",3) << "Current column from file is empty with size " << mCurrentColumn->size() << std::endl;
       return false;
     }
   }
@@ -294,7 +296,7 @@ insert_columns_from_file (std::string const& fileName,
   if ((0 == n) || (0 == k))
     std::cerr << "CLMN: *** ERROR *** Read " << n << " cases and " << k << " columns from file " << fileName << std::endl;
   else
-    debugging::debug("CLMN",1) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+    debug("CLMN",1) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -316,7 +318,7 @@ insert_columns_from_file (std::string const& fileName, int ny,
     ++colStream;
     col = *colStream;
   }
-  debugging::debug("CLMN",4) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+  debug("CLMN",4) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 
@@ -330,7 +332,7 @@ insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
   { std::cerr << "COLM: Could not open name file to create columns; open of " << nameFileName << " failed.\n";
     return 0;
   }
-  debugging::debug("CLMN", 3) << "Making columns from stream data with " << nRows << " rows.\n";
+  debug("CLMN", 3) << "Making columns from stream data with " << nRows << " rows.\n";
   std::vector<std::string> names;
   std::vector<double*> xPtrs;
   char name[maxColumnNameLength];

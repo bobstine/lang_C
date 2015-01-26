@@ -116,14 +116,12 @@ class Column
     mData->mDescription = description;
     double *x (mData->mBegin);
     int result = 0;
-    std::clog << "*** Defining column with n=" << n << std::endl;
     while(n--)
       result = fscanf(fp, "%lf", x++);
     if (result != 1)
     { std::cerr << "CLMN: *** ERROR *** Could not read sought column element with n=" << n << std::endl;
       std::cerr << "                    Last values read are " << *(x-2) << ", " << *(x-1) << ", " << (*x) << std::endl;
     }
-    std::clog << "*** Init column " << std::endl;
     mData->init_properties();
   }
 
