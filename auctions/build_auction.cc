@@ -261,11 +261,6 @@ main(int argc, char** argv)
       double time = time_since(start);
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
-      std::cout << "Current features are \n";
-      for (auto f : featureVectors[0])
-      { std::cout << "   " << f;
-	if (f->is_used_in_model()) std::cout << "In Model\n" ; else std::cout << "Not in model\n";
-      }
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
