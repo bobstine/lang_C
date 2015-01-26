@@ -206,14 +206,18 @@ namespace {
     // read a string name, and position at start of next line (removes blanks)
     register char *cs;
     cs = s;
-    while (--max > 0 && (c = getc(iop)) != EOF)
+    while ((--max > 0) && ((c = getc(iop)) != EOF))
     {
       if (c == ' ')         // put _ in place of blank
-	*cs++ = '_';
-      else if ((*cs++ = (char) c) == '\n')
-	break;
+      { *cs++ = '_';
+      }
+      else
+      { *cs = (char) c;
+	if (*cs == '\n') break;
+	++cs;
+      }
     }
-    --cs; *cs='\0';         // mark the end of the string
+    *cs='\0';         // mark the end of the string
     // read description line
     while (--dMax > 0 && (c = getc(iop)) != EOF)
     {
@@ -261,10 +265,12 @@ FileColumnStream::read_next_column_from_file()
     if (read_name_and_desc_after_skip(mCurrentName, maxColumnNameLength,
 				      mCurrentDesc, maxColumnDescLength, mFile)) // don't gobble trailing /n; leave for next read
     { mCurrentColumn = Column(mCurrentName, mCurrentDesc, mN, mFile);
+      std::clog << "CLMN: Current column from file has name `" << mCurrentName << "' with size " << mCurrentColumn->size() << std::endl;
       return true;
     }
     else
     { mCurrentColumn = Column();
+      std::clog << "CLMN: Current column from file is empty with size " << mCurrentColumn->size() << std::endl;
       return false;
     }
   }
@@ -288,7 +294,7 @@ insert_columns_from_file (std::string const& fileName,
   if ((0 == n) || (0 == k))
     std::cerr << "CLMN: *** ERROR *** Read " << n << " cases and " << k << " columns from file " << fileName << std::endl;
   else
-    debugging::debug("CLMN",4) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
+    debugging::debug("CLMN",1) << "Inserted " << k << " columns from " << fileName << ", each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
 

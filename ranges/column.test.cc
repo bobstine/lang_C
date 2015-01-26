@@ -13,6 +13,7 @@ main()
 {
   debugging::debug_init(std::clog, -1);
   
+  if (false)
   {
     std::cout << "\n\nTEST: dynamic columns \n";
 
@@ -53,6 +54,7 @@ main()
   {     // read the columns one at a time via the iterator interface    
     std::cout << "\n\nTEST: File portion of test.\n";
     
+    if (false)
     {
       std::cout << "\n\nTEST: Read from file into a column vector manually.\n";
 
@@ -77,6 +79,7 @@ main()
     }
 
 
+    if (false)
     {
       std::cout << "\n\nTEST: Read from file into a single column vector using back_inserter.\n";
 
@@ -87,6 +90,7 @@ main()
       std::cout << "TEST: column vector has " << columnVector.size() << " columns.\n";
     }
 
+    if (false)
     {
       std::cout << "\n\nTEST: Read from file into labeled back-insert iterators.\n";
 
@@ -103,25 +107,26 @@ main()
     
     
     // or just read them all into a vector
-
-
-    std::cout << "\n\nTEST: Second portion of file test.  Inserting from file.\n";
     
-    std::pair<int,int> dim;
-    std::vector<Column> yColumns;
-    std::vector<Column> xColumns;
-
-
-    dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, std::back_inserter(yColumns), std::back_inserter(xColumns));
+    {
+      std::cout << "\n\nTEST: Second portion of file test.  Inserting from file.\n";
     
-    std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
-    int nRows (yColumns[0]->size());
-    std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
+      std::pair<int,int> dim;
+      std::vector<Column> yColumns;
+      std::vector<Column> xColumns;
+      
+      // dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, std::back_inserter(yColumns), std::back_inserter(xColumns));
+      // std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
 
-
-    
-    // or read them from a name file and a data file of rows.
-    // These two are made by Dean's c4.5 syntax program test. (NEED to add number of rows.)
+      dim = insert_columns_from_file("/home/bob/C/text/prep_error/auction_data/in_to/Y",  std::back_inserter(yColumns));
+      std::cout << "TEST: Read file with dim = " << dim.first << "x" << dim.second << std::endl;
+      int nRows (yColumns[0]->size());
+      std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
+    }
+      
+      
+      // or read them from a name file and a data file of rows.
+      // These two are made by Dean's c4.5 syntax program test. (NEED to add number of rows.)
     // run as cat test/nrows test/c45_test.rows | column.test.exec`
     /*
       if(false)

@@ -56,7 +56,7 @@ Convert::gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows)
 Eigen::MatrixXd
 Convert::features_into_eigen_matrix(std::vector<Feature> const& fv, int skipContextRows)
 {
-  const int k (fv.size());
+  const int k ((int)fv.size());
   const int n (fv[0]->size()-skipContextRows);
   Eigen::MatrixXd mat(n,k);
   
@@ -76,7 +76,7 @@ Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string name
 {
   std::vector<Feature> result;
 
-  int nRows (mat.rows() + addContextRows);
+  int nRows ((int) mat.rows() + addContextRows);
   for (int j=0; j<mat.cols(); ++j)
   { std::ostringstream name;
     name << namePrefix << "[" << j << "]";

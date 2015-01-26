@@ -71,7 +71,7 @@ void
 write_feature_vector_to (std::ostream& os, FeatureVector const& featureVec)
 {
   int max (10);
-  int n   (featureVec.size());
+  int n   ((int)featureVec.size());
   int show = (max < n) ? max : n;
   for (int i = 0; i < show; ++i)
   { featureVec[i]->write_to(os);

@@ -81,9 +81,9 @@ main(int argc, char** argv)
   // Parse command line options
   
   double   totalAlphaToSpend    (0.1);
-  string   responseFileName    ("y.dat");
-  string   contextFileName     ("c.dat");
-  string   xFileName           ("x.dat");
+  string   responseFileName     ("Y");
+  string   contextFileName      ("cv_indicator");
+  string   xFileName            ("x.dat");
   string   outputPath           ("/home/bob/C/auctions/test/log/"); 
   int      protection           (  3);
   bool     useShrinkage       (false);
@@ -111,8 +111,9 @@ main(int argc, char** argv)
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
-  
-  debug("AUCT",0)   << "Echo of arguments...    --y-name=" << responseFileName << " --output-path=" << outputPath << " --debug-level=" << debugLevel
+   
+  debug("AUCT",0)   << "auction --y_file=" << responseFileName << " --c_file=" << contextFileName << " --x_file=" << xFileName
+		    << " --output-path=" << outputPath << " --debug-level=" << debugLevel
 		    << " --protect=" << protection << " --rounds=" << numberRounds << " --output-x=" << numOutputPredictors
 		    << " --alpha=" << totalAlphaToSpend;
   if (useShrinkage)
@@ -160,10 +161,13 @@ main(int argc, char** argv)
   ColumnVector yColumns, xColumns, cColumns;
   { std::pair<int,int> dim;
     dim = insert_columns_from_file (responseFileName, std::back_insert_iterator<ColumnVector>(yColumns));
+    debug("MAIN",1) << " Y file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -1;
     dim = insert_columns_from_file (contextFileName,  std::back_insert_iterator<ColumnVector>(cColumns));
+    debug("MAIN",1) << " Context file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -2;
     dim = insert_columns_from_file (xFileName,        std::back_insert_iterator<ColumnVector>(xColumns));
+    debug("MAIN",1) << " X file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -3;
     debug("MAIN",1) << " Input files produced "
 		    << yColumns.size() << " Ys, "
@@ -315,9 +319,9 @@ parse_arguments(int argc, char** argv,
     {
       int option_index = 0;
       static struct option long_options[] = {
-	  {"y-file",            1, 0, 'Y'},  // has arg,
-	  {"c-file",            1, 0, 'C'},  // has arg,
-	  {"x-file",            1, 0, 'X'},  // has arg,
+	  {"y_file",            1, 0, 'Y'},  // has arg,
+	  {"c_file",            1, 0, 'C'},  // has arg,
+	  {"x_file",            1, 0, 'X'},  // has arg,
 	  {"alpha",             1, 0, 'a'},  // has arg,
 	  {"calibration",       1, 0, 'c'},  // has arg,
 	  {"debug-level",       1, 0, 'd'},  // has arg,

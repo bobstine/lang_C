@@ -19,9 +19,9 @@
 
 void
 parse_arguments(int argc, char** argv,
-		bool   &header,           // add lines with name, attributes
+		bool   &header,           // add lines with length, name, attributes
 		int    &prefix,           // number of prefix 1 blocks
-		int    &n,                // number random items
+		int    &n,                // number random items (reads from std in if not set)
 		double &pc,               // proportion to use (if <= 1, or count to use if > 1)
 		int    &blockSize,        // blocking factor, such as number of counties
 		int    &seed);              
@@ -37,12 +37,13 @@ int main(int argc, char ** argv)
   int seed         = 2741;
 
   parse_arguments(argc, argv, headerLines,  prefixCases, n, choose, blockSize,seed);
+  if (n == 0) std::cin >> n;
   std::clog << "random_indicator --prefix=" << prefixCases << " -n" << n << " -c" << choose
 	    << " --blocksize=" << blockSize << " --seed=" << seed;
   if (headerLines) std::clog << " --header";
   std::clog << std::endl;
 
-  if (headerLines) std::cout << "CV\ncv indicator\n";
+  if (headerLines) std::cout << n << "\nCV\nrole cv\n";
   srand48(seed);
   for (int i=0; i<prefixCases; ++i)
     for (int j=0; j<blockSize; ++j)
