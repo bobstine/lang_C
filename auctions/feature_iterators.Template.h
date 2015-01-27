@@ -25,7 +25,7 @@ template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>::operator++()
 {
   int size = (int) mSource.size();
-  int count = std::count_if(mSource.begin(), mSource.end(), mSkipFeature);
+  int count = (int) std::count_if(mSource.begin(), mSource.end(), mSkipFeature);
   mSize = size - count;
   if (mSize == 0)
     std::cerr << "FITR: Warning. Cyclic iterator has no more elements to increment\n";

@@ -220,13 +220,21 @@ main(int argc, char** argv)
     double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
     double   alphaMain      (alphaShare * (hasLockFeatures ? 0.40 : 0.60 ));  // percentage of alpha to features as given
     assert (featureVectors.size() == 0);
-    for (int s=0; s < (int)streamNames.size(); ++s)
+    FeatureVector FV1 = featureSource.features_with_attribute("stream", "BGL");
+    theAuction.add_expert(Expert("Strm[BGL]", source, nContextCases, alphaMain,
+				 UniversalBoundedBidder<FiniteStream>(), 
+				 make_finite_stream("BGL", FV1, SkipIfInModel())));
+    FeatureVector FV2 = featureSource.features_with_attribute("stream", "BGR");
+    theAuction.add_expert(Expert("Strm[BGR]", source, nContextCases, alphaMain,
+				 UniversalBoundedBidder<FiniteStream>(), 
+				 make_finite_stream("BGR", FV2, SkipIfInModel())));
+    /*    for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureVectors.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
-      /*
+
       theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("within " + streamNames[s],
@@ -238,8 +246,8 @@ main(int argc, char** argv)
 				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureVectors[s], lockedFeatures) 
 				     ));
-      */
-    }
+       }
+    */
   }
   
   // ----------------------   run the auction with output to file  ---------------------------------
