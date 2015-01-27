@@ -114,7 +114,7 @@ main(int argc, char** argv)
 #endif 
   {
     string msg  = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
-      + " --output-path=" + outputPath + " --debug-level=" + debugLevel
+      + " --output-path=" + outputPath + " --debug-level=" + std::to_string(debugLevel)
       + " --protect=" + std::to_string(protection) + " --rounds=" + std::to_string(numberRounds) + " --output-x="
       + std::to_string(maxNumOutputPredictors) + " --alpha=" + std::to_string(totalAlphaToSpend);
     if (useShrinkage) msg += " --shrink";

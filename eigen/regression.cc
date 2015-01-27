@@ -536,11 +536,11 @@ void
 LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 {
   // number of columns of predictors
-  int numX = min_int(mK,maxNumXCols);
+  int numX = min_int(mK-1,maxNumXCols);
   // prefix line with var names; intercept is name[0]
   os << "Role\tFit\tResidual\t" << mYName;
   // skip the intercept in column 0
-  for(int j=1; j<numX; ++j)  
+  for(int j=1; j<=numX; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
@@ -551,7 +551,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] ;
     if(numX>0)
     { Vector row (x_row(i));
-      for (int j=1; j<numX; ++j)  // skip intercept
+      for (int j=1; j<=numX; ++j)  // skip intercept
 	os << '\t' << row[j];
     }
     os << std::endl;
@@ -591,6 +591,7 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
   { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
     for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
       os << '\t' << mValidationX(i,j);
+    os << std::endl;
   }
 }
 
