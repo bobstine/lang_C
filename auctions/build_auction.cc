@@ -192,7 +192,7 @@ main(int argc, char** argv)
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
-  std::vector<FeatureVector> featureVectors;
+  //  std::vector<FeatureVector> featureVectors;
   ///  add_source_experts_to_auction(featureSource, nContextCases, totalAlphaToSpend, featureVectors, theAuction);
 
   std::vector<string> streamNames (featureSource.stream_names());
@@ -215,20 +215,23 @@ main(int argc, char** argv)
   //  double   alphaInt       (alphaShare * (hasLockFeatures ? 0.31 : 0.40 ));  //                        interactions of given
   //  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
   //  double   alphaCP        (alphaShare * (hasLockFeatures ? 0.29 : 0    ));  //                        cross products
-  {
+
     bool     hasLockFeatures(lockedFeatures.size() > 0);
     double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
     double   alphaMain      (alphaShare * (hasLockFeatures ? 0.40 : 0.60 ));  // percentage of alpha to features as given
-    assert (featureVectors.size() == 0);
+
     FeatureVector FV1 = featureSource.features_with_attribute("stream", "BGL");
     theAuction.add_expert(Expert("Strm[BGL]", source, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream("BGL", FV1, SkipIfInModel())));
+
     FeatureVector FV2 = featureSource.features_with_attribute("stream", "BGR");
     theAuction.add_expert(Expert("Strm[BGR]", source, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream("BGR", FV2, SkipIfInModel())));
-    /*    for (int s=0; s < (int)streamNames.size(); ++s)
+    
+    /*
+      for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureVectors.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
       theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
@@ -248,7 +251,7 @@ main(int argc, char** argv)
 				     ));
        }
     */
-  }
+
   
   // ----------------------   run the auction with output to file  ---------------------------------
   int round = 0;
@@ -266,8 +269,6 @@ main(int argc, char** argv)
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
-      for(auto fv : featureVectors)
-	std::cout << "Current features \n" << fv << std::endl;
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
 	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
