@@ -27,6 +27,7 @@ public:
 ValidatedRegression
 build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
 
+
 void
 add_source_experts_to_auction (FeatureSource const& src, int contextCases, double wealth,
 			       std::vector<FeatureVector> &featureStreams,

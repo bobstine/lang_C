@@ -159,17 +159,18 @@ main(int argc, char** argv)
     
   typedef std::vector<Column> ColumnVector;
   ColumnVector yColumns, xColumns, cColumns;
-  { std::pair<int,int> dim;
+  {
+    std::pair<int,int> dim;
     dim = insert_columns_from_file (responseFileName, std::back_insert_iterator<ColumnVector>(yColumns));
-    debug("MAIN",1) << " Y file returns dimension " << dim.first << "x" << dim.second << std::endl;
+    debug("MAIN",2) << "Y file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -1;
     dim = insert_columns_from_file (contextFileName,  std::back_insert_iterator<ColumnVector>(cColumns));
-    debug("MAIN",1) << " Context file returns dimension " << dim.first << "x" << dim.second << std::endl;
+    debug("MAIN",2) << "Context file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -2;
     dim = insert_columns_from_file (xFileName,        std::back_insert_iterator<ColumnVector>(xColumns));
-    debug("MAIN",1) << " X file returns dimension " << dim.first << "x" << dim.second << std::endl;
+    debug("MAIN",2) << "X file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -3;
-    debug("MAIN",1) << " Input files produced "
+    debug("MAIN",1) << "Input files produced "
 		    << yColumns.size() << " Ys, "
 		    << xColumns.size() << " Xs, and "
 		    << cColumns.size() << " context columns.\n";
@@ -177,8 +178,7 @@ main(int argc, char** argv)
 
   // Parse binary Y and partition X data into feature streams  (const settings lock out other features)
   
-  bool yIsBinary  (yColumns[0]->is_dummy());
-  if (yIsBinary)
+  if( yColumns[0]->is_dummy() )
     debug("AUCT",1) << "Response " << yColumns[0]->name() << " is binary; truncating calibration estimates." << std::endl;
 
   // build model and initialize auction with csv stream for tracking progress
@@ -189,60 +189,51 @@ main(int argc, char** argv)
   
   // add experts to auction
   
-  debug("AUCT",3) << "Assembling experts"  << std::endl;
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
-  //  std::vector<FeatureVector> featureVectors;
-  ///  add_source_experts_to_auction(featureSource, nContextCases, totalAlphaToSpend, featureVectors, theAuction);
-
   std::vector<string> streamNames (featureSource.stream_names());
-  FeatureVector lockedFeatures;
-  for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream
-  { if (*it == "LOCKED")
-    { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
-      streamNames.erase(it);
-      lockedFeatures = featureSource.features_with_attribute("stream", "LOCKED");
-      break;
+
+  // handle locked features
+  {
+    FeatureVector lockedFeatures;
+    for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream
+    { if (*it == "LOCKED")
+      { debug("MAIN",4) << "Found locked stream; it is not a bidding stream.\n";
+	streamNames.erase(it);
+	lockedFeatures = featureSource.features_with_attribute("stream", "LOCKED");
+	break;
+      }
+    }
+    debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; " << lockedFeatures.size() << " features are locked." << std::endl;
+    if(lockedFeatures.size()>0) 
+    { theAuction.add_initial_features(lockedFeatures);
+      debug("AUCT",1) << theAuction << std::endl << std::endl;
     }
   }
-  debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; " << lockedFeatures.size() << " features are locked." << std::endl;
-  if(lockedFeatures.size()>0) 
-  { theAuction.add_initial_features(lockedFeatures);
-    debug("AUCT",1) << theAuction << std::endl << std::endl;
-  }
+
+  debug("AUCT",3) << "Assembling experts"  << std::endl;
+  double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
+  double   alphaMain      (alphaShare * 0.60);
+  double   alphaInt       (alphaShare * 0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
-  //  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
-  //  double   alphaInt       (alphaShare * (hasLockFeatures ? 0.31 : 0.40 ));  //                        interactions of given
+  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   //  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
   //  double   alphaCP        (alphaShare * (hasLockFeatures ? 0.29 : 0    ));  //                        cross products
 
-    bool     hasLockFeatures(lockedFeatures.size() > 0);
-    double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
-    double   alphaMain      (alphaShare * (hasLockFeatures ? 0.40 : 0.60 ));  // percentage of alpha to features as given
-
-    FeatureVector FV1 = featureSource.features_with_attribute("stream", "BGL");
-    theAuction.add_expert(Expert("Strm[BGL]", source, nContextCases, alphaMain,
+  std::vector<FeatureVector> featureVectors(streamNames.size());   // treat this guy with respect... lots of const refs to its elements
+  
+  for (int s=0; s < (int)streamNames.size(); ++s)
+  { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
+    featureVectors[s] = featureSource.features_with_attribute("stream", streamNames[s]);
+    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream("BGL", FV1, SkipIfInModel())));
-
-    FeatureVector FV2 = featureSource.features_with_attribute("stream", "BGR");
-    theAuction.add_expert(Expert("Strm[BGR]", source, nContextCases, alphaMain,
-				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream("BGR", FV2, SkipIfInModel())));
-    
+				 make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
+    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+				 UniversalBoundedBidder<InteractionStream>(),
+				 make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
+				 ));
+  }
     /*
-      for (int s=0; s < (int)streamNames.size(); ++s)
-    { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
-      featureVectors.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
-      theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
-				   UniversalBoundedBidder<FiniteStream>(), 
-				   make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
-
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
-				   UniversalBoundedBidder<InteractionStream>(),
-				   make_interaction_stream("within " + streamNames[s],
-							   featureVectors[s], true)                                  // true means to include squared terms
-				   ));
       if (hasLockFeatures)                                                                                           // cross with locked stream
 	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
