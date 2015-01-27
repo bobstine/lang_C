@@ -61,7 +61,7 @@ void
 parse_arguments(int argc, char** argv,
 		std::string& yFileName, std::string& cFileName, std::string& xFileName, std::string& outputPath,
 		int    &protection, bool   &shrink, int    &nRounds,
-		double &totalAlpha, int    &gap,    int    &debugLevel, int    &numOutputPredictors);
+		double &totalAlpha, int    &gap,    int    &debugLevel, int    &maxNumOutputPredictors);
 
 
 ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool shrink, std::ostream& os);
@@ -88,7 +88,7 @@ main(int argc, char** argv)
   int      protection           (  3);
   bool     useShrinkage       (false);
   int      numberRounds         (200);
-  int      numOutputPredictors    (0);
+  int      maxNumOutputPredictors    (0);
   int      calibration            (0);      // 0 means no calibration; otherwise gap between models offered calibration
   int      debugLevel             (3);
 
@@ -100,7 +100,8 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, responseFileName, contextFileName, xFileName, outputPath,
 		  protection, useShrinkage, numberRounds, totalAlphaToSpend,
-		  calibration, debugLevel, numOutputPredictors);
+		  calibration, debugLevel, maxNumOutputPredictors);
+  if (outputPath[outputPath.size()-1] != '/') outputPath += "/";
   
   // initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
   
@@ -110,16 +111,16 @@ main(int argc, char** argv)
   debugging::debug_init(logStream, debugLevel);
 #else
   debugging::debug_init(std::clog, debugLevel);
-#endif
-   
-  debug("AUCT",0)   << "auction --y_file=" << responseFileName << " --c_file=" << contextFileName << " --x_file=" << xFileName
-		    << " --output-path=" << outputPath << " --debug-level=" << debugLevel
-		    << " --protect=" << protection << " --rounds=" << numberRounds << " --output-x=" << numOutputPredictors
-		    << " --alpha=" << totalAlphaToSpend;
-  if (useShrinkage)
-    debug("AUCT",0) << " --shrink";
-  debug("AUCT",0)   << std::endl;
-   
+#endif 
+  {
+    string msg  = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
+      + " --output-path=" + outputPath + " --debug-level=" + debugLevel
+      + " --protect=" + std::to_string(protection) + " --rounds=" + std::to_string(numberRounds) + " --output-x="
+      + std::to_string(maxNumOutputPredictors) + " --alpha=" + std::to_string(totalAlphaToSpend);
+    if (useShrinkage) msg += " --shrink";
+    debug("AUCT",0)   << msg << std::endl;
+  }
+  
   // open additional files for output
   
   string progressCSVFileName (outputPath + "progress.csv");
@@ -299,10 +300,10 @@ main(int argc, char** argv)
     debug(2) << "Writing model data to file " << modelDataFileName << std::endl;
     std::ofstream output (modelDataFileName.c_str());
     if (! output)
-    { std::cerr << "AUCT: Cannot open output file for model data " << modelDataFileName << std::endl;
+    { std::cerr << "AUCT: Cannot open output file `" << modelDataFileName << "'for model data.\n";
       return 2;
     } 
-    theAuction.write_model_data_to(output, numOutputPredictors);
+    theAuction.write_model_data_to(output, maxNumOutputPredictors);  
     output.close();
   }
   debug("AUCT",3) << "Exiting; final clean-up done by ~ functions.\n";
@@ -322,7 +323,7 @@ parse_arguments(int argc, char** argv,
 		double      &totalAlpha,
 		int         &calibrate,
 		int         &debugLevel,
-		int         &numOutputPredictors)
+		int         &maxNumOutputPredictors)
 {
   int key;
   while (1)                                  // read until empty key causes break
@@ -355,7 +356,7 @@ parse_arguments(int argc, char** argv,
 	  case 'a' : { totalAlpha = read_utils::lexical_cast<double>(optarg);      break; }
 	  case 'c' : { calibrate = read_utils::lexical_cast<int>(optarg);          break; }
 	  case 'd' : { debugLevel = read_utils::lexical_cast<int>(optarg);         break; }
-	  case 'k' : { numOutputPredictors = read_utils::lexical_cast<int>(optarg);break; }
+	  case 'k' : { maxNumOutputPredictors = read_utils::lexical_cast<int>(optarg);break; }
 	  case 'o' : { outputPath = optarg;                                        break; }
 	  case 'p' : { protection = read_utils::lexical_cast<int>(optarg);         break; }
 	  case 'r' : { nRounds = read_utils::lexical_cast<int>(optarg);            break; }
@@ -391,39 +392,5 @@ parse_arguments(int argc, char** argv,
     }
 }
 
-  
-Column
-identify_cv_indicator(std::vector<Column> const& columns, int prefixCases)
-{ // have some weird allocation/bad pointer issues around assigning an empty column; problem was here; avoid by returning Column()
-  using debugging::debug;
-  
-  debug("MAIN",3) << "Checking for CV indicator variable among " << columns.size() << " columns. "
-		  << " First column is named " << columns[0]->name() << " with size = " << columns[0]->size() << std::endl
-		  << columns[0] << std::endl;
-  if (columns.empty())
-  { debug("MAIN",0) << "Data lack CV indicator.\n";
-    return Column();
-  }
-  if ((columns[0]->name() != "[in/out][in]") && (columns[0]->name() != "cv.indicator[in]"))
-  { debug("MAIN",0) << "First context column is not in/out indicator; found '" << columns[0]->name()
-		    << "' instead. Using all cases for estimation.\n";
-    return Column();
-  }
-  // check name of the first context column, verify its a dummy variable
-  if (columns[0]->is_dummy())
-  { double sum (0.0);
-    for (double *b (columns[0]->begin() + prefixCases); b != columns[0]->end() ; ++ b)
-      sum += *b;
-    debug("MAIN",0) << "CV indicator variable is " << columns[0]->name() << " with sum " << sum
-		    << " estimation cases after skipping " << prefixCases << " leading cases.\n";
-    return columns[0];
-  }
-  else // explain why its not a dummy variable
-  { debug("MAIN",0) << "ERROR: CV indicator variable '" << columns[0]->name() << "' is not a dummy variable. Use all cases.\n";
-    columns[0]->print_to(debug("MAIN",0));
-    debug("MAIN",0) << std::endl << std::endl;
-    return Column();
-  }
-}
 
  

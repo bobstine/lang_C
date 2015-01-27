@@ -335,12 +335,12 @@ FStatistic
 LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Matrix const& z) const
 {
   mTempNames = xNames;
-  mTempK     = z.cols();
+  mTempK     = (int) z.cols();
   mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column(mK+k))
       return FStatistic();
-  int residualDF (mN-mK-z.cols());
+  int residualDF (mN-mK-(int)z.cols());
   assert(residualDF > 0);
   Vector Qe  (mQ.block(0,mK,mN,mTempK).transpose() * mResiduals);    // new gamma coefs
   if (mBlockSize==0)
@@ -417,14 +417,14 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
   assert(z.rows() == mN);
   assert((int)zNames.size() == z.cols());
   mTempNames = zNames;
-  mTempK     = z.cols();
+  mTempK     = (int) z.cols();
   mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column(mK+k))
     { std::cerr << "REGR: *** Error *** Column " << k << " of forced-to-add predictors is collinear." << std::endl;
       return;
     }
-  int residualDF (mN-mK-z.cols());
+  int residualDF (mN-mK-(int)z.cols());
   assert(residualDF > 0);
   add_predictors();
 }
@@ -539,7 +539,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   int numX = min_int(mK,maxNumXCols);
   // prefix line with var names; intercept is name[0]
   os << "Role\tFit\tResidual\t" << mYName;
-  // skip over the intercept in column 0
+  // skip the intercept in column 0
   for(int j=1; j<numX; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
@@ -548,12 +548,11 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   Vector res  (raw_residuals());
   Vector fit  (y - res);
   for(int i=0; i<mN; ++i)
-  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] << "\t";
+  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] ;
     if(numX>0)
     { Vector row (x_row(i));
-      for (int j=1; j<(numX-1); ++j)  // skip intercept
-	os << row[j] << "\t";
-      os << row[numX-1];
+      for (int j=1; j<numX; ++j)  // skip intercept
+	os << '\t' << row[j];
     }
     os << std::endl;
   }
@@ -589,10 +588,9 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
   mModel.write_data_to(os, maxNumXCols);
   Vector preds (mModel.predictions(mValidationX));
   for(int i=0; i<mValidationX.rows(); ++i)
-  { os << "val\t" << preds[i] << "\t" << mValidationY[i]-preds[i] << "\t" << mValidationY[i] << "\t";
-    for (int j=0; j<min_int(mValidationX.cols()-1, maxNumXCols); ++j) 
-      os << mValidationX(i,j) << "\t";
-    os << mValidationX(i,mValidationX.cols()-1) << std::endl;
+  { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
+    for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
+      os << '\t' << mValidationX(i,j);
   }
 }
 
@@ -704,7 +702,7 @@ public:
     
   void operator()()
   {
-    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, mY->size(), noBlocking, noShrinkage);
+    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, (int)mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
     namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
     if(mXi->cols()>0)
