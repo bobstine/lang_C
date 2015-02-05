@@ -213,14 +213,15 @@ Auction<ModelClass>::have_available_bid()
 {
   BiddingHistory const history  (auction_history());
   bool haveBid          (false);
-  bool haveActiveExpert (false);
-  while( !haveBid || haveActiveExpert )
-  { haveActiveExpert = false;
+  //  bool haveActiveExpert (false);    do we need to use active???
+  while( !haveBid /* || haveActiveExpert */ )
+  { // haveActiveExpert = false;
     for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it)
-    { if ((*it)->is_active())
+    { /*if ((*it)->is_active())
 	haveActiveExpert = true;
-      else
-	haveBid = haveBid || (0 < (*it)->place_bid(history));
+	else
+      */
+      haveBid = haveBid || (0 < (*it)->place_bid(history));
     }
   }
   return haveBid;
@@ -243,23 +244,26 @@ Auction<ModelClass>::collect_bids ()
   double         highBid (-7.7),   priorityBid (0.0);
   BiddingHistory history  (auction_history());
   int iExpert (0);
-  for(ExpertVector::iterator it = mExperts.begin(); it != mExperts.end(); ++it, ++iExpert)
-  { double bid = (*it)->place_bid(history);               // pass information to experts; check if has feature
+  for(auto expert : mExperts)
+  { double bid = expert->place_bid(history);               // pass information to experts; check if has feature
     if (mProgressStream)
       if (iExpert < mNumInitialExperts)                   // only track output for initial experts
       {	if (bid > 0)
-	  mProgressStream << "\t"    << remove_comma((*it)->feature_name()) << "\t" << (*it)->alpha() << "\t" << bid; 
+	  //      tracks the names of the features here
+	  //	  mProgressStream << "\t"    << remove_comma(expert.feature_name()) << "\t" << expert.alpha() << "\t" << bid;
+	  mProgressStream << "\t"    << "xxx" << "\t" << expert->alpha() << "\t" << bid;
 	else
-	  mProgressStream << "\t\t"                                                 << (*it)->alpha() << "\t" << bid;
+	  mProgressStream << "\t\t"                   << expert->alpha() << "\t" << bid;
       }
     if (bid > highBid)
     { highBid = bid;
-      winningExpert = *it;
+      winningExpert = expert;
     }
-    if (bid>0 && (calibrate == (*it)->role()))
-    { priorityExpert = *it;
+    if (bid>0 && (calibrate == expert->role()))
+    { priorityExpert = expert;
       priorityBid    = bid;
     }
+    ++iExpert;
   }
   if (!priorityExpert.empty())                          // override results
   { highBid = priorityBid;

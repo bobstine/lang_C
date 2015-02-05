@@ -20,12 +20,12 @@
  Feature streams (along with bidders) are held in experts that participate in the
  auction. Experts call
  
-        has_feature()
+        has_feature_vector()
 	
  before placing any bids. If the stream has/makes a feature, then a winning
  expert will call
  
-        pop()
+        pop_feature_vector()
 
  which must return a feature vector.  pop() must (a) run very fast and (b)
  return a vector of features.  Heavy lifting required in order to be able to

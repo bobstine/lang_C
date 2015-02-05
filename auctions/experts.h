@@ -82,13 +82,13 @@ public:
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
-  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || (!is_active() && !has_feature());}
+  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || ( !has_feature() /* is.active??? */);}
   
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   virtual std::string    description()                      const = 0;  
   virtual double         place_bid(BiddingHistory const& state)  = 0; 
-  virtual std::string    feature_name()                     const = 0;
+  // virtual std::string    feature_name()                     const = 0;   do we really need this???
   virtual FeatureVector  feature_vector()                         = 0;
   
   NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;    // convert to vector of (name, begin) pairs
@@ -101,7 +101,7 @@ public:
 
   double                 max_bid()           const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
   virtual bool           has_feature()              = 0;
-  virtual bool           is_active()         const  = 0;
+  //  virtual bool           is_active()         const  = 0;     do I need to add this back?
 
 private:
   std::string            role_string() const;
@@ -131,13 +131,12 @@ public:
   double              place_bid (BiddingHistory const& state);
   void                model_adds_current_variable()           { /* placeholder */ }
 
-  std::string         feature_name()                const     { return mStream.feature_name(); }       
-  FeatureVector       feature_vector()                        { return mStream.pop(); }      // stream pop must return feature *vector*
+  //  std::string         feature_name()                const     { return mStream.feature_name(); }        have not put this back in ???
+  FeatureVector       feature_vector()                        { return mStream.pop_feature_vector(); }      // stream pop must return feature *vector*
 
   virtual void        print_to(std::ostream& os)    const;
 
-  bool                has_feature()                           { return mStream.has_feature(); }
-  bool                is_active()                   const     { return mStream.is_active(); } 
+  bool                has_feature()                           { return mStream.has_feature_vector(); }
 };
 
 

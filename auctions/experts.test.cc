@@ -12,10 +12,12 @@
 
 #include "column.h"
 #include "features.h"
+#include "feature_iterators.Template.h"
+#include "feature_streams.Template.h"
 
 #include <iostream>
 #include <iomanip>
-
+#include <chrono>
 
 // for linking to model
 typedef     std::pair<std::string, FeatureABC::Iterator>   NamedIterator;
@@ -44,18 +46,20 @@ main()
   std::cout << "TEST: Initialization converted " << columns.size() << " columns into features.\n";
   
   // build regression model ([0] is br, [2] is other month indicator)
-  ValidatedRegression theRegr(columns[0]->name(), columns[0]->begin(), columns[2]->begin(), columns[0]->size());
+  const int  blockSize = 1;
+  const bool shrink = false;
+  ValidatedRegression theRegr(columns[0]->name(), columns[0]->begin(), columns[2]->begin(), columns[0]->size(), blockSize, shrink);
   
   // construct streams
   typedef FeatureStream< CyclicIterator<FeatureVector, SkipNone>, Identity>                                 FiniteStream;
   typedef FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity>                   InteractionStream;
-  typedef FeatureStream< CrossProductIterator, Identity >                                                   CrossProductStream;
-  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
+  typedef FeatureStream< CrossProductIterator<              SkipIfRelatedPair>, Identity>    CrossProductStream;
+  //  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> > CalibrationStream;
 
   FiniteStream       finiteStream (make_finite_stream("Columns", xFeatures, SkipNone()));   
   InteractionStream  interStream  (make_interaction_stream("Col interactions", xFeatures, true));  // use squares 
   CrossProductStream cpStream     (make_cross_product_stream("cp", xFeatures, xFeatures));
-  CalibrationStream  calStream    (make_calibration_stream("fitted_values", theRegr, 3, 0));       // poly degree, number prefix cases 
+  //  CalibrationStream  calStream    (make_calibration_stream("fitted_values", theRegr, 3, 0));       // poly degree, number prefix cases 
 				 
   // build several experts
   double alpha (0.05);
@@ -63,7 +67,7 @@ main()
   theExperts.push_back(Expert("finite",        source,   0, alpha, FiniteBidder<FiniteStream>(),          finiteStream));
   theExperts.push_back(Expert("interactions",  source,   0, alpha, UniversalBidder<InteractionStream>(),  interStream));
   theExperts.push_back(Expert("cross product", parasite, 0, alpha, UniversalBidder<CrossProductStream>(), cpStream));
-  theExperts.push_back(Expert("calibrator",   calibrate, 0, alpha, FitBidder(0.000005, "Y_hat"),          calStream));
+  //  theExperts.push_back(Expert("calibrator",   calibrate, 0, alpha, FitBidder(0.000005, "Y_hat"),          calStream));
   std::cout << "TEST: the experts are :\n" << theExperts << std::endl;
 
   // history defined in bidder.h
@@ -105,10 +109,9 @@ main()
     }
   }
   { // pause to allow threads to complete...
-    float ms = 1 * 1e3;
-    boost::posix_time::milliseconds pause(ms);
-    std::cout << "TEST: paused for " << ms << "ms.\n";
-    boost::this_thread::sleep(pause);
+    std::chrono::milliseconds pause(1000);
+    std::cout << "TEST: paused " << std::endl;
+    std::this_thread::sleep_for(pause);
   }
   std::cout << "TEST:  Done, with features...\n";
   unsigned k (0);
