@@ -58,51 +58,98 @@
 #include "feature_iterators.h"
 #include "feature_transformations.h"
 
-#include "light_threads.h"
+#include "thread_functions.h"
 #include "debug.h"
 
 #include <iostream>
+#include <memory>   // shared_ptr
 
 using debugging::debug;
-
 
 template<class Iterator, class Op>
 class FeatureStream
 {
-  typedef FeatureTransformation<Op>                   Transform;
-  typedef std::shared_ptr< LightThread<Transform> > ThreadPointer;
+  typedef FeatureTransformation<Op> Transform;
   
 private:
   std::string     mName;
   Iterator        mIterator;
   Transform       mTransform;    // copy each time start a new thread
-  ThreadPointer   mpThread;    
-
+  
 public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Op op)
-    : mName(name), mIterator(it), mTransform(op), mpThread(new LightThread<Transform>(name))  { make_features(); }
+    : mName(name), mIterator(it), mTransform(FeatureTransformation<Op>(op)) {  }
 
-  std::string    name()                      const;
-  std::string    feature_name()              const;
-  void           print_to(std::ostream& os)  const;
+  std::string    name()                          const { return mName; }
+  bool           cannot_generate_more_features() const { return (0 == number_remaining()); }
+  int            number_remaining()              const { return mIterator.number_remaining(); }
 
-  int            number_remaining()          const;
+  bool           has_feature_vector()                  { return mIterator.points_to_valid_data(); }
+  
+  FeatureVector  pop_feature_vector()                  { FeatureVector fv = mTransform(*mIterator); ++mIterator; return fv; }
 
-  bool           is_active()                 const;
-  bool           is_empty()                  const;
-  bool           has_feature();
-  FeatureVector  pop();
+  void           print_to(std::ostream& os)      const { os << "feature_stream `" << mName << " with " << number_remaining() << " remaining features "; }
 
-private:
-  void make_features();
-  bool const_has_feature()                   const;
 };
 
 template<class Iterator, class Transform>
 std::ostream&
 operator<<(std::ostream& os, FeatureStream<Iterator,Transform> const& s) { s.print_to(os); return os; }
+
+
+//     ThreadedFeatureStream     ThreadedFeatureStream     ThreadedFeatureStream     ThreadedFeatureStream     ThreadedFeatureStream     
+
+template<class Iterator, class Op>
+class ThreadedFeatureStream
+{
+  typedef thread_function<FeatureTransformation<Op>> Transform;
+  
+private:
+  std::string       mName;
+  Iterator          mIterator;
+  mutable bool      mHaveStartedThread;
+  std::shared_ptr<Transform> mpTransform;
+  
+public:
+  ~ThreadedFeatureStream() { }
+
+  ThreadedFeatureStream (std::string name, Iterator it, Op op)
+    : mName(name), mIterator(it), mHaveStartedThread(false), mpTransform(new Transform("TFS", op)) { }
+
+  std::string    name()                          const { return mName; }
+  bool           cannot_generate_more_features() const { return (0 == number_remaining()); }
+  int            number_remaining()              const { return mIterator.number_remaining(); }
+  
+  bool           has_feature_vector()
+    { if (mHaveStartedThread)
+      	return mpTransform->finished();
+      else
+      { start_thread();
+	return false;
+      }
+    }	 
+
+  FeatureVector  pop_feature_vector()
+    { assert(mHaveStartedThread && mpTransform->finished());
+      FeatureVector fv = mpTransform->result();
+      ++mIterator;
+      start_thread();
+    }
+
+  void           print_to(std::ostream& os)      const { os << "threaded_feature_stream `" << mName << "' with " << number_remaining() << " remaining features "; }
+
+private:
+  void start_thread() 
+    { assert (mpTransform->finished());
+      if (mIterator.points_to_valid_data())
+      { (*mpTransform)(*mIterator);
+	mHaveStartedThread = true;
+      }
+      else mHaveStartedThread = false;
+    }
+};
 
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -188,6 +235,16 @@ make_subspace_stream (std::string const& name, Collection const& src, Trans cons
 {
   debug("FSTR",3) << "make_subspace_stream with bundle size " << bundleSize << std::endl;
   return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
+    ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
+}
+
+
+template <class Collection, class Trans>
+ThreadedFeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
+make_threaded_subspace_stream (std::string const& name, Collection const& src, Trans const& trans, int bundleSize)
+{
+  debug("FSTR",3) << "make_threaded_subspace_stream with bundle size " << bundleSize << std::endl;
+  return ThreadedFeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
     ("Subspace::"+name, BundleIterator<Collection,SkipIfInBasis>(src, bundleSize, SkipIfInBasis()), trans);
 }
 

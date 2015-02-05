@@ -48,13 +48,13 @@ public:
   QueueIterator(QueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
 
   int    number_remaining()             const { return (int) mpQueue->mQueue.size(); }
-  bool   valid()                        const { return !mpQueue->mQueue.empty(); }
+  bool   points_to_valid_data()                        const { return !mpQueue->mQueue.empty(); }
   
-  QueueIterator&   operator++()               { assert(valid()); mpQueue->mQueue.pop();
+  QueueIterator&   operator++()               { assert(points_to_valid_data()); mpQueue->mQueue.pop();
                                                 while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop();
 						return *this; }
 
-  Feature          operator*()          const { assert(valid()); return mpQueue->mQueue.top(); }
+  Feature          operator*()          const { assert(points_to_valid_data()); return mpQueue->mQueue.top(); }
     
   void print_to(std::ostream& os)       const { os << "QueueIterator: " << number_remaining() << " features remain; queue ref count " << mpQueue->mRefCount; }
   
@@ -81,10 +81,11 @@ public:
     : mSource(source), mPosition(0), mNeedToCheck(true), mSkipFeature(pred) { advance_position(); }
 
   int   number_remaining()              const { return (int)mSource.size() - (int)mPosition; }
-  bool  valid()                               { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
+  bool  points_to_valid_data()                               { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
 
   DynamicIterator& operator++()               { assert(mPosition < mSource.size()); ++mPosition; advance_position(); return *this;}
-
+  //  DynamicIterator  operator++(int)            { DynamicIterator copy = *this; assert(mPosition < mSource.size()); ++mPosition; advance_position(); return copy;}
+  
   Feature          operator*()          const { assert(mPosition < mSource.size()); return mSource[mPosition]; }
 
   void  print_to(std::ostream& os)      const { os << "DynamicIterator [" << mPosition << "/" << mSource.size() << "] "; }
@@ -116,12 +117,12 @@ public:
     : mSource(source), mSkipFeature(pred), mIter(source.begin()), mSize((int)source.size()) { initialize(); }
   
   int   number_remaining()              const { return mSize; }
-  bool  valid()                         const { return !mSource.empty() && (mSize > 0); }
+  bool  points_to_valid_data()                         const { return !mSource.empty() && (mSize > 0); }
 
   CyclicIterator& operator++();
   Feature         operator*()           const { return *mIter; }
 
-  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (valid()) os << *mIter << " ";  else os << " empty "; }
+  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (points_to_valid_data()) os << *mIter << " ";  else os << " empty "; }
 
  private:
   void initialize();
@@ -148,7 +149,7 @@ public:
     :  mFeature(f), mBlockSize(blockSize), mRemaining(maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }
   
   int   number_remaining()         const   { return  mRemaining; }
-  bool  valid()                    const   { return  mRemaining > 0; }
+  bool  points_to_valid_data()                    const   { return  mRemaining > 0; }
 
   LagIterator&  operator++();
   Feature       operator*()        const   { return  Feature(mFeature,mLag,mBlockSize); }
@@ -169,12 +170,12 @@ class ModelIterator
 {
   Model const& mModel;       // maintained by someone else
   int          mLastQ;       // q of last model built predictors for
-  int          mSeparation;  // gap between models that are valid
+  int          mSeparation;  // gap between models that are points_to_valid_data
  public:
  ModelIterator(Model const& m, int gap): mModel(m), mLastQ(0), mSeparation(gap) {}
   
-  bool            valid()                    const;
-  int             number_remaining ()        const { if (valid()) return 1; else return 0; }
+  bool            points_to_valid_data()                    const;
+  int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
   ModelIterator&  operator++()                     { return *this; }
   Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
   void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " with separation " << mSeparation; }
@@ -198,8 +199,8 @@ class BundleIterator
 public:
   BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mLoIndex(0), mHiIndex(0) { }
 
-  bool     valid()              const    { return (mSource.size()-mLoIndex) > mBundleSize; } 
-  int  number_remaining ()      const    { if (valid()) return 1; else return 0; }
+  bool     points_to_valid_data()              const    { return (mSource.size()-mLoIndex) > mBundleSize; } 
+  int  number_remaining ()      const    { if (points_to_valid_data()) return 1; else return 0; }
   BundleIterator& operator++()           { return *this; }
 
   FeatureVector   operator*()   
@@ -243,7 +244,7 @@ public:
     mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count((int)src.size())) { initialize(); }
   
   int   number_remaining()           const { return mRemain; }
-  bool  valid ()                     const { return mRemain > 0; }
+  bool  points_to_valid_data ()                     const { return mRemain > 0; }
 
   InteractionIterator& operator++();  
   Feature              operator*()   const;  
@@ -295,9 +296,8 @@ class CrossProductIterator
  CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, SkipPred p)
    : mSlowSource(slow), mFastSource(fast), mSkipPred(p), mSlowIndex(0), mFastIndices() { update_index_vector(); }
   
-  int                   number_remaining () const; 
-
-  bool                  valid()             const;
+  int                   number_remaining ()    const;
+  bool                  points_to_valid_data() const;
 
   Feature               operator*()         const;
   CrossProductIterator& operator++();

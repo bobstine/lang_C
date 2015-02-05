@@ -53,7 +53,7 @@ template<class Collection, class Pred>
 
 template< class Model >
 bool
-ModelIterator<Model>::valid()  const
+ModelIterator<Model>::points_to_valid_data()  const
 {
   if(mModel.q() <= (mLastQ + mSeparation))
     return false;
@@ -161,7 +161,7 @@ template<class Source, class Pred>
   InteractionIterator<Source,Pred>::print_to(std::ostream &os)   const
 {
   os << "InteractionIterator [" << mRemain << "] ";
-  if(valid()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name();
+  if(points_to_valid_data()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name();
 }
 
 
@@ -170,7 +170,7 @@ template<class Source, class Pred>
 
 template<class Pred>
 bool
-CrossProductIterator<Pred>::valid()             const
+CrossProductIterator<Pred>::points_to_valid_data()             const
 {
   update_index_vector();
   return (mSlowIndex < mSlowSource.size()) && (mFastIndices[mSlowIndex] < mFastSource.size());
@@ -180,7 +180,7 @@ template<class Pred>
 int
 CrossProductIterator<Pred>::number_remaining () const
 {
-  if (! valid() ) return 0;
+  if (! points_to_valid_data() ) return 0;
   int n (0);
   for (unsigned iSlow=0; iSlow < mSlowSource.size(); ++iSlow)
     n += (int)mFastSource.size() - mFastIndices[iSlow];
@@ -193,7 +193,7 @@ template<class Pred>
 Feature
 CrossProductIterator<Pred>::operator*()         const
 {
-  assert(valid());
+  assert(points_to_valid_data());
   return Feature(mSlowSource[mSlowIndex], mFastSource[mFastIndices[mSlowIndex]]);
 }
 
@@ -252,7 +252,7 @@ void
 CrossProductIterator<Pred>::print_to (std::ostream& os) const
 { os << "CrossProductIterator with indices ";
   print_indices(os);
-  if(valid())
+  if(points_to_valid_data())
     os << "@ " << mSlowSource[mSlowIndex]->name() << " x " << mFastSource[mFastIndices[mSlowIndex]]->name() << std::endl;
   else
     os << "is empty.\n";

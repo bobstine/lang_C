@@ -14,8 +14,6 @@
 #include "feature_streams.Template.h"
 #include "feature_iterators.Template.h"
 
-#include "light_threads.Template.h"
-
 #include <iostream>
 #include <algorithm>
 #include <chrono>
@@ -45,8 +43,8 @@ public:
 };
 
 
-template<class Iterator, class Transformation>
-void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
+template<class Stream>
+void drain_features (Stream & fs, int loopLimit)
 {
   unsigned int ms = 200;
   std::chrono::milliseconds workTime(ms);
@@ -60,13 +58,13 @@ void drain_features (FeatureStream<Iterator,Transformation> & fs, int loopLimit)
   bool busy = false;
   bool has = false;
   // test whether has feature first, since that test might make it busy
-  while (( (has=fs.has_feature()) || (fs.is_active()) ) && loopLimit--)
+  while ((has=fs.has_feature_vector()) && loopLimit--)
   {
-    std::cout << "TEST_drain: At top, is_active=" << fs.is_active() << "  has_feature=" << fs.has_feature() << "\n";
+    std::cout << "TEST_drain: At top,  has_feature=" << fs.has_feature_vector() << "\n";
     std::this_thread::sleep_for(workTime);
-    if (fs.has_feature())
+    if (fs.has_feature_vector())
     { std::cout << "TEST_drain: About to pop off feature\n";
-      std::vector<Feature> fv (fs.pop());
+      std::vector<Feature> fv = fs.pop_feature_vector();
       ++nPopped;
       std::cout << "TEST_drain: popped off feature nPopped\n";
       std::for_each(fv.begin(), fv.end(), [&saved](Feature const& f) { saved.push_back(f); });
@@ -146,6 +144,7 @@ main()
     std::cout << "\n\nTEST: lag stream\n";
     FeatureStream<LagIterator, Identity> ls (make_lag_stream("Test", features[0], 4, 2, 1)); // max lag 4, 2 cycles, blocksize 1
     drain_features(ls, 10);
+    std::cout << "  Lag stream:  has_feature=" << ls.has_feature_vector() << " with " << ls.number_remaining() << " left.\n";
   }
 
   
@@ -154,7 +153,7 @@ main()
     std::cout << "\n\nTEST: making polynomial stream\n";
     FeatureStream< DynamicIterator<FeatureVector, SkipIfDerived>, BuildPolynomialFeatures > ps (make_polynomial_stream("Test", features, 3));
     std::cout << ps << std::endl;
-    std::cout << "  Polynomial stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
+    std::cout << "  Polynomial stream  has_feature=" << ps.has_feature_vector() << " with " << ps.number_remaining() << " left.\n";
     drain_features(ps, 10); // does not apply to dummy inputs
   }
   
@@ -182,7 +181,7 @@ main()
     std::cout << "\n\nTEST: making product stream\n";
     FeatureStream< QueueIterator<FeatureVector, SkipIfRelated>, BuildProductFeature> ps (make_feature_product_stream ("test", features[0], features));
     std::cout << ps << std::endl;
-    std::cout << "  Product stream  has_feature=" << ps.has_feature() << " with " << ps.number_remaining() << " left.\n";
+    std::cout << "  Product stream  has_feature=" << ps.has_feature_vector() << " with " << ps.number_remaining() << " left.\n";
     drain_features(ps,10);
   }
 
@@ -197,9 +196,9 @@ main()
 
     FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, "Y_hat_", skip, binaryResponse));
     std::cout << cs << std::endl;
-    std::cout << "  Calibration stream  has_feature=" << cs.has_feature() << std::endl;
+    std::cout << "  Calibration stream  has_feature=" << cs.has_feature_vector() << std::endl;
     model.increment_q();
-    std::cout << "  After increment, stream  has_feature=" << cs.has_feature() << std::endl;
+    std::cout << "  After increment, stream  has_feature=" << cs.has_feature_vector() << std::endl;
     drain_features(cs,10);  // hard to test since need to increment q inside drain.
   }
 
@@ -213,18 +212,27 @@ main()
     drain_features(bs,15);
   }
 
+  if(false)    // test subspace with threads
+  {
+    std::cout << "\n\nTEST: making threaded subspace stream\n";
+    FeatureVector bundle;
+    int bundleSize = 5;
+    auto tbs = make_threaded_subspace_stream("test", features, VIdentity(), bundleSize);
+    drain_features(tbs,15);
+  }
+
     
   if (true)     // test interactions
   { bool const useSquares (true);
     std::cout << "\n\nTEST:  Test of interaction stream.\n";
     FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, useSquares));
     std::cout << " IS has " << is.number_remaining() << " features remaining\n";
-    std::cout << "TEST: Cross-product stream has_feature = " << is.has_feature() << std::endl;
-    std::cout << "TEST:   on second call,    has_feature = " << is.has_feature() << std::endl;
-    std::cout << "TEST:       third call,    has_feature = " << is.has_feature() << std::endl;
-    std::cout << "TEST:      fourth call,    has_feature = " << is.has_feature() << std::endl;
-    std::cout << "TEST:       fifth call,    has_feature = " << is.has_feature() << std::endl;
-    std::cout << "TEST:       sixth call,    has_feature = " << is.has_feature() << std::endl;
+    std::cout << "TEST: Cross-product stream has_feature = " << is.has_feature_vector() << std::endl;
+    std::cout << "TEST:   on second call,    has_feature = " << is.has_feature_vector() << std::endl;
+    std::cout << "TEST:       third call,    has_feature = " << is.has_feature_vector() << std::endl;
+    std::cout << "TEST:      fourth call,    has_feature = " << is.has_feature_vector() << std::endl;
+    std::cout << "TEST:       fifth call,    has_feature = " << is.has_feature_vector() << std::endl;
+    std::cout << "TEST:       sixth call,    has_feature = " << is.has_feature_vector() << std::endl;
     is.print_to(std::cout); std::cout << std::endl;
     drain_features(is,30);
   }
@@ -234,8 +242,8 @@ main()
   if (false)    // test dynamic cross-product stream
   { std::cout << "\n\nTEST:  Moving on to test other feature streams, now cross-product stream.\n";
     FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity > cp (make_cross_product_stream("test", featureVec1, featureVec2));
-    std::cout << "TEST: Cross-product stream has_feature = " << cp.has_feature() << std::endl;
-    std::cout << "TEST: On second call,    has_feature = " << cp.has_feature() << std::endl;
+    std::cout << "TEST: Cross-product stream has_feature = " << cp.has_feature_vector() << std::endl;
+    std::cout << "TEST: On second call,    has_feature = " << cp.has_feature_vector() << std::endl;
     drain_features(cp,10);
   }
 

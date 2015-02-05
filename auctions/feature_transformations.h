@@ -5,6 +5,7 @@
 #include "features.h"
 #include "function_utils.h"
 
+#include <functional>
 
 /*
   Feature transformations apply an operator that must product a vector of features
@@ -17,51 +18,41 @@
 template< class Operator >
 class FeatureTransformation
 {
-  typedef typename Operator::argument_type ArgType;
+ public:
+  typedef typename Operator::argument_type argument_type;
+  typedef FeatureVector                    result_type;
   
  private:
   Operator      mOp;
-  ArgType       mInput;
-  FeatureVector mFV;
   
  public:
   
- FeatureTransformation(Operator op)   : mOp(op), mInput(), mFV() { }
+ FeatureTransformation(Operator op)   : mOp(op) { }
   
-  void          input(ArgType x)               { mInput = x; }
-  bool          empty()                const   { return mFV.empty(); }
-  std::string   first_output_name()    const   { assert(!mFV.empty()); return mFV[0]->name(); }
-  FeatureVector output_features()              { FeatureVector fv(mFV); mFV.clear(); return fv; }   // empty the result; want to appear stateless
-  
-  void operator()()         
-  {
-    // std::cout << "TRANS: apply feature transformation operator \n";
-    mFV = mOp(mInput);
-    // std::cout << "TRANS: operator yields " << mFV.size() << " features;  fv[0] = " << mFV[0]->name() << std::endl;
-  }
+  FeatureVector operator()(argument_type const& arg)  { return mOp(arg); }
 };
 
 
 
 //     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     
 
-class Identity: public std::unary_function<Feature, FeatureVector>
+class Identity: public std::function<FeatureVector (Feature)>
 {
  public:
   FeatureVector operator()(Feature f)        const { FeatureVector fv; fv.push_back(f); return fv; }
 };
 
-class VIdentity: public std::unary_function<FeatureVector, FeatureVector>
+class VIdentity: public std::function<FeatureVector (FeatureVector)>
 {
  public:
-  FeatureVector operator()(FeatureVector fv) const {                                    return fv; }
+  FeatureVector operator()(FeatureVector fv) const { return fv; }
 };
 
 
 
 //     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial     Polynomial
 
-class BuildPolynomialFeatures: public std::unary_function<Feature, FeatureVector>
+class BuildPolynomialFeatures: public std::function<FeatureVector (Feature)>
 {
  unsigned mDegree;
 
@@ -87,7 +78,7 @@ class BuildPolynomialFeatures: public std::unary_function<Feature, FeatureVector
 
 //     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood     Neighborhood
 
-class BuildNeighborhoodFeature: public std::unary_function<Feature, FeatureVector>
+class BuildNeighborhoodFeature: public std::function<FeatureVector (Feature)>
 {
   IntegerColumn  mIndexColumn;   // maintained externally, not reference
 public:
@@ -106,7 +97,7 @@ public:
 
 //     Product     Product     Product     Product     Product     Product     Product     Product     Product     Product
 
-class BuildProductFeature: public std::unary_function<Feature,FeatureVector>
+class BuildProductFeature: public std::function<FeatureVector(Feature)>
 {
   Feature mFeature;
 public:
@@ -125,7 +116,7 @@ public:
 //     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration     Calibration
 
 template< class Model >
-class BuildCalibrationFeature: public std::unary_function<Model const*, FeatureVector>
+class BuildCalibrationFeature: public std::function<FeatureVector(Model const*)>
 {
   int         mDegree;
   std::string mSignature;  // identifying variable name

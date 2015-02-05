@@ -28,10 +28,10 @@ public:
   }
 
  thread_function()
-   : mName("EMPTY"), mF(), mTaskIsComplete(false) { }
+   : mName("EMPTY"), mF(), mTaskIsComplete(true) { }
   
  thread_function(std::string name, F f)
-   : mName(name), mF(f), mTaskIsComplete(false) {  }
+   : mName(name), mF(f), mTaskIsComplete(true) {  }
   
  thread_function(thread_function&& tf) // move copy
    : mName(tf.mName), mF(tf.mF), mTaskIsComplete(tf.mTaskIsComplete.load()), mThread(std::move(tf.mThread)), mResult(tf.mResult) { }
@@ -47,7 +47,8 @@ public:
   
   void   operator()(argument_type const& arg)
   { mThread = std::thread([this, arg]()
-			  { this->mResult = this->mF(arg);
+			  { this->mTaskIsComplete=false;
+			    this->mResult = this->mF(arg);
 			    this->mTaskIsComplete=true;
 			  }); }
   
