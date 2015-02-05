@@ -89,7 +89,7 @@ read_file_line (char *s, int maxLength, FILE *fp)
 {
   int count (0);
   char c;
-  while (--maxLength > 0 && (c = getc(fp)) != EOF)
+  while (--maxLength > 0 && (c = (char)getc(fp)) != EOF)
   { *s = c;
     if (c == '\n')
       break;
@@ -110,7 +110,7 @@ read_string(char *s, int n, FILE *iop)
   while (--n > 0 && (c = getc(iop)) != EOF)
   {
     if (c != ' ')
-      if ((*cs++ = c) == '\n')
+      if ((*cs++ = (char)c) == '\n')
 				break;
   }
   --cs;

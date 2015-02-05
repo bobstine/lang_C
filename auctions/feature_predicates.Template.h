@@ -1,3 +1,9 @@
+#ifndef _FEATURE_PREDICATES_TEMPLATE_H_
+#define _FEATURE_PREDICATES_TEMPLATE_H_
+
+#include "feature_predicates.h"
+
+
 template< class Collection >
 bool
 FeaturePredicates::found_name_among_features (std::string const& name, Collection const& features, std::string const& description)
@@ -13,6 +19,6 @@ FeaturePredicates::found_name_among_features (std::string const& name, Collectio
   return false;
 }
 
-
+#endif
 
 

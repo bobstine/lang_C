@@ -110,11 +110,11 @@ C45_syntax::print_on(std::ostream & ostrm) const
   ostrm << "\n\n";
   for(Data_matrix::const_iterator col = m_data.begin();col != m_data.end(); ++col)
     {
-      int col_index = col - m_data.begin();
+      int col_index = (int) (col - m_data.begin());
       std::string col_name = m_Xs[col_index];
       ostrm << col_name << " = ";
       int num_printed = 0;
-      int n = col->size();
+      int n = (int) col->size();
       int num_missing = 0;
       for(int i = 0; i < n; ++i)
 	{
@@ -150,7 +150,7 @@ namespace
     if(max < 26)
       {
 	std::string result;
-	result += ('A' + i - 1);
+	result += (char)('A' + i - 1);
 	return result;
       }
     std::stringstream s;
@@ -192,7 +192,7 @@ C45_syntax::print_sanitary_names(std::ostream & ostrm) const
 		ostrm << ", ";
 	      continuation = true;
 	      //	      const std::string& name = i->first;
-	      ostrm << sanitary(i->second,t.size());
+	      ostrm << sanitary(i->second,(int)t.size());
 	    }
 	  ostrm << "." << std::endl;
 	}
@@ -226,7 +226,7 @@ C45_syntax::print_variable_names(std::ostream & ostrm) const
 		ostrm << ", ";
 	      continuation = true;
 	      //	      const std::string& name = i->first;
-	      ostrm << sanitary(i->second,t.size());
+	      ostrm << sanitary(i->second,(int)t.size());
 	    }
 	  ostrm << "." << std::endl;
 	}
@@ -237,7 +237,7 @@ C45_syntax::print_variable_names(std::ostream & ostrm) const
 void
 C45_syntax::print_sanitary_data(std::ostream & ostrm) const
 {
-  int n = m_data.begin()->size();  // we assume all have same size and at least one exists
+  int n = (int)m_data.begin()->size();  // we assume all have same size and at least one exists
   std::pair<std::vector<double>,std::vector<double> > ms = mean_sd();
   const std::vector<double>& mean(ms.first);
   const std::vector<double>& sd(ms.second);
@@ -250,13 +250,13 @@ C45_syntax::print_sanitary_data(std::ostream & ostrm) const
 	    ostrm << ", ";
 	  continuation = true;
 
-	  int col_index = col - m_data.begin();
+	  int col_index = (int)(col - m_data.begin());
 	  if(!(*col)[i].second)  // OK, it isn't missing
 	    {
 	      if(m_continuous[col_index].second)
 		ostrm <<  ((*col)[i].first - mean[col_index])/sd[col_index];
 	      else
-		ostrm << sanitary(int((*col)[i].first),m_translators[col_index].size());
+		ostrm << sanitary(int((*col)[i].first),(int) m_translators[col_index].size());
 	    }
 	}
       ostrm << std::endl;
@@ -266,7 +266,7 @@ C45_syntax::print_sanitary_data(std::ostream & ostrm) const
 void
 C45_syntax::print_raw_variable(int col_index, std::ostream & ostrm) const
 {
-  int n = m_data[col_index].size();
+  int n = (int) m_data[col_index].size();
   ostrm << m_Xs[col_index] << std::endl;
   for(int i = 0; i < n; ++i)
     {
@@ -278,7 +278,7 @@ C45_syntax::print_raw_variable(int col_index, std::ostream & ostrm) const
 void
 C45_syntax::print_missing_indicator(int col_index, std::ostream & ostrm) const
 {
-  int n = m_data[col_index].size();
+  int n = (int) m_data[col_index].size();
   ostrm << m_Xs[col_index] << " is missing" << std::endl;
   for(int i = 0; i < n; ++i)
     {
@@ -290,10 +290,10 @@ C45_syntax::print_missing_indicator(int col_index, std::ostream & ostrm) const
 void
 C45_syntax::print_categories(int col_index, std::ostream & ostrm) const
 {
-  int n = m_data[col_index].size();
+  int n = (int)m_data[col_index].size();
   assert(!m_continuous[col_index].second);
   const Translator& t = m_translators[col_index];
-  int num_categories = t.size();
+  int num_categories = (int)t.size();
   Translator::const_iterator iter = t.begin();
 
   if(num_categories == 2)
@@ -363,7 +363,7 @@ C45_syntax::raw_data_print_on(std::ostream & ostrm) const
   bool y_printed = false;
   for(Data_matrix::const_iterator col = m_data.begin();col != m_data.end(); ++col)
     {
-      int col_index = col - m_data.begin();
+      int col_index = (int)(col - m_data.begin());
       std::string col_name = m_Xs[col_index];
       if(is_y(col_name))
 	{
@@ -376,7 +376,7 @@ C45_syntax::raw_data_print_on(std::ostream & ostrm) const
 
   for(Data_matrix::const_iterator col = m_data.begin();col != m_data.end(); ++col)
     {
-      int col_index = col - m_data.begin();
+      int col_index = (int)(col - m_data.begin());
       std::string col_name = m_Xs[col_index];
       if(!is_y(col_name))
 	print_whole_variable(col_index,ostrm);
@@ -392,7 +392,7 @@ C45_syntax::mean_sd() const
 
   for(Data_matrix::const_iterator col = m_data.begin();col != m_data.end(); ++col)
     {
-      int col_index = col - m_data.begin();
+      int col_index = (int)(col - m_data.begin());
       if(m_continuous[col_index].second)
 	{
 	  double t = 0;
@@ -544,7 +544,7 @@ C45_syntax::parse_names(std::istream& istrm)
 	  m_Ys.push_back(n);
 	}
     }
-  m_num_Xs = m_Xs.size();
+  m_num_Xs = (int) m_Xs.size();
 };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 C45_syntax::Row

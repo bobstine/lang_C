@@ -1,3 +1,9 @@
+#ifndef _FEATURE_ITERATORS_TEMPLATE_H_
+#define _FEATURE_ITERATORS_TEMPLATE_H_
+
+#include "feature_iterators.h"
+#include "feature_predicates.Template.h"
+
 #include "adapter.h"
 #include "debug.h"
 
@@ -261,3 +267,5 @@ CrossProductIterator<Pred>::print_indices(std::ostream& os)  const
     os << mFastIndices[i] << " ";
   os << "}";
 }
+
+#endif

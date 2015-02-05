@@ -282,7 +282,7 @@ operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { 
             var 2                    has not been crossed with any                                              
 */                                                                                                              
                                                                                                                 
-template<class SkipPred>                                                                                                                                                             
+template<class SkipPred> 
 class CrossProductIterator
 {
   FeatureVector const&          mSlowSource;
@@ -313,8 +313,5 @@ class CrossProductIterator
 template<class Pred>
 std::ostream&
 operator<< (std::ostream& os, CrossProductIterator<Pred> const& it) { it.print_to(os); return os; }
-
-
-#include "feature_iterators.Template.h"
 
 #endif

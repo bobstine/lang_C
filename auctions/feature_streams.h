@@ -214,6 +214,4 @@ make_cross_product_stream (std::string const& name, FeatureVector const& slow, F
 
 ///////////////////////////////////////////////////////////////////////
 
-#include "feature_streams.Template.h"
-
 #endif

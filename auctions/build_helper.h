@@ -40,6 +40,4 @@ time_since(time_t const& start);
 std::pair< std::pair<int,double>, std::pair<int,double> >
 initialize_sums_of_squares(std::vector<Column> y);
 
-
-
 #endif

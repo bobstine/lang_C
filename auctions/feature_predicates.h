@@ -62,7 +62,4 @@ class SkipIfInBasis
   bool operator()(Feature const& f) const {  return (f->is_constant()) || (f->name() == "Basis");  }
 };
 
-
-#include "feature_predicates.Template.h"
-
 #endif

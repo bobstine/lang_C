@@ -191,6 +191,4 @@ operator<< (std::ostream& os, std::vector<Expert> const& experts)
   return os;
 }
 
-#include "experts.Template.h"
-
 #endif

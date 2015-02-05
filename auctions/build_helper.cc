@@ -1,8 +1,14 @@
 #include "build_helper.h"
 
-#include "feature_streams.h"
+// templates
+#include "features.Template.h"
+#include "feature_streams.Template.h"
+#include "feature_iterators.Template.h"
+#include "feature_predicates.Template.h"
 #include "light_threads.Template.h"
-#include "auction.Template.h"
+#include "experts.Template.h"
+#include "bidders.h"
+
 #include "column.h"
 #include "debug.h"
 

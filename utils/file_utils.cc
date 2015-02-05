@@ -66,7 +66,7 @@ int count_fields (std::string const& fileName, int lineNumber)
 	if (ch == '\n') ++ line;
       // Close file and return number of lines
       fclose(fp);
-      return (line);
+      return ((int)line);
     }
   }
 

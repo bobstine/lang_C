@@ -1,3 +1,7 @@
+#ifndef _FEATURE_STREAMS_TEMPLATE_H_
+#define _FEATURE_STREAMS_TEMPLATE_H_
+
+#include "feature_streams.h"
 
 template<class Iterator, class Trans>
   std::string
@@ -101,3 +105,5 @@ template<class Iterator, class Trans>
     (*mpThread)(mTransform);
   }
 }
+
+#endif

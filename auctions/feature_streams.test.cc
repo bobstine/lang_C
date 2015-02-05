@@ -11,7 +11,9 @@
 #include "debug.h"
 #include "column.h"
 
-#include "feature_streams.h"
+#include "feature_streams.Template.h"
+#include "feature_iterators.Template.h"
+
 #include "light_threads.Template.h"
 
 #include <iostream>

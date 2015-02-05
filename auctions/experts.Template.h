@@ -1,5 +1,7 @@
-////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE 
+#ifndef _EXPERTS_TEMPLATE_H_
+#define _EXPERTS_TEMPLATE_H_
 
+////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE
 
 template<class Bidder, class Stream>
 double
@@ -26,3 +28,5 @@ void
   os << ", stream ";
   mStream.print_to(os);
 }
+
+#endif

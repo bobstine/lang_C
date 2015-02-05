@@ -34,8 +34,15 @@
 #include "range.h" 
 #include "range_ops.h"
 #include "anonymous_iterator.h"
-#include "feature_streams.h"
+
+// templates
+#include "features.Template.h"
+#include "feature_streams.Template.h"
+#include "feature_iterators.Template.h"
+#include "feature_predicates.Template.h"
 #include "light_threads.Template.h"
+#include "experts.Template.h"
+#include "bidders.h"
 
 // for constant iterator 
 #include "iterators.h"
@@ -68,7 +75,7 @@ ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRo
 int                  parse_column_format(std::string const& dataFileName, std::ostream&);
 Column               identify_cv_indicator(std::vector<Column> const& columns);
 void                 round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
-
+ 
 
 int
 main(int argc, char** argv)

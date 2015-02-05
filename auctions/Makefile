@@ -44,12 +44,12 @@ level_7   = build_auction.o
 ############################################################################
 include ../rules_for_makefiles
 
-
 # make data file from csv file
 data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
+# current auction target (build_auction has main)
 auction: $(above_8)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
