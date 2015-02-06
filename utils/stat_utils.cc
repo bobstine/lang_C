@@ -36,7 +36,7 @@ std::pair<double,double>
 Stat_Utils::mands (const std::vector<double>& x)
 {
   assert (x.size() > 1);
-  double xBar = accumulate(x.begin(), x.end(), 0.0)/x.size();
+  double xBar = accumulate(x.begin(), x.end(), 0.0)/(double)x.size();
   return std::make_pair(xBar, standard_deviation(x, xBar));
 }
 
@@ -45,7 +45,7 @@ Stat_Utils::standard_deviation (std::vector<double> const& x, double avg)
 {
   double ss = std::accumulate(x.begin(), x.end(), 0.0, CenterSquare(avg));
   assert (ss >= 0);
-  return sqrt(ss/(x.size()-1));
+  return sqrt(ss/(double)(x.size()-1));
 }
 
 ////  Tests and p-values

@@ -73,23 +73,32 @@ private:
   std::string     mName;
   Iterator        mIterator;
   Transform       mTransform;
+  FeatureVector   mFeatureVector;
   
 public:
   ~FeatureStream() { }
 
   FeatureStream (std::string name, Iterator it, Op op)
-    : mName(name), mIterator(it), mTransform(FeatureTransformation<Op>(op)) {  }
+    : mName(name), mIterator(it), mTransform(FeatureTransformation<Op>(op)) { try_to_make_features(); }
 
   std::string    name()                          const { return mName; }
   bool           cannot_generate_more_features() const { return (0 == number_remaining()); }
   int            number_remaining()              const { return mIterator.number_remaining(); }
 
-  bool           has_feature_vector()                  { return mIterator.points_to_valid_data(); }
+  bool           has_feature_vector()            const { return mFeatureVector.size()>0; }
+  std::string    first_feature_name()            const { if(has_feature_vector()) return mFeatureVector[0]->name(); else return std::string("empty"); }
   
-  FeatureVector  pop_feature_vector()                  { FeatureVector fv = mTransform(*mIterator); ++mIterator; return fv; }
+  FeatureVector  pop_feature_vector()                  { FeatureVector fv = std::move(mFeatureVector); try_to_make_features(); return fv; }
 
   void           print_to(std::ostream& os)      const { os << "feature_stream `" << mName << "' with " << number_remaining() << " remaining features "; }
 
+private:
+  void  try_to_make_features()
+  { if(mIterator.points_to_valid_data())
+    { mFeatureVector = mTransform(*mIterator);
+      ++mIterator;
+    }
+  }
 };
 
 template<class Iterator, class Transform>
@@ -128,12 +137,14 @@ public:
 	return false;
       }
     }	 
+  std::string    first_feature_name()            const { if(has_feature_vector()) return mpTransform->result[0].name(); else return std::string("empty"); }
 
   FeatureVector  pop_feature_vector()
     { assert(mHaveStartedThread && mpTransform->finished());
       FeatureVector fv = mpTransform->result();
       ++mIterator;
       start_thread();
+      return fv;
     }
 
   void           print_to(std::ostream& os)      const { os << "threaded_feature_stream `" << mName << "' with " << number_remaining() << " remaining features "; }

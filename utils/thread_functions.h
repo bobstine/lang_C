@@ -37,7 +37,9 @@ public:
    : mName(tf.mName), mF(tf.mF), mTaskIsComplete(tf.mTaskIsComplete.load()), mThread(std::move(tf.mThread)), mResult(tf.mResult) { }
   
   thread_function& operator=(thread_function&& tf) // move assign
-    { mName = tf.mName; mF = tf.mF; mTaskIsComplete =tf.mTaskIsComplete.load(); mThread = std::move(tf.mThread); mResult = tf.mResult;
+    { std::clog << tag << "Calling move operator= in threads\n";
+      if (mThread.joinable()) mThread.join();
+      mName = tf.mName; mF = tf.mF; mTaskIsComplete =tf.mTaskIsComplete.load(); mThread = std::move(tf.mThread); mResult = tf.mResult;
       return *this;
     }
   
@@ -46,7 +48,11 @@ public:
   result_type result  ()     const { return mResult; }
   
   void   operator()(argument_type const& arg)
-  { mThread = std::thread([this, arg]()
+  { if(mThread.joinable())
+    { std::clog << tag << "mThread was joinable when called in operator().\n";
+      mThread.join();
+    }
+    mThread = std::thread([this, arg]()
 			  { this->mTaskIsComplete=false;
 			    this->mResult = this->mF(arg);
 			    this->mTaskIsComplete=true;

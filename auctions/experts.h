@@ -82,13 +82,13 @@ public:
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
-  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || ( !has_feature() /* is.active??? */);}
+  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || ( !has_feature() );}
   
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   virtual std::string    description()                      const = 0;  
   virtual double         place_bid(BiddingHistory const& state)  = 0; 
-  // virtual std::string    feature_name()                     const = 0;   do we really need this???
+  virtual std::string    first_feature_name()               const = 0;   
   virtual FeatureVector  feature_vector()                         = 0;
   
   NamedIteratorVector    convert_to_model_iterators(FeatureVector const& fv) const;    // convert to vector of (name, begin) pairs
@@ -131,7 +131,7 @@ public:
   double              place_bid (BiddingHistory const& state);
   void                model_adds_current_variable()           { /* placeholder */ }
 
-  //  std::string         feature_name()                const     { return mStream.feature_name(); }        have not put this back in ???
+  std::string         first_feature_name()          const     { return mStream.first_feature_name(); }
   FeatureVector       feature_vector()                        { return mStream.pop_feature_vector(); }      // stream pop must return feature *vector*
 
   virtual void        print_to(std::ostream& os)    const;

@@ -83,7 +83,7 @@ main(int argc, char** argv)
   using debugging::debug;
   using std::string;
 
-  debug("AUCT",0) << "Version build 1.7 (18 Jan 2015)\n";
+  debug("AUCT",0) << "Version build 2.0 (18 Jan 2015)\n";
 
   // Parse command line options
   
@@ -195,13 +195,11 @@ main(int argc, char** argv)
   const string calibrationSignature ("Y_hat_");
   Auction<  ValidatedRegression > theAuction(theRegr, calibration, calibrationSignature, blockSize, progressStream);
   
-  // add experts to auction
+  // open input data stream
   
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
   std::vector<string> streamNames (featureSource.stream_names());
-
-  // handle locked features
   {
     FeatureVector lockedFeatures;
     for(auto it = streamNames.begin(); it!=streamNames.end(); ++it)                // remove locked stream

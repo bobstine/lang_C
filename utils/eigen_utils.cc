@@ -24,7 +24,7 @@ EigenUtils::write_matrix_to_file (std::string fileName, Matrix const& x, bool ap
     return 0;
   }
   output << x ;
-  return x.rows();
+  return (int)x.rows();
 }
 
 
@@ -39,7 +39,7 @@ EigenUtils::write_labelled_matrix_to_file (std::string fileName, std::vector<std
   }
   for(int i=0; i<x.rows(); ++i)
     output << std::setw(8) << rowLabels[i] << "   " << x.row(i) << std::endl;
-  return x.rows();
+  return (int)x.rows();
 }
 
 int
@@ -52,6 +52,6 @@ EigenUtils::write_vector_to_file (std::string fileName, Vector const& x, bool ap
     return 0;
   }
   output << x.transpose() << std::endl;
-  return x.size();
+  return (int)x.size();
 }
 

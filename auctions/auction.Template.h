@@ -245,15 +245,11 @@ Auction<ModelClass>::collect_bids ()
   BiddingHistory history  (auction_history());
   int iExpert (0);
   for(auto expert : mExperts)
-  { double bid = expert->place_bid(history);               // pass information to experts; check if has feature
+  { double bid = expert->place_bid(history);        // pass information to experts; check if has feature
     if (mProgressStream)
-      if (iExpert < mNumInitialExperts)                   // only track output for initial experts
-      {	if (bid > 0)
-	  //      tracks the names of the features here
-	  //	  mProgressStream << "\t"    << remove_comma(expert.feature_name()) << "\t" << expert.alpha() << "\t" << bid;
-	  mProgressStream << "\t"    << "xxx" << "\t" << expert->alpha() << "\t" << bid;
-	else
-	  mProgressStream << "\t\t"                   << expert->alpha() << "\t" << bid;
+      if (iExpert < mNumInitialExperts)             // output is only formatted for initial experts
+      {	std::string name = (bid>0) ? remove_comma(expert->first_feature_name()) : std::string("*empty*");
+	mProgressStream << "\t" << name << "\t" << expert->alpha() << "\t" << bid;
       }
     if (bid > highBid)
     { highBid = bid;

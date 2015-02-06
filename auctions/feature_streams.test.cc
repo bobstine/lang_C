@@ -48,36 +48,32 @@ void drain_features (Stream & fs, int loopLimit)
 {
   unsigned int ms = 200;
   std::chrono::milliseconds workTime(ms);
-  std::cout << "\nTEST_drain: Loop pauses for " << 200 << "ms\n";
-  ms = 250;
+  std::cout << "\nTEST_drain: Loop pauses for " << ms << "ms\n";
   std::chrono::milliseconds pause(ms);
   
   int nPopped (0);
   int nIdle   (0);
   FeatureVector saved;
-  bool busy = false;
-  bool has = false;
   // test whether has feature first, since that test might make it busy
-  while ((has=fs.has_feature_vector()) && loopLimit--)
+  while (loopLimit--)
   {
-    std::cout << "TEST_drain: At top,  has_feature=" << fs.has_feature_vector() << "\n";
+    std::cout << "TEST_drain: At top with stream " << fs.name() << ":  has_feature=" << fs.has_feature_vector() << "\n";
     std::this_thread::sleep_for(workTime);
     if (fs.has_feature_vector())
-    { std::cout << "TEST_drain: About to pop off feature\n";
+    { std::cout << "TEST_drain: Pop off feature";
       std::vector<Feature> fv = fs.pop_feature_vector();
       ++nPopped;
-      std::cout << "TEST_drain: popped off feature nPopped\n";
-      std::for_each(fv.begin(), fv.end(), [&saved](Feature const& f) { saved.push_back(f); });
+      std::cout << "TEST_drain: Have popped off feature\n";
+      for(auto f : fv) saved.push_back(f);
       if (fv.size()) std::cout << "TEST_drain: feature " << fv[0] << " with " << fs.number_remaining() << " remaining\n" ;
-      else           std::cout << "TEST_drain: stream has_feature=true, but popped empty feature vector.\n"; 
+      else           std::cout << "TEST_drain: *** Error *** Stream has_feature=true, but popped empty feature vector.\n"; 
     }
     else ++nIdle;
   }
   std::this_thread::sleep_for(pause);
-  std::cout << "TEST_drain: exiting feature pop loop after popping " << nPopped << " features with " << nIdle << " idle cycles; more = " << loopLimit 
-	    << " iterations left with  busy=" << busy << "  and  has_feature=" << has << std::endl;
-  std::cout << "TEST_drain: popped features are: \n";
-  std::for_each(saved.begin(), saved.end(), [](Feature const& f) { std::cout << "       " << f->name() << std::endl; });
+  std::cout << "TEST_drain: Exiting feature pop loop after popping " << nPopped << " features with " << nIdle << " idle cycles.\n"; 
+  std::cout << "TEST_drain: Accumulated popped features are: \n";
+  for (auto f : saved) { std::cout << "       " << f->name() << std::endl; };
   std::cout << " ------- drain ended.\n\n";
 }
 
@@ -98,7 +94,7 @@ main()
   FeatureVector empty;
   
   std::cout << "\n\nTEST: building collection of features\n";
-  const int numFeatures (3);
+  const int numFeatures (15);
   for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
@@ -109,7 +105,7 @@ main()
 
 
 
-  if (true)         // test cyclic streams
+  if (false)         // test cyclic streams
   { 
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
     features[0] -> set_model_results(true, 0.05);
@@ -211,18 +207,17 @@ main()
     FeatureStream< BundleIterator<FeatureVector, SkipIfInBasis>, VIdentity> bs (make_subspace_stream("test", features, VIdentity(), bundleSize));
     drain_features(bs,15);
   }
-
-  if(false)    // test subspace with threads
+ 
+  if(true)    // test subspace with threads
   {
-    std::cout << "\n\nTEST: making threaded subspace stream\n";
-    FeatureVector bundle;
-    int bundleSize = 5;
+    const int bundleSize = 5;
+    std::cout << "\n\nTEST: Making threaded subspace stream from input feature vector with " << features.size() << " features.\n";
     auto tbs = make_threaded_subspace_stream("test", features, VIdentity(), bundleSize);
     drain_features(tbs,15);
   }
 
     
-  if (true)     // test interactions
+  if (false)     // test interactions
   { bool const useSquares (true);
     std::cout << "\n\nTEST:  Test of interaction stream.\n";
     FeatureStream< InteractionIterator<FeatureVector, SkipIfRelatedPair>, Identity> is (make_interaction_stream("test", features, useSquares));

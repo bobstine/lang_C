@@ -199,7 +199,7 @@ class BundleIterator
 public:
   BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mLoIndex(0), mHiIndex(0) { }
 
-  bool     points_to_valid_data()              const    { return (mSource.size()-mLoIndex) > mBundleSize; } 
+  bool points_to_valid_data()   const    { return mBundleSize <= (mSource.size()-mLoIndex); } 
   int  number_remaining ()      const    { if (points_to_valid_data()) return 1; else return 0; }
   BundleIterator& operator++()           { return *this; }
 
