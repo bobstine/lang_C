@@ -32,8 +32,8 @@ public:
   Model() : mQ(0), mCases(0), mAccepted(), mRejected() { }
   Model(FeatureVector const& accept, FeatureVector const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
 
-  int q()                       const  { return mQ; }
-  void increment_q()                   { ++ mQ; }
+  int  q()                      const  { return mQ; }
+  void increment_q()                   { ++ mQ; std::cout << "TEST: Model q incremented to q=" << mQ << std::endl;}
   int n_total_cases()           const  { return mCases; }
   double y_bar()                const  { return 0.0; }
   
@@ -60,7 +60,7 @@ void drain_features (Stream & fs, int loopLimit)
     std::cout << "TEST_drain: At top with stream " << fs.name() << ":  has_feature=" << fs.has_feature_vector() << "\n";
     std::this_thread::sleep_for(workTime);
     if (fs.has_feature_vector())
-    { std::cout << "TEST_drain: Pop off feature";
+    { std::cout << "TEST_drain: Pop off feature\n";
       std::vector<Feature> fv = fs.pop_feature_vector();
       ++nPopped;
       std::cout << "TEST_drain: Have popped off feature\n";
@@ -98,7 +98,7 @@ main()
   for (int i=0; i<numFeatures; ++i)
   { features.push_back(Feature(columns[i]));
     featureVec1.push_back(Feature(columns[i]));
-    // featureVec2.push_back(Feature(columns[i+numFeatures]));
+    featureVec2.push_back(Feature(columns[i+numFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
   std::cout << "  -------------------------------------------------------\n\n";
@@ -182,19 +182,21 @@ main()
   }
 
 
-  if (false)    // test calibration stream
+  if (true)    // test calibration stream
   {
     std::cout << "\n\nTEST: making calibration stream\n";
-    int  const degree = 3;
+    int  const gap = 0;
     int  const skip = 0;
     bool const binaryResponse (false);
     Model model (featureVec1, featureVec2);
 
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream ("test", model, degree, "Y_hat_", skip, binaryResponse));
-    std::cout << cs << std::endl;
-    std::cout << "  Calibration stream  has_feature=" << cs.has_feature_vector() << std::endl;
+    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream
+									      ("test", model, gap, "Y_hat_", skip, binaryResponse));
+    std::cout << "  Initial calibration stream,  has_feature=" << cs.has_feature_vector() << std::endl
+	      << "  " << cs << std::endl;
     model.increment_q();
-    std::cout << "  After increment, stream  has_feature=" << cs.has_feature_vector() << std::endl;
+    std::cout << "  After increment q, calibration stream,  has_feature=" << cs.has_feature_vector() << std::endl
+	      << "  " <<  cs << std::endl;
     drain_features(cs,10);  // hard to test since need to increment q inside drain.
   }
 
@@ -208,7 +210,7 @@ main()
     drain_features(bs,15);
   }
  
-  if(true)    // test subspace with threads
+  if(false)    // test subspace with threads
   {
     const int bundleSize = 5;
     std::cout << "\n\nTEST: Making threaded subspace stream from input feature vector with " << features.size() << " features.\n";

@@ -109,9 +109,11 @@ operator<< (std::ostream& os, Feature const& feature) { feature.write_to(os); re
 typedef  std::vector<Feature>  FeatureVector;
 typedef  std::list  <Feature>  FeatureList;
 
-
 FeatureVector
 features_with_name(std::string name, FeatureVector const& fv);
+
+FeatureVector
+features_with_attribute(std::string attribute, std::string value, FeatureVector const& fv);
 
 FeatureVector
 powers_of_column (Column const& col, std::vector<int> const& powers);

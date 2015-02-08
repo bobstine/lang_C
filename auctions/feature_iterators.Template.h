@@ -60,7 +60,7 @@ ModelIterator<Model>::points_to_valid_data()  const
   // need to check name of last accepted; dont have one if its us
   std::string lastName (mModel.predictor_names().back());
   if (std::string::npos != lastName.find("Y_hat"))                          // npos means not found; != npos means found
-  { debugging::debug("FITS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
+  { debugging::debug("FTRS", 3) << "Found fit variable in most recent model; cannot build feature.\n";
     return false;
   }
   return true;

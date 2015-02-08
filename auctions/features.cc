@@ -99,6 +99,18 @@ features_with_name(std::string name, FeatureVector const& fv)
   return result;
 }
 
+FeatureVector
+features_with_attribute(std::string attribute, std::string value, FeatureVector const& fv)
+{
+  FeatureVector result;
+  for(auto f : fv)
+  { std::string v = f->attribute_str_value(attribute);
+    if(v == value)
+      result.push_back(f);
+  }
+  return result;
+}
+
   
 Feature
 make_indexed_feature(Feature const& f, IntegerColumn const& i)

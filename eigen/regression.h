@@ -101,10 +101,12 @@ public:
   inline double    aic_c()             const   { double n(mN), k(mK); return n * log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
   inline double    r_squared()         const   { return 1.0 - mResidualSS/mTotalSS; }
   inline double    adj_r_squared()     const   { return 1.0 - (mResidualSS/(mN-mK)) / (mTotalSS/(mN-1)); }
+  inline Vector    y()                 const   { return mY; }
   inline Vector    residuals()         const   { return mResiduals; }
   inline Vector    fitted_values()     const   { return mY - mResiduals; }
-  inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }  // raw versions remove the internal weights
-  inline Vector    raw_fitted_values() const   { return fitted_values().array()/mSqrtWeights.array(); }
+  inline Vector    raw_y()             const   { return mY.cwiseQuotient(mSqrtWeights); }                // raw versions remove the internal weights
+  inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }       //
+  inline Vector    raw_fitted_values() const   { return fitted_values().array()/mSqrtWeights.array(); }  //
 
   Vector    raw_fitted_values(double lo, double hi)  const;                                             // truncated to indicated range
   Vector    x_row(int i)                    const; 
@@ -161,9 +163,10 @@ public:
 class ValidatedRegression
 {
 public:
-  typedef LinearRegression::Vector  Vector;
-  typedef LinearRegression::Matrix  Matrix;
-  
+  typedef LinearRegression::Vector        Vector;
+  typedef LinearRegression::Matrix        Matrix;
+  typedef std::vector<std::pair<int,int>> ConfusionMatrix;
+
 private:
   const int             mLength;            // total length estimation + validation
   const bool            mShrink;        
@@ -187,27 +190,31 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
     :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
 
-  double goodness_of_fit()        const  { return mModel.r_squared(); }
-  int block_size()                const  { return mModel.block_size(); }
-  int q()                         const  { return mModel.q(); }
-  int residual_df()               const  { return n_estimation_cases() - 1 - mModel.q(); }
-  LinearRegression const& model() const  { return mModel; }
+  double goodness_of_fit()                      const  { return mModel.r_squared(); }
+  int block_size()                              const  { return mModel.block_size(); }
+  int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
+  int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
+  LinearRegression const& model()               const  { return mModel; }
 
-  std::vector<std::string> predictor_names() const { return mModel.predictor_names(); }
-  
-  int n_total_cases()      const  { return mLength; }
-  int n_validation_cases() const  { return mLength - mN; }
-  int n_estimation_cases() const  { return mN; }
-  
-  double estimation_ss()   const  { return mModel.residual_ss(); }
-  double validation_ss()   const  { return mValidationSS; }
+  double y_bar()                                const  { return mModel.y_bar(); }
+  std::vector<double>  beta()                   const  { std::vector<double> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
+  std::vector<std::string> predictor_names()    const  { return mModel.predictor_names(); }
 
-  std::pair<double,double> sums_of_squares() { return std::make_pair(estimation_ss(), mValidationSS); }
+  int n_total_cases()                           const  { return mLength; }
+  int n_validation_cases()                      const  { return mLength - mN; }
+  int n_estimation_cases()                      const  { return mN; }
+  
+  double estimation_ss()                        const  { return mModel.residual_ss(); }
+  double validation_ss()                        const  { return mValidationSS; }
+  std::pair<double,double> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
+
+  ConfusionMatrix estimation_confusion_matrix(double threshold=0.5) const;
+  ConfusionMatrix validation_confusion_matrix(double threshold=0.5) const;
+  
 
   template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
 
-  double                     y_bar()                               const  { return mModel.y_bar(); }
   template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
   template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
   

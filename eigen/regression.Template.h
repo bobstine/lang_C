@@ -50,7 +50,6 @@ std::pair<double,double>
 }
 
 
-
 template<class Iter, class BIter, class WIter>
   void
   ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)

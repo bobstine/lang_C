@@ -544,7 +544,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
-  Vector y    (mY.cwiseQuotient(mSqrtWeights));
+  Vector y    (raw_y());
   Vector res  (raw_residuals());
   Vector fit  (y - res);
   for(int i=0; i<mN; ++i)
@@ -567,6 +567,56 @@ ValidatedRegression::initialize_validation_ss()
   mValidationSS = mValidationY.unaryExpr([mean](double x)->double { return x-mean; }).squaredNorm();
 }
 
+//     confusion_matrix     confusion_matrix     confusion_matrix
+
+ValidatedRegression::ConfusionMatrix
+confusion_matrix (ValidatedRegression::Vector const& y, ValidatedRegression::Vector const& yHat, double threshold)
+{
+  std::pair<int,int>  p0 = {0,0};
+  std::pair<int,int>  p1 = {0,0};
+  for(int i=0; i<y.size(); ++i)
+  { std::pair<int,int> *p = (y[i]==0) ? &p0 : &p1;
+    if(yHat[i] < threshold)
+      ++p->first;
+    else
+      ++p->second;
+  }
+  std::vector<std::pair<int,int>> result (2);
+  result[0] = p0;
+  result[1] = p1;
+  return result;
+}  
+
+void
+print_confusion_matrix( ValidatedRegression::ConfusionMatrix const& m, std::ostream &os )
+{
+  std::pair<int,int> p;
+  
+  double sens = (double) m[0].first /(double)(m[0].first+m[0].second);
+  double spec = (double) m[1].second/(double)(m[1].first+m[1].second);
+  os
+    << "[0] " << std::setw(5) << m[0].first << "  " << std::setw(5) << m[0].second << " {" << std::setprecision(3) << sens << "} "
+    << "[1] " << std::setw(5) << m[1].first << "  " << std::setw(5) << m[1].second << " {" << std::setprecision(3) << spec << "} ";
+}
+  
+ValidatedRegression::ConfusionMatrix
+ValidatedRegression::estimation_confusion_matrix(double threshold) const
+{
+  assert (mModel.is_binary());
+  return confusion_matrix(mModel.raw_y(), mModel.fitted_values(), threshold);
+}
+
+ValidatedRegression::ConfusionMatrix
+ValidatedRegression::validation_confusion_matrix(double threshold) const
+{
+  assert (mModel.is_binary());
+  assert (n_validation_cases() > 0);
+  return confusion_matrix(mValidationY, mModel.predictions(mValidationX), threshold);
+}
+
+
+//     print_to     print_to     print_to     
+
 void
 ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
 {
@@ -577,8 +627,18 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
   if(block_size() > 0)
     os << " with White SE(b=" << block_size() << ")";
   os << std::endl
-     << "            Validation SS = " << validation_ss() << std::endl
-     << mModel;
+     << "            Validation SS = " << validation_ss() << std::endl;
+  if (mModel.is_binary())
+  { os << "            Training   confusion matrix = " ;
+    print_confusion_matrix(estimation_confusion_matrix(),os);
+    os << std::endl;
+    if (n_validation_cases())
+    { os << "            Validation confusion matrix = ";
+      print_confusion_matrix(validation_confusion_matrix(),os);
+      os << std::endl;
+    }
+  }
+  os << mModel;
 }
 
 void

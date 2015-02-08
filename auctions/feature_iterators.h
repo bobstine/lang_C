@@ -149,7 +149,7 @@ public:
     :  mFeature(f), mBlockSize(blockSize), mRemaining(maxLag*cycles), mLag(1), mMaxLag(maxLag) {  }
   
   int   number_remaining()         const   { return  mRemaining; }
-  bool  points_to_valid_data()                    const   { return  mRemaining > 0; }
+  bool  points_to_valid_data()     const   { return  mRemaining > 0; }
 
   LagIterator&  operator++();
   Feature       operator*()        const   { return  Feature(mFeature,mLag,mBlockSize); }
@@ -174,7 +174,7 @@ class ModelIterator
  public:
  ModelIterator(Model const& m, int gap): mModel(m), mLastQ(0), mSeparation(gap) {}
   
-  bool            points_to_valid_data()                    const;
+  bool            points_to_valid_data()     const;
   int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
   ModelIterator&  operator++()                     { return *this; }
   Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
@@ -186,6 +186,27 @@ std::ostream&
 operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os); return os; }
 
 
+//     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator
+
+template< class Model >
+class BeamIterator
+{
+  std::string  mStream;  // watching this stream
+  Model const& mModel;   // better not go out of scope!
+  int          mLastQ;   // number used in current feature
+  int          mGap;     // how many before we build a new one
+ public:
+
+ BeamIterator(std::string stream, Model const& m, int gap): mStream(stream), mModel(m), mLastQ(0), mGap(gap) { }
+  
+  bool            points_to_valid_data()     const;
+  int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
+  BeamIterator&   operator++()                     { return *this; }
+  Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
+  void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " with separation " << mGap; }
+};
+  
+  
 
 //     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator
 
