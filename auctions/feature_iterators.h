@@ -162,7 +162,6 @@ std::ostream&
 operator<< (std::ostream& os, LagIterator const& it) { it.print_to(os); return os; }
 
 
-
 //     ModelIterator    ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     ModelIterator     
 
 template< class Model >
@@ -174,7 +173,7 @@ class ModelIterator
  public:
  ModelIterator(Model const& m, int gap): mModel(m), mLastQ(0), mSeparation(gap) {}
   
-  bool            points_to_valid_data()     const;
+  bool            points_to_valid_data()     const ;
   int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
   ModelIterator&  operator++()                     { return *this; }
   Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
@@ -188,24 +187,120 @@ operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os);
 
 //     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator
 
-template< class Model >
+template< class Auction >
 class BeamIterator
 {
-  std::string  mStream;  // watching this stream
-  Model const& mModel;   // better not go out of scope!
-  int          mLastQ;   // number used in current feature
-  int          mGap;     // how many before we build a new one
+  
  public:
+  typedef std::pair<std::vector<int>, std::vector<int>> IndexPair;               // which model features form the beams
+  typedef std::pair<int, Feature>                       IndexedFeature;          // where does feature appear in model
+  typedef std::vector<std::vector<IndexedFeature>>      IndexedFeatureVector;    // features in a beam
+  typedef std::pair<std::string,FeaturePredicate>       NamedFeaturePredicate;   // assign feature with index to beam
 
- BeamIterator(std::string stream, Model const& m, int gap): mStream(stream), mModel(m), mLastQ(0), mGap(gap) { }
+ private:
+  typedef std::vector<std::string     >   NameVector;
+  typedef std::vector<FeaturePredicate>   PredicateVector;
+  typedef std::vector<int>                CountVector;
+  typedef std::pair<int,int>              IntPair;
+  typedef std::map<IntPair,IntPair>       IntPairMap;
   
-  bool            points_to_valid_data()     const;
+  Auction    const&         mAuction;    
+  int                       mGap;               // gap between beams from same stream
+  int                       mLastQ;
+  IntPair                   mBestBeam;
+  IntPairMap                mBeamFeaturesUsed;
+  IndexedFeatureVector      mBeamFeatures;
+  NameVector                mBeamNames;
+  PredicateVector           mBeamPredicates;
+  
+ public:
+ BeamIterator(Auction const& auc, std::vector<NamedFeaturePredicate> beamIDs, int gap)
+   : mAuction(auc), mGap(gap), mLastQ(mAuction.number_of_model_features()), mBestBeam({0,0})
+  { init(beamIDs);
+    find_best_beam();
+  }
+  
+  bool            points_to_valid_data()           { if(update_adds_to_beams()) find_best_beam(); return best_beam_is_okay(); }
+    
   int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
-  BeamIterator&   operator++()                     { return *this; }
-  Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
-  void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " with separation " << mGap; }
-};
+
+  BeamIterator&   operator++()                     { find_best_beam(); }
+  IndexPair       operator*()
+  { std::pair<int,int> base = mBeamFeaturesUsed[mBestBeam];
+    return std::make_pair(
+			  current_beam_indices(mBestBeam.first, base.first),
+			  current_beam_indices(mBestBeam.second, base.second)
+			  );
+  }
   
+  void            print_to(std::ostream& os) const { os << "BeamIterator, " << mBeamFeatures.size() << " beams\n"; }
+
+  int             number_of_beams()          const { return (int) mBeamFeatures.size(); }
+  
+ private:
+
+  void init(std::vector<NamedFeaturePredicate> beamIDs)
+  { for (auto p : beamIDs)
+    { mBeamNames.push_back(p.first);
+      mBeamPredicates.push_back(p.second);
+    }
+    for(int i=0; i<number_of_beams(); ++i)
+      for(int j=0; j<=i; ++j)
+	mBeamFeaturesUsed[std::make_pair(i,j)] = std::make_pair(0,0);
+  }
+
+    std::vector<int> current_beam_indices (int beam, int position) const
+  {
+    assert(position < (int)mBeamFeatures[beam].size());
+    std::vector<int> result;
+    for(int i=position; i<(int)mBeamFeatures[beam].size(); ++i)
+      result.push_back(mBeamFeatures[beam][i].first);
+    return result;
+  }
+
+      
+  bool update_adds_to_beams()
+  { bool result = false;
+    if (mLastQ < mAuction.number_of_model_features())  // need to add features
+    { FeatureVector modelFeatures = mAuction.model_features();
+      for (int i=mLastQ+1; i<mAuction.number_of_model_features(); ++i)
+      { Feature f = modelFeatures[i];
+	for(int j=0; j<(int)mBeamPredicates.size(); ++j)
+	{ if(mBeamPredicates[j](f))      // add this feature to named beam
+	  { result=true;
+	    mBeamFeatures[j].push_back(std::make_pair(i,f));
+	  }
+	}
+      }
+    }
+    mLastQ = mAuction.number_of_model_features();
+    return result;
+  }
+
+  void find_best_beam()
+  { int bestSum = 0;
+    for(int i=0; i<number_of_beams(); ++i)
+      for (int j=0; j<=i; ++j)
+      { std::pair<int,int> lastCount = mBeamFeaturesUsed[std::make_pair(i,j)];
+	int sum = (int)(mBeamFeatures[i].size()+mBeamFeatures[j].size())-(lastCount.first + lastCount.second);
+	if (bestSum < sum)
+	{ bestSum = sum;
+	  mBestBeam = std::make_pair(i,j);
+	}
+      }
+  }
+
+  
+  bool best_beam_is_okay() const
+  { std::pair<int,int> lastCount = *mBeamFeaturesUsed.find(mBestBeam);
+    return   (
+	      ((lastCount.first +mGap) < mBeamFeatures[mBestBeam.first].size()) ||
+	      ((lastCount.second+mGap) < mBeamFeatures[mBestBeam.second].size())
+	      );
+  }
+      
+    
+};
   
 
 //     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator

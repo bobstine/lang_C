@@ -227,6 +227,16 @@ make_feature_product_stream (std::string name, Feature const& f, Collection cons
 }
 
 
+template <class Auction>
+FeatureStream< BeamIterator<Auction, SkipIfDerived> , BeamConstructor>
+make_beam_stream (std::string name, Auction const& auction, int gap)
+{
+  debug("FSTR",3) << "make_beam_stream from auction\n";
+  return FeatureStream< BeamIterator<Auction,SkipIfDerived>, BeamConstructor>
+    ("Beam::"+name, BeamIterator<Auction, SkipIfDerived>(auction,gap), BeamConstructor());
+}
+
+
 template <class Model>
 FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
 make_calibration_stream (std::string name, Model const& model, int gap, std::string signature, int skip, bool binary)

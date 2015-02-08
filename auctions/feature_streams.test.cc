@@ -201,6 +201,21 @@ main()
   }
 
 
+  if (true)    // test beam stream
+  {
+    std::cout << "\n\nTEST: Making beam stream\n";
+    int  const gap = 0;
+		  
+    Model model (featureVec1, featureVec2);
+    
+    std::vector<BeamIterator<Model>::NamedFeaturePredicate> vp;
+    vp.push_back( std::make_pair("s1", [](Feature const& f)->bool{ return f->name()=="s1";}));
+    vp.push_back( std::make_pair("s2", [](Feature const& f)->bool{ return f->name()=="s2";}));
+
+    
+  }
+
+
   if(false)    // test subspace 
   {
     std::cout << "\n\nTEST: making subspace stream\n";

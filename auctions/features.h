@@ -103,6 +103,10 @@ inline
 std::ostream&
 operator<< (std::ostream& os, Feature const& feature) { feature.write_to(os); return os; }
 
+////  Convenience definitions
+
+typedef bool (*FeaturePredicate)(Feature const&) ;
+
 
 ////  Convenience functions for collections
 

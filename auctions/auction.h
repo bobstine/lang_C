@@ -67,7 +67,8 @@ private:
   StringVec              purged_expert_names()      const { return mPurgedExpertNames; }
 									 
   int                    number_of_predictors()     const { return mModel.dimension(); }
-  int                    number_of_features_tried() const { return mModelFeatures.size() + mRejectedFeatures.size(); }
+  int                    number_of_features_tried() const { return (int) (mModelFeatures.size() + mRejectedFeatures.size()); }
+  int                    number_of_model_features() const { return (int) mModelFeatures.size(); }
   FeatureVector const&   model_features()           const { return mModelFeatures; }
   FeatureVector const&   rejected_features()        const { return mRejectedFeatures; }
   BiddingHistory         auction_history()          const { return BiddingHistory(mPayoffHistory, mModelFeatures, mRejectedFeatures); }
