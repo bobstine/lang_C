@@ -4,6 +4,7 @@
 
 #include "fstatistic.h"
 #include "eigen_iterator.h"
+#include "confusion_matrix.h"
 
 #include <Eigen/Core>
 
@@ -165,7 +166,6 @@ class ValidatedRegression
 public:
   typedef LinearRegression::Vector        Vector;
   typedef LinearRegression::Matrix        Matrix;
-  typedef std::vector<std::pair<int,int>> ConfusionMatrix;
 
 private:
   const int             mLength;            // total length estimation + validation
@@ -208,9 +208,8 @@ public:
   double validation_ss()                        const  { return mValidationSS; }
   std::pair<double,double> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
 
-  ConfusionMatrix estimation_confusion_matrix(double threshold=0.5) const;
-  ConfusionMatrix validation_confusion_matrix(double threshold=0.5) const;
-  
+  ConfusionMatrix estimation_confusion_matrix(float threshold=0.5) const;
+  ConfusionMatrix validation_confusion_matrix(float threshold=0.5) const;
 
   template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
   std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);

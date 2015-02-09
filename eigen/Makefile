@@ -21,7 +21,7 @@ EXTERNAL_USES =
 #
 ###########################################################################
 
-level_0   =  fstatistic.o eigen_iterator.o
+level_0   =  fstatistic.o eigen_iterator.o confusion_matrix.o
 level_1   =  eigen_svd.o  regression.o 
 
 ############################################################################

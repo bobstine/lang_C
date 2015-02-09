@@ -11,6 +11,8 @@ using debugging::debug;
 
 #include "regression.h"
 #include "bennett.h"
+#include "eigen_iterator.h"
+#include "confusion_matrix.h"
 
 #include <thread>
 
@@ -568,50 +570,23 @@ ValidatedRegression::initialize_validation_ss()
 }
 
 //     confusion_matrix     confusion_matrix     confusion_matrix
-
-ValidatedRegression::ConfusionMatrix
-confusion_matrix (ValidatedRegression::Vector const& y, ValidatedRegression::Vector const& yHat, double threshold)
-{
-  std::pair<int,int>  p0 = {0,0};
-  std::pair<int,int>  p1 = {0,0};
-  for(int i=0; i<y.size(); ++i)
-  { std::pair<int,int> *p = (y[i]==0) ? &p0 : &p1;
-    if(yHat[i] < threshold)
-      ++p->first;
-    else
-      ++p->second;
-  }
-  std::vector<std::pair<int,int>> result (2);
-  result[0] = p0;
-  result[1] = p1;
-  return result;
-}  
-
-void
-print_confusion_matrix( ValidatedRegression::ConfusionMatrix const& m, std::ostream &os )
-{
-  std::pair<int,int> p;
   
-  double sens = (double) m[0].first /(double)(m[0].first+m[0].second);
-  double spec = (double) m[1].second/(double)(m[1].first+m[1].second);
-  os
-    << "[0] " << std::setw(5) << m[0].first << "  " << std::setw(5) << m[0].second << " {" << std::setprecision(3) << sens << "} "
-    << "[1] " << std::setw(5) << m[1].first << "  " << std::setw(5) << m[1].second << " {" << std::setprecision(3) << spec << "} ";
-}
-  
-ValidatedRegression::ConfusionMatrix
-ValidatedRegression::estimation_confusion_matrix(double threshold) const
+ConfusionMatrix
+ValidatedRegression::estimation_confusion_matrix(float threshold) const
 {
   assert (mModel.is_binary());
-  return confusion_matrix(mModel.raw_y(), mModel.fitted_values(), threshold);
+  Vector y = mModel.raw_y();
+  Vector fit = mModel.fitted_values();
+  return ConfusionMatrix(y.size(), EigenVectorIterator(&y), EigenVectorIterator(&fit), threshold);
 }
 
-ValidatedRegression::ConfusionMatrix
-ValidatedRegression::validation_confusion_matrix(double threshold) const
+ConfusionMatrix
+ValidatedRegression::validation_confusion_matrix(float threshold) const
 {
   assert (mModel.is_binary());
   assert (n_validation_cases() > 0);
-  return confusion_matrix(mValidationY, mModel.predictions(mValidationX), threshold);
+  Vector pred = mModel.predictions(mValidationX);
+  return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
 }
 
 
@@ -629,13 +604,13 @@ ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
   os << std::endl
      << "            Validation SS = " << validation_ss() << std::endl;
   if (mModel.is_binary())
-  { os << "            Training   confusion matrix = " ;
-    print_confusion_matrix(estimation_confusion_matrix(),os);
-    os << std::endl;
+  { os << "            Training   confusion matrix \n"
+       << estimation_confusion_matrix()
+       << std::endl;
     if (n_validation_cases())
-    { os << "            Validation confusion matrix = ";
-      print_confusion_matrix(validation_confusion_matrix(),os);
-      os << std::endl;
+    { os << "            Validation confusion matrix = \n"
+	 << validation_confusion_matrix()
+	 << std::endl;
     }
   }
   os << mModel;

@@ -1,4 +1,4 @@
-/*
+/* 
   Builds the auction using parameters from the input parameter file.  The first
   line of the parameters file uses these options:
 	-a  total alpha to distribute           (default is 0.1... might ought to be less)
