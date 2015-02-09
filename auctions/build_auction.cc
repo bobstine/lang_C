@@ -193,7 +193,8 @@ main(int argc, char** argv)
 
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
-  Auction<  ValidatedRegression > theAuction(theRegr, calibration, calibrationSignature, blockSize, progressStream);
+  typedef Auction< ValidatedRegression > RegressionAuction;
+  RegressionAuction theAuction(theRegr, calibration, calibrationSignature, blockSize, progressStream);
   
   // open input data stream
   
@@ -223,6 +224,8 @@ main(int argc, char** argv)
   double   alphaInt       (alphaShare * 0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
+  typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
+
   //  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
   //  double   alphaCP        (alphaShare * (hasLockFeatures ? 0.29 : 0    ));  //                        cross products
 
@@ -239,6 +242,14 @@ main(int argc, char** argv)
 				 make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
 				 ));
   }
+  {
+    const int gap = 3;
+    theAuction.add_expert(Expert("Beam", custom, nContextCases, alphaInt,
+				 UniversalBoundedBidder<BeamStream>(),			       
+				 make_beam_stream("streams", theAuction, streamNames, gap)));
+  }
+
+
     /*
       if (hasLockFeatures)                                                                                           // cross with locked stream
 	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 

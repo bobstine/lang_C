@@ -208,10 +208,7 @@ main()
 		  
     Model model (featureVec1, featureVec2);
     
-    std::vector<BeamIterator<Model>::NamedFeaturePredicate> vp;
-    vp.push_back( std::make_pair("s1", [](Feature const& f)->bool{ return f->name()=="s1";}));
-    vp.push_back( std::make_pair("s2", [](Feature const& f)->bool{ return f->name()=="s2";}));
-
+    BeamIterator<Model> vp;
     
   }
 

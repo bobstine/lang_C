@@ -50,23 +50,35 @@ class VIdentity: public std::function<FeatureVector (FeatureVector)>
 
 
 //     BeamConstructor     BeamConstructor     BeamConstructor     BeamConstructor     BeamConstructor
+//
+//   input vectors are the indices into the regression model
+//
+inline
+std::ostream& operator<<(std::ostream& os, std::vector<int> const& beam)
+{
+  os << "{";
+  for(int i : beam) os << " " << i;
+  os << " }";
+  return os;
+}
 
-template<class Auction>
+template<class Auc>
 class BeamConstructor: public std::function<FeatureVector (std::pair<std::vector<int>, std::vector<int>>)>
 {
   typedef std::vector<int> Beam;
-  
-  Auction  mAuction;
+
+  Auc const& mAuction;
   Beam mBeam1;
   Beam mBeam2;
   
  public:
   
- BeamConstructor(Auction const& auction): mAuction(auction) { }
+ BeamConstructor(Auc const& auction): mAuction(auction) { }
   
   FeatureVector operator()(std::pair<Beam,Beam> const& beams) const
   {
     FeatureVector result(1);
+    std::cout << "\nBEAM: Building linear combination of beams " << beams.first << " and " << beams.second << " in transformation.\n";
     result[0] = Feature(linear_combination(beams.first),
 			linear_combination(beams.second)
 			);
@@ -74,12 +86,14 @@ class BeamConstructor: public std::function<FeatureVector (std::pair<std::vector
   }
   
  private:
-  Feature linear_combination(Beam const& beam)
+  
+  Feature linear_combination(Beam const& beam) const
   {
     FeatureVector const& modelFeatures = mAuction.model_features();
     std::vector<double>  beta          = mAuction.model().beta();
     std::vector<double>  beamCoefs;
     std::vector<Feature> beamFeatures;
+    beamCoefs.push_back(0.0);  // linear combination wants an intercept
     for(int i : beam)
     { beamCoefs.push_back(beta[i+1]);
       beamFeatures.push_back(modelFeatures[i]);

@@ -82,7 +82,7 @@ public:
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
-  bool                   finished()                               { if (role()!=custom) return false; return (mAlpha <= 1.0e-10) || ( !has_feature() );}
+  bool                   finished()                               { if (mRole==custom) return false; return (mAlpha <= 1.0e-10) || ( 0 == number_of_remaining_features() );}
   
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
@@ -100,9 +100,9 @@ public:
   virtual void           print_to(std::ostream& os) const;
 
   double                 max_bid()           const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
-  virtual bool           has_feature()              = 0;
-  //  virtual bool           is_active()         const  = 0;     do I need to add this back?
-
+  virtual bool           has_feature()                  = 0;
+  virtual int            number_of_remaining_features() = 0;
+  
 private:
   std::string            role_string() const;
 };
@@ -137,6 +137,7 @@ public:
   virtual void        print_to(std::ostream& os)    const;
 
   bool                has_feature()                           { return mStream.has_feature_vector(); }
+  int                 number_of_remaining_features()          { return mStream.number_remaining(); }
 };
 
 

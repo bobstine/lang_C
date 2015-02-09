@@ -48,7 +48,7 @@ public:
   QueueIterator(QueueIterator const& queue)    : mpQueue(queue.mpQueue), mSkipPred(queue.mSkipPred) { ++mpQueue->mRefCount; }
 
   int    number_remaining()             const { return (int) mpQueue->mQueue.size(); }
-  bool   points_to_valid_data()                        const { return !mpQueue->mQueue.empty(); }
+  bool   points_to_valid_data()         const { return !mpQueue->mQueue.empty(); }
   
   QueueIterator&   operator++()               { assert(points_to_valid_data()); mpQueue->mQueue.pop();
                                                 while( (!mpQueue->mQueue.empty()) && mSkipPred(mpQueue->mQueue.top()) ) mpQueue->mQueue.pop();
@@ -81,7 +81,7 @@ public:
     : mSource(source), mPosition(0), mNeedToCheck(true), mSkipFeature(pred) { advance_position(); }
 
   int   number_remaining()              const { return (int)mSource.size() - (int)mPosition; }
-  bool  points_to_valid_data()                               { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
+  bool  points_to_valid_data()                { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
 
   DynamicIterator& operator++()               { assert(mPosition < mSource.size()); ++mPosition; advance_position(); return *this;}
   //  DynamicIterator  operator++(int)            { DynamicIterator copy = *this; assert(mPosition < mSource.size()); ++mPosition; advance_position(); return copy;}
@@ -117,7 +117,7 @@ public:
     : mSource(source), mSkipFeature(pred), mIter(source.begin()), mSize((int)source.size()) { initialize(); }
   
   int   number_remaining()              const { return mSize; }
-  bool  points_to_valid_data()                         const { return !mSource.empty() && (mSize > 0); }
+  bool  points_to_valid_data()          const { return !mSource.empty() && (mSize > 0); }
 
   CyclicIterator& operator++();
   Feature         operator*()           const { return *mIter; }
@@ -189,8 +189,7 @@ operator<< (std::ostream& os, ModelIterator<Model> const& it) { it.print_to(os);
 
 template< class Auction >
 class BeamIterator
-{
-  
+{  
  public:
   typedef std::pair<std::vector<int>, std::vector<int>> IndexPair;               // which model features form the beams
   typedef std::pair<int, Feature>                       IndexedFeature;          // where does feature appear in model
@@ -200,31 +199,27 @@ class BeamIterator
  private:
   typedef std::vector<std::string     >   NameVector;
   typedef std::vector<FeaturePredicate>   PredicateVector;
-  typedef std::vector<int>                CountVector;
+  typedef std::vector<int>                IntVector;
   typedef std::pair<int,int>              IntPair;
   typedef std::map<IntPair,IntPair>       IntPairMap;
   
   Auction    const&         mAuction;    
+  NameVector                mBeamNames;
   int                       mGap;               // gap between beams from same stream
   int                       mLastQ;
   IntPair                   mBestBeam;
-  IntPairMap                mBeamFeaturesUsed;
   IndexedFeatureVector      mBeamFeatures;
-  NameVector                mBeamNames;
-  PredicateVector           mBeamPredicates;
-  
- public:
- BeamIterator(Auction const& auc, std::vector<NamedFeaturePredicate> beamIDs, int gap)
-   : mAuction(auc), mGap(gap), mLastQ(mAuction.number_of_model_features()), mBestBeam({0,0})
-  { init(beamIDs);
-    find_best_beam();
-  }
-  
-  bool            points_to_valid_data()           { if(update_adds_to_beams()) find_best_beam(); return best_beam_is_okay(); }
-    
-  int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
+  IntPairMap                mBeamFeaturesUsed;
 
-  BeamIterator&   operator++()                     { find_best_beam(); }
+ public:
+ BeamIterator(Auction const& auc, std::vector<std::string> beamNames, int gap)
+   : mAuction(auc), mBeamNames(beamNames), mGap(gap), mLastQ(mAuction.number_of_model_features()), mBestBeam({0,0}), mBeamFeatures(beamNames.size())
+  { init();  find_best_beam(); }													       
+
+  int             number_of_beams()          const { return (int) mBeamFeatures.size(); }
+  bool            points_to_valid_data()           { if(update_adds_to_beams()) find_best_beam(); return best_beam_is_okay(); }
+  int             number_remaining ()      const   { return (int) mBeamNames.size();} //  Need to decide something sensible here??? (must maintain const)
+  BeamIterator&   operator++()                     { find_best_beam(); return *this; }
   IndexPair       operator*()
   { std::pair<int,int> base = mBeamFeaturesUsed[mBestBeam];
     return std::make_pair(
@@ -233,75 +228,25 @@ class BeamIterator
 			  );
   }
   
-  void            print_to(std::ostream& os) const { os << "BeamIterator, " << mBeamFeatures.size() << " beams\n"; }
-
-  int             number_of_beams()          const { return (int) mBeamFeatures.size(); }
+  void            print_to(std::ostream& os) const;
   
  private:
+  void       init();
+  IntVector  current_beam_indices (int beam, int position) const;
+  bool       update_adds_to_beams();
+  void       find_best_beam();
+  bool       best_beam_is_okay() const;
 
-  void init(std::vector<NamedFeaturePredicate> beamIDs)
-  { for (auto p : beamIDs)
-    { mBeamNames.push_back(p.first);
-      mBeamPredicates.push_back(p.second);
-    }
-    for(int i=0; i<number_of_beams(); ++i)
-      for(int j=0; j<=i; ++j)
-	mBeamFeaturesUsed[std::make_pair(i,j)] = std::make_pair(0,0);
-  }
-
-    std::vector<int> current_beam_indices (int beam, int position) const
-  {
-    assert(position < (int)mBeamFeatures[beam].size());
-    std::vector<int> result;
-    for(int i=position; i<(int)mBeamFeatures[beam].size(); ++i)
-      result.push_back(mBeamFeatures[beam][i].first);
-    return result;
-  }
-
-      
-  bool update_adds_to_beams()
-  { bool result = false;
-    if (mLastQ < mAuction.number_of_model_features())  // need to add features
-    { FeatureVector modelFeatures = mAuction.model_features();
-      for (int i=mLastQ+1; i<mAuction.number_of_model_features(); ++i)
-      { Feature f = modelFeatures[i];
-	for(int j=0; j<(int)mBeamPredicates.size(); ++j)
-	{ if(mBeamPredicates[j](f))      // add this feature to named beam
-	  { result=true;
-	    mBeamFeatures[j].push_back(std::make_pair(i,f));
-	  }
-	}
-      }
-    }
-    mLastQ = mAuction.number_of_model_features();
-    return result;
-  }
-
-  void find_best_beam()
-  { int bestSum = 0;
-    for(int i=0; i<number_of_beams(); ++i)
-      for (int j=0; j<=i; ++j)
-      { std::pair<int,int> lastCount = mBeamFeaturesUsed[std::make_pair(i,j)];
-	int sum = (int)(mBeamFeatures[i].size()+mBeamFeatures[j].size())-(lastCount.first + lastCount.second);
-	if (bestSum < sum)
-	{ bestSum = sum;
-	  mBestBeam = std::make_pair(i,j);
-	}
-      }
-  }
-
-  
-  bool best_beam_is_okay() const
-  { std::pair<int,int> lastCount = *mBeamFeaturesUsed.find(mBestBeam);
-    return   (
-	      ((lastCount.first +mGap) < mBeamFeatures[mBestBeam.first].size()) ||
-	      ((lastCount.second+mGap) < mBeamFeatures[mBestBeam.second].size())
-	      );
-  }
-      
-    
 };
-  
+
+template <class A>
+inline
+std::ostream&
+operator<<(std::ostream& os, BeamIterator<A> bi)
+{
+  bi.print_to(os);
+  return(os);
+}
 
 //     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator     BundleIterator
 
@@ -334,8 +279,9 @@ public:
 };
 
 template <class Collection, class Pred>
-std::ostream&
-operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+  inline
+  std::ostream&
+  operator<< (std::ostream& os, BundleIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
 
@@ -376,8 +322,9 @@ public:
 
 
 template <class Collection, class Pred>
-std::ostream&
-operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
+  inline
+  std::ostream&
+  operator<< (std::ostream& os, InteractionIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
 
@@ -427,7 +374,8 @@ class CrossProductIterator
                                                                                                                                                            
 
 template<class Pred>
-std::ostream&
-operator<< (std::ostream& os, CrossProductIterator<Pred> const& it) { it.print_to(os); return os; }
+  inline
+  std::ostream&
+  operator<< (std::ostream& os, CrossProductIterator<Pred> const& it) { it.print_to(os); return os; }
 
 #endif

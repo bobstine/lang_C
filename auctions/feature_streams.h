@@ -228,12 +228,12 @@ make_feature_product_stream (std::string name, Feature const& f, Collection cons
 
 
 template <class Auction>
-FeatureStream< BeamIterator<Auction, SkipIfDerived> , BeamConstructor>
-make_beam_stream (std::string name, Auction const& auction, int gap)
+FeatureStream< BeamIterator<Auction> , BeamConstructor<Auction> >
+make_beam_stream (std::string name, Auction const& auction, std::vector<std::string> streams, int gap)
 {
   debug("FSTR",3) << "make_beam_stream from auction\n";
-  return FeatureStream< BeamIterator<Auction,SkipIfDerived>, BeamConstructor>
-    ("Beam::"+name, BeamIterator<Auction, SkipIfDerived>(auction,gap), BeamConstructor());
+  return FeatureStream< BeamIterator<Auction>, BeamConstructor<Auction> >
+    ("Beam::"+name, BeamIterator<Auction>(auction,streams,gap), BeamConstructor<Auction>(auction));
 }
 
 

@@ -9,6 +9,88 @@
 
 #include <assert.h>
 
+//     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator     BeamIterator
+
+template<class A>
+void
+BeamIterator<A>::print_to(std::ostream& os) const
+{ os << "BeamIterator with " << mBeamFeatures.size() << " beams of sizes: ";
+  for(size_t i=0; i<mBeamFeatures.size(); ++i)
+    os << "(" << mBeamNames[i] << "," << mBeamFeatures[i].size() << ") ";
+}	
+
+template<class A>
+void
+BeamIterator<A>::init()
+{ debugging::debug("BEAM",3) << "Initializing BeamIterator to watch " << mBeamFeatures.size() << " streams:";
+  for(std::string n : mBeamNames) std::cout << " " << n;
+  std::cout << std::endl;
+  for(int i=0; i<number_of_beams(); ++i)
+    for(int j=0; j<=i; ++j)
+      mBeamFeaturesUsed[std::make_pair(i,j)] = std::make_pair(0,0);
+}
+
+template<class A>
+std::vector<int>
+BeamIterator<A>::current_beam_indices (int beam, int position) const
+{
+  assert(position < (int)mBeamFeatures[beam].size());
+  std::vector<int> result;
+  for(int i=position; i<(int)mBeamFeatures[beam].size(); ++i)
+    result.push_back(mBeamFeatures[beam][i].first);
+  return result;
+}
+      
+template<class A>
+bool
+BeamIterator<A>::update_adds_to_beams()
+{ debugging::debug("BEAM",3) << "BeamIterator::update_adds_to_beams, mLastQ=" << mLastQ << "; model now has " << mAuction.number_of_model_features() << " features." << std::endl;
+  bool result = false;
+  if (mLastQ < mAuction.number_of_model_features())  // need to add features
+  { FeatureVector modelFeatures = mAuction.model_features();
+    debugging::debug("BEAM",3) << "Update with vector of " << modelFeatures.size() << " model features.\n";
+    for (int i=mLastQ; i<mAuction.number_of_model_features(); ++i)
+    { Feature f = modelFeatures[i];
+      debugging::debug("BEAM",3) << "Update examining feature " << f->name() << " from stream " << f->attribute_str_value("stream") << std::endl;
+      for(int j=0; j<(int)mBeamNames.size(); ++j)
+      { if(mBeamNames[j] == f->attribute_str_value("stream"))      // add this feature to named beam   ... ??? add a 'beam' attribute in the future rather than use stream name
+	{ result=true;
+	  mBeamFeatures[j].push_back(std::make_pair(i,f));
+	}
+      }
+    }
+  }
+  mLastQ = mAuction.number_of_model_features();
+  return result;
+}
+
+template<class A>
+void
+BeamIterator<A>::find_best_beam()
+{ debugging:debug("BEAM",4) << "BeamIterator::find_best_beam\n";
+  int bestSum = 0;
+  for(int i=0; i<number_of_beams(); ++i)
+    for (int j=0; j<=i; ++j)
+    { std::pair<int,int> lastCount = mBeamFeaturesUsed[std::make_pair(i,j)];
+      int sum = (int)(mBeamFeatures[i].size()+mBeamFeatures[j].size())-(lastCount.first + lastCount.second);
+      if (bestSum < sum)
+      { bestSum = sum;
+	mBestBeam = std::make_pair(i,j);
+      }
+    }
+}
+
+template<class A>
+bool
+BeamIterator<A>::best_beam_is_okay() const
+{ std::pair<int,int> lastCount = mBeamFeaturesUsed.find(mBestBeam)->second;
+  return   (
+	    ((lastCount.first +mGap) < (int)mBeamFeatures[mBestBeam.first].size()) ||
+	    ((lastCount.second+mGap) < (int)mBeamFeatures[mBestBeam.second].size())
+	    );
+}
+
+
 
 //  CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator     CyclicIterator
 
