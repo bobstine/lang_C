@@ -227,7 +227,6 @@ class BeamIterator
 			  current_beam_indices(mBestBeam.second, base.second)
 			  );
   }
-  
   void            print_to(std::ostream& os) const;
   
  private:
@@ -236,7 +235,6 @@ class BeamIterator
   bool       update_adds_to_beams();
   void       find_best_beam();
   bool       best_beam_is_okay() const;
-
 };
 
 template <class A>

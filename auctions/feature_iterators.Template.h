@@ -67,7 +67,7 @@ BeamIterator<A>::update_adds_to_beams()
 template<class A>
 void
 BeamIterator<A>::find_best_beam()
-{ debugging:debug("BEAM",4) << "BeamIterator::find_best_beam\n";
+{ debugging::debug("BEAM",4) << "BeamIterator::find_best_beam\n";
   int bestSum = 0;
   for(int i=0; i<number_of_beams(); ++i)
     for (int j=0; j<=i; ++j)
