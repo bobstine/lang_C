@@ -95,8 +95,8 @@ main(int argc, char** argv)
   int      protection           (  3);
   bool     useShrinkage       (false);
   int      numberRounds         (200);
-  int      maxNumOutputPredictors    (0);
-  int      calibration            (0);      // 0 means no calibration; otherwise gap between models offered calibration
+  int      maxNumOutputPredictors (0);
+  int      calibrationGap         (0);      // 0 means no calibration; otherwise gap between models offered calibration
   int      debugLevel             (3);
 
   // lock these options
@@ -107,7 +107,7 @@ main(int argc, char** argv)
 
   parse_arguments(argc,argv, responseFileName, contextFileName, xFileName, outputPath,
 		  protection, useShrinkage, numberRounds, totalAlphaToSpend,
-		  calibration, debugLevel, maxNumOutputPredictors);
+		  calibrationGap, debugLevel, maxNumOutputPredictors);
   if (outputPath[outputPath.size()-1] != '/') outputPath += "/";
   
   // initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
@@ -184,17 +184,12 @@ main(int argc, char** argv)
 		    << cColumns.size() << " context columns.\n";
   }
 
-  // Parse binary Y and partition X data into feature streams  (const settings lock out other features)
-  
-  if( yColumns[0]->is_dummy() )
-    debug("AUCT",1) << "Response " << yColumns[0]->name() << " is binary; truncating calibration estimates." << std::endl;
-
   // build model and initialize auction with csv stream for tracking progress
 
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
   typedef Auction< ValidatedRegression > RegressionAuction;
-  RegressionAuction theAuction(theRegr, calibration, calibrationSignature, blockSize, progressStream);
+  RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   // open input data stream
   
@@ -225,10 +220,7 @@ main(int argc, char** argv)
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
-
-  //  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
-  //  double   alphaCP        (alphaShare * (hasLockFeatures ? 0.29 : 0    ));  //                        cross products
-
+  //  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
   std::vector<FeatureVector> featureVectors(streamNames.size());   // treat this guy with respect... lots of const refs to its elements
   
   for (int s=0; s < (int)streamNames.size(); ++s)
@@ -249,16 +241,15 @@ main(int argc, char** argv)
 				 make_beam_stream("streams", theAuction, streamNames, gap)));
   }
 
-
-    /*
-      if (hasLockFeatures)                                                                                           // cross with locked stream
-	theAuction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
-				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
-							       featureVectors[s], lockedFeatures) 
-				     ));
-       }
-    */
+  //  Calibration expert
+  if(calibrationGap > 0)
+  { bool yIsBinary  (yColumns[0]->is_dummy());
+    if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
+    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
+				 FitBidder(0.000005, calibrationSignature),                  
+				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+							 nContextCases, yIsBinary)));
+  }
 
   
   // ----------------------   run the auction with output to file  ---------------------------------
@@ -275,7 +266,7 @@ main(int argc, char** argv)
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
       double time = time_since(start);
       totalTime += time;
-      debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl;
+      debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
@@ -350,10 +341,10 @@ parse_arguments(int argc, char** argv,
 	  {"c_file",            1, 0, 'C'},  // has arg,
 	  {"x_file",            1, 0, 'X'},  // has arg,
 	  {"alpha",             1, 0, 'a'},  // has arg,
-	  {"calibration",       1, 0, 'c'},  // has arg,
-	  {"debug-level",       1, 0, 'd'},  // has arg,
-	  {"output-x",          1, 0, 'k'},  // has arg
-	  {"output-path",       1, 0, 'o'},  // has arg,
+	  {"calibration_gap",   1, 0, 'c'},  // has arg,
+	  {"debug",             1, 0, 'd'},  // has arg,
+	  {"output_x",          1, 0, 'k'},  // has arg
+	  {"output_path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,
 	  {"shrinkage",         1, 0, 's'},  // has arg

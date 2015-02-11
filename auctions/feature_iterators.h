@@ -174,7 +174,7 @@ class ModelIterator
  ModelIterator(Model const& m, int gap): mModel(m), mLastQ(0), mSeparation(gap) {}
   
   bool            points_to_valid_data()     const ;
-  int             number_remaining ()        const { if (points_to_valid_data()) return 1; else return 0; }
+  int             number_remaining ()        const { return 1; }
   ModelIterator&  operator++()                     { return *this; }
   Model const*    operator*()                      { mLastQ = mModel.q(); return &mModel; }
   void            print_to(std::ostream& os) const { os << "ModelIterator, last q=" << mLastQ << "; model @ " << mModel.q() << " with separation " << mSeparation; }

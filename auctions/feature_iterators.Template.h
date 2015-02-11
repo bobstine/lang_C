@@ -48,10 +48,10 @@ BeamIterator<A>::update_adds_to_beams()
   bool result = false;
   if (mLastQ < mAuction.number_of_model_features())  // need to add features
   { FeatureVector modelFeatures = mAuction.model_features();
-    debugging::debug("BEAM",3) << "Update with vector of " << modelFeatures.size() << " model features.\n";
+    debugging::debug("BEAM",3) << "Update beam with vector of " << modelFeatures.size() << " model features.\n";
     for (int i=mLastQ; i<mAuction.number_of_model_features(); ++i)
     { Feature f = modelFeatures[i];
-      debugging::debug("BEAM",3) << "Update examining feature " << f->name() << " from stream " << f->attribute_str_value("stream") << std::endl;
+      debugging::debug("BEAM",4) << "Update examining feature " << f->name() << " from stream " << f->attribute_str_value("stream") << std::endl;
       for(int j=0; j<(int)mBeamNames.size(); ++j)
       { if(mBeamNames[j] == f->attribute_str_value("stream"))      // add this feature to named beam   ... ??? add a 'beam' attribute in the future rather than use stream name
 	{ result=true;

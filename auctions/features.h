@@ -78,6 +78,7 @@ class Feature
   Feature(Feature const& f1, Feature const& f2);
 
   //  linear combination
+  Feature(int n, std::string name, std::vector<double> b, std::vector<Feature> const& fv);
   Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
 
   //  unary feature

@@ -242,8 +242,9 @@ FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
 make_calibration_stream (std::string name, Model const& model, int gap, std::string signature, int skip, bool binary)
 {
   debug("FSTR",2) << "make_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
+  const int polyDegree = 3;
   return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(3,signature,skip, binary));  // 3 = cubic
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(polyDegree, signature, skip, binary));
 }
 
 

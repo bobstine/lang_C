@@ -105,7 +105,7 @@ bool
 Auction<ModelClass>::auction_next_feature ()
 {
   ++mRound;
-  debug("AUCT",2) << "\n\nBeginning auction round #" << mRound << std::endl; 
+  debug("AUCT",1) << "-------------  Begin auction round #" << mRound << "  -------------" << std::endl; 
   // reap empty custom experts 
   purge_empty_experts();
   if (!have_available_bid())
@@ -139,7 +139,7 @@ Auction<ModelClass>::auction_next_feature ()
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   double pValue (result.second);
-  debug("AUCT",2) << "Test results are  <" << result.first << "," << pValue << ">\n";
+  debug("AUCT",3) << "Test results are  <" << result.first << "," << pValue << ">\n";
   if (mProgressStream)
     mProgressStream << "\t" << pValue << "\t" << remove_comma(features[0]->name());
   // report bid result
@@ -197,7 +197,7 @@ Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature a
     else
     { mRecoveredAlpha += (*ee)->alpha();
       mPurgedExpertNames.push_back((*ee)->name());
-      debug("AUCT",3) << "Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
+      debug("AUCT",3) << "Purged expert " << (*ee)->name() << ".  Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
       numberPurged += 1;
       mExperts.erase(ee);
     } 
@@ -406,7 +406,7 @@ void
 Auction<ModelClass>::print_to (std::ostream& os) const
 {
   os << std::endl << "     Auction    " << mExperts.size() << " bidders with total alpha " << total_expert_alpha() << std::endl;
-  debugging::debug("AUCT",2) << mExperts << std::endl;
+  debugging::debug("AUCT",3) << mExperts << std::endl;
   os << mModel << std::endl;
 }
 

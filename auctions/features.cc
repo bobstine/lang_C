@@ -28,6 +28,12 @@ Feature::Feature(Feature const& f1, Feature const& f2)
   mFP = new InteractionFeature(f1,f2);
 }
 
+
+Feature::Feature(int n, std::string name,  std::vector<double> b, std::vector<Feature> const& fv)
+{
+  mFP = new LinearCombinationFeature(n, name, b, fv);
+}
+
 Feature::Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv)
 {
   mFP = new LinearCombinationFeature(n, b, fv);

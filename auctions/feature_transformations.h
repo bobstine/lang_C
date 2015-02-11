@@ -99,7 +99,8 @@ class BeamConstructor: public std::function<FeatureVector (std::pair<std::vector
     { beamCoefs.push_back(beta[i+1]);
       beamFeatures.push_back(modelFeatures[i]);
     }
-    return Feature(modelFeatures[0]->size(), beamCoefs, beamFeatures);
+    std::string beamName = std::string("Beam_") + beamFeatures[0]->attribute_str_value("stream") + std::string("_") + std::to_string(beam.size());
+    return Feature(modelFeatures[0]->size(), beamName, beamCoefs, beamFeatures);
   }
 
 };
