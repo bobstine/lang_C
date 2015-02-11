@@ -511,12 +511,10 @@ LinearCombinationFeature::valid_args()    const
   }
 }
 
-void
-LinearCombinationFeature::make_name()
+std::string
+LinearCombinationFeature::make_name(std::vector<double> b) const
 {
-  std::ostringstream oss ("");
-  oss << "xb_" << mBeta.size()-1;
-  mName = oss.str();
+  return(std::string("LC_") + std::to_string(b.size()-1));
 }
 
 

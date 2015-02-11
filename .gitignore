@@ -1,10 +1,8 @@
 .DS_Store
-bellman
-prep_error
+projects
 text
 utilities
 stepwise
-sweeper
 GCC4.9
 sandbox
 *.test

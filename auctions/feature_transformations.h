@@ -6,6 +6,7 @@
 #include "function_utils.h"
 
 #include <functional>
+#include "debug.h"
 
 /*
   Feature transformations apply an operator that must product a vector of features
@@ -78,7 +79,7 @@ class BeamConstructor: public std::function<FeatureVector (std::pair<std::vector
   FeatureVector operator()(std::pair<Beam,Beam> const& beams) const
   {
     FeatureVector result(1);
-    std::cout << "\nBEAM: Building linear combination of beams " << beams.first << " and " << beams.second << " in transformation.\n";
+    debugging::debug("BEAM",3) << "Beam constructor (fea_tran) building linear combination of beams " << beams.first << " and " << beams.second << std::endl;
     result[0] = Feature(linear_combination(beams.first),
 			linear_combination(beams.second)
 			);

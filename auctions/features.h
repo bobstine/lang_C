@@ -265,10 +265,13 @@ class LinearCombinationFeature : public FeatureABC
  public:
   virtual ~LinearCombinationFeature() {}
   
- LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<Feature> const& fv)
+ LinearCombinationFeature(int n, std::string name, std::vector<double> const& b, std::vector<Feature> const& fv)
     :                                                      
     FeatureABC(n), 
-      mBeta(b), mFeatures(fv), mName(), mColumn(Column("Linear Comb", n)) { if (valid_args()) { make_name(); fill_column();} }
+      mBeta(b), mFeatures(fv), mName(name       ), mColumn(Column("Linear Comb", n)) { if (valid_args()) fill_column(); }
+
+ LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<Feature> const& fv)
+   : LinearCombinationFeature(n, LinearCombinationFeature::make_name(b), b, fv) { }
     
   string        class_name()       const;
   string        name()             const;
@@ -289,9 +292,9 @@ class LinearCombinationFeature : public FeatureABC
 
   string        long_name()        const;
  private:
-  bool        valid_args()    const ;
-  void        make_name();
-  void        fill_column();
+  std::string   make_name(std::vector<double> b)     const ;
+  bool          valid_args()    const ;
+  void          fill_column();
 };
 
 

@@ -28,6 +28,12 @@ ConfusionMatrix::f1() const
   return (float)(tp2)/(float)(tp2 + mMatrix(0,1) + mMatrix(1,0)); // F1 = 2 TP/ (2 TP + FP + FN)
 }
 
+float
+ConfusionMatrix::pct_correct() const
+{
+  return (float)(mMatrix(0,0)+mMatrix(1,1))/(float)(mMatrix(2,2));
+}
+
 void
 ConfusionMatrix::print_to(std::ostream &os) const
 {
@@ -39,5 +45,6 @@ ConfusionMatrix::print_to(std::ostream &os) const
     << "    sens=" << std::setprecision(3) << sensitivity() << " prec=" << std::setprecision(3) << precision()
     << std::endl
     << "    " << std::setw(5) << mMatrix(2,0) << "  " << std::setw(5) << mMatrix(2,1) << " | " << std::setw(5) << mMatrix(2,2)
+    << "    % correct = " << std::setprecision(3) << pct_correct()
     << std::endl;
 }

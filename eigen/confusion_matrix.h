@@ -22,6 +22,7 @@ class ConfusionMatrix
   float specificity() const;
   float precision()   const;
   float f1()          const;
+  float pct_correct() const;
   
   void print_to (std::ostream& os) const;
   
