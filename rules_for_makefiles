@@ -50,9 +50,11 @@ $(level_9:.o=.test):  $(above_9)
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 # path to library header files
-vpath %.a $(patsubst %, ../%, $(USES))
+# vpath %.a $(patsubst %, ../%, $(USES))
+vpath %.a $(patsubst %, $(LIBPATH)%, $(USES))
 
-INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+# INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, $(LIBPATH)%, $(USES)))
 
 # names of libraries
 LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
@@ -61,7 +63,8 @@ LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthre
 LIBRARIES = $(patsubst %,lib%.a,$(USES))
 
 # paths
-LDFLAGS = $(patsubst %,-L%,$(patsubst %, ../%, $(USES)))
+# LDFLAGS = $(patsubst %,-L%,$(patsubst %, ../%, $(USES)))
+LDFLAGS = $(patsubst %,-L%,$(patsubst %, $(LIBPATH)%, $(USES)))
 
 
 # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
