@@ -108,37 +108,39 @@ main(int argc, char** argv)
   parse_arguments(argc,argv, responseFileName, contextFileName, xFileName, outputPath,
 		  protection, useShrinkage, numberRounds, totalAlphaToSpend,
 		  calibrationGap, debugLevel, maxNumOutputPredictors);
-  if (outputPath[outputPath.size()-1] != '/') outputPath += "/";
   
   // initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
-  
+  if (outputPath[outputPath.size()-1] != '/') outputPath += "/";
   string   debugFileName (outputPath + "progress.log");
-  std::ofstream logStream     (debugFileName.c_str());
 #ifdef NDEBUG
+  std::ofstream logStream     (debugFileName.c_str());
   debugging::debug_init(logStream, debugLevel);
 #else
   debugging::debug_init(std::clog, debugLevel);
-#endif 
+#endif
+
+  // write configuration and record to file
   {
-    string msg  = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
+    string configuration = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
       + " --output-path=" + outputPath + " --debug-level=" + std::to_string(debugLevel)
       + " --protect=" + std::to_string(protection) + " --rounds=" + std::to_string(numberRounds) + " --output-x="
       + std::to_string(maxNumOutputPredictors) + " --alpha=" + std::to_string(totalAlphaToSpend);
-    if (useShrinkage) msg += " --shrink";
-    debug("AUCT",0)   << msg << std::endl;
+    if (useShrinkage) configuration += " --shrink";
+    debug("AUCT",0) << configuration << std::endl;
+    std::ofstream os (outputPath + "configuration");
+    os << configuration << std::endl;
   }
-  
   // open additional files for output
   
-  string progressCSVFileName (outputPath + "progress.csv");
-  std::ofstream progressStream (progressCSVFileName.c_str());
+  string        progressFileName (outputPath + "progress.txt");
+  std::ofstream progressStream   (progressFileName.c_str());
   if (!progressStream)
-  { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressCSVFileName << std::endl;
+  { std::cerr << "AUCT: *** Error ***  Cannot open file to write expert status stream " << progressFileName << std::endl;
     return -1;
   }
   string modelHTMLFileName  (outputPath + "model.html"); 
   string modelTextFileName  (outputPath + "model.txt");
-  string modelDataFileName  (outputPath + "model_data.csv");
+  string modelDataFileName  (outputPath + "model_data.txt");
   debug("AUCT",2) << "Output going to these files:\n"
 #ifdef NDEBUG
 		  << "             log  --> " << debugFileName  << std::endl
@@ -184,7 +186,7 @@ main(int argc, char** argv)
 		    << cColumns.size() << " context columns.\n";
   }
 
-  // build model and initialize auction with csv stream for tracking progress
+  // build model and initialize auction with tab-delimited stream for tracking progress
 
   ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
