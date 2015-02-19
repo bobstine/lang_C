@@ -221,8 +221,7 @@ main(int argc, char** argv)
   double   alphaInt       (alphaShare * 0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
-  typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
-  //  typedef FeatureStream< ModelIterator<ValidatedRegression>, BuildCalibrationFeature<ValidatedRegression> >  CalibrationStream;
+  
   std::vector<FeatureVector> featureVectors(streamNames.size());   // treat this guy with respect... lots of const refs to its elements
   
   for (int s=0; s < (int)streamNames.size(); ++s)
@@ -238,6 +237,7 @@ main(int argc, char** argv)
   }
   {
     const int gap = 3;
+    typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
     theAuction.add_expert(Expert("Beam", custom, nContextCases, alphaInt,
 				 UniversalBoundedBidder<BeamStream>(),			       
 				 make_beam_stream("streams", theAuction, streamNames, gap)));

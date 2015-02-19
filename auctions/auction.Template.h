@@ -77,7 +77,7 @@ Auction<Model>::write_header_to_progress_stream () const
 {
   mProgressStream << "Round\tTime\tGoodness of Fit\tTotal Alpha";
   for (int b=0; b<number_of_experts(); ++b)
-    mProgressStream << "\t" << mExperts[b]->name() << "Expert\tAlpha\tCurrent Bid";
+    mProgressStream << "\t" << mExperts[b]->name() << " Expert\tAlpha\tCurrent Bid";
   mProgressStream << "\tWinning Expert\tWinning Bid\tp value\tVariable\tOutcome\tPayoff\tRes SS\tCVSS" << std::endl;
   // initial conditions
   std::pair<double,double> ss =  mModel.sums_of_squares();
@@ -134,7 +134,7 @@ Auction<ModelClass>::auction_next_feature ()
     else
       debug("AUCT",1) << std::setw(len) << expert->name(len) << "   bid   $" << std::setw(10) << std::left << bid << " on "
 		      << features.size() << " features, starting with " << features[0]->name() << std::endl;
-    debug("AUCT",3) << "Winning expert " << expert << std::endl;
+    debug("AUCT",3) << "Details of winning expert: " << expert << std::endl;
   }
   // build variables for testing, conversion adjusts for initial context rows
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
@@ -248,7 +248,7 @@ Auction<ModelClass>::collect_bids ()
   { double bid = expert->place_bid(history);        // pass information to experts; check if has feature
     if (mProgressStream)
       if (iExpert < mNumInitialExperts)             // output is only formatted for initial experts
-      {	std::string name = (bid>0) ? remove_comma(expert->first_feature_name()) : std::string("*empty*");
+      {	std::string name = (bid>0) ? remove_comma(expert->first_feature_name()) : std::string("*bid=0*");
 	mProgressStream << "\t" << name << "\t" << expert->alpha() << "\t" << bid;
       }
     if (bid > highBid)
@@ -264,7 +264,7 @@ Auction<ModelClass>::collect_bids ()
   if (!priorityExpert.empty())                          // override results
   { highBid = priorityBid;
     winningExpert = priorityExpert;
-    debug("AUCT",3) << "Priority bidder takes bid " << highBid << std::endl;
+    debug("AUCT",2) << "Priority calibration bidder claims with bid " << priorityBid << std::endl;
   }
   if(mProgressStream)
     mProgressStream << "\t" << remove_comma(winningExpert->name()) << "\t" << highBid;
