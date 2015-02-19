@@ -173,35 +173,25 @@ Auction<ModelClass>::auction_next_feature ()
   return accepted;
 }
 
-namespace {
-  class Empty {
-  private:
-    BiddingHistory mHistory;
-  public:
-    Empty(BiddingHistory const& h) : mHistory(h) { }
-    bool operator()(Expert & e) { return e->finished(); }
-  };
-}
-
 
 template<class ModelClass>
 int
 Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom
 {
   int numberPurged (0);
-  Empty pred(auction_history());            // Empty defined above
-  while (true)
-  { ExpertVector::iterator ee (std::find_if(mExperts.begin(), mExperts.end(), pred));
-    if(ee == mExperts.end())
-      break;
-    else
-    { mRecoveredAlpha += (*ee)->alpha();
-      mPurgedExpertNames.push_back((*ee)->name());
-      debug("AUCT",3) << "Purged expert " << (*ee)->name() << ".  Recovering alpha " << (*ee)->alpha() << " from " << (*ee)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
+  std::list<Expert> finishedExperts;
+  for(auto expert : mExperts)
+  { if(expert->finished() && (source != expert->role()))  // don't purge source experts for writing tabular summary
+    { finishedExperts.push_back(expert);
+      mRecoveredAlpha += expert->alpha();
+      mPurgedExpertNames.push_back(expert->name());
+      debug("AUCT",3) << "Purged expert " << expert->name() << ".  Recovering alpha " << expert->alpha() << " from "
+		      << expert->name() << " boosts total to " << mRecoveredAlpha << ".\n";
       numberPurged += 1;
-      mExperts.erase(ee);
-    } 
+    }
   }
+  for(auto expert:finishedExperts)
+    mExperts.erase(expert);
   return numberPurged;
 }   
       

@@ -82,7 +82,7 @@ public:
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
   double                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
-  bool                   finished()                               { if (mRole==custom) return false; return (mAlpha <= 1.0e-10) || ( 0 == number_of_remaining_features() );}
+  bool                   finished()                               { return (mAlpha < 1.0e-10) || (0 == number_of_remaining_features());}
   
   void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
