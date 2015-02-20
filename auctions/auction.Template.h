@@ -179,19 +179,19 @@ int
 Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom
 {
   int numberPurged (0);
-  std::list<Expert> finishedExperts;
-  for(auto expert : mExperts)
-  { if(expert->finished() && (source != expert->role()))  // don't purge source experts for writing tabular summary
+  typedef std::vector<Expert>::const_iterator Iterator;
+  std::list<Iterator> finishedExperts;
+  for(Iterator expert=mExperts.begin(); expert != mExperts.end(); ++expert)
+  { if((*expert)->finished() && ((*expert)->is_purgable()))   // don't purge source experts for writing tabular summary
     { finishedExperts.push_back(expert);
-      mRecoveredAlpha += expert->alpha();
-      mPurgedExpertNames.push_back(expert->name());
-      debug("AUCT",3) << "Purged expert " << expert->name() << ".  Recovering alpha " << expert->alpha() << " from "
-		      << expert->name() << " boosts total to " << mRecoveredAlpha << ".\n";
+      mRecoveredAlpha += (*expert)->alpha();
+      mPurgedExpertNames.push_back((*expert)->name());
+      debug("AUCT",3) << "Purged expert " << (*expert)->name() << ".  Recovering alpha " << (*expert)->alpha() << " from "
+		      << (*expert)->name() << " boosts total to " << mRecoveredAlpha << ".\n";
       numberPurged += 1;
     }
   }
-  for(auto expert:finishedExperts)
-    mExperts.erase(expert);
+  for(auto expert:finishedExperts) mExperts.erase(expert);
   return numberPurged;
 }   
       
@@ -273,17 +273,17 @@ Auction<ModelClass>::tax_bid (Expert winningExpert, double bid)
     return bid;
   else
   { double tax (mBidTaxRate * bid);
-    int  parasiteCount (0);
-    for (ExpertVector::iterator i=mExperts.begin(); i!=mExperts.end(); ++i)   // count parasitic bidders
-      if( (*i)->role() == parasite)
-	++parasiteCount;
-    debug("AUCT",4) << "Distributing bid tax $" << tax << " among " << parasiteCount << " parasites.\n";
-    if (parasiteCount == 0)
+    int  scavengerCount (0);
+    for (ExpertVector::iterator i=mExperts.begin(); i!=mExperts.end(); ++i)   // count scavengers
+      if( (*i)->role() == scavenger)
+	++scavengerCount;
+    debug("AUCT",4) << "Distributing bid tax $" << tax << " among " << scavengerCount << " scavengers.\n";
+    if (scavengerCount == 0)
       return bid;
     else
     { for (ExpertVector::iterator i=mExperts.begin(); i!=mExperts.end(); ++i) // distribute tax among parasitic bidders
-	if( (*i)->role() == parasite)
-	  (*i)->increment_alpha(tax/parasiteCount);
+	if( (*i)->role() == scavenger)
+	  (*i)->increment_alpha(tax/scavengerCount);
       return bid-tax;
     }
   }
@@ -336,7 +336,8 @@ Auction<ModelClass>::pay_winning_expert (Expert expert, FeatureVector const& fea
       */
       // interact winning feature with rest of model stream
       const int nSkippedCases = 0;
-      spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", custom, nSkippedCases, 0.0,
+      const bool purgable = true;
+      spawned.push_back(Expert("Cross["+(*f)->name()+" x model]", spawn, purgable, nSkippedCases, 0.0,
 			       UniversalBoundedBidder< ProductStream >(),
 			       make_feature_product_stream("winner", *f, without_calibration_features(model_features()))  ));
       double alpha = taxForEach/(double)spawned.size();

@@ -88,6 +88,8 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
+  const bool purgable = true;
+  
   {
     bool     hasLockStream (lockedStream.size() > 0);
     double   alphaShare    (wealth/(double)streamNames.size());
@@ -102,16 +104,16 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
     for (int s=0; s < (int)streamNames.size(); ++s)
     { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
       featureStreams.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
-      auction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
+      auction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
 				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
-      auction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+      auction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,     // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("within " + streamNames[s],
-							   featureStreams[s], true)                                  // true means to include squared terms
+							   featureStreams[s], true)                             // true means to include squared terms
 				   ));
       if (hasLockStream)                                                                                             // cross with locked stream
-	auction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, nContextCases, alphaCP, 
+	auction.add_expert(Expert("CrossProd["+streamNames[s]+" x Lock]", source, !purgable, nContextCases, alphaCP, 
 				     UniversalBoundedBidder<CrossProductStream>(),
 				     make_cross_product_stream("CP[" + streamNames[s] + " x Lock]",
 							       featureStreams[s], lockedStream )                     
@@ -121,8 +123,6 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
   }
 }
 
-
-
   /*
   typedef FeatureStream< DynamicIterator     <FeatureVector, SkipIfDerived    >, BuildPolynomialFeatures >    PolynomialStream;
   typedef FeatureStream< BundleIterator      <FeatureVector, SkipIfInBasis    >, EigenAdapter<PCA> >          PCAStream;
@@ -131,25 +131,25 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
   
   // scavenger experts
 
-  theAuction.add_expert(Expert("In*Out", parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("In*Out", scavenger, !purgable, nContextCases, 0,
 			       UniversalBidder<CrossProductStream>(),
 			       make_cross_product_stream("accept x reject", theAuction.model_features(), theAuction.rejected_features()) ));
 
   
-  theAuction.add_expert(Expert("Poly", parasite, nContextCases, 0,
+  theAuction.add_expert(Expert("Poly", scavenger, !purgable, nContextCases, 0,
 			       UniversalBidder< PolynomialStream >(),
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
   
   //  Calibration expert
   if(calibration > 0)
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
+    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder(0.000005, calibrationSignature),                  
 				 make_calibration_stream("fitted_values", theRegr, calibration, calibrationSignature,
 							 nContextCases, yIsBinary)));
 
   //   Principle component type features
-  theAuction.add_expert(Expert("PCA", source, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
+  theAuction.add_expert(Expert("PCA", source, !purgable, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share
 			       UniversalBidder<PCAStream>(),
 			       make_subspace_stream("PCA", 
 						    theAuction.rejected_features(),
@@ -157,7 +157,7 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
 						    30))) ;                                                          // bundle size
 
   //   RKHS stream
-  theAuction.add_expert(Expert("RKHS", source, nContextCases, totalAlphaToSpend/6,
+  theAuction.add_expert(Expert("RKHS", source, !purgable, nContextCases, totalAlphaToSpend/6,
 			       UniversalBidder<RKHSStream>(),
 			       make_subspace_stream("RKHS", 
 						    theAuction.rejected_features(),

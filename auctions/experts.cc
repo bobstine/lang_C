@@ -9,15 +9,17 @@
 
 #include "experts.h"
 
-
+// enum    ExpertRole       { source, scavenger, beam, calibrate, spawn, custom }; 
 std::string
 ExpertABC::role_string () const
 {
   switch(mRole) {
-  case source   : { return "source"; }
-  case parasite : { return "parasite"; }
+  case source   : { return "source"   ; }
+  case scavenger: { return "scavenger"; }
+  case beam     : { return "beam"     ; }
   case calibrate: { return "calibrate"; }
-  case custom   : { return "custom"; }
+  case spawn    : { return "spawn"    ; }
+  case custom   : { return "custom"   ; }
   }
   return "not found";
 }

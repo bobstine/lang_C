@@ -216,9 +216,10 @@ main(int argc, char** argv)
   }
 
   debug("AUCT",3) << "Assembling experts"  << std::endl;
-  double   alphaShare     (totalAlphaToSpend/(double)streamNames.size());
-  double   alphaMain      (alphaShare * 0.60);
-  double   alphaInt       (alphaShare * 0.40);
+  const bool purgable = true;
+  double     alphaShare     (totalAlphaToSpend/(double)streamNames.size());
+  double     alphaMain      (alphaShare * 0.60);
+  double     alphaInt       (alphaShare * 0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   
@@ -227,10 +228,10 @@ main(int argc, char** argv)
   for (int s=0; s < (int)streamNames.size(); ++s)
   { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
     featureVectors[s] = featureSource.features_with_attribute("stream", streamNames[s]);
-    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, nContextCases, alphaMain,
+    theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
-    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, nContextCases, alphaInt,                  // less avoids tie 
+    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
 				 UniversalBoundedBidder<InteractionStream>(),
 				 make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
 				 ));
@@ -238,7 +239,7 @@ main(int argc, char** argv)
   {
     const int gap = 3;
     typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
-    theAuction.add_expert(Expert("Beam", custom, nContextCases, alphaInt,
+    theAuction.add_expert(Expert("Beam", beam, purgable, nContextCases, alphaInt,
 				 UniversalBoundedBidder<BeamStream>(),			       
 				 make_beam_stream("streams", theAuction, streamNames, gap)));
   }
@@ -247,7 +248,7 @@ main(int argc, char** argv)
   if(calibrationGap > 0)
   { bool yIsBinary  (yColumns[0]->is_dummy());
     if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
-    theAuction.add_expert(Expert("Calibrator", calibrate, nContextCases, 100,                                        // endow with lots of money
+    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder(0.000005, calibrationSignature),                  
 				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
 							 nContextCases, yIsBinary)));

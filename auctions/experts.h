@@ -1,4 +1,4 @@
-// -*- mode: c++; fill-column: 80; -*-
+// -*- mode: c++; fill-column: 100; -*-
 /* 
  *  expert.h
  *  auctions
@@ -40,7 +40,7 @@
 
 // need ABC since have a collection of experts due to templating
 
-enum    ExpertRole       { source, parasite, calibrate, custom }; 
+enum    ExpertRole       { source, scavenger, beam, calibrate, spawn, custom }; 
 
 class Expert;
 
@@ -53,30 +53,30 @@ class ExpertABC
   typedef     std::map<std::string, std::string>             Attributes;
   
 protected:
-  std::string mName;
-  std::string mDescription;
-  int         mRefCount;
-  ExpertRole  mRole;
-  int         mSkip;              // leading context data cases to skip past
-  double      mAlpha;
-  double      mCurrentBid;
-  bool        mLastBidAccepted;
-  BidHistory  mBidHistory;
+  const std::string mName;
+  const ExpertRole  mRole;
+  const bool        mPurgable;          // from auction when finished
+  const int         mSkip;              // # leading context data cases to skip past
+  int               mRefCount;
+  double            mAlpha;
+  double            mCurrentBid;
+  bool              mLastBidAccepted;
+  BidHistory        mBidHistory;
   
 public:
   virtual ~ExpertABC () { }
   
   ExpertABC()
-    : mName("none"), mRefCount(1), mRole(source), mSkip(0), mAlpha(0),
-      mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+    : mName("none"), mRole(source), mPurgable(true), mSkip(0), mRefCount(1),  mAlpha(0), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
-  ExpertABC(std::string name, ExpertRole role, int skip, double alpha)
-    : mName(name), mRefCount(1), mRole(role), mSkip(skip),  mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
+  ExpertABC(std::string name, ExpertRole role, bool purgable, int skip, double alpha)
+    : mName(name), mRole(role), mPurgable(purgable), mSkip(skip), mRefCount(1), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   std::string            name()                             const { return mName; }
   std::string            name(unsigned int maxlen)          const { if(mName.size()<maxlen) return mName; else return mName.substr(0,maxlen); } 
   int                    priority()                         const { if (mRole == calibrate) return 1; else return 0; }
   ExpertRole             role()                             const { return mRole; }
+  bool                   is_purgable()                      const { return mPurgable; }
   int                    skip()                             const { return mSkip; }
   double                 alpha()                            const { return mAlpha; }
   double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
@@ -121,8 +121,8 @@ private:
 public:
   virtual ~StreamExpert () { };
   
-  StreamExpert (std::string name, ExpertRole role, int skip, double alpha, Bidder b, Stream s)
-    : ExpertABC(name, role, skip, alpha), mBidder(b), mStream(s) { }
+  StreamExpert (std::string name, ExpertRole role, bool purgable, int skip, double alpha, Bidder b, Stream s)
+    : ExpertABC(name, role, purgable, skip, alpha), mBidder(b), mStream(s) { }
 
   std::string         description()  const { return mBidder.name()+"/"+mStream.name(); }
   Bidder const&       bidder()       const { return mBidder; }
@@ -157,8 +157,8 @@ class Expert
   
   // stream expert
   template <class Bidder, class Stream>
-  Expert(std::string name, ExpertRole role, int skip, double alpha, Bidder const& b, Stream const& s)
-    { mpExpert = new StreamExpert<Bidder,Stream> (name, role, skip, alpha, b, s); }
+  Expert(std::string name, ExpertRole role, bool purgable, int skip, double alpha, Bidder const& b, Stream const& s)
+  { mpExpert = new StreamExpert<Bidder,Stream> (name, role, purgable, skip, alpha, b, s); }
 
   // copy
   Expert(Expert const& e)    : mpExpert(e.mpExpert)   { ++e.mpExpert->mRefCount;  }  
