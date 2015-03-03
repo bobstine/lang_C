@@ -82,24 +82,26 @@ int main(int argc, char ** argv)
     while (input.good())
     { string word;
       input >> word;
-      word = string_trim(word);
+      word = trim(word);
       if (word.empty()) break;
       tags.push_back(word);
       ++counts[word];
     }
-    { tagIndex
-    std::clog << "random_indicator read " << tags.size() << " tokens of " << counts.size() << " types to balance.\n";
+    std::clog << "random_indicator read " << tags.size() << " tokens of " << counts.size() << " types to balance:\n      ";
     std::map<string,size_t> tagIndex;
     std::vector<double> numLeftToChoose(counts.size()),numRemaining(counts.size());
     {
       size_t i = 0;
       for(auto p : counts)
-      { tagIndex[p.first]=i;
+      { std::clog << "{" << p.first << " " << p.second << "}  ";
+	tagIndex[p.first]=i;
 	numLeftToChoose[i] = choose;
 	numRemaining[i]    = p.second;
+	++i;
       }
+      std::clog << std::endl;
     }
-    for (size_t i=0; i<n; ++i)
+    for (size_t i=0; i<(size_t)n; ++i)
     { size_t index = tagIndex[tags[i]];
       double p = numLeftToChoose[index]/numRemaining[index];
       if (drand48() < p)
