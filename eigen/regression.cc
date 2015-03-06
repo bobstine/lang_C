@@ -277,7 +277,7 @@ LinearRegression::sweep_Q_from_column(int col) const
   //residual from each first, modified GS
   for(int j=0; j<col; ++j)
   { mR(j,col) = mQ.col(j).dot(mQ.col(col));
-    mQ.col(col) -= mQ.col(j) * mR(j,col);
+    mQ.col(col).noalias() -= mQ.col(j) * mR(j,col);
   }
   #endif
   double ssz  (mQ.col(col).squaredNorm());
