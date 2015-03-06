@@ -355,14 +355,14 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
     QeeQ.setZero();
     if (mBlockSize == 1)
     { Matrix eQ (mResiduals.asDiagonal() * mQ.block(0,mK,mN,mTempK));  
-      QeeQ = eQ.transpose() * eQ;
+      QeeQ.noalias() = eQ.transpose() * eQ;
     }
     else     // blocksize > 1
     { assert(0 == mN % mBlockSize);
       Vector eQ(mTempK);
       for(int block = 0, row = 0; block<mN/mBlockSize; ++block)
       {	eQ = mResiduals.segment(row,mBlockSize).transpose() * mQ.block(row,mK,mBlockSize,mTempK);
-	QeeQ += eQ * eQ.transpose();
+	QeeQ.noalias() += eQ * eQ.transpose();
 	row += mBlockSize;
       }
     }

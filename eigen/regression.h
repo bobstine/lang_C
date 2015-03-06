@@ -226,7 +226,7 @@ private:
   void   initialize(std::string yName, Iter Y, BIter B, int blockSize);
   template<class Iter, class BIter, class WIter>
   void   initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize);
-
+  
   void   initialize_validation_ss();
   
   template<class Iter>
