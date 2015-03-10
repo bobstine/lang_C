@@ -1,4 +1,5 @@
 // -*- c++ -*-
+#include "base_types.h"
 #include "regression.h"
 #include "debug.h"
 
@@ -18,7 +19,7 @@ using std::endl;
 // #define USE_WLS
 
 std::ostream&
-operator<<(std::ostream& os, std::pair<double,double> p)
+operator<<(std::ostream& os, std::pair<SCALAR,SCALAR> p)
 {
   os << " <" << p.first << "," << p.second << "> ";
   return os;
@@ -34,6 +35,10 @@ void print_time(time_t const& start)
 
 int main(int, char **)
 {
+  typedef LinearRegression::Scalar Scalar;
+  typedef LinearRegression::Vector Vector;
+  typedef LinearRegression::Matrix Matrix;
+  
   cout << "TEST:  Test of regression begins...\n\n";
   debugging::debug_init(cout,2);  // Debug level 1 avoids most messages; raise number for more
   cout.precision(4);
@@ -51,11 +56,11 @@ int main(int, char **)
   const int nAdd        (    25 );
   
   // form random matrix for response and predictors
-  Eigen::VectorXd y  (Eigen::VectorXd::Random(nRows));
-  Eigen::VectorXd z  (Eigen::VectorXd::Random(nRows));
-  Eigen::VectorXd w  (Eigen::VectorXd::Zero  (nRows));
-  Eigen::MatrixXd X  (Eigen::MatrixXd::Random(nRows,nCols));
-  Eigen::MatrixXd Z  (Eigen::MatrixXd::Random(nRows,nAdd));
+  Vector y  (Vector::Random(nRows));
+  Vector z  (Vector::Random(nRows));
+  Vector w  (Vector::Zero  (nRows));
+  Matrix X  (Matrix::Random(nRows,nCols));
+  Matrix Z  (Matrix::Random(nRows,nAdd));
 
   // shift the y's by 100 to check ordering in train/test data
   for(int i=0; i<nRows; ++i)
@@ -88,7 +93,7 @@ int main(int, char **)
 
   //  write data so that can check in JMP/R
   if (false && nRows < 1000)
-  { Eigen::MatrixXd data(nRows,1+nCols+nAdd);
+  { Matrix data(nRows,1+nCols+nAdd);
     data << y , X , Z; 
     cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << endl;
     std::string fileName ("regr_test_data.txt");
@@ -101,10 +106,10 @@ int main(int, char **)
   }
 
     
-  if (false)
+  if (true)
   { cout << "\n\nTEST: basic test of the linear regression routine, adding variables one at a time." << endl;
 
-    double mean (y.sum()/y.size());
+    Scalar mean (y.sum()/(Scalar)y.size());
     cout << "TEST:  y-bar is " << mean << endl;
     cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << endl;
     cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << endl;
@@ -147,7 +152,7 @@ int main(int, char **)
   }
 
 
-  if (false)  // second test, adding X bundle at once
+  if (true)  // second test, adding X bundle at once
   {
 #ifdef USE_WLS
     LinearRegression regr("yyy", y, w, 0);
@@ -170,7 +175,7 @@ int main(int, char **)
   if(true)   // test threads for regression
   { cout << "\n\nTEST: Testing threads code for CV." << endl;
     int nFolds = 20;
-    Eigen::MatrixXd results(1+Z.cols(), 4);           // extra row for base model
+    Matrix results(1+Z.cols(), 4);           // extra row for base model
     validate_regression( y, X, Z, nFolds, results);
     cout << "TEST: Thread results for columns R2, RSS, AICc, and CVSS\n" << results << endl;
   }
@@ -178,37 +183,37 @@ int main(int, char **)
   // --------------  from here below
   //     check validation model (dup validation and estimation cases)
   // --------------
-  if (false)
+  if (true)
   { clock_t start;
     // assemble data
     cout << "TEST: Testing validated model\n";
     bool   cv[2*nRows];
-    double yPtr[2*nRows];
-    double wts[2*nRows];
+    Scalar yPtr[2*nRows];
+    Scalar wts[2*nRows];
     for(int i=0; i<nRows; ++i)
     { yPtr[2*i] = y(i); yPtr[2*i+1] = y(i);
       cv[2*i] = true; cv[2*i+1]=false;        // weave the training and test data
       wts[2*i] = w[i] = 10.0;
     }
     cout << "TEST: Initial weights are " << wts[0] << " " << wts[1] << " " << wts[2] << endl;
-    std::vector<std::pair<std::string, double*> > xcollection;
+    std::vector<std::pair<std::string, Scalar*> > xcollection;
     for(int j=0; j<nCols; ++j)
-    { double *xPtr = new double [nRows*2];
+    { Scalar *xPtr = new Scalar [nRows*2];
       for(int i=0; i<nRows; ++i)
       { xPtr[2*i] = X(i,j);
 	xPtr[2*i+1] = X(i,j);
       }
       xcollection.push_back(make_pair(xNames[j],xPtr));
     }
-    std::vector<std::pair<std::string, double*> > zcollection;
+    std::vector<std::pair<std::string, Scalar*> > zcollection;
     for(int j=0; j<nAdd; ++j)
-    { double *xPtr = new double [nRows*2];
+    { Scalar *xPtr = new Scalar [nRows*2];
       for(int i=0; i<nRows; ++i)
       { xPtr[2*i] = Z(i,j); xPtr[2*i+1] = Z(i,j); }
       zcollection.push_back(make_pair(zNames[j],xPtr));
     }
   
-    if(false) //  validated regression, standard F test
+    if(true) //  validated regression, standard F test
     { cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
 #ifdef USE_WLS
       ValidatedRegression vregr("Y", yPtr, cv, wts, 2*nRows, 0, true);
@@ -216,40 +221,40 @@ int main(int, char **)
       ValidatedRegression vregr("Y", yPtr, cv,      2*nRows, 0, true);
 #endif
       cout << vregr << endl;
-      std::pair<double,double> result;
+      std::pair<Scalar,Scalar> result;
       // force to add by setting p-value threshold to 1
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
       cout << "TEST: test of adding xcollection gives " << result << endl << vregr << endl;
-      double *pFit  (new double[2*nRows]);
+      Scalar *pFit  (new Scalar[2*nRows]);
       vregr.fill_with_fit(pFit);
       cout << "TEST: First 10 fitted values from model with 3 X's are   ";
-      std::for_each(pFit, pFit+10, [](double x){ cout << x << "  ";});
+      std::for_each(pFit, pFit+10, [](Scalar x){ cout << x << "  ";});
       cout << endl;
       // test where does not add
-      std::vector<std::pair<std::string, double*> > collect1;
+      std::vector<std::pair<std::string, Scalar*> > collect1;
       collect1.push_back(zcollection[0]);
-      start = clock(); result = vregr.add_predictors_if_useful (collect1,0.0000001); print_time(start);
+      start = clock(); result = vregr.add_predictors_if_useful (collect1, (Scalar)0.0000001); print_time(start);
       cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << endl << vregr << endl;      
       // force to add all Z's
-      start = clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
+      start = clock(); result = vregr.add_predictors_if_useful (zcollection, (Scalar)1.0); print_time(start);
       cout << "TEST: test of adding zcollection gives " << result << endl << vregr << endl;
       // test the writing of data
       //      vregr.write_data_to (cout);
     }
     
-    if(false) // validated regression, white tests
+    if(true) // validated regression, white tests
     { bool shrink (false);
       const int blockSize (1);
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
       cout << "\n\n----------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       cout << vregr << endl;
-      std::pair<double,double> result;
+      std::pair<Scalar,Scalar> result;
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
       cout << "TEST: test of adding initial xcollection gives " << result << endl << vregr << endl;
       {
-	std::vector<std::pair<std::string, double*> > collect1;
+	std::vector<std::pair<std::string, Scalar*> > collect1;
 	collect1.push_back(zcollection[0]);
-	start=clock(); result = vregr.add_predictors_if_useful (collect1,0.00001); print_time(start);
+	start=clock(); result = vregr.add_predictors_if_useful (collect1,(Scalar)0.00001); print_time(start);
       }
       cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << endl << vregr << endl;
       start=clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
@@ -262,13 +267,13 @@ int main(int, char **)
       ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
       cout << "\n\n--------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       cout << vregr << endl;
-      std::pair<double,double> result;
+      std::pair<Scalar,Scalar> result;
       result = vregr.add_predictors_if_useful (xcollection, 1.0);
       cout << "TEST: test of adding initial xcollection gives " << result << endl << vregr << endl;
       {
-	std::vector<std::pair<std::string, double*> > collect1;
+	std::vector<std::pair<std::string, Scalar*> > collect1;
 	collect1.push_back(zcollection[0]);
-	start=clock(); result = vregr.add_predictors_if_useful (collect1,0.00001); print_time(start);
+	start=clock(); result = vregr.add_predictors_if_useful (collect1,(Scalar)0.00001); print_time(start);
       }
       cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << endl << vregr << endl;
       start=clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);

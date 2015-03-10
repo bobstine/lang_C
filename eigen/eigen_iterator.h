@@ -1,19 +1,25 @@
 #ifndef _EIGEN_ITERATOR_H_
 #define _EIGEN_ITERATOR_H_
 
+#include "base_types.h"
+
 #include <Eigen/Core>
 #include <iterator>
 
 //      eigen_iterator     eigen_iterator     eigen_iterator     eigen_iterator     eigen_iterator
 
-class EigenVectorIterator: public std::iterator<std::forward_iterator_tag, double>
+class EigenVectorIterator: public std::iterator<std::forward_iterator_tag, SCALAR>
 {
-  
-  int mIndex;
-  Eigen::VectorXd const* mpVector;
+ public:
+  typedef SCALAR  Scalar;
+  typedef VECTOR  Vector;
+
+ private:
+  int           mIndex;
+  Vector const* mpVector;
   
 public:
-  EigenVectorIterator (Eigen::VectorXd const* v)
+  EigenVectorIterator (Vector const* v)
     : mIndex(0), mpVector(v)                  { }
 
   EigenVectorIterator (EigenVectorIterator const& vi)
@@ -29,7 +35,7 @@ public:
     }
   
   EigenVectorIterator& operator++()          { ++mIndex; return *this; }
-  double               operator*()    const  { return (*mpVector)[mIndex]; }
+  Scalar               operator*()    const  { return (*mpVector)[mIndex]; }
 
   bool operator==(EigenVectorIterator const& it) const { return ((mIndex == it.mIndex) && (mpVector == it.mpVector)); }
   bool operator!=(EigenVectorIterator const& it) const { return ((mIndex != it.mIndex) || (mpVector != it.mpVector)); }
@@ -39,14 +45,20 @@ public:
 };
 
 
-class EigenColumnIterator: public std::iterator<std::forward_iterator_tag, double>
+class EigenColumnIterator: public std::iterator<std::forward_iterator_tag, SCALAR>
 {
-  int mColumn;
-  int mIndex;
-  Eigen::MatrixXd const* mpMatrix;
+ public:
+  typedef SCALAR  Scalar;
+  typedef VECTOR  Vector;
+  typedef MATRIX  Matrix;
+
+ private:
+  int           mColumn;
+  int           mIndex;
+  Matrix const* mpMatrix;
   
 public:
-  EigenColumnIterator (Eigen::MatrixXd const* m, int column)
+  EigenColumnIterator (Matrix const* m, int column)
     : mColumn(column), mIndex(0), mpMatrix(m)                  { }
 
   EigenColumnIterator (EigenColumnIterator const& mi)
@@ -63,7 +75,7 @@ public:
     }
   
   EigenColumnIterator& operator++()          { ++mIndex; return *this; }
-  double               operator*()    const  { return (*mpMatrix)(mIndex,mColumn); }
+  Scalar               operator*()    const  { return (*mpMatrix)(mIndex,mColumn); }   // ??? This code makes no sense!!! returns a scalar? should be vector
 
   bool operator==(EigenColumnIterator const& it) const { return ((mIndex == it.mIndex) && (mpMatrix == it.mpMatrix)); }
   bool operator!=(EigenColumnIterator const& it) const { return ((mIndex != it.mIndex) || (mpMatrix != it.mpMatrix)); }

@@ -2,7 +2,8 @@
 #include "fstatistic.h"
 
 #include <boost/math/distributions/fisher_f.hpp>
-using boost::math::fisher_f;
+
+using boost::math::fisher_f_distribution;
 
 using boost::math::cdf;
 using boost::math::quantile;
@@ -30,23 +31,23 @@ FStatistic::calc_p_value()
   if ( (mF <= 0.0) || std::isnan(mF) || std::isinf(mF) )
     mPValue = 0.0;
   else
-  { fisher_f fdist(mNumDF, mDenDF);
+  { fisher_f_distribution<Scalar> fdist((Scalar)mNumDF, (Scalar)mDenDF);
     mPValue = cdf(complement(fdist, mF));
   }		  
 }
 
 
-double
-FStatistic::critical_value(double p) const
+FStatistic::Scalar
+FStatistic::critical_value(Scalar p) const
 {
-  assert (0.0 <= p && p <= 1.0);
-  if (0 == p)
-    return 0.0;
-  else if (1 == p)
+  assert ((Scalar)0.0 <= p && p <= (Scalar)1.0);
+  if ((Scalar)0 == p)
+    return (Scalar)0.0;
+  else if ((Scalar)1.0 == p)
     return INFINITY;
   else
-  { fisher_f fdist(mNumDF, mDenDF);
-    return quantile(complement(fdist, p));
+  { fisher_f_distribution<Scalar> fdist((Scalar)mNumDF, (Scalar)mDenDF);
+    return (Scalar)quantile(complement(fdist, p));
   }
 }
 

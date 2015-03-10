@@ -7,11 +7,13 @@
 int
 main(void)
 {
-  //  Eigen::VectorXd x(10);
-  LinearRegression::Vector x(10);
+  typedef EigenVectorIterator::Scalar Scalar;
+  typedef EigenVectorIterator::Vector Vector;
+  
+  Vector x(10);
   
   for(int i=0; i<10; ++i)
-    x[i] = i;
+    x[i] = (Scalar)i;
 
   std::cout << "TEST: Iterator output... ";
 

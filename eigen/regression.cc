@@ -15,7 +15,7 @@ using debugging::debug;
 #include "confusion_matrix.h"
 
 #include <thread>
-
+#include <cmath>
 #include <Eigen/LU>
 #include <Eigen/QR>
 
@@ -27,10 +27,10 @@ using debugging::debug;
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(3001);    
 
-double abs_val(double x) { if (x < 0.0) return -x; else return x; }
-double max_abs(double x, double y) { double ax = abs_val(x); double ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
+LinearRegression::Scalar abs_val(LinearRegression::Scalar x) { if (x < 0.0) return -x; else return x; }
+LinearRegression::Scalar max_abs(LinearRegression::Scalar x, LinearRegression::Scalar y) { LinearRegression::Scalar ax = abs_val(x); LinearRegression::Scalar ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
 int    min_int(int i, int j) { if(i<j) return i; else return j; }
-bool   close (double a, double b) { return abs_val(a-b) < 1.0e-50; }
+bool   close (LinearRegression::Scalar a, LinearRegression::Scalar b) { return abs_val(a-b) < 1.0e-50; }
 
 
 //   Macros      Macros      Macros      Macros      Macros
@@ -42,15 +42,15 @@ bool   close (double a, double b) { return abs_val(a-b) < 1.0e-50; }
 
 //    Utils      Utils      Utils      Utils      Utils      Utils      Utils      Utils
 
-double
+LinearRegression::Scalar
 LinearRegression::approximate_ss(Vector const& x) const
 {
-  double sum (x[0]);
-  double ss   (0.0);
+  Scalar sum (x[0]);
+  Scalar ss   (0.0);
 
   for (int i=1; i<x.size(); ++i)
   { sum += x[i];
-    double dev = x[i]-(sum/i);
+    LinearRegression::Scalar dev = x[i]-(sum/(Scalar)i);
     ss += dev*dev;
   }
   return ss;
@@ -106,7 +106,7 @@ LinearRegression::add_constant()
   mK = 1;
   mXNames.push_back("Intercept");
   mQ.col(0)    = mSqrtWeights;
-  mR(0,0)      = sqrt(mSqrtWeights.squaredNorm());
+  mR(0,0)      = (Scalar) sqrt(mSqrtWeights.squaredNorm());
   mQ.col(0)   /= mR(0,0);
   mGamma[0]    = mQ.col(0).dot(mY);
   mLambda[0]   = 0.0;                               // dont shrink intercept
@@ -126,10 +126,10 @@ LinearRegression::x_row (int i)            const
 
 
 LinearRegression::Vector
-LinearRegression::raw_fitted_values(double lo, double hi) const
+LinearRegression::raw_fitted_values(LinearRegression::Scalar lo, LinearRegression::Scalar hi) const
 {
   Vector fit = raw_fitted_values();
-  return fit.unaryExpr([lo,hi] (double x) -> double { if(x < lo) return lo; if(x < hi) return x; return hi; });
+  return fit.unaryExpr([lo,hi] (LinearRegression::Scalar x) -> LinearRegression::Scalar { if(x < lo) return lo; if(x < hi) return x; return hi; });
 }
 
 
@@ -139,8 +139,8 @@ LinearRegression::raw_fitted_values(double lo, double hi) const
 LinearRegression::Vector
 LinearRegression::se_gamma_ls() const
 {
-  double s2 (mResidualSS/(mN-mK));
-  Vector se (mLambda.unaryExpr([s2] (double lam)->double { return sqrt(s2/(1+lam)); }));
+  LinearRegression::Scalar s2 (mResidualSS/(Scalar)(mN-mK));
+  Vector se (mLambda.unaryExpr([s2] (Scalar lam)->Scalar { return (Scalar)sqrt(s2/(1+lam)); }));
   return se;
 }
 
@@ -226,7 +226,7 @@ LinearRegression::predictions(Matrix const& x) const
 }
 
 LinearRegression::Vector
-LinearRegression::predictions(Matrix const& x, double lo, double hi) const
+LinearRegression::predictions(Matrix const& x, LinearRegression::Scalar lo, LinearRegression::Scalar hi) const
 {
   Vector preds (predictions(x));
   for(int i=0; i<preds.size(); ++i)
@@ -240,7 +240,7 @@ LinearRegression::predictions(Matrix const& x, double lo, double hi) const
 //     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests     Tests
 
 bool
-LinearRegression::is_invalid_ss (double ss, double ssz)          const
+LinearRegression::is_invalid_ss (LinearRegression::Scalar ss, LinearRegression::Scalar ssz)          const
 {
   const    double    epsilon (1.0e-5);
   debugging::debug("REGR",4) << "Initial SSz = " << ss << " becomes " << ssz << " after sweeping." << std::endl; 
@@ -263,11 +263,11 @@ LinearRegression::is_invalid_ss (double ss, double ssz)          const
   return false;
 }
 
-double
+LinearRegression::Scalar
 LinearRegression::sweep_Q_from_column(int col) const
 {
   // all at once, classical GS
-  double ss (approximate_ss(mQ.col(col)));
+  Scalar ss (approximate_ss(mQ.col(col)));
   #ifdef _CLASSICAL_GS_
   Vector delta  (mQ.leftCols(col).transpose() * mQ.col(col));
   debugging::debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
@@ -280,10 +280,10 @@ LinearRegression::sweep_Q_from_column(int col) const
     mQ.col(col).noalias() -= mQ.col(j) * mR(j,col);
   }
   #endif
-  double ssz  (mQ.col(col).squaredNorm());
+  Scalar ssz  (mQ.col(col).squaredNorm());
   if (is_invalid_ss (ss, ssz)) return 0.0;
-  mQ.col(col) /= sqrt(ssz);
-  mR(col,col) = sqrt(ssz);
+  mQ.col(col) /= (Scalar) sqrt(ssz);
+  mR(col,col)  = (Scalar) sqrt(ssz);
   // std::cout << "TEST: R matrix after sweeping Q is " << std::endl << mR.topLeftCorner(col+1,col+1) << std::endl;
   // std::cout << "TEST: Q matrix is " << std::endl << mQ.topLeftCorner(5,col+1) << " ...." << std::endl;
   return ssz;
@@ -302,19 +302,19 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   }
   int residualDF (mN-mK);
   assert(residualDF > 0);
-  double qe  (mQ.col(mK).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
+  Scalar qe  (mQ.col(mK).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
   if (mBlockSize==0)
-  { double regrss (qe * qe);
+  { Scalar regrss (qe * qe);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, Vector::Ones(1));
   }
   else                                              
   { if (is_binary() && (mBlockSize == 1))            // use Bennett and fake F stat from squaring bennett t stat
-    { std::pair<double,double> test (bennett_evaluation());
+    { std::pair<Scalar,Scalar> test (bennett_evaluation());
       debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
       return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
     }
     else                                             // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
-    { double qeeq (0.0);
+    { Scalar qeeq (0.0);
       if (mBlockSize == 1)
       { Vector temp (mQ.col(mK).array() * mResiduals.array());
 	qeeq = temp.squaredNorm();
@@ -322,7 +322,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
       else
       { assert (0 == mN % mBlockSize);
 	for(int row=0; row<mN; row +=mBlockSize)
-	{ double ezi (mResiduals.segment(row,mBlockSize).dot(mQ.col(mK).segment(row,mBlockSize)));
+	{ Scalar ezi (mResiduals.segment(row,mBlockSize).dot(mQ.col(mK).segment(row,mBlockSize)));
 	  qeeq += ezi * ezi;
 	}
       }
@@ -346,7 +346,7 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
   assert(residualDF > 0);
   Vector Qe  (mQ.block(0,mK,mN,mTempK).transpose() * mResiduals);    // new gamma coefs
   if (mBlockSize==0)
-  { double regrss (Qe.squaredNorm());
+  { Scalar regrss (Qe.squaredNorm());
     debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << ")" << std::endl;
     return FStatistic(regrss, mTempK, mResidualSS-regrss, residualDF, Vector::Ones(z.cols()));
   }
@@ -366,9 +366,9 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 	row += mBlockSize;
       }
     }
-    double ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
+    Scalar ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
     debugging::debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
-    return FStatistic(ss/mTempK, mTempK, residualDF, Vector::Ones(z.cols()));
+    return FStatistic(ss/(Scalar)mTempK, mTempK, residualDF, Vector::Ones(z.cols()));
   }
 }
 
@@ -376,22 +376,22 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 
 // RAS: pretty sure this is wrong when the response gets weighted
 
-std::pair<double,double>
+std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 LinearRegression::bennett_evaluation () const
 {
-  const double epsilon (1.0E-10);
-  Vector mu      (raw_fitted_values(epsilon, 1.0-epsilon));                  // think of fit as E(Y), constrained to [eps,1-eps] interval
+  const Scalar epsilon ((Scalar)1.0E-10);
+  Vector mu      (raw_fitted_values(epsilon, (Scalar)1.0-epsilon));                  // think of fit as E(Y), constrained to [eps,1-eps] interval
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                  // would match residuals IF other fit is bounded
-  double num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)
-  double rootZDZ (sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));      // sqrt(z'Dz)
-  double maxA    (0.0);
+  Scalar num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)
+  Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));      // sqrt(z'Dz)
+  Scalar maxA    (0.0);
   for (int i=0; i<mN; ++i)
-  { double absZ (abs_val(mQ(i,mK) * max_abs(mu[i], 1.0-mu[i])));             // largest possible error for this case
+    { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));             // largest possible error for this case
     if (absZ > maxA) maxA = absZ;                                            // largest?
   }
-  double Mz      (maxA/rootZDZ);
-  double tz      (abs_val(num)/rootZDZ);                    // num = get(mZE,0)
+  Scalar Mz      (maxA/rootZDZ);
+  Scalar tz      (abs_val(num)/rootZDZ);                    // num = get(mZE,0)
   return std::make_pair(tz, bennett_p_value(tz,Mz));
 }
 
@@ -436,8 +436,8 @@ void
 LinearRegression::add_predictors  (FStatistic const& fstat)
 {
   debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
-  double lambda (0);
-  double F (fstat.f_stat());
+  Scalar lambda (0);
+  Scalar F (fstat.f_stat());
   if (F > 0) // dont shrink those with F == 0
   { if (F > 1)
       lambda = 1/(F - 1);
@@ -456,7 +456,7 @@ void
 LinearRegression::add_predictors  ()   // no shrinkage
 {
   debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
-  double lambda (0);
+  Scalar lambda (0);
   for (unsigned int j=0; j<mTempNames.size(); ++j)
     mLambda[mK+j] = lambda;
   update_fit(mTempNames);
@@ -565,14 +565,14 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 void
 ValidatedRegression::initialize_validation_ss()
 { 
-  double mean (mModel.y_bar());
-  mValidationSS = mValidationY.unaryExpr([mean](double x)->double { return x-mean; }).squaredNorm();
+  Scalar mean (mModel.y_bar());
+  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
 }
 
 //     confusion_matrix     confusion_matrix     confusion_matrix
   
 ConfusionMatrix
-ValidatedRegression::estimation_confusion_matrix(float threshold) const
+ValidatedRegression::estimation_confusion_matrix(Scalar threshold) const
 {
   assert (mModel.is_binary());
   Vector y = mModel.raw_y();
@@ -581,7 +581,7 @@ ValidatedRegression::estimation_confusion_matrix(float threshold) const
 }
 
 ConfusionMatrix
-ValidatedRegression::validation_confusion_matrix(float threshold) const
+ValidatedRegression::validation_confusion_matrix(Scalar threshold) const
 {
   assert (mModel.is_binary());
   assert (n_validation_cases() > 0);
@@ -636,9 +636,9 @@ ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-const int    noBlocking    = 0;     // no white blocking
-const bool   noShrinkage   = false; // no shrinkage
-const double singularPval  = 0.995; // threshold for deciding if added variable is 'too close' to singular
+const int    noBlocking    = 0;             // no white blocking
+const bool   noShrinkage   = false;         // no shrinkage
+const SCALAR singularPval  = (SCALAR)0.995; // threshold for deciding if added variable is 'too close' to singular
 
 
 /*
@@ -650,16 +650,21 @@ const double singularPval  = 0.995; // threshold for deciding if added variable 
 
 class RegressionWorker
 {
+public:
+  typedef SCALAR Scalar;
+  typedef VECTOR Vector;
+  typedef MATRIX Matrix;
+  
 private:
-  Eigen::VectorXd const*   mY;
-  Eigen::MatrixXd const*   mXi;
-  Eigen::MatrixXd const*   mX;
-  int                      mSkipped;
-  Eigen::MatrixXd      *   mResults;
-  bool                     mTrace;
+  Vector const*   mY;
+  Matrix const*   mXi;
+  Matrix const*   mX;
+  int             mSkipped;
+  Matrix      *   mResults;
+  bool            mTrace;
 
 public:    
-  RegressionWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X, Eigen::MatrixXd *results, bool trace)
+  RegressionWorker(Vector const* y, Matrix const* Xi, Matrix const* X, Matrix *results, bool trace)
     :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results), mTrace(trace)
     {
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
@@ -694,16 +699,16 @@ private:
       (*mResults)(k,2) = regr.aic_c();
     }
   
-  void add_predictor_if_useful(LinearRegression *regr, std::string name, Eigen::VectorXd const& x, bool verbose=false)
-    { FStatistic f = regr->f_test_predictor(name, x);
-      if(f.f_stat() != 0.0)
-	regr->add_predictors();
-      else
-	++mSkipped;
-      if (verbose) std::clog << "REGR: Trace of regression worker, q = " << regr->q() << " predictors (" << mSkipped << " skipped)" << std::endl
-			    << "      beta = " << regr->beta().transpose() << std::endl
-			    << "      r^2 = " << regr->r_squared() << "   RSS = " << regr->residual_ss() << std::endl;
-    }
+  void add_predictor_if_useful(LinearRegression *regr, std::string name, Vector const& x, bool verbose=false)
+  { FStatistic f = regr->f_test_predictor(name, x);
+    if(f.f_stat() != 0.0)
+      regr->add_predictors();
+    else
+      ++mSkipped;
+    if (verbose) std::clog << "REGR: Trace of regression worker, q = " << regr->q() << " predictors (" << mSkipped << " skipped)" << std::endl
+			   << "      beta = " << regr->beta().transpose() << std::endl
+			   << "      r^2 = " << regr->r_squared() << "   RSS = " << regr->residual_ss() << std::endl;
+  }
   
 };
 
@@ -715,18 +720,23 @@ private:
 */
 class ValidationWorker
 {
+public:
+  typedef SCALAR Scalar;
+  typedef VECTOR Vector;
+  typedef MATRIX Matrix;
+  
 private:
-  Eigen::VectorXd const*             mY;
-  Eigen::MatrixXd const*             mXi;
-  Eigen::MatrixXd const*             mX;
+  Vector const*                      mY;
+  Matrix const*                      mXi;
+  Matrix const*                      mX;
   std::vector<bool>::const_iterator  mSelector;
   int                                mSkipped;
-  Eigen::VectorXd                 *  mCVSS;
-  const double                       mPtoEnter = 0.995;  // avoid singular variables
+  Vector                          *  mCVSS;
+  const Scalar                       mPtoEnter = (Scalar) 0.995;  // avoid singular variables
 
 public:    
-  ValidationWorker(Eigen::VectorXd const* y, Eigen::MatrixXd const* Xi, Eigen::MatrixXd const* X,
-		   std::vector<bool>::const_iterator sel, Eigen::VectorXd *cvss)
+  ValidationWorker(Vector const* y, Matrix const* Xi, Matrix const* X,
+		   std::vector<bool>::const_iterator sel, Vector *cvss)
     : mY(y), mXi(Xi), mX(X), mSelector(sel), mSkipped(0), mCVSS(cvss)
     { 
       assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
@@ -751,7 +761,7 @@ public:
     namedIter[0].first = "vXX";
     for (int k=0; k<mX->cols(); ++k)
     { namedIter[0].second = EigenColumnIterator(mX, k);
-      std::pair<double,double> fAndP = regr.add_predictors_if_useful(namedIter, mPtoEnter);
+      std::pair<Scalar,Scalar> fAndP = regr.add_predictors_if_useful(namedIter, mPtoEnter);
       if (fAndP.first == 0) ++mSkipped;  
       (*mCVSS)[k+1] = regr.validation_ss();           // offset by 1 to accomodate first model
     }
@@ -763,11 +773,11 @@ public:
 
 
 void
-validate_regression(Eigen::VectorXd const& Y,
-		    Eigen::MatrixXd const& Xi,      // preconditioning variables
-		    Eigen::MatrixXd const& X,       // variables to add one-at-a-time
+validate_regression(VECTOR    const& Y,
+		    MATRIX    const& Xi,      // preconditioning variables
+		    MATRIX    const& X,       // variables to add one-at-a-time
 		    int nFolds,
-		    Eigen::MatrixXd  &results,
+		    MATRIX   &results,
 		    unsigned randomSeed)
 {
   if ((results.rows() != (1+X.cols())) || (results.cols()!=4) )
@@ -790,9 +800,9 @@ validate_regression(Eigen::VectorXd const& Y,
       shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
     // write data to check code
     if (false)
-    { Eigen::MatrixXd data(X.rows(),2+Xi.cols()+X.cols());
-      Eigen::VectorXd dFold(folds.size());
-      for(int i=0; i<(int)folds.size(); ++i) dFold[i] = folds[i];
+    { MATRIX data(X.rows(),2+Xi.cols()+X.cols());
+      VECTOR dFold(folds.size());
+      for(int i=0; i<(int)folds.size(); ++i) dFold[i] = (SCALAR)folds[i];
       data << dFold, Y , Xi , X; 
       std::cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << std::endl;
       std::string fileName ("regr_test_data.txt");
@@ -806,13 +816,13 @@ validate_regression(Eigen::VectorXd const& Y,
     // build validated regressions (construct each worker then launch thread)
     debug("REGR",2) << "Building validation threads" << std::endl;
     std::vector<std::vector<bool>>  selectors (nFolds);
-    std::vector<Eigen::VectorXd *>  cvss      (nFolds);
+    std::vector<VECTOR *>           cvss      (nFolds);
     std::vector<ValidationWorker *> workers   (nFolds);
     std::vector<std::thread>        validationThreads(nFolds);
     for (int fold=0; fold<nFolds; ++fold)
     { for(int i=0; i<(int)folds.size(); ++i)
 	selectors[fold].push_back( folds[i] != fold );
-      cvss[fold]    = new Eigen::VectorXd(1+X.cols());   // +1 for initial model results
+      cvss[fold]    = new VECTOR(1+X.cols());   // +1 for initial model results
       workers[fold] = new ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold]);
       debug("REGR",2) << "Starting validation thread #" << fold << std::endl;
       validationThreads[fold] = std::thread(*workers[fold]);

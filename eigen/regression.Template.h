@@ -13,8 +13,8 @@ void LinearRegression::fill_with_beta (Iter begin) const
 //     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression
   
 template <class Iter>
-std::pair<double,double>
-  ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter)
+std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
+  ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, LinearRegression::Scalar pToEnter)
 {
   FStatistic f;
   int k ((int)c.size());                                                                  // k denotes the number of added variables
@@ -116,8 +116,8 @@ ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
   Vector results (mLength);
   
   if (truncate)
-  { double min (0.0);
-    double max (1.0);
+  { Scalar min (0.0);
+    Scalar max (1.0);
     results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(min,max);
     results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,min,max);
   }

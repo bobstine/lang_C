@@ -2,6 +2,7 @@
 #ifndef _EIGEN_REGRESSION_H_
 #define _EIGEN_REGRESSION_H_
 
+#include "base_types.h"
 #include "fstatistic.h"
 #include "eigen_iterator.h"
 #include "confusion_matrix.h"
@@ -41,8 +42,9 @@
 class LinearRegression
 {
 public:
-  typedef Eigen::VectorXd          Vector;
-  typedef Eigen::MatrixXd          Matrix;
+  typedef SCALAR                   Scalar;      // vs double
+  typedef VECTOR                   Vector;
+  typedef MATRIX                   Matrix;
   typedef FStatistic               FStat;
   typedef std::vector<std::string> StringVec;
   
@@ -63,15 +65,14 @@ private:
   Matrix    mutable        mQ, mR;         // only changes are in the latter columns past Kth
   StringVec mutable        mTempNames;
   int       mutable        mTempK;         // number of predictors last tried, these are last mTempDim columns of Q
-  double                   mResidualSS;
-  double                   mTotalSS;
+  Scalar                   mResidualSS;
+  Scalar                   mTotalSS;
   
 public:
   ~LinearRegression () {  }
 
   LinearRegression ()
     :  mN(0) { }
-
   
   LinearRegression (std::string yName, Vector const& y, int blockSize) 
     : mN((int)y.size()), mK(0), mBlockSize(blockSize),
@@ -82,7 +83,6 @@ public:
     :  mN((int)y.size()), mK(0), mBlockSize(blockSize),
        mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
        mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames, x); }
-
   
   // WLS: if weighted, all things held are weighted by square root of input weights in w
   LinearRegression (std::string yName, Vector const& y, Vector const& w, int blockSize)
@@ -97,11 +97,11 @@ public:
   inline int       block_size()        const   { return mBlockSize; }
   inline int       n()                 const   { return mN; };
   inline int       q()                 const   { return mK-1; }                                     // -1 for intercept 
-  inline double    rmse()              const   { return sqrt(mResidualSS/(mN-mK)); }  
-  inline double    residual_ss()       const   { return mResidualSS; }
-  inline double    aic_c()             const   { double n(mN), k(mK); return n * log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
-  inline double    r_squared()         const   { return 1.0 - mResidualSS/mTotalSS; }
-  inline double    adj_r_squared()     const   { return 1.0 - (mResidualSS/(mN-mK)) / (mTotalSS/(mN-1)); }
+  inline Scalar    rmse()              const   { return (Scalar) sqrt(mResidualSS/((Scalar)(mN-mK))); }  
+  inline Scalar    residual_ss()       const   { return mResidualSS; }
+  inline Scalar    aic_c()             const   { Scalar n((Scalar)mN), k((Scalar)mK); return (Scalar) n*(Scalar)log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
+  inline Scalar    r_squared()         const   { return (Scalar) 1.0 - mResidualSS/mTotalSS; }
+  inline Scalar    adj_r_squared()     const   { return (Scalar) 1.0 - (mResidualSS/(Scalar)(mN-mK)) / (mTotalSS/(Scalar)(mN-1)); }
   inline Vector    y()                 const   { return mY; }
   inline Vector    residuals()         const   { return mResiduals; }
   inline Vector    fitted_values()     const   { return mY - mResiduals; }
@@ -109,10 +109,10 @@ public:
   inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }       //
   inline Vector    raw_fitted_values() const   { return fitted_values().array()/mSqrtWeights.array(); }  //
 
-  Vector    raw_fitted_values(double lo, double hi)  const;                                             // truncated to indicated range
+  Vector    raw_fitted_values(Scalar lo, Scalar hi)  const;                                             // truncated to indicated range
   Vector    x_row(int i)                    const; 
 
-  double    y_bar()                  const   { if (mK>0) return sqrt(mN)*mGamma(0); else return 0.0; }
+  Scalar    y_bar()                  const   { if (mK>0) return (Scalar) sqrt(mN)*mGamma(0); else return 0.0; }
   Vector    gamma()                  const   { return mGamma.head(mK); }
   Vector    se_gamma_ls()            const;
   Vector    se_gamma()               const;
@@ -126,7 +126,7 @@ public:
   
   StringVec predictor_names()        const   { return mXNames; }
   Vector    predictions  (Matrix const& matrix)  const;
-  Vector    predictions  (Matrix const& matrix, double lo, double hi)   const;    // truncate to range
+  Vector    predictions  (Matrix const& matrix, Scalar lo, Scalar hi)   const;    // truncate to range
 
   FStat     f_test_predictor  (std::string name, Vector const& z)       const;    // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;    //           blocksize > 0 implies blocked white.
@@ -145,13 +145,13 @@ public:
  private:
   void      allocate_memory();
   void      add_constant();
-  double    sweep_Q_from_column(int col)           const;              // only affect Q, R past those of current fit
+  Scalar    sweep_Q_from_column(int col)           const;              // only affect Q, R past those of current fit
   void      update_fit(StringVec xNames);
   StringVec name_vec(std::string name)             const;              // inits a vector with one string
-  double    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
+  Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
   bool      is_binary_vector(Vector const& y)      const;              // used to determine whether to use Bennett bounds
-  bool      is_invalid_ss (double ss, double ssz)  const;              // checks for singularity, nan, neg, inf
-  std::pair<double,double> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
+  bool      is_invalid_ss (Scalar ss, Scalar ssz)  const;              // checks for singularity, nan, neg, inf
+  std::pair<Scalar,Scalar> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.array() * a.array()).colwise().sum()); } // diagonal of a'a
@@ -164,6 +164,7 @@ public:
 class ValidatedRegression
 {
 public:
+  typedef LinearRegression::Scalar        Scalar;
   typedef LinearRegression::Vector        Vector;
   typedef LinearRegression::Matrix        Matrix;
 
@@ -174,7 +175,7 @@ private:
   std::vector<int>      mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
   Vector                mValidationY;
   Matrix                mValidationX;       // append when variable is added to model
-  double                mValidationSS;      // cache validation ss, computed whenever model changes
+  Scalar                mValidationSS;      // cache validation ss, computed whenever model changes
   LinearRegression      mModel;
   
 public:
@@ -190,29 +191,29 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
     :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
 
-  double goodness_of_fit()                      const  { return mModel.r_squared(); }
+  Scalar goodness_of_fit()                      const  { return mModel.r_squared(); }
   int block_size()                              const  { return mModel.block_size(); }
   int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
   int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
   LinearRegression const& model()               const  { return mModel; }
 
-  double y_bar()                                const  { return mModel.y_bar(); }
-  std::vector<double>  beta()                   const  { std::vector<double> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
+  Scalar y_bar()                                const  { return mModel.y_bar(); }
+  std::vector<Scalar>  beta()                   const  { std::vector<Scalar> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
   std::vector<std::string> predictor_names()    const  { return mModel.predictor_names(); }
 
   int n_total_cases()                           const  { return mLength; }
   int n_validation_cases()                      const  { return mLength - mN; }
   int n_estimation_cases()                      const  { return mN; }
   
-  double estimation_ss()                        const  { return mModel.residual_ss(); }
-  double validation_ss()                        const  { return mValidationSS; }
-  std::pair<double,double> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
+  Scalar estimation_ss()                        const  { return mModel.residual_ss(); }
+  Scalar validation_ss()                        const  { return mValidationSS; }
+  std::pair<Scalar,Scalar> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
 
   ConfusionMatrix estimation_confusion_matrix(float threshold=0.5) const;
   ConfusionMatrix validation_confusion_matrix(float threshold=0.5) const;
 
   template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
-  std::pair<double,double> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, double pToEnter);
+  std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
 
   template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
   template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
@@ -238,14 +239,13 @@ private:
 //      cross-validation     cross-validation     cross-validation     cross-validation     cross-validation
 
 void
-validate_regression(Eigen::VectorXd const& Y,     // response
-		    Eigen::MatrixXd const& Xi,    // initial block of Xs to initialize model
-		    Eigen::MatrixXd const& X,     // sequence to compute AIC, CVSS
-		    int nFolds,                   // how many folds for CV (0 means no CV)
-		    Eigen::MatrixXd  &result,     // 4 columns: R2, RSS, AICc, CVSS; n = cols(X) rows
-		    unsigned randomSeed=26612);   // used to control random splits (does not call srand).
-                                                  // 0 forces deterministic split 0 1 2 3 0 1 2 3 etc for 4 fold
-
+validate_regression(LinearRegression::Vector const& Y,     // response
+		    LinearRegression::Matrix const& Xi,    // initial block of Xs to initialize model
+		    LinearRegression::Matrix const& X,     // sequence to compute AIC, CVSS
+		    int nFolds,                            // how many folds for CV (0 means no CV)
+		    LinearRegression::Matrix      &result, // 4 columns: R2, RSS, AICc, CVSS; n = cols(X) rows
+		    unsigned randomSeed=26612);            // used to control random splits (does not call srand).
+                                                           // 0 forces deterministic split 0 1 2 3 0 1 2 3 etc for 4 fold
 
 ///////////////////////////  Printing Operators  /////////////////////////////
 

@@ -1,37 +1,37 @@
 #include "confusion_matrix.h"
 #include <iomanip>
 
-float
+ConfusionMatrix::Scalar
 ConfusionMatrix::sensitivity() const
 {
-  return (float)mMatrix(1,1)/(float)mMatrix(1,2);
+  return (Scalar)mMatrix(1,1)/(Scalar)mMatrix(1,2);
 }
 
-float
+ConfusionMatrix::Scalar
 ConfusionMatrix::specificity() const
 {
-  return (float)mMatrix(0,0)/(float)mMatrix(0,2);
+  return (Scalar)mMatrix(0,0)/(Scalar)mMatrix(0,2);
 }
 
 
-float
+ConfusionMatrix::Scalar
 ConfusionMatrix::precision() const
 {
-  return (float)mMatrix(1,1)/(float)(mMatrix(2,1));    // TP / (TP + FP)
+  return (Scalar)mMatrix(1,1)/(Scalar)(mMatrix(2,1));    // TP / (TP + FP)
 }
 
-float
+ConfusionMatrix::Scalar
 ConfusionMatrix::f1() const
 {
   size_t tp2 = 2 * mMatrix(1,1);
   
-  return (float)(tp2)/(float)(tp2 + mMatrix(0,1) + mMatrix(1,0)); // F1 = 2 TP/ (2 TP + FP + FN)
+  return (Scalar)(tp2)/(Scalar)(tp2 + mMatrix(0,1) + mMatrix(1,0)); // F1 = 2 TP/ (2 TP + FP + FN)
 }
 
-float
+ConfusionMatrix::Scalar
 ConfusionMatrix::pct_correct() const
 {
-  return (float)(mMatrix(0,0)+mMatrix(1,1))/(float)(mMatrix(2,2));
+  return (Scalar)(mMatrix(0,0)+mMatrix(1,1))/(Scalar)(mMatrix(2,2));
 }
 
 void
