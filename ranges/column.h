@@ -5,6 +5,7 @@
  A Column puts a name on a numerical range and the various statistics of that range.
  Access to properties of the column come via operator->.
 
+ 10 Mar 14 ... Template over field of numbers
  24 Aug 10 ... Add integer columns.
  27 Apr 10 ... Column streams to use an input stream rather than file; columns have a 'role'
  11 Nov 09 ... Add description field to allow attributes when reading stream format data.
@@ -30,51 +31,57 @@
 #include "debug.h"
 
 
+template <class F>
 class Column;
+
 class IntegerColumn;
 
 
-//     Double Column     Double Column     Double Column     Double Column     Double Column     Double Column     
+//     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     
 
 
+template <class F>
 class ColumnData
 {
-  friend class Column;
+  friend class Column<F>;
 
+ public:
+  typedef F Scalar;
+  
  private:
   std::string mName;
   std::string mRole;              // such as y, x or context
   std::string mDescription;       // store whatever you want here
   int         mN;
-  double      mAvg;
-  double      mMin, mMax;
+  Scalar      mAvg;
+  Scalar      mMin, mMax;
   int         mNumUnique;
-  std::set<double> mUniqueElements; // only held if mNumUnique is small
-  double *    mBegin;
-  double *    mEnd;
+  std::set<F> mUniqueElements; // only held if mNumUnique is small
+  Scalar *    mBegin;
+  Scalar *    mEnd;
   int         mRefCount;
  
  private:
-  ~ColumnData()                     { delete[] mBegin; }
+  ~ColumnData()                 { delete[] mBegin; }
 
- ColumnData(size_t n)            : mBegin(new double[n]), mEnd(mBegin+n), mRefCount(1) { mN = (int)n; assert(mBegin != NULL); }
+ ColumnData(size_t n)            : mBegin(new Scalar[n]), mEnd(mBegin+n), mRefCount(1) { mN = (int)n; assert(mBegin != NULL); }
 
  public:
   std::string     name()          const { return mName; }
   std::string     role()          const { return mRole; }
   std::string     description()   const { return mDescription; }
   int             size()          const { return mN; }
-  double          average()       const { return mAvg; }
-  double          scale()         const { return (mMax - mMin)/6.0; }
-  double          min()           const { return mMin; }
-  double          max()           const { return mMax; }
+  Scalar          average()       const { return mAvg; }
+  Scalar          scale()         const { return (mMax - mMin)/6.0; }
+  Scalar          min()           const { return mMin; }
+  Scalar          max()           const { return mMax; }
   int             num_unique()    const { return mNumUnique; }
-  double          element(int i)  const { return *(mBegin+i); }
-  double*         begin()         const { return mBegin; }
-  double*         end()           const { return mEnd; }
-  Ranges::range<double*>       writable_range()  const { return Ranges::make_range(mBegin, mEnd); }
-  Ranges::range<double const*> range()           const { return Ranges::make_range(mBegin, mEnd); }
-  std::set<double>             unique_elements() const { return mUniqueElements; }
+  Scalar          element(int i)  const { return *(mBegin+i); }
+  Scalar*         begin()         const { return mBegin; }
+  Scalar*         end()           const { return mEnd; }
+  Ranges::range<Scalar*>       writable_range()  const { return Ranges::make_range(mBegin, mEnd); }
+  Ranges::range<Scalar const*> range()           const { return Ranges::make_range(mBegin, mEnd); }
+  std::set<Scalar>             unique_elements() const { return mUniqueElements; }
   
   bool            is_constant()   const { return mNumUnique == 1; }
   bool            is_dummy()      const { return ((mNumUnique == 2) && (mMin == 0) && (mMax == 1)); }
@@ -93,71 +100,27 @@ const int maxColumnNameLength ( 128);
 
 const int maxColumnDescLength (1024);
 
+template <class F>
 class Column
 {
  private:
-  ColumnData       *  mData;            // pointer makes it possible to have const but change ref count
+  ColumnData<F>       *  mData;            // pointer makes it possible to have const but change ref count
 
  public:
   ~Column() { if(--mData->mRefCount <= 0) delete mData; }
   
- Column()                                     : mData( new ColumnData(0) ) {  }
-
- Column(Column const& c)                      : mData(c.mData) { ++c.mData->mRefCount; }
-
- Column(char const* name, int n)              : mData( new ColumnData(n) ) {
-    mData->mName = name;
-    mData->mRole="";
-    mData->mDescription=""; }
-
- Column(char const* name, char const* description, size_t n, FILE *fp) : mData( new ColumnData(n) )
-  { mData->mName = name;
-    mData->mRole = extract_role_from_string(description);
-    mData->mDescription = description;
-    double *x (mData->mBegin);
-    int result = 0;
-    while(n--)
-      result = fscanf(fp, "%lf", x++);
-    if (result != 1)
-    { std::cerr << "CLMN: *** ERROR *** Could not read sought column element with n=" << n << std::endl;
-      std::cerr << "                    Last values read are " << *(x-2) << ", " << *(x-1) << ", " << (*x) << std::endl;
-    }
-    mData->init_properties();
-  }
-
- Column(std::string name, std::string description, size_t n, std::istream& is) : mData( new ColumnData(n) )
-  { size_t expect (n);
-    mData->mName = name;
-    mData->mRole = extract_role_from_string(description);
-    mData->mDescription = description;
-    double *x (mData->mBegin);  
-    while(n-- && is >> *x)
-      ++x;
-    ++n;  // why increment???
-    if(n)
-      debugging::debug("CLMN",-1) << "Error. Incomplete column read of column '" << name
-				  << "'. Expecting " << expect << " but read " << expect-n << std::endl;
-    std::string rest;
-    getline(is, rest);             // dump rest of data line
-    mData->init_properties();
-  }
+  Column();
+  Column(Column<F> const& c);
+  Column(char const* name, int n);
+  Column(std::string name, std::string description, size_t n, std::istream& is);
+  Column(char const* name, char const* description, size_t n, FILE *fp);
 
   template <class Iter>
-    Column(char const* name, char const* description, size_t n, Iter source) : mData( new ColumnData(n) )
-  { mData->mName = name;
-    mData->mRole = extract_role_from_string(description);
-    mData->mDescription = description;
-    double *x (mData->mBegin);
-    while(n--)
-    { *x = *source;
-      ++x; ++source;
-    }
-    mData->init_properties();
-  }
+    Column(char const* name, char const* description, size_t n, Iter source);
   
   Column& operator= (Column const& c);
   
-  ColumnData* operator->()                const { return mData; }
+  ColumnData<F> * operator->()            const { return mData; }
   
   void        init_properties()                 { mData->init_properties(); }
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
@@ -168,9 +131,10 @@ class Column
   
 };
 
+template<class F>
 inline
 std::ostream&
-operator<<(std::ostream& os, Column const& column)
+operator<<(std::ostream& os, Column<F> const& column)
 {
   column.print_to(os);
   return os;
@@ -181,7 +145,8 @@ operator<<(std::ostream& os, Column const& column)
 //        First line of stream gives number of observations expected for each column.
 //        Seems to work okay so long as this number is >= to the number present.
 //        Then come triples of lines for each column: name, description, data
-class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
+template <class F>
+class ColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
 {
   std::istream&    mStream;
   std::string      mStreamName;
@@ -189,7 +154,7 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
   int              mCount;
   std::string      mCurrentName;
   std::string      mCurrentDesc;
-  Column           mCurrentColumn;
+  Column<F>        mCurrentColumn;
 
   
  public:
@@ -199,14 +164,14 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
     :  mStream(is), mStreamName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
     { if (is) { initialize(); read_next_column(); } }
 
-  std::string   currentName()        const { return mCurrentName; }
-  std::string   currentDescription() const { return mCurrentDesc; }
+  std::string      currentName()        const { return mCurrentName; }
+  std::string      currentDescription() const { return mCurrentDesc; }
   
-  Column        operator*()          const { return mCurrentColumn; }
-  ColumnStream& operator++()               { ++mCount; read_next_column(); return *this; }
+  Column<F>        operator*()          const { return mCurrentColumn; }
+  ColumnStream<F>& operator++()               { ++mCount; read_next_column(); return *this; }
 
-  int           position()           const { return mCount; }
-  int           n()                  const { return mN;     }
+  int              position()           const { return mCount; }
+  int              n()                  const { return mN;     }
   
  private:
   void initialize();
@@ -214,30 +179,30 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 };
 
 // Return number of observations and number of columns
+template<class F>
 std::pair<int,int>
   insert_columns_from_stream (std::istream& is,
-			      std::back_insert_iterator< std::vector<Column> > it);
+			      std::back_insert_iterator< std::vector<Column<F>> > it);
 
 // Return collection of column vectors based on named variables
 // Names obtained from columnVector field as *first* pair of strings on description line
-typedef std::map<std::string, std::back_insert_iterator< std::vector<Column> > > NamedColumnInsertMap;
-
+template<class F>
 void
-insert_columns_from_stream (std::istream& is, NamedColumnInsertMap insertMap);
-
-
+insert_columns_from_stream (std::istream& is,
+			    std::map<std::string, std::back_insert_iterator< std::vector<Column<F>> > > insertMap);
 
 
 // This version makes columns from an input file using C io rather than C++ (faster this way)
 
-class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
+template <class F>
+class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
 {
   std::string      mFileName;
   int              mN;
   int              mCount;
   char             mCurrentName[maxColumnNameLength];
   char             mCurrentDesc[maxColumnDescLength];
-  Column           mCurrentColumn;
+  Column<F>        mCurrentColumn;
   FILE*            mFile;
   
  public:
@@ -248,12 +213,12 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
     mFileName(fileName), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn(), mFile(0)
     { open_file(); read_next_column_from_file(); }
   
-  Column            operator*()  const { return mCurrentColumn; }
-  FileColumnStream& operator++()       { ++mCount; read_next_column_from_file(); return *this; }
+  Column<F>            operator*()  const { return mCurrentColumn; }
+  FileColumnStream<F>& operator++()       { ++mCount; read_next_column_from_file(); return *this; }
 
-  int               position()   const { return mCount; }
-  int               n()          const { return mN;     }
-  void              close_file()       { fclose(mFile); }
+  int                  position()   const { return mCount; }
+  int                  n()          const { return mN;     }
+  void                 close_file()       { fclose(mFile); }
   
  private:
   bool open_file();
@@ -261,22 +226,22 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column>
 };
 
 
-
+template<class F>
 std::pair<int,int>
 insert_columns_from_file (std::string const& fileName, 
-                          std::back_insert_iterator< std::vector<Column> > it);
+                          std::back_insert_iterator< std::vector<Column<F>> > it);
 
 
+template<class F>
 std::pair<int,int>
 insert_columns_from_file (std::string const& fileName, int ny,
-                          std::back_insert_iterator< std::vector<Column> > yIt,
-                          std::back_insert_iterator< std::vector<Column> > xIt);
+                          std::back_insert_iterator< std::vector<Column<F>> > yIt,
+                          std::back_insert_iterator< std::vector<Column<F>> > xIt);
 
+template<class F>
 int
 insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
-			  std::back_insert_iterator< std::vector<Column> > it);
-
-
+			  std::back_insert_iterator< std::vector<Column<F>> > it);
 
 
 //    Integer Columns     Integer Columns     Integer Columns     Integer Columns     Integer Columns     
@@ -313,7 +278,8 @@ class IntegerColumn
   ~IntegerColumn() { if(--mData->mRefCount <= 0) delete mData; }
   
  IntegerColumn()                                     : mData( new IntegerColumnData(0) ) {  }
- IntegerColumn(Column const& c)                      : mData( new IntegerColumnData(c->size(),c->name()) ) { transfer_from_double(c->begin()); }
+ IntegerColumn(Column<double> const& c)              : mData( new IntegerColumnData(c->size(),c->name()) ) { transfer_from_double(c->begin()); }
+ IntegerColumn(Column<float>  const& c)              : mData( new IntegerColumnData(c->size(),c->name()) ) { transfer_from_float (c->begin()); }
  IntegerColumn(IntegerColumn const& c)               : mData(c.mData) { ++c.mData->mRefCount; }
   
   IntegerColumnData* operator->()                const { return mData; }
@@ -322,6 +288,7 @@ class IntegerColumn
   
  private:
   void transfer_from_double (double *pDouble);
+  void transfer_from_float  (float  *pFloat);
 };
 
 inline
