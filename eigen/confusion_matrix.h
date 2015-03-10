@@ -1,7 +1,8 @@
 #ifndef _confusion_matrix_h_
 #define  _confusion_matrix_h_
 
-#include "base_types.h"
+#include "eigen_base_types.h"
+
 #include <iostream>
 #include <Eigen/Core>
 

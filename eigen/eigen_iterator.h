@@ -1,7 +1,7 @@
 #ifndef _EIGEN_ITERATOR_H_
 #define _EIGEN_ITERATOR_H_
 
-#include "base_types.h"
+#include "eigen_base_types.h"
 
 #include <Eigen/Core>
 #include <iterator>

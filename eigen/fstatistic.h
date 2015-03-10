@@ -1,6 +1,7 @@
 #ifndef _F_STATISTIC_
 #define _F_STATISTIC_
-#include "base_types.h"
+
+#include "eigen_base_types.h"
 
 #include <Eigen/Core>
 
