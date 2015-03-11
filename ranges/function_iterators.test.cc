@@ -180,14 +180,18 @@ int main()
   std::cout << "\n Length of range      : " << end(rng)-begin(rng) << std::endl;
   
   { // simple test printing a range of numbers
-    std::cout << "\nTest with 5 doubles  :  " << rng;
+    std::cout << "\nTEST: Print range of 5 doubles  :  " << rng;
   }
   
   { // use unary ranges
-    std::cout << std::endl;
-    std::cout << "  shifted vector:           "
-	      << make_range(make_unary_iterator(Operator(6.6), iz.begin()), make_unary_iterator(Operator(6.6), iz.end()));
-    std::cout << "  doubly shifted vector:    "
+    std::cout << std::endl << std::endl;
+    std::cout << "TEST: Shifted vector as constructed b/e range:           "
+	      << make_range(make_unary_iterator(Operator(6.6), iz.begin()), make_unary_iterator(Operator(6.6), iz.end()))
+	      << std::endl;
+    std::cout << "      : Shifted vector as unary range:           "
+	      << make_unary_range(Operator(6.6), iz) << std::endl;
+    /*  not compiling
+      std::cout << "  doubly shifted vector:    "
 	      << make_unary_range(Shifter(6.6), make_unary_range(Shifter(6.6),iz) );
     std::cout << "  direct shifter:           "
 	      << make_unary_range(std::bind1st(std::plus<double>(),6.6),iz) << std::endl;
@@ -198,15 +202,18 @@ int main()
     std::cout << "  from a saved range        ";
     range< unary_iterator<Shifter,std::vector<double>::const_iterator,std::random_access_iterator_tag> > rng = make_unary_range(Shifter(7.7),iz);
     std::cout << rng << std::endl;
+    */
 
     std::cout << std::endl;
   }
 
-  { // Make the operator first
-    Shifter s1(1.0);
+  /*  not compiling
+      { // Make the operator first
+      Shifter s1(1.0);
     std::cout << "  shifted range is ... "
-	      << make_unary_range(s1, iz) << std::endl;
-  }
+    << make_unary_range(s1, iz) << std::endl;
+    }
+  */
   
   {
     std::cout << "\nTest of binary iterators...\n";
@@ -221,12 +228,14 @@ int main()
   std::list< Shifter > f;
   f.push_back(Shifter(1.0));  f.push_back(Shifter(2.0)); 
   f.push_back(Shifter(3.0));  f.push_back(Shifter(4.0));
-  
+
+  /*
   {
     std::cout << std::endl << "Test of function ranges (and evaluator)" << std::endl;
     double x (0.0);
     // here are two styles that reverse the order of evaulation in operator*
-    std::cout << "Range of shifter functions evaluated at 0: " << make_function_range(x,f);
+    // not compiling
+    // std::cout << "Range of shifter functions evaluated at 0: " << make_function_range(x,f);
     // std::cout << "                                         : " << make_unary_range(evaluator<Shifter>(x),f);  // requires non-const operator to change
     
     
@@ -281,7 +290,7 @@ int main()
 	      << make_unary_range(std::mem_fun_ref(&Employee::salary), staff)
 	      << std::endl;
   }
-
+  */
   std::cout << std::endl << "DONE." << std::endl;
   return 0;
 }

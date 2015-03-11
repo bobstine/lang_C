@@ -72,7 +72,7 @@ class ColumnData
   std::string     description()   const { return mDescription; }
   int             size()          const { return mN; }
   Scalar          average()       const { return mAvg; }
-  Scalar          scale()         const { return (mMax - mMin)/6.0; }
+  Scalar          scale()         const { return (Scalar) ((mMax - mMin)/(Scalar)6.0); }
   Scalar          min()           const { return mMin; }
   Scalar          max()           const { return mMax; }
   int             num_unique()    const { return mNumUnique; }

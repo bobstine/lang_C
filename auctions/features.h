@@ -40,6 +40,8 @@
    9 Mar 04 ... Created to support abstraction of auction.
 */
 
+#include "auction_base_types.h"
+
 #include "featureABC.h"
 #include "column.h"
 #include "range_stats.h"
@@ -55,6 +57,8 @@
 
 class Feature
 {
+ public:
+  typedef SCALAR Scalar;
   
  private:
   FeatureABC *mFP;
@@ -69,7 +73,7 @@ class Feature
   Feature();
 
   //  column feature
-  Feature(Column const &c);
+  Feature(Column<Scalar> const &c);
 
   //  lag feature
   Feature(Feature const& f, size_t lag, size_t blockSize=1);
@@ -78,8 +82,8 @@ class Feature
   Feature(Feature const& f1, Feature const& f2);
 
   //  linear combination
-  Feature(int n, std::string name, std::vector<double> b, std::vector<Feature> const& fv);
-  Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv);
+  Feature(int n, std::string name, std::vector<Scalar> b, std::vector<Feature> const& fv);
+  Feature(int n,  std::vector<Scalar> b, std::vector<Feature> const& fv);
 
   //  unary feature
   template<class Op>
@@ -121,7 +125,7 @@ FeatureVector
 features_with_attribute(std::string attribute, std::string value, FeatureVector const& fv);
 
 FeatureVector
-powers_of_column (Column const& col, std::vector<int> const& powers);
+powers_of_column (Column<SCALAR> const& col, std::vector<int> const& powers);
   
 Feature
 make_indexed_feature (Feature const& f, IntegerColumn const& i);
@@ -140,15 +144,13 @@ operator<< (std::ostream& os, FeatureVector const& featureVec) { write_feature_v
 
 class ColumnFeature : public FeatureABC
 {
-  typedef std::string string;
-  
  private:
-  Column mColumn;  // store by value ; columns are lightweight with ref-counted pointer
+  Column<Scalar> mColumn;  // store by value ; columns are lightweight with ref-counted pointer
 
  public:
   virtual ~ColumnFeature() {};
   
- ColumnFeature(Column c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
+ ColumnFeature(Column<Scalar> c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
 
   string        class_name()       const;
   string        name()             const;
@@ -156,15 +158,15 @@ class ColumnFeature : public FeatureABC
   DependenceMap dependence_map()   const;
   int           degree()           const;
   Arguments     arguments()        const;
-  Column        column()           const;
+  Column<Scalar>column()           const;
   Iterator      begin()            const;
   Iterator      end()              const;
   Range         range()            const;
   bool          is_dummy()         const;
   bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
+  Scalar        average()          const; 
+  Scalar        center()           const;
+  Scalar        scale()            const;
   void          write_to(std::ostream& os) const;
 
 };  
@@ -193,15 +195,15 @@ class LagFeature : public FeatureABC
   DependenceMap dependence_map()   const;
   int           degree()           const;
   Arguments     arguments()        const;
-  Column        column()           const;
+  Column<Scalar>column()           const;
   Iterator      begin()            const;
   Iterator      end()              const;
   Range         range()            const;
   bool          is_dummy()         const;
   bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
+  Scalar        average()          const; 
+  Scalar        center()           const;
+  Scalar        scale()            const;
   void          write_to(std::ostream& os) const;
 
   int           lag ()             const;
@@ -217,7 +219,7 @@ class InteractionFeature : public FeatureABC
   Feature       mFeature1;
   Feature       mFeature2;
   DependenceMap mDependenceMap;
-  double        mCtr1, mCtr2;
+  Scalar        mCtr1, mCtr2;
   string        mName;
 
  public:
@@ -227,22 +229,22 @@ class InteractionFeature : public FeatureABC
     : FeatureABC(f1->size()), mFeature1(f1), mFeature2(f2), mDependenceMap(), mCtr1(0.0), mCtr2(0.0)
     { make_dependence_map(); center_features();  collect_attributes(); make_name();  }
 
-  string        class_name()       const;
-  string        name()             const;
-  string        operator_name()    const;
-  DependenceMap dependence_map()   const;
-  int           degree()           const;
-  Arguments     arguments()        const;
-  Column        column()           const;
-  Iterator      begin()            const;
-  Iterator      end()              const;
-  Range         range()            const;
-  bool          is_dummy()         const;
-  bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
-  void          write_to(std::ostream& os) const;
+  string         class_name()       const;
+  string         name()             const;
+  string         operator_name()    const;
+  DependenceMap  dependence_map()   const;
+  int            degree()           const;
+  Arguments      arguments()        const;
+  Column<Scalar> column()           const;
+  Iterator       begin()            const;
+  Iterator       end()              const;
+  Range          range()            const;
+  bool           is_dummy()         const;
+  bool           is_constant()      const;
+  Scalar         average()          const; 
+  Scalar         center()           const;
+  Scalar         scale()            const;
+  void           write_to(std::ostream& os) const;
 
  private:
   void        make_dependence_map();
@@ -258,42 +260,42 @@ class LinearCombinationFeature : public FeatureABC
 {
   typedef std::string string;
   
-  std::vector<double>  mBeta;      // b[0] is constant, as in regr
+  std::vector<Scalar>  mBeta;      // b[0] is constant, as in regr
   std::vector<Feature> mFeatures;
   string               mName;
-  Column               mColumn;    // place to store the lin comb
+  Column<Scalar>       mColumn;    // place to store the lin comb
   
  public:
   virtual ~LinearCombinationFeature() {}
   
- LinearCombinationFeature(int n, std::string name, std::vector<double> const& b, std::vector<Feature> const& fv)
+ LinearCombinationFeature(int n, std::string name, std::vector<Scalar> const& b, std::vector<Feature> const& fv)
     :                                                      
     FeatureABC(n), 
-      mBeta(b), mFeatures(fv), mName(name       ), mColumn(Column("Linear Comb", n)) { if (valid_args()) fill_column(); }
+      mBeta(b), mFeatures(fv), mName(name       ), mColumn(Column<Scalar>("Linear Comb", n)) { if (valid_args()) fill_column(); }
 
- LinearCombinationFeature(int n, std::vector<double> const& b, std::vector<Feature> const& fv)
+ LinearCombinationFeature(int n, std::vector<Scalar> const& b, std::vector<Feature> const& fv)
    : LinearCombinationFeature(n, LinearCombinationFeature::make_name(b), b, fv) { }
     
-  string        class_name()       const;
-  string        name()             const;
-  string        operator_name()    const;
-  DependenceMap dependence_map()   const;
-  int           degree()           const;
-  Arguments     arguments()        const;
-  Column        column()           const;
-  Iterator      begin()            const;
-  Iterator      end()              const;
-  Range         range()            const;
-  bool          is_dummy()         const;
-  bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
-  void          write_to(std::ostream& os) const;
+  string         class_name()       const;
+  string         name()             const;
+  string         operator_name()    const;
+  DependenceMap  dependence_map()   const;
+  int            degree()           const;
+  Arguments      arguments()        const;
+  Column<Scalar> column()           const;
+  Iterator       begin()            const;
+  Iterator       end()              const;
+  Range          range()            const;
+  bool           is_dummy()         const;
+  bool           is_constant()      const;
+  Scalar         average()          const; 
+  Scalar         center()           const;
+  Scalar         scale()            const;
+  void           write_to(std::ostream& os) const;
 
   string        long_name()        const;
  private:
-  std::string   make_name(std::vector<double> b)     const ;
+  std::string   make_name(std::vector<Scalar> b)     const ;
   bool          valid_args()    const ;
   void          fill_column();
 };
@@ -310,7 +312,7 @@ class UnaryFeature : public FeatureABC
 
   Op             mOp;
   Feature        mFeature;
-  mutable double mMean;  // cache
+  mutable Scalar mMean;  // cache
 
  public:
   virtual ~UnaryFeature() {}
@@ -318,22 +320,22 @@ class UnaryFeature : public FeatureABC
   UnaryFeature(Op const& op, Feature const& f)
     : FeatureABC(f->size()), mOp(op), mFeature(f), mMean(std::nan("")) { }
   
-  string        class_name()       const;
-  string        name()             const;
-  string        operator_name()    const;
-  DependenceMap dependence_map()   const;
-  int           degree()           const;
-  Arguments     arguments()        const;
-  Column        column()           const;
-  Iterator      begin()            const;
-  Iterator      end()              const;
-  Range         range()            const;
-  bool          is_dummy()         const;
-  bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
-  void          write_to(std::ostream& os) const;
+  string         class_name()       const;
+  string         name()             const;
+  string         operator_name()    const;
+  DependenceMap  dependence_map()   const;
+  int            degree()           const;
+  Arguments      arguments()        const;
+  Column<Scalar> column()           const;
+  Iterator       begin()            const;
+  Iterator       end()              const;
+  Range          range()            const;
+  bool           is_dummy()         const;
+  bool           is_constant()      const;
+  Scalar         average()          const; 
+  Scalar         center()           const;
+  Scalar         scale()            const;
+  void           write_to(std::ostream& os) const;
 
 };
 
@@ -353,22 +355,22 @@ class BinaryFeature : public FeatureABC
   BinaryFeature(Op const& op, Feature const& f1, Feature const& f2)
     : FeatureABC(f1->size()), mOp(op), mFeature1(f1), mFeature2(f2) { }
 
-  string        class_name()       const;
-  string        name()             const;
-  string        operator_name()    const;
-  DependenceMap dependence_map()   const;
-  int           degree()           const;
-  Arguments     arguments()        const;
-  Column        column()           const;
-  Iterator      begin()            const;
-  Iterator      end()              const;
-  Range         range()            const;
-  bool          is_dummy()         const;
-  bool          is_constant()      const;
-  double        average()          const; 
-  double        center()           const;
-  double        scale()            const;
-  void          write_to(std::ostream& os) const;
+  string         class_name()       const;
+  string         name()             const;
+  string         operator_name()    const;
+  DependenceMap  dependence_map()   const;
+  int            degree()           const;
+  Arguments      arguments()        const;
+  Column<Scalar> column()           const;
+  Iterator       begin()            const;
+  Iterator       end()              const;
+  Range          range()            const;
+  bool           is_dummy()         const;
+  bool           is_constant()      const;
+  Scalar         average()          const; 
+  Scalar         center()           const;
+  Scalar         scale()            const;
+  void           write_to(std::ostream& os) const;
   
 };
 
@@ -382,16 +384,19 @@ class BinaryFeature : public FeatureABC
 
 class FeatureSource
 {
+ public:
+  typedef SCALAR                   Scalar;
   typedef std::vector<std::string> StringVector;
   typedef std::set<std::string>    StringSet;
-  
+
+ private:
   const int                mSkip;           // skip this count of leading cases when transfer to model
   std::vector<std::string> mStreams;        // use vector to keep ordered
   FeatureVector            mFeatures;
   
  public:
 
- FeatureSource(std::vector<Column> const& cols, int skip = 0)    : mSkip(skip) { initialize(cols); }
+ FeatureSource(std::vector<Column<Scalar>> const& cols, int skip = 0)    : mSkip(skip) { initialize(cols); }
 
   int             number_skipped_cases ()   const  { return mSkip; }
   int             number_of_streams  ()     const  { return (int) mStreams.size();  }
@@ -406,7 +411,7 @@ class FeatureSource
   void print_summary (std::ostream& os)     const;
   
  private:
-  void initialize (std::vector<Column> cols);
+  void initialize (std::vector<Column<Scalar>> cols);
 
 };
 

@@ -61,7 +61,7 @@ bool
 UnaryFeature<Op>::is_constant()    const { return mFeature->is_constant(); }
 
 template<class Op>
-double
+SCALAR
 UnaryFeature<Op>::average()        const
 {
   if(std::isnan(mMean))
@@ -70,11 +70,11 @@ UnaryFeature<Op>::average()        const
 }
 
 template<class Op>
-double
+SCALAR
 UnaryFeature<Op>::center()         const { return average(); }
 
 template<class Op>
-double
+SCALAR
 UnaryFeature<Op>::scale()          const { return range_stats::standard_deviation(range(),mMean,size()); }
   
 
@@ -161,16 +161,16 @@ bool
 BinaryFeature<Op>::is_constant() const { return (mFeature1->is_constant() && mFeature2->is_constant()); }
 
 template<class Op>
-double
-BinaryFeature<Op>::average()    const  { return range_stats::average(range(), size()); }
+SCALAR
+BinaryFeature<Op>::average()    const  { return (SCALAR) range_stats::average(range(), size()); }
 
 template<class Op>
-double
-BinaryFeature<Op>::center()      const { return mOp(mFeature1->center(),mFeature2->center()); }
+SCALAR
+BinaryFeature<Op>::center()      const { return (SCALAR) mOp(mFeature1->center(),mFeature2->center()); }
 
 template<class Op>
-double
-BinaryFeature<Op>::scale()       const { return mOp(mFeature1->scale() ,mFeature2->scale()); }
+SCALAR
+BinaryFeature<Op>::scale()       const { return (SCALAR) mOp(mFeature1->scale() ,mFeature2->scale()); }
 
 template<class Op>
 void

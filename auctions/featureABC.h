@@ -25,6 +25,8 @@
    9 Mar 04 ... Created to support abstraction of auction.
 */
 
+#include "auction_base_types.h"
+
 #include "range_stats.h"
 #include "anonymous_iterator.h"
 
@@ -37,14 +39,18 @@ class Feature;
 
 class FeatureABC
 {
+ public:
   friend class Feature;
+
+  typedef std::string string;
+  typedef SCALAR      Scalar;
   
  public:
-  typedef anonymous_iterator_envelope<std::random_access_iterator_tag,double> Iterator;
+  typedef anonymous_iterator_envelope<std::random_access_iterator_tag,Scalar> Iterator;
   typedef Ranges::range< Iterator >                                           Range;
   typedef std::map<Feature,int>                                               DependenceMap;
-  typedef std::map<std::string, int>                                          Arguments;   // map sorts names, second is power
-  typedef std::map<std::string, std::string >                                 Attributes;  // allow multiple occurances of the attr 
+  typedef std::map<string, int>                                               Arguments;   // map sorts names, second is power
+  typedef std::map<string, string >                                           Attributes;  // allow multiple occurances of the attr 
   
  private:
   int            mRefCount;
@@ -52,16 +58,16 @@ class FeatureABC
   Attributes     mAttributes;
   bool           mTried;          // Has this feature been tried in the model?
   bool           mInModel;        // Is this feature a predictor in the model?
-  double         mEntryBid;       // Bid on the feature when offered in auction
+  Scalar         mEntryBid;       // Bid on the feature when offered in auction
   
  public:
   virtual ~FeatureABC() { }
   
   FeatureABC (int size)
-    : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { }
+    : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid((Scalar)0.0) { }
 
   FeatureABC (std::istream& is)
-    : mRefCount(1), mSize(   0), mAttributes(), mTried(false), mInModel(false), mEntryBid(0.0) { read_from(is); }
+    : mRefCount(1), mSize(   0), mAttributes(), mTried(false), mInModel(false), mEntryBid((Scalar)0.0) { read_from(is); }
 
   bool                  operator== (FeatureABC const* f)          const { return name() == f->name(); }
 
@@ -69,8 +75,8 @@ class FeatureABC
   
   bool                  was_tried_in_model ()                     const { return mTried; }
   bool                  is_used_in_model ()                       const { return mInModel; }
-  double                entry_bid ()                              const { return mEntryBid; }
-  void                  set_model_results(bool used, double bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
+  Scalar                entry_bid ()                              const { return mEntryBid; }
+  void                  set_model_results(bool used, Scalar bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
 
   Attributes            attributes()                              const { return mAttributes; }
   bool                  has_attribute(std::string attr)           const;
@@ -78,7 +84,7 @@ class FeatureABC
   void                  add_attributes_from_paired_list (std::string list);
   std::string           attribute_str_value(std::string attr)     const;
   int                   attribute_int_value(std::string attr)     const;
-  double                attribute_dbl_value(std::string attr)     const;
+  Scalar                attribute_dbl_value(std::string attr)     const;
 
   virtual std::string   class_name()                              const { return "FeatureABC"; }
   virtual DependenceMap dependence_map()                          const = 0; 
@@ -89,9 +95,9 @@ class FeatureABC
   virtual Iterator      begin ()                                  const = 0;                 //
   virtual Iterator      end ()                                    const = 0;                 //
   virtual Range         range ()                                  const = 0;                 //
-  virtual double        average ()                                const = 0;                 // mean value
-  virtual double        center ()                                 const = 0;                 // may or may not be average, easier to compute
-  virtual double        scale ()                                  const = 0;                 // 0 must mean constant
+  virtual Scalar        average ()                                const = 0;                 // mean value
+  virtual Scalar        center ()                                 const = 0;                 // may or may not be average, easier to compute
+  virtual Scalar        scale ()                                  const = 0;                 // 0 must mean constant
   virtual bool          is_dummy()                                const;
   virtual bool          is_constant()                             const { return (0.0 == scale()); }
   
@@ -130,21 +136,12 @@ operator<< (std::ostream& os, std::set<std::string> const& s)                 //
 }
 
 
+template <class F>
 inline
 std::ostream&
-operator<< (std::ostream& os, std::set<int> const& s)                 // default for *any* set
+operator<< (std::ostream& os, std::set<F> const& s)                 // default for *any* set
 {
-  for(std::set<int>::const_iterator it=s.begin(); it!=s.end(); ++it)
-    os << " " << *it;
-  return os;
-}
-
-
-inline
-std::ostream&
-operator<< (std::ostream& os, std::set<double> const& s)                 // default for *any* set
-{
-  for(std::set<double>::const_iterator it=s.begin(); it!=s.end(); ++it)
+  for(typename std::set<F>::const_iterator it=s.begin(); it!=s.end(); ++it)
     os << " " << *it;
   return os;
 }

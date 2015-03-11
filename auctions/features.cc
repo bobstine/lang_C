@@ -9,11 +9,11 @@
 
 Feature::Feature()
 {
-  Column c;
+  Column<Scalar> c;
   mFP = new ColumnFeature(c);
 }
 
-Feature::Feature(Column const &c)
+Feature::Feature(Column<Scalar> const &c)
 {
   mFP = new ColumnFeature(c);
 }  
@@ -29,12 +29,12 @@ Feature::Feature(Feature const& f1, Feature const& f2)
 }
 
 
-Feature::Feature(int n, std::string name,  std::vector<double> b, std::vector<Feature> const& fv)
+Feature::Feature(int n, std::string name,  std::vector<Scalar> b, std::vector<Feature> const& fv)
 {
   mFP = new LinearCombinationFeature(n, name, b, fv);
 }
 
-Feature::Feature(int n,  std::vector<double> b, std::vector<Feature> const& fv)
+Feature::Feature(int n,  std::vector<Scalar> b, std::vector<Feature> const& fv)
 {
   mFP = new LinearCombinationFeature(n, b, fv);
 }
@@ -125,14 +125,14 @@ make_indexed_feature(Feature const& f, IntegerColumn const& i)
 			     << " elements and " << i->size() << " indices from " << i->name() << ".\n";
   assert(i->size() == f->size());
   int n (i->size());
-  std::vector<double> x (n);             // copy feature data into vector for indexing
+  std::vector<SCALAR> x (n);             // copy feature data into vector for indexing
   { FeatureABC::Iterator mSrc (f->begin());
     for (int i=0; i<n; ++i)
       x[i] = *mSrc++;
   }
   std::string name (f->name()+"["+i->name()+"]");
-  Column dest(name.c_str(), n);
-  double *pDest (dest->begin());
+  Column<SCALAR> dest(name.c_str(), n);
+  SCALAR *pDest (dest->begin());
   int *pIndex (i->begin());
   for (int i=0; i<n; ++i)
     *pDest++ = x[*pIndex++];
@@ -171,7 +171,7 @@ ColumnFeature::arguments()      const
   return a;
 }
   
-Column
+Column<ColumnFeature::Scalar>
 ColumnFeature::column()         const
 {
   return mColumn;
@@ -207,22 +207,22 @@ ColumnFeature::is_constant()    const
   return (1 == mColumn->num_unique());
 }
 
-double
+ColumnFeature::Scalar
 ColumnFeature::average()        const
 {
-  return mColumn->average();
+  return (Scalar) mColumn->average();
 }
 
-double
+ColumnFeature::Scalar
 ColumnFeature::center()         const
 {
-  return mColumn->average();
+  return (Scalar) mColumn->average();
 }
 
-double
+ColumnFeature::Scalar
 ColumnFeature::scale()          const
 {
-  return mColumn->scale();
+  return (Scalar) mColumn->scale();
 }  // defaults to range/6
 
 void
@@ -307,15 +307,15 @@ LagFeature::is_constant()    const
   return mFeature->is_constant();
 }
 
-double
+LagFeature::Scalar
 LagFeature::average()        const
 { return mFeature->average(); }
 
-double
+LagFeature::Scalar
 LagFeature::center()         const
 { return mFeature->average(); }
 
-double
+LagFeature::Scalar
 LagFeature::scale()          const
 { return mFeature->scale(); }
 
@@ -373,19 +373,20 @@ InteractionFeature::range()          const
 {
   return make_anonymous_range(
 			      make_binary_range(
-						Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						//		Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						[&](Scalar x1, Scalar x2)->Scalar { return (x1-mCtr1)*(x2-mCtr2); },
 						mFeature1->range(),
 						mFeature2->range()));
 }
 
-double
-InteractionFeature::average()        const { return range_stats::average(range(), size()); }
+InteractionFeature::Scalar
+InteractionFeature::average()        const { return (Scalar) range_stats::average(range(), size()); }
 
-double
-InteractionFeature::center()         const { return mFeature1->center()*mFeature2->center(); }
+InteractionFeature::Scalar
+InteractionFeature::center()         const { return (Scalar) mFeature1->center()*mFeature2->center(); }
 
-double
-InteractionFeature::scale()          const { return mFeature1->scale()*mFeature2->scale(); }
+InteractionFeature::Scalar
+InteractionFeature::scale()          const { return (Scalar) mFeature1->scale()*mFeature2->scale(); }
 
 bool
 InteractionFeature::is_dummy()       const { return (mFeature1->is_dummy() && mFeature2->is_dummy()) ; }
@@ -489,14 +490,14 @@ LinearCombinationFeature::end()            const { return make_anonymous_iterato
 FeatureABC::Range
 LinearCombinationFeature::range()          const { return make_anonymous_range(mColumn->range()); }
 
-double
-LinearCombinationFeature::average()        const { return mColumn->average(); }
+LinearCombinationFeature::Scalar
+LinearCombinationFeature::average()        const { return (Scalar) mColumn->average(); }
 
-double
-LinearCombinationFeature::center()         const { return mColumn->average(); }
+LinearCombinationFeature::Scalar
+LinearCombinationFeature::center()         const { return (Scalar) mColumn->average(); }
 
-double
-LinearCombinationFeature::scale()          const { return mColumn->scale(); }
+LinearCombinationFeature::Scalar
+LinearCombinationFeature::scale()          const { return (Scalar) mColumn->scale(); }
 
 bool
 LinearCombinationFeature::is_dummy()       const { return mColumn->is_dummy(); }
@@ -518,7 +519,7 @@ LinearCombinationFeature::valid_args()    const
 }
 
 std::string
-LinearCombinationFeature::make_name(std::vector<double> b) const
+LinearCombinationFeature::make_name(std::vector<Scalar> b) const
 {
   return(std::string("LC_") + std::to_string(b.size()-1));
 }
@@ -558,7 +559,7 @@ LinearCombinationFeature::write_to (std::ostream& os) const
 
 
 std::vector<Feature>
-powers_of_column (Column const& col, std::vector<int> const& powers)
+powers_of_column (Column<SCALAR> const& col, std::vector<int> const& powers)
 {
   std::vector<Feature> fv;
   Feature  base(col);
@@ -588,10 +589,10 @@ powers_of_column (Column const& col, std::vector<int> const& powers)
 //     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source     Feature Source
 
 void
-FeatureSource::initialize (std::vector<Column> cols)
+FeatureSource::initialize (std::vector<Column<SCALAR>> cols)
 { 
   StringSet streams;                      // track unique stream names
-  for (std::vector<Column>::const_iterator it = cols.begin(); it != cols.end(); ++it)
+  for (std::vector<Column<SCALAR>>::const_iterator it = cols.begin(); it != cols.end(); ++it)
   { Feature f(*it);                       // convert column to feature 
     if (!f->has_attribute("stream"))      // assign to default stream
       f->set_attribute("stream", "MAIN");

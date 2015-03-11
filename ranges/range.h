@@ -18,6 +18,7 @@
 #define _RANGE_H_
 
 #include <utility>    // pairs
+#include <iterator>   // begin-end functions
 #include "iterators.h"  
 
 namespace Ranges 
@@ -55,13 +56,13 @@ public:
   
   range ( range<Iter> const& r )
     : mBegin(r.mBegin), mEnd(r.mEnd) { }
-
+  
   template<class I2>                           // these constructors allow type conversion between base iterators
-  range (I2 begin, I2 end)
-    : mBegin(begin), mEnd(end) { }
+    range (I2 begin, I2 end)                     // ??? not sure why there's an advantage to this as a constructor after seeing that
+    : mBegin(begin), mEnd(end) { }               //     a range just glues together two arbirary iterators
 
   template<class I2>
-  range (range<I2> const& r)
+    range (range<I2> const& r)
     : mBegin(begin(r)), mEnd(end(r)) { }
   
   template<class I2> friend I2 begin(range<I2>);
@@ -72,85 +73,94 @@ public:
 
 // MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  
 
-  template <typename Container>
-  range<typename Container::const_iterator>
-  make_range(Container const& c)
-  {
-    return range<typename Container::const_iterator>(c.begin(),c.end());
-  }
-  
-  template <typename Container>
-  range<typename Container::iterator>
-  make_range(Container *c)
-  {
-    return range<typename Container::iterator>(c->begin(),c->end());
-  }
-  
-  template <class Iter>
-  range<Iter>
-  make_range(std::pair<Iter, Iter> r)
-  {
-    return range<Iter>(r.first, r.second);
-  }
-  
-  
-  template <class Iter>
-  range<Iter>
-  make_range(Iter b, Iter e)
-  {
-    return range<Iter>(b, e);
-  }
+ template <typename Container>
+   range<typename Container::const_iterator>
+   make_range(Container const& c)
+ {
+   return range<typename Container::const_iterator>(c.begin(),c.end());
+ }
   
 
-  template <class Iter>
-  range<Iter>
-  make_range(range<Iter> r)
-  {
-    return r;
-  }
-  
-  // JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN
-
-  
-  template <typename I1, typename I2>
-  range< JoinIterator<I1, I2> >
-  join_ranges(range<I1> r1, range<I2> r2)
-  {
-    typedef JoinIterator<I1, I2> JoinIter;
-    return range<JoinIter> (JoinIter(begin(r1), begin(r2)), JoinIter(end(r1), end(r2)));
-  }
-
+ template <typename Container>                       // support for new begin/end functions in C++11
+   range<typename Container::const_iterator>
+   make_range(Container const& c)
+ {
+   return range<typename Container::const_iterator>(std::begin(c),std::end(c));
+ }
   
 
+ template <typename Container>
+   range<typename Container::iterator>
+   make_range(Container *c)
+ {
+   return range<typename Container::iterator>(c->begin(),c->end());
+ }
+ 
+ template <class Iter>
+   range<Iter>
+   make_range(std::pair<Iter, Iter> r)
+ {
+   return range<Iter>(r.first, r.second);
+ }
+ 
+  
+ template <class Iter>
+   range<Iter>
+   make_range(Iter b, Iter e)
+ {
+   return range<Iter>(b, e);
+ }
+  
 
-  // BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN
+ template <class Iter>
+   range<Iter>
+   make_range(range<Iter> r)
+ {
+   return r;
+ }
+ 
+ // JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN   JOIN
+
+  
+ template <typename I1, typename I2>
+   range< JoinIterator<I1, I2> >
+   join_ranges(range<I1> r1, range<I2> r2)
+ {
+   typedef JoinIterator<I1, I2> JoinIter;
+   return range<JoinIter> (JoinIter(begin(r1), begin(r2)), JoinIter(end(r1), end(r2)));
+ }
+ 
+ 
 
 
+ // BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN
+ 
+ 
+ 
+ template<class Container>
+   inline
+   typename Container::const_iterator
+   begin(const Container& container)
+ {
+   return container.begin();
+ }
+ 
+ template<class Container>
+   inline
+   typename Container::iterator
+   begin(Container* container)
+ {
+   return container->begin();
+ }
 
-template<class Container>
-inline
-typename Container::const_iterator
-begin(const Container& container)
-{
-  return container.begin();
-}
-
-template<class Container>
-inline
-typename Container::iterator
-begin(Container* container)
-{
-  return container->begin();
-}
-
-template<class Iter>
-inline
-Iter
-begin(range<Iter> r)
-{
-  return r.mBegin;
-}
-
+ template<class Iter>
+   inline
+   Iter
+   begin(range<Iter> r)
+ {
+   return r.mBegin;
+ }
+ 
 
 // END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END  END 
 

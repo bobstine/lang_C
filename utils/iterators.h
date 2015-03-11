@@ -160,7 +160,7 @@ make_second_iterator( Iter it )
 }
 
 
-
+/* name conflict with same object in range code */
 template<class Iter, class F>
   class FunctionIterator: public std::iterator<std::forward_iterator_tag, typename F::result_type>
 {
@@ -181,7 +181,7 @@ public:
 
 template<class Iter, class F>
   FunctionIterator<Iter, F>
-  make_function_iterator( Iter it, F f )
+  make_Function_Iterator( Iter it, F f )
 {
   return FunctionIterator<Iter,F>(it,f);
 }

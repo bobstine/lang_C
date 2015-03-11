@@ -12,40 +12,42 @@ int
 main ()
 {
   const int n (20);
+  typedef float Scalar;
+
   
   // define the base data with name string and vector of numbers
   std::string name1("x1");
   std::string name2("x2");
   std::string ind1("i1");    // mutually exclusive dummy
   std::string ind2("i2");
-  double*     x1 = new double[n];
-  double*     x2 = new double[n];
-  double*     i1 = new double[n];
-  double*     i2 = new double[n];
-  double*     ii = new double[n];
+  Scalar*     x1 = new Scalar[n];
+  Scalar*     x2 = new Scalar[n];
+  Scalar*     i1 = new Scalar[n];
+  Scalar*     i2 = new Scalar[n];
+  Scalar*     ii = new Scalar[n];
   for (int i=0; i<n; ++i)
-  { x1[i] = i;
-    x2[i] = 2 * i;
-    i1[i] = i % 2;
-    i2[i] = 1 - i1[i];
-    ii[i] = n-i-1;
+  { x1[i] = (Scalar) i;
+    x2[i] = (Scalar) (2 * i);
+    i1[i] = (Scalar) (i % 2);
+    i2[i] = (Scalar) (1 - i1[i]);
+    ii[i] = (Scalar) (n-i-1);
   }
   std::cout << "TEST: X initialized with name1 " << name1 << " and name2 " << name2 << std::endl;  
   
   // make columns
-  Column  xColumn1  (name1.c_str(), "first column", n, x1);
-  Column  xColumn2  ("duplicate", "second column", n, x1);
-  Column  xColumn3  ("has_role_x", "role x", n, x1);
-  Column  xColumn4  ("has_role_x2", "  role x ", n, x1);  // blanks were causing empty attribute
-  Column  x2Column  (name2.c_str(), "x2 column",n, x2);
-  Column  i1Column  ("Dummy_1", "i1", n, i1);
-  Column  i2Column  ("Dummy_2", "i2", n, i2);
-  Column  iiColumn  ("Dummy_2", "i2", n, ii);
+  Column<Scalar>  xColumn1  (name1.c_str(), "first column", n, x1);
+  Column<Scalar>  xColumn2  ("duplicate", "second column", n, x1);
+  Column<Scalar>  xColumn3  ("has_role_x", "role x", n, x1);
+  Column<Scalar>  xColumn4  ("has_role_x2", "  role x ", n, x1);  // blanks were causing empty attribute
+  Column<Scalar>  x2Column  (name2.c_str(), "x2 column",n, x2);
+  Column<Scalar>  i1Column  ("Dummy_1", "i1", n, i1);
+  Column<Scalar>  i2Column  ("Dummy_2", "i2", n, i2);
+  Column<Scalar>  iiColumn  ("Dummy_2", "i2", n, ii);
   IntegerColumn indices (iiColumn);
   std::cout << xColumn1 << std::endl << x2Column << std::endl << i1Column << std::endl << i2Column << std::endl << iiColumn << std::endl;
   
   // feature source
-  std::vector<Column> colVec;
+  std::vector<Column<Scalar>> colVec;
   colVec.push_back(xColumn1);
   colVec.push_back(xColumn2);
   colVec.push_back(xColumn3);
@@ -63,7 +65,7 @@ main ()
   x->set_attribute ("test", "value of test");
   x->set_attribute ("test_int", "23423");
   x->set_attribute ("test_dbl", "234.235");
-  x->set_model_results(true, 0.04);
+  x->set_model_results(true, (Scalar)0.04);
   std::cout << "TEST: average of feature is " << x->center() << std::endl;
   std::cout << "      feature attribute {test}     = " << x->has_attribute("test") << std::endl;
   std::cout << "      feature attribute {test2}    = " << x->has_attribute("test2") << std::endl;
@@ -143,7 +145,7 @@ main ()
   std::cout << "      attributes are " << zero->attributes() << std::endl  << std::endl;
   
   // a linear combination of several
-  std::vector<double>      wts (3); wts[0] = 0.7; wts[1] = 100.0; wts[2] = 10000;
+  std::vector<Scalar>      wts (3); wts[0] = (Scalar)0.7; wts[1] = (Scalar)100.0; wts[2] = (Scalar)10000;
   std::vector<Feature> fv (2); fv[0] = dup ; fv[1] = x;
   Feature lc(x->size(), wts, fv);
   std::cout << "TEST: Linear combination feature with center " << lc->center() << std::endl;
@@ -158,7 +160,7 @@ main ()
   
   // and a binary feature
   std::cout << "\nTEST: Now a binary feature... \n";
-  Feature  xpx  (std::plus<double>(), x, x );
+  Feature  xpx  (std::plus<Scalar>(), x, x );
   std::cout <<   "      " << xpx << std::endl;
 
   
@@ -184,8 +186,8 @@ main ()
   // read multiple features from file by converting into columns
   std::cout << "\nTEST: Building features from file of columns ... \n";
   std::pair<int,int> dim;
-  std::vector<Column> yColumns;
-  std::vector<Column> xColumns;
+  std::vector<Column<Scalar>> yColumns;
+  std::vector<Column<Scalar>> xColumns;
   dim = insert_columns_from_file("/home/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
   Feature xCol0 (xColumns[0]);
   Feature xCol1 (xColumns[1]);
