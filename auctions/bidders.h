@@ -1,5 +1,4 @@
-// $Id: bidders.h,v 3.6 2008/01/21 23:27:26 bob Exp $
-
+// -*- c++ -*-
 #ifndef _BIDDERS_H_
 #define _BIDDERS_H_
 
@@ -30,8 +29,9 @@
 
 // universal PDF 
 #include "coding.h"
-#include "debug.h"
 
+#include "auction_base_types.h"
+#include "debug.h"
 #include "features.h"
 
 #include <iostream>
@@ -47,17 +47,21 @@
 
 class BiddingHistory
 {
-  std::vector<double>  const& mPayoffHistory;
+ public:
+  typedef SCALAR   Scalar;
+
+ private:
+  std::vector<Scalar>  const& mPayoffHistory;
   std::vector<Feature> const& mAcceptedFeatures;
   std::vector<Feature> const& mRejectedFeatures;
 
  public:
-  BiddingHistory (std::vector<double>  const& payoffs,
+  BiddingHistory (std::vector<Scalar>  const& payoffs,
 		  std::vector<Feature> const& accepted,
 		  std::vector<Feature> const& rejected)
     : mPayoffHistory(payoffs), mAcceptedFeatures(accepted), mRejectedFeatures(rejected) { }
   
-  std::vector<double>  const&  payoff_history()    const { return mPayoffHistory; }
+  std::vector<Scalar>  const&  payoff_history()    const { return mPayoffHistory; }
   std::vector<Feature> const&  rejected_features() const { return mRejectedFeatures; }
   std::vector<Feature> const&  accepted_features() const { return mAcceptedFeatures;}
 
@@ -107,12 +111,12 @@ public:
   
   std::string name() const { return "Finite bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
+  SCALAR bid (bool, SCALAR alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
   {
-    const double maxbid = 0.25;
+    const SCALAR maxbid = 0.25;
     int n (stream.number_remaining());
     if (n>0)
-    { double b = alpha/n;
+      { SCALAR b = alpha/(SCALAR)n;
       return (b < maxbid) ? b : maxbid;
     }
     else
@@ -136,18 +140,18 @@ make_finite_bidder(Stream& stream)
 class FitBidder
 {
  private:
-  double      mBidAmount;
+  SCALAR      mBidAmount;
   std::string mSignature;
  public:
   
-  FitBidder (double bid, std::string signature)    : mBidAmount(bid), mSignature(signature) {}
+  FitBidder (SCALAR bid, std::string signature)    : mBidAmount(bid), mSignature(signature) {}
   
   std::string name() const { return "Fit Bidder [" + mSignature + "]"; }
   
   template <class Stream>
-    double bid (bool lastBidAccepted, double, Stream const&, BidHistory const&, BiddingHistory const& state)
+    SCALAR bid (bool lastBidAccepted, SCALAR, Stream const&, BidHistory const&, BiddingHistory const& state)
   {
-    std::vector<double> payoffs (state.payoff_history());
+    std::vector<SCALAR> payoffs (state.payoff_history());
     if(!payoffs.empty() && payoffs.back() > 0)                       // last variable was added
     { if (lastBidAccepted)                                           // dont bid this round if last added was calibration
 	return 0;
@@ -166,21 +170,21 @@ class FitBidder
 template <class Stream>
 class GeometricBidder
 {
-  const double mRate;
+  const SCALAR mRate;
   
  public:
   
-  GeometricBidder (double rate)
+  GeometricBidder (SCALAR rate)
     : mRate(rate) {}
   
   std::string name() const { return "Geo Bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
+  SCALAR bid (bool, SCALAR alpha, Stream const& stream, BidHistory const&, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
       return alpha * mRate; 
     else
-      return 0.0;
+      return (SCALAR)0.0;
   }
   
 };
@@ -199,24 +203,22 @@ public:
   
   std::string name() const { return "Univ Bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
+  SCALAR bid (bool, SCALAR alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
     if (stream.number_remaining()>0)
-      return alpha * slowUniversalPDF(1+history.number_bids_since_last_success());   // add 1; cannot call with zero
+      return alpha * (SCALAR)slowUniversalPDF(1+history.number_bids_since_last_success());   // add 1; cannot call with zero
     else
-      return 0.0;
+      return (SCALAR)0.0;
   }
 
 };
-
-
 
 ////  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder  UniversalBoundedBidder 
 
 // mixes universal with finite/bidder; keeps bid above a minimal threshold
 
 namespace {
-  double max(double a, double b) { return a>b ? a : b; }
+  SCALAR max(SCALAR a, SCALAR b) { return a>b ? a : b; }
 }
 
 template <class Stream>
@@ -228,13 +230,13 @@ public:
   
   std::string name() const { return "Univ Bd Bidder"; }
   
-  double bid (bool, double alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
+  SCALAR bid (bool, SCALAR alpha, Stream const& stream, BidHistory const& history, BiddingHistory const&) const
   {
-    const double maxbid = 0.25;
+    const SCALAR maxbid = 0.25;
     int n (stream.number_remaining());
     if (n>0)
-    { double fixedBid=1.0/(double)n;
-      double bid = alpha * max( fixedBid, universalPDF(1+history.number_bids_since_last_success()) );
+    { SCALAR fixedBid= (SCALAR)1.0/(SCALAR)n;
+      SCALAR bid = alpha * max( fixedBid, (SCALAR)universalPDF(1+history.number_bids_since_last_success()) );
       return (bid < maxbid) ? bid : maxbid;
     }
     else
@@ -242,6 +244,5 @@ public:
   }
 
 };
-
 
 #endif

@@ -1,4 +1,7 @@
 // -*- mode: c++; fill-column: 100; -*-
+#ifndef _EXPERTS_H_
+#define _EXPERTS_H_
+
 /* 
  *  expert.h
  *  auctions
@@ -27,9 +30,7 @@
   
 */
 
-#ifndef _EXPERTS_H
-#define _EXPERTS_H_
-
+#include "auction_base_types.h"
 #include "debug.h"
 
 #include "feature_streams.h"
@@ -47,7 +48,8 @@ class Expert;
 class ExpertABC
 {
   friend class Expert;
-  
+public:
+  typedef     SCALAR                                         Scalar;
   typedef     std::pair<std::string, FeatureABC::Iterator>   NamedIterator;
   typedef     std::vector<NamedIterator>                     NamedIteratorVector;
   typedef     std::map<std::string, std::string>             Attributes;
@@ -58,8 +60,8 @@ protected:
   const bool        mPurgable;          // from auction when finished
   const int         mSkip;              // # leading context data cases to skip past
   int               mRefCount;
-  double            mAlpha;
-  double            mCurrentBid;
+  Scalar            mAlpha;
+  Scalar            mCurrentBid;
   bool              mLastBidAccepted;
   BidHistory        mBidHistory;
   
@@ -69,7 +71,7 @@ public:
   ExpertABC()
     : mName("none"), mRole(source), mPurgable(true), mSkip(0), mRefCount(1),  mAlpha(0), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
-  ExpertABC(std::string name, ExpertRole role, bool purgable, int skip, double alpha)
+  ExpertABC(std::string name, ExpertRole role, bool purgable, int skip, Scalar alpha)
     : mName(name), mRole(role), mPurgable(purgable), mSkip(skip), mRefCount(1), mAlpha(alpha), mCurrentBid(0.0), mLastBidAccepted(false), mBidHistory() {}
   
   std::string            name()                             const { return mName; }
@@ -78,16 +80,16 @@ public:
   ExpertRole             role()                             const { return mRole; }
   bool                   is_purgable()                      const { return mPurgable; }
   int                    skip()                             const { return mSkip; }
-  double                 alpha()                            const { return mAlpha; }
-  double                 increment_alpha(double a)                { mAlpha += a; return mAlpha; }
-  double                 current_bid()                      const { return mCurrentBid; }
+  Scalar                 alpha()                            const { return mAlpha; }
+  Scalar                 increment_alpha(Scalar a)                { mAlpha += a; return mAlpha; }
+  Scalar                 current_bid()                      const { return mCurrentBid; }
   std::pair<int,int>     performance()                      const { return mBidHistory.bid_results_summary(); }
   bool                   finished()                               { return (mAlpha < 1.0e-10) || (0 == number_of_remaining_features());}
   
-  void                   payoff (double w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
+  void                   payoff (Scalar w);     // positive -> added, negative -> rejected, zero -> predictor conditionally singular 
   
   virtual std::string    description()                      const = 0;  
-  virtual double         place_bid(BiddingHistory const& state)  = 0; 
+  virtual Scalar         place_bid(BiddingHistory const& state)  = 0; 
   virtual std::string    first_feature_name()               const = 0;   
   virtual FeatureVector  feature_vector()                         = 0;
   
@@ -99,7 +101,7 @@ public:
 
   virtual void           print_to(std::ostream& os) const;
 
-  double                 max_bid()           const                { return  (mAlpha>0.0) ? mAlpha/(1.0+mAlpha) : 0.0; }  // bid < 1.0
+  Scalar                 max_bid()           const                { return  (mAlpha>0.0) ? (Scalar)(mAlpha/((Scalar)1.0+mAlpha)) : (Scalar)0.0; }  // bid < 1.0
   virtual bool           has_feature()                  = 0;
   virtual int            number_of_remaining_features() = 0;
   
@@ -121,14 +123,14 @@ private:
 public:
   virtual ~StreamExpert () { };
   
-  StreamExpert (std::string name, ExpertRole role, bool purgable, int skip, double alpha, Bidder b, Stream s)
+  StreamExpert (std::string name, ExpertRole role, bool purgable, int skip, Scalar alpha, Bidder b, Stream s)
     : ExpertABC(name, role, purgable, skip, alpha), mBidder(b), mStream(s) { }
 
   std::string         description()  const { return mBidder.name()+"/"+mStream.name(); }
   Bidder const&       bidder()       const { return mBidder; }
   Stream const&       stream()       const { return mStream; }
 
-  double              place_bid (BiddingHistory const& state);
+  Scalar              place_bid (BiddingHistory const& state);
   void                model_adds_current_variable()           { /* placeholder */ }
 
   std::string         first_feature_name()          const     { return mStream.first_feature_name(); }
@@ -157,7 +159,7 @@ class Expert
   
   // stream expert
   template <class Bidder, class Stream>
-  Expert(std::string name, ExpertRole role, bool purgable, int skip, double alpha, Bidder const& b, Stream const& s)
+  Expert(std::string name, ExpertRole role, bool purgable, int skip, Scalar alpha, Bidder const& b, Stream const& s)
   { mpExpert = new StreamExpert<Bidder,Stream> (name, role, purgable, skip, alpha, b, s); }
 
   // copy

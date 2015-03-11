@@ -42,11 +42,11 @@ ExpertABC::print_to(std::ostream& os) const
 
 
 void 
-ExpertABC::payoff (double w)    
+ExpertABC::payoff (Scalar w)    
 { 
   mBidHistory.append_bid_outcome( (w>0.0) );
   mAlpha += w; 
-  if (mAlpha<-0.000001)
+  if (mAlpha<(Scalar)-0.000001)
     std::cout << "XPRT:  *** Error. ***   Expert " << name() << " has negative alpha=" << mAlpha << std::endl;
 }
 

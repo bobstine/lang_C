@@ -14,7 +14,7 @@ BiddingHistory::print_to (std::ostream & os) const
 {
     os << "Auction State:  \n"
        << "    payoffs [" << mPayoffHistory.size()    << "] : ";
-    for(std::vector<double>::const_iterator i=mPayoffHistory.begin(); i != mPayoffHistory.end(); ++i)
+    for(std::vector<Scalar>::const_iterator i=mPayoffHistory.begin(); i != mPayoffHistory.end(); ++i)
       os << " " << *i;
     os << std::endl
        << "    accepts [" << mAcceptedFeatures.size() << "] : " << std::endl << mAcceptedFeatures << std::endl

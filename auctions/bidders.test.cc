@@ -4,12 +4,12 @@
    6 Aug 03 ... Created
 */
 
-#include "bidders.h"
+#include "auction_base_types.h"
 
+#include "bidders.h"
 #include "column.h"
 #include "features.h"
 #include "feature_streams.h"
-
 
 #include <iostream>
 #include <vector>
@@ -21,7 +21,7 @@ main()
 {
   // build vector of columns from file
   const std::string columnFileName ("/Users/bob/C/seq_regr/data/bank_small.dat");
-  std::vector<Column> columns;
+  std::vector<Column<SCALAR>> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
 

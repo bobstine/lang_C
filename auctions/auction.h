@@ -10,6 +10,8 @@
    1 Aug 03 ... Created
 */  
 
+#include "auction_base_types.h"
+
 #include "features.h"
 #include "experts.h"
 
@@ -19,25 +21,27 @@
 template <class Model>
 class Auction
 {
+  
  public:
   typedef Auction                            AuctionClass;
   typedef Model                              ModelClass;
+  typedef SCALAR                             Scalar;
   typedef typename std::vector<Expert>       ExpertVector;
   typedef typename std::set<std::string>     StringSet;
   typedef typename std::vector<std::string>  StringVec;
-  typedef typename std::pair<double,double>  TestResult;
+  typedef typename std::pair<Scalar,Scalar>  TestResult;
   
 private:
-  const double        mPayoff;            // payoff for a winning bid
-  const double        mBidTaxRate;        // percentage taken from winning bid
-  const double        mPayoffTaxRate;     //                       payoff
+  const Scalar        mPayoff;            // payoff for a winning bid
+  const Scalar        mBidTaxRate;        // percentage taken from winning bid
+  const Scalar        mPayoffTaxRate;     //                       payoff
   const int           mBlockSize;
-  double              mRecoveredAlpha;    // collected from experts that expired
+  Scalar              mRecoveredAlpha;    // collected from experts that expired
   bool                mTerminating;
   bool                mCalibrateFit;      // use calibration
   std::string         mCalibrationSignature;
   int                 mRound;          
-  std::vector<double> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
+  std::vector<Scalar> mPayoffHistory;     // all prior payoff amounts (positive denote accepted variables)
   int                 mNumInitialExperts; // for building results file  (set when prior to header is written)
   ExpertVector        mExperts;
   StringVec           mPurgedExpertNames; // keep track of the names of any expert that is purged 
@@ -53,16 +57,16 @@ private:
     }
     
   Auction (Model& m, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
-    : mPayoff(0.05), mBidTaxRate(0.05), mPayoffTaxRate(0.40), mBlockSize(blockSize), mRecoveredAlpha(0),  mTerminating(false),
+    : mPayoff((Scalar)0.05), mBidTaxRate((Scalar)0.05), mPayoffTaxRate((Scalar)0.40), mBlockSize(blockSize), mRecoveredAlpha((Scalar)0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mProgressStream(progressStream) {  } 
   
-  double                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
+  Scalar                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
   int                    number_of_experts ()       const { return (int) mExperts.size(); }
   int                    add_expert(Expert e)             { mExperts.push_back(e); return (int)mExperts.size(); }
-  double                 total_expert_alpha ()      const;
-  double                 recovered_alpha()          const { return mRecoveredAlpha; }
+  Scalar                 total_expert_alpha ()      const;
+  Scalar                 recovered_alpha()          const { return mRecoveredAlpha; }
   bool                   is_terminating()           const { return mTerminating; }
   StringVec              purged_expert_names()      const { return mPurgedExpertNames; }
 									 
@@ -89,14 +93,14 @@ private:
 
   int                      purge_empty_experts();
   bool                     have_available_bid();
-  std::pair<Expert,double> collect_bids();
-  double                   tax_bid(Expert e, double bid);
-  double                   pay_winning_expert (Expert e, FeatureVector const& fv);
-  double                   collect_from_losing_expert (Expert e, double bid, bool singular);
+  std::pair<Expert,Scalar> collect_bids();
+  Scalar                   tax_bid(Expert e, Scalar bid);
+  Scalar                   pay_winning_expert (Expert e, FeatureVector const& fv);
+  Scalar                   collect_from_losing_expert (Expert e, Scalar bid, bool singular);
   
   FeatureVector            without_calibration_features(FeatureVector const& fv)         const;
   bool                     is_calibration_feature(Feature const& f)                      const;
-  FeatureABC *             xb_feature(std::vector<double> const& b)                      const;
+  FeatureABC *             xb_feature(std::vector<Scalar> const& b)                      const;
   FeatureABC *             calibration_feature()                                         const;
 
 };

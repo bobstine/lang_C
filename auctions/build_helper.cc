@@ -1,16 +1,16 @@
 #include "build_helper.h"
 
-// templates
-#include "features.Template.h"
-#include "feature_streams.Template.h"
-#include "feature_iterators.Template.h"
-#include "feature_predicates.Template.h"
-#include "light_threads.Template.h"
-#include "experts.Template.h"
-#include "bidders.h"
-
-#include "column.h"
 #include "debug.h"
+
+#include "features.Template.h"
+#include "feature_predicates.Template.h"
+#include "feature_iterators.Template.h"
+#include "feature_streams.Template.h"
+#include "bidders.h"
+#include "experts.Template.h"
+
+#include "light_threads.Template.h"
+#include "column.Template.h"
 
 
 void
@@ -20,7 +20,7 @@ FiniteCauchyShare::init()
     mSum = mSum + p(j);
 }
 
-double
+SCALAR
 FiniteCauchyShare::operator()(int j) const
 {
   assert(j >= 0);
@@ -29,20 +29,19 @@ FiniteCauchyShare::operator()(int j) const
 }
 
 
-double
+SCALAR
 FiniteCauchyShare::p(int j) const
 {
-  return 1.0/(double)((j+1)*(j+1)); 
+  return (SCALAR)1.0/(SCALAR)((j+1)*(j+1)); 
 }
 
 //     build_regression_model     build_regression_model     build_regression_model     build_regression_model
 
 ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
+build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
 {
-  bool                      useSubset    (0 != inOut->size());
-  constant_iterator<double> equalWeights (1.0);
-  int                       nRows        ((int)y->size()-prefixRows);
+  bool  useSubset    (0 != inOut->size());
+  int   nRows        ((int)y->size()-prefixRows);
   
   os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y;
   if (useShrinkage)
@@ -63,7 +62,7 @@ build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bo
 //     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     add_experts_to_auction     
 
 void
-add_source_experts_to_auction (FeatureSource const& featureSource, int nContextCases, double wealth,
+add_source_experts_to_auction (FeatureSource const& featureSource, int nContextCases, SCALAR wealth,
 			       std::vector<FeatureVector> &featureStreams, Auction<ValidatedRegression> &auction)
 {
   using std::string;
@@ -92,10 +91,10 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
   
   {
     bool     hasLockStream (lockedStream.size() > 0);
-    double   alphaShare    (wealth/(double)streamNames.size());
-    double   alphaMain     (alphaShare * (hasLockStream ? 0.40 : 0.60 ));  // percentage of alpha to features as given
-    double   alphaInt      (alphaShare * (hasLockStream ? 0.31 : 0.40 ));  //                        interactions of given
-    double   alphaCP       (alphaShare * (hasLockStream ? 0.29 : 0    ));  //                        cross products
+    SCALAR   alphaShare    (wealth/(SCALAR)streamNames.size());
+    SCALAR   alphaMain     (alphaShare * (hasLockStream ? (SCALAR) 0.40 : (SCALAR) 0.60 ));  // percentage of alpha to features as given
+    SCALAR   alphaInt      (alphaShare * (hasLockStream ? (SCALAR) 0.31 : (SCALAR) 0.40 ));  //                        interactions of given
+    SCALAR   alphaCP       (alphaShare * (hasLockStream ? (SCALAR) 0.29 : (SCALAR) 0    ));  //                        cross products
     assert (featureStreams.size() == 0);
     if (featureStreams.size() > 0)
     { std::clog << "MAIN:  *** Warning *** Input feature stream will be emptied.\n";
@@ -167,12 +166,12 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
 
 
 //     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     Utilities     
-double
+SCALAR
 time_since(time_t const& start)
 {
-  return  double(clock() - start)/CLOCKS_PER_SEC;
+  return  SCALAR(clock() - start)/CLOCKS_PER_SEC;
 }
 
-std::pair< std::pair<int,double>, std::pair<int,double> >
-initialize_sums_of_squares(std::vector<Column> y);
+std::pair< std::pair<int,SCALAR>, std::pair<int,SCALAR> >
+initialize_sums_of_squares(std::vector<Column<SCALAR>> y);
 

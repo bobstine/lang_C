@@ -1,43 +1,43 @@
-#ifndef __build_helper__
-#define __build_helper__
+#ifndef _BUILD_HELPER_H_
+#define _BUILD_HELPER_H_
 
+#include "auction_base_types.h"
 #include "auction.h"
 #include "regression.h"
-
 
 class FiniteCauchyShare
 {
 private:
-  double mTotalAlpha;
+  SCALAR mTotalAlpha;
   int    mCount;
-  double mSum;
+  SCALAR mSum;
 
 public:
-  FiniteCauchyShare (double alpha, int count) :  mTotalAlpha(alpha), mCount(count), mSum(0.0)
+  FiniteCauchyShare (SCALAR alpha, int count) :  mTotalAlpha(alpha), mCount(count), mSum(0.0)
     { init(); }
 
-  double operator()(int j) const;
+  SCALAR operator()(int j) const;
   
  private:
   void init();
-  double p(int j) const;
+  SCALAR p(int j) const;
 };
 
 
 ValidatedRegression
-build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
+build_regression_model(Column<SCALAR> y, Column <SCALAR>inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
 
 
 void
-add_source_experts_to_auction (FeatureSource const& src, int contextCases, double wealth,
+add_source_experts_to_auction (FeatureSource const& src, int contextCases, SCALAR wealth,
 			       std::vector<FeatureVector> &featureStreams,
 			       Auction<ValidatedRegression> &auction);
 
-double
+SCALAR
 time_since(time_t const& start);
 
 
-std::pair< std::pair<int,double>, std::pair<int,double> >
-initialize_sums_of_squares(std::vector<Column> y);
+std::pair< std::pair<int,SCALAR>, std::pair<int,SCALAR> >
+initialize_sums_of_squares(std::vector<Column<SCALAR>> y);
 
 #endif

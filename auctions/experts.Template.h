@@ -1,16 +1,18 @@
 #ifndef _EXPERTS_TEMPLATE_H_
 #define _EXPERTS_TEMPLATE_H_
 
+#include "experts.h"
+
 ////     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE     TEMPLATE
 
 template<class Bidder, class Stream>
-double
+SCALAR
   StreamExpert<Bidder,Stream>::place_bid (BiddingHistory const& state)
 {
   debugging::debug("XPRT",4) << name() << " asked to place bid: mAlpha=" << mAlpha << std::endl;
   if ( (mAlpha>0.0) && has_feature() )
-  { double b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, state)); 
-    double m (max_bid()); 
+  { SCALAR b (mBidder.bid(mLastBidAccepted, mAlpha, mStream, mBidHistory, state)); 
+    SCALAR m (max_bid()); 
     mCurrentBid = (b<m) ? b:m;
   }    
   else

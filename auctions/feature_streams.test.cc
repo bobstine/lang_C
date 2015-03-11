@@ -84,7 +84,7 @@ main()
   
   // build vector of columns from file
   //  const std::string columnFileName ("/home/bob/C/gsl_tools/data/bank_post45.dat");
-  const std::string columnFileName ("/home/bob/C/text/prep_error/auction_data/in_to/X");
+  const std::string columnFileName ("test/bank_post45.dat");
   std::vector<Column<SCALAR>> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";

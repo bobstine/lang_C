@@ -26,7 +26,8 @@
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
 */
-   
+
+#include "auction_base_types.h"
 #include "auction.Template.h"
 #include "build_helper.h"
 
@@ -37,20 +38,20 @@
 
 // templates
 #include "features.Template.h"
-#include "feature_streams.Template.h"
-#include "feature_iterators.Template.h"
 #include "feature_predicates.Template.h"
-#include "light_threads.Template.h"
-#include "experts.Template.h"
+#include "feature_iterators.Template.h"
+#include "feature_streams.Template.h"
 #include "bidders.h"
+#include "experts.Template.h"
 
 // for constant iterator 
 #include "iterators.h"
 
 // from utils; debug has the printing facility
-#include "column.h"
 #include "debug.h"
 #include "read_utils.h"     
+#include "column.Template.h"
+#include "light_threads.Template.h"
 
 #include "regression.h"
 #include "eigen_svd.h"
@@ -68,13 +69,13 @@ void
 parse_arguments(int argc, char** argv,
 		std::string& yFileName, std::string& cFileName, std::string& xFileName, std::string& outputPath,
 		int    &protection, bool   &shrink, int    &nRounds,
-		double &totalAlpha, int    &gap,    int    &debugLevel, int    &maxNumOutputPredictors);
+		SCALAR &totalAlpha, int    &gap,    int    &debugLevel, int    &maxNumOutputPredictors);
 
 
-ValidatedRegression  build_regression_model(Column y, Column inOut, int prefixRows, int blockSize, bool shrink, std::ostream& os);
+ValidatedRegression  build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, int blockSize, bool shrink, std::ostream& os);
 int                  parse_column_format(std::string const& dataFileName, std::ostream&);
-Column               identify_cv_indicator(std::vector<Column> const& columns);
-void                 round_elements_into_vector(Column const& c, std::vector<int>::iterator b);
+Column<SCALAR>       identify_cv_indicator(std::vector<Column<SCALAR>> const& columns);
+void                 round_elements_into_vector(Column<SCALAR> const& c, std::vector<int>::iterator b);
  
 
 int
@@ -82,12 +83,13 @@ main(int argc, char** argv)
 {
   using debugging::debug;
   using std::string;
+  typedef SCALAR  Scalar;
 
   debug("AUCT",0) << "Version build 2.0 (18 Jan 2015)\n";
-
+  
   // Parse command line options
   
-  double   totalAlphaToSpend    (0.1);
+  Scalar   totalAlphaToSpend    ((Scalar)0.1);
   string   responseFileName     ("Y");
   string   contextFileName      ("cv_indicator");
   string   xFileName            ("x.dat");
@@ -160,14 +162,14 @@ main(int argc, char** argv)
      ...
      
      The reading is done by a FileColumnStream.  A column feature provides a named range
-     of doubles that learns a few properties of the data as it's read in (min, max, unique
+     of Scalars that learns a few properties of the data as it's read in (min, max, unique
      values). The space used by columns is allocated on reading in the function
      FileColumnStream.  Space is managed within each column.
   */
 
   // Read response and associated control variables; read returns <n,k>
     
-  typedef std::vector<Column> ColumnVector;
+  typedef std::vector<Column<SCALAR>> ColumnVector;
   ColumnVector yColumns, xColumns, cColumns;
   {
     std::pair<int,int> dim;
@@ -217,9 +219,9 @@ main(int argc, char** argv)
 
   debug("AUCT",3) << "Assembling experts"  << std::endl;
   const bool purgable = true;
-  double     alphaShare     (totalAlphaToSpend/(double)streamNames.size());
-  double     alphaMain      (alphaShare * 0.60);
-  double     alphaInt       (alphaShare * 0.40);
+  Scalar     alphaShare     (totalAlphaToSpend/(Scalar)streamNames.size());
+  Scalar     alphaMain      (alphaShare * (Scalar)0.60);
+  Scalar     alphaInt       (alphaShare * (Scalar)0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
   typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
   
@@ -260,20 +262,20 @@ main(int argc, char** argv)
   {
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
-    double totalTime (0.0);
+    Scalar totalTime (0.0);
     while(round<numberRounds && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
       clock_t start;
       start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
       	debug("AUCT",1) << theAuction << std::endl << std::endl;
-      double time = time_since(start);
+      Scalar time = (Scalar)time_since(start);
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
-	      << " rounds; average time " << totalTime/round << " per round \n\n" << theAuction << std::endl;
+	      << " rounds; average time " << totalTime/(Scalar)round << " per round \n\n" << theAuction << std::endl;
     { std::vector<string> names (theAuction.purged_expert_names());
       std::cout << "\n During the auction, there were " << names.size() << " purged experts: \n";
       for(unsigned int i=0; i<names.size(); ++i)
@@ -330,7 +332,7 @@ parse_arguments(int argc, char** argv,
 		int         &protection,
 		bool        &shrink,
 		int         &nRounds,
-		double      &totalAlpha,
+		Scalar      &totalAlpha,
 		int         &calibrate,
 		int         &debugLevel,
 		int         &maxNumOutputPredictors)
@@ -363,7 +365,7 @@ parse_arguments(int argc, char** argv,
 	  case 'Y' : { yFileName = optarg;                                         break; }
 	  case 'C' : { cFileName = optarg;                                         break; }
 	  case 'X' : { xFileName = optarg;                                         break; }
-	  case 'a' : { totalAlpha = read_utils::lexical_cast<double>(optarg);      break; }
+	  case 'a' : { totalAlpha = read_utils::lexical_cast<Scalar>(optarg);      break; }
 	  case 'c' : { calibrate = read_utils::lexical_cast<int>(optarg);          break; }
 	  case 'd' : { debugLevel = read_utils::lexical_cast<int>(optarg);         break; }
 	  case 'k' : { maxNumOutputPredictors = read_utils::lexical_cast<int>(optarg);break; }

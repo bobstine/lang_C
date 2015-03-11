@@ -7,10 +7,12 @@
  *
  */
 
-#include "experts.h"
+#include "auction_base_types.h"
+
+#include "experts.Template.h"
 #include "regression.h"
 
-#include "column.h"
+#include "column.Template.h"
 #include "features.h"
 #include "feature_iterators.Template.h"
 #include "feature_streams.Template.h"
@@ -27,8 +29,8 @@ int
 main()
 {
   // build vector of columns from file
-  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
-  std::vector<Column> columns;
+  const std::string columnFileName ("test/bank_post45.dat");
+  std::vector<Column<SCALAR>> columns;
   insert_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   
@@ -62,16 +64,17 @@ main()
   //  CalibrationStream  calStream    (make_calibration_stream("fitted_values", theRegr, 3, 0));       // poly degree, number prefix cases 
 				 
   // build several experts
-  double alpha (0.05);
+  SCALAR alpha ((SCALAR)0.05);
+  const bool purgeable = true;
   std::vector<Expert> theExperts;
-  theExperts.push_back(Expert("finite",        source,   0, alpha, FiniteBidder<FiniteStream>(),          finiteStream));
-  theExperts.push_back(Expert("interactions",  source,   0, alpha, UniversalBidder<InteractionStream>(),  interStream));
-  theExperts.push_back(Expert("cross product", parasite, 0, alpha, UniversalBidder<CrossProductStream>(), cpStream));
+  theExperts.push_back(Expert("finite",        source,    purgeable, 0, alpha, FiniteBidder<FiniteStream>(),          finiteStream));
+  theExperts.push_back(Expert("interactions",  source,    purgeable, 0, alpha, UniversalBidder<InteractionStream>(),  interStream));
+  theExperts.push_back(Expert("cross product", scavenger, purgeable, 0, alpha, UniversalBidder<CrossProductStream>(), cpStream));
   //  theExperts.push_back(Expert("calibrator",   calibrate, 0, alpha, FitBidder(0.000005, "Y_hat"),          calStream));
   std::cout << "TEST: the experts are :\n" << theExperts << std::endl;
 
   // history defined in bidder.h
-  std::vector<double> history;
+  std::vector<SCALAR> history;
   std::vector<Feature> accepted, rejected;
   BiddingHistory bidHist(history, accepted, rejected);
   
@@ -93,16 +96,16 @@ main()
 	if (round % 3 == 0)     // accept every 3rd round
 	{ (*it)->bid_accepted();
 	  std::cout << "TEST: Feature " << fv[0]->name() << " added.\n";
-	  theRegr.add_predictors_if_useful(theExperts[0]->convert_to_model_iterators(fv), 0.10);
-	  fv[0]->set_model_results(true,0.05);   // used
-	  (*it)->payoff(0.05);
+	  theRegr.add_predictors_if_useful(theExperts[0]->convert_to_model_iterators(fv), (SCALAR)0.10);
+	  fv[0]->set_model_results(true, (SCALAR)0.05);   // used
+	  (*it)->payoff((SCALAR)0.05);
 	  std::for_each(theExperts.begin(), theExperts.end(), [](Expert e) {e->model_adds_current_variable();});
 	  accepted.push_back(fv[0]);
 	}
 	else
 	{ (*it)->bid_declined();
 	  std::cout << "TEST: Feature " << fv[0]->name() << " rejected.\n";
-	  fv[0]->set_model_results(false,0.05);  // not used
+	  fv[0]->set_model_results(false,(SCALAR)0.05);  // not used
 	  rejected.push_back(fv[0]);
 	}
       }

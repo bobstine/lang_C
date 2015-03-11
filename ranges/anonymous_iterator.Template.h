@@ -400,7 +400,7 @@ class anonymous_iterator<std::forward_iterator_tag,BaseIter>
 
   virtual v_type operator*() const
     {
-      return *mIter; 
+      return (SCALAR)*mIter; 
     }
 
   virtual Parent* clone() const
