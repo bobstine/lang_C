@@ -73,14 +73,6 @@ public:
 
 // MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  
 
- // template <typename Container>
- //   range<typename Container::const_iterator>
- //   make_range(Container const& c)
- // {
- //   return range<typename Container::const_iterator>(c.begin(),c.end());
- // }
-  
-
  template <typename Container>                       // support for new begin/end functions in C++11
    range<typename Container::const_iterator>
    make_range(Container const& c)
