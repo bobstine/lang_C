@@ -1,4 +1,4 @@
-/*
+/*  -*- c++ -*-
   Ranges support the protocol (policy) of begin and end returning a
   pair of iterators. These then allow for lazy function evaluation and
   enforced matching of the endpoints of stl algorithms.
@@ -73,12 +73,12 @@ public:
 
 // MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  MAKE_RANGE  
 
- template <typename Container>
-   range<typename Container::const_iterator>
-   make_range(Container const& c)
- {
-   return range<typename Container::const_iterator>(c.begin(),c.end());
- }
+ // template <typename Container>
+ //   range<typename Container::const_iterator>
+ //   make_range(Container const& c)
+ // {
+ //   return range<typename Container::const_iterator>(c.begin(),c.end());
+ // }
   
 
  template <typename Container>                       // support for new begin/end functions in C++11
