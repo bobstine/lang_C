@@ -107,9 +107,15 @@ private:
 
 
 
-template <class Model>
+
+template <class ModelClass>
+inline
 std::ostream&
-operator<<(std::ostream& os, Auction<Model> const& auction);
+operator<<(std::ostream& os, Auction<ModelClass> const& auction) 
+{ 
+  auction.print_to(os); 
+  return os; 
+}
 
 
 #endif

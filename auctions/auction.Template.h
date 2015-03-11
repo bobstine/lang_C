@@ -482,13 +482,3 @@ Auction<ModelClass>::write_model_to  (std::ostream& os) const
 
 
 
-
-template <class ModelClass>
-std::ostream&
-operator<<(std::ostream& os, Auction<ModelClass> const& auction) 
-{ 
-  auction.print_to(os); 
-  return os; 
-}
-
-
