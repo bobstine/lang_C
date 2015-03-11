@@ -73,11 +73,11 @@ FeatureABC::attribute_int_value(std::string attr) const
       
 
 
-double
-FeatureABC::attribute_dbl_value(std::string attr) const
+FeatureABC::Scalar
+FeatureABC::attribute_scalar_value(std::string attr) const
 {
   std::istringstream ss( attribute_str_value(attr) );
-  double value;
+  FeatureABC::Scalar value;
   ss >> value;
   return value;
 }
@@ -132,7 +132,7 @@ FeatureABC::write_to (std::ostream& os)     const
 void
 FeatureABC::write_values_to(std::ostream& os) const
 {
-  std::copy(begin(), end(), std::ostream_iterator<double>(os," "));
+  std::copy(begin(), end(), std::ostream_iterator<Scalar>(os," "));
 }
 
 

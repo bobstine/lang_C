@@ -20,177 +20,178 @@
 
 namespace Function_Utils
 {
-
-  class AbsValue : public std::unary_function<double,double> {
+  typedef float Scalar;
+  
+  class AbsValue : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { return (x >= 0.0) ? x : -x; }
+    Scalar operator()(Scalar x) const { return (x >= 0.0) ? x : -x; }
   };
   
-  class Log : public std::unary_function<double,double> {
+  class Log : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { if (x > 0) return log(x); else return -7.7; }
+    Scalar operator()(Scalar x) const { if (x > 0) return (Scalar)log(x); else return (Scalar)-7.7; }
   };
   
-  class Sqrt : public std::unary_function<double,double> {
+  class Sqrt : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { if (x >= 0) return sqrt(x); else return -7.7; }
+    Scalar operator()(Scalar x) const { if (x >= 0) return (Scalar)sqrt(x); else return (Scalar)-7.7; }
   };
 
 
-  class Square : public std::unary_function<double,double> {
+  class Square : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { return x*x; }
+    Scalar operator()(Scalar x) const { return x*x; }
   };
   
 
-  class CenteredSquare : public std::unary_function<double,double> {
+  class CenteredSquare : public std::unary_function<Scalar,Scalar> {
   private:
-    double mCenter;
+    Scalar mCenter;
   public:
-    CenteredSquare(double center) : mCenter(center) {};
+    CenteredSquare(Scalar center) : mCenter(center) {};
 
-    double operator()(double x) const { double dev (x - mCenter); return dev*dev; }
+    Scalar operator()(Scalar x) const { Scalar dev (x - mCenter); return dev*dev; }
   };
   
 
-  class CenteredMultiply : public std::binary_function<double,double,double> {
+  class CenteredMultiply : public std::binary_function<Scalar,Scalar,Scalar> {
   private:
-    double mAvg1, mAvg2;
+    Scalar mAvg1, mAvg2;
   public:
-  CenteredMultiply(double avg1, double avg2) : mAvg1(avg1), mAvg2(avg2) {};
+  CenteredMultiply(Scalar avg1, Scalar avg2) : mAvg1(avg1), mAvg2(avg2) {};
 
-    double operator()(double x1, double x2) const { return (x1 - mAvg1)*(x2 - mAvg2); }
+    Scalar operator()(Scalar x1, Scalar x2) const { return (x1 - mAvg1)*(x2 - mAvg2); }
   };
   
   
-  class Cube : public std::unary_function<double,double> {
+  class Cube : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { return x*x*x; }
+    Scalar operator()(Scalar x) const { return x*x*x; }
   };
   
 
-  class CenteredCube : public std::unary_function<double,double> {
+  class CenteredCube : public std::unary_function<Scalar,Scalar> {
   private:
-    double mCenter;
+    Scalar mCenter;
   public:
-    CenteredCube(double center) : mCenter(center) {};
+    CenteredCube(Scalar center) : mCenter(center) {};
 
-    double operator()(double x) const { double dev (x - mCenter); return dev*dev*dev; }
+    Scalar operator()(Scalar x) const { Scalar dev (x - mCenter); return dev*dev*dev; }
   };
   
 
-  class CenteredQuad : public std::unary_function<double,double> {
+  class CenteredQuad : public std::unary_function<Scalar,Scalar> {
   private:
-    double mCenter;
+    Scalar mCenter;
   public:
-    CenteredQuad(double center) : mCenter(center) {};
+    CenteredQuad(Scalar center) : mCenter(center) {};
 
-    double operator()(double x) const { double dev (x - mCenter); dev = dev * dev; return dev*dev; }
+    Scalar operator()(Scalar x) const { Scalar dev (x - mCenter); dev = dev * dev; return dev*dev; }
   };
   
 
-  class CenteredQuint : public std::unary_function<double,double> {
+  class CenteredQuint : public std::unary_function<Scalar,Scalar> {
   private:
-    double mCenter;
+    Scalar mCenter;
   public:
-    CenteredQuint(double center) : mCenter(center) {};
+    CenteredQuint(Scalar center) : mCenter(center) {};
 
-    double operator()(double x) const { double dev (x - mCenter); double result (dev*dev); return result*result*dev; }
+    Scalar operator()(Scalar x) const { Scalar dev (x - mCenter); Scalar result (dev*dev); return result*result*dev; }
   };
   
   
   
-  class Power : public std::unary_function<double,double> {
+  class Power : public std::unary_function<Scalar,Scalar> {
     int mPower;
   public:
     Power(int p): mPower(p) { }
-    double operator()(double x) const { int i=mPower; double result(x); while(--i) result *= x; return result; }
+    Scalar operator()(Scalar x) const { int i=mPower; Scalar result(x); while(--i) result *= x; return result; }
   };
 
   
   
-  class CenteredPower : public std::unary_function<double,double> {
+  class CenteredPower : public std::unary_function<Scalar,Scalar> {
     size_t mPower;
-    double mCenter;
+    Scalar mCenter;
   public:
-  CenteredPower(size_t p, double center): mPower(p), mCenter(center) { }
-    double operator()(double x) const { size_t i=mPower; x = x-mCenter; double result(x); while(--i) result *= x; return result; }
+  CenteredPower(size_t p, Scalar center): mPower(p), mCenter(center) { }
+    Scalar operator()(Scalar x) const { size_t i=mPower; x = x-mCenter; Scalar result(x); while(--i) result *= x; return result; }
   };
 
 
-  class LogisticNeg : public std::unary_function<double,double> {
+  class LogisticNeg : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { return 1.0/(1.0 + exp(-x)); }
+    Scalar operator()(Scalar x) const { return (Scalar)(1.0/(1.0 + exp(-x))); }
   };
 
   
-  const double eps (0.000001);
-  const double minLogit (log(eps/(1.0-eps)));
-  const double maxLogit (-minLogit);
-  class Logit : public std::unary_function<double,double> {
+  const Scalar eps      = (Scalar)0.000001;
+  const Scalar minLogit = (Scalar) (log(eps/(1.0-eps)));
+  const Scalar maxLogit (-minLogit);
+  class Logit : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double p) const
+    Scalar operator()(Scalar p) const
       {
 	if (p < eps)
 	  return minLogit;
 	else if (p > 1.0-eps)
 	  return maxLogit;
 	else
-	  return log (p / (1.0 - p));
+	  return (Scalar)(log(p / ((Scalar)1.0 - p)));
       }
   };
 
   
-  class LogisticPos : public std::unary_function<double,double> {
+  class LogisticPos : public std::unary_function<Scalar,Scalar> {
   public:
-    double operator()(double x) const { return 1.0/(1.0 + exp(x)); } 
+    Scalar operator()(Scalar x) const { return (Scalar)(1.0/(1.0 + exp(x))); } 
   };
 
   
-  class LogisticLikeTerm : public std::binary_function<double,double,double>
+  class LogisticLikeTerm : public std::binary_function<Scalar,Scalar,Scalar>
   {
   public:
-    double operator()(double y, double xb) { return y * xb - log(1.0 + exp(xb)); }
+    Scalar operator()(Scalar y, Scalar xb) { return y * xb - (Scalar)log(1.0 + exp(xb)); }
   };
 
 
-  class Center : public std::unary_function<double,double> {
-    const double mC;
+  class Center : public std::unary_function<Scalar,Scalar> {
+    const Scalar mC;
   public:
-    Center(double c) : mC(c) { }
-    double operator()(double x) const { return x-mC; }
+    Center(Scalar c) : mC(c) { }
+    Scalar operator()(Scalar x) const { return x-mC; }
   };
 
   
-  class SquaredDeviation : public std::unary_function<double,double> 
+  class SquaredDeviation : public std::unary_function<Scalar,Scalar> 
   {
-    const double mC;
+    const Scalar mC;
    public:
-    SquaredDeviation(double c) : mC(c) { }
-    double operator()(double x) const { double dev (x-mC); return dev*dev; }
+    SquaredDeviation(Scalar c) : mC(c) { }
+    Scalar operator()(Scalar x) const { Scalar dev (x-mC); return dev*dev; }
   };
   
   
   
-  class Standardize : public std::unary_function<double,double> {
-    const double mC, mS;
+  class Standardize : public std::unary_function<Scalar,Scalar> {
+    const Scalar mC, mS;
   public:
-    Standardize(double c, double s) : mC(c),mS(s) { }
-    double operator()(double x) const { return (x-mC)/mS; }
-  };
-
-  
-  class AXPY : public std::binary_function<double,double,double> {
-    const double mA;
-  public:
-    AXPY(double a) : mA(a) { }
-    double operator()(double x, double y) const { return mA * x + y; }
+    Standardize(Scalar c, Scalar s) : mC(c),mS(s) { }
+    Scalar operator()(Scalar x) const { return (x-mC)/mS; }
   };
 
   
-  class BinomialVariance :public std::unary_function<double,double> {
+  class AXPY : public std::binary_function<Scalar,Scalar,Scalar> {
+    const Scalar mA;
   public:
-    double operator()(double p) { return p * (1-p) ; }
+    AXPY(Scalar a) : mA(a) { }
+    Scalar operator()(Scalar x, Scalar y) const { return mA * x + y; }
+  };
+
+  
+  class BinomialVariance :public std::unary_function<Scalar,Scalar> {
+  public:
+    Scalar operator()(Scalar p) { return p * (1-p) ; }
   };
 
   

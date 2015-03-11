@@ -1,4 +1,4 @@
-// $Id: operator_traits.h,v 1.3 2005/09/02 02:41:31 bob Exp $
+//  -*- c++ -*-
 
 #ifndef _OPERATOR_TRAITS_H_
 #define _OPERATOR_TRAITS_H_

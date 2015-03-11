@@ -1,7 +1,7 @@
 #include "features.Template.h"
-#include "column.h"
+#include "column.Template.h"
 
-#include "smoothing_spline.h"
+// #include "smoothing_spline.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 
@@ -13,7 +13,6 @@ main ()
 {
   const int n (20);
   typedef float Scalar;
-
   
   // define the base data with name string and vector of numbers
   std::string name1("x1");
@@ -54,31 +53,30 @@ main ()
   colVec.push_back(xColumn4);
   colVec.push_back(x2Column);
 
-  std::cout << "TEST: Makeing Feature Source from vector of columns" << std::endl;
+  std::cout << "TEST: Making a FeatureSource from vector of columns" << std::endl;
   FeatureSource fs(colVec,0);
   fs.print_summary(std::cout);
-  
+
   // make a feature from a column, add some attributes
   Feature x   (xColumn1);
   Feature xx2 (x2Column);
   Feature dup (xColumn2);
   x->set_attribute ("test", "value of test");
   x->set_attribute ("test_int", "23423");
-  x->set_attribute ("test_dbl", "234.235");
+  x->set_attribute ("test_scl", "234.235");
   x->set_model_results(true, (Scalar)0.04);
   std::cout << "TEST: average of feature is " << x->center() << std::endl;
   std::cout << "      feature attribute {test}     = " << x->has_attribute("test") << std::endl;
   std::cout << "      feature attribute {test2}    = " << x->has_attribute("test2") << std::endl;
   std::cout << "      feature attribute {test}     = " << x->attribute_str_value("test") << std::endl;
   std::cout << "      feature attribute {test_int} = " << x->attribute_int_value("test_int") << std::endl;
-  std::cout << "      feature attribute {test_dbl} = " << x->attribute_dbl_value("test_dbl") << std::endl;
-
+  std::cout << "      feature attribute {test_scl} = " << x->attribute_scalar_value("test_scl") << std::endl;
+  
   // dummy variable features
   Feature d1 (i1Column);
   Feature d2 (i2Column);
   d1->set_attribute("parent", "group");
   d2->set_attribute("parent", "group");
-  
   { // find name in feature vector
     FeatureVector fv;
     fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
@@ -97,11 +95,12 @@ main ()
     std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
     std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
   }
-  
+
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
+  std::cout << "  x      " << x   << std::endl;
   Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);
-  std::cout << "      " << xSq << std::endl;
+  std::cout << "  xSq    " << xSq << std::endl << std::endl;
   xSq->write_to(std::cout);  
 
   // make an interaction with the unary feature
@@ -115,20 +114,19 @@ main ()
     std::cout << make_indexed_feature(prod, indices) << std::endl;
     std::cout << std::endl;
   }
-
-  
+    
   // make an interaction
   Feature inter (x, dup);
   std::cout << "TEST: center of x x duplicate interaction feature is " << inter->center() << std::endl;
   std::cout << "TEST: begin of x x interaction feature is " << *(inter->begin()) << std::endl;
   std::cout << "      " << inter << std::endl;
-
+  
   // now another interaction (that squares)
   Feature xx(x, x);
   std::cout << "TEST: center of xx interaction feature is " << xx->center() << std::endl;
   std::cout << "TEST: *begin of xx interaction feature is " << *(xx->begin()) << std::endl;
   std::cout << "      " << xx << std::endl;
-
+  
   // an interaction of xx with xx
   Feature xxxx(xx, xx);
   std::cout << "TEST: center of xxxx interaction feature is " << xxxx->center() << std::endl;
@@ -149,8 +147,7 @@ main ()
   std::vector<Feature> fv (2); fv[0] = dup ; fv[1] = x;
   Feature lc(x->size(), wts, fv);
   std::cout << "TEST: Linear combination feature with center " << lc->center() << std::endl;
-  std::cout << "      " << lc << std::endl;
-			       
+  std::cout << "      " << lc << std::endl;			       
   
   // another unary feature
   std::cout << "\nTEST: Now build unary composition features... \n";
@@ -162,7 +159,6 @@ main ()
   std::cout << "\nTEST: Now a binary feature... \n";
   Feature  xpx  (std::plus<Scalar>(), x, x );
   std::cout <<   "      " << xpx << std::endl;
-
   
   // and a spline feature (a very messy unary feature)
   /*
@@ -172,7 +168,7 @@ main ()
   std::cout <<   "      " << spline << std::endl;
   spline->write_to(std::cout);
   */
-  
+
   // write features to a file
   std::ofstream output("test/features.dat");
   x->write_to(output);
@@ -194,7 +190,7 @@ main ()
   std::cout << xCol0 << std::endl;
   std::cout << "TEST: average of feature is "  << xCol0->center()                         << std::endl;
   std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
-  
+
   
   delete [] x1;
   return 0;

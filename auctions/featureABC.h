@@ -84,7 +84,7 @@ class FeatureABC
   void                  add_attributes_from_paired_list (std::string list);
   std::string           attribute_str_value(std::string attr)     const;
   int                   attribute_int_value(std::string attr)     const;
-  Scalar                attribute_dbl_value(std::string attr)     const;
+  Scalar                attribute_scalar_value(std::string attr)  const;
 
   virtual std::string   class_name()                              const { return "FeatureABC"; }
   virtual DependenceMap dependence_map()                          const = 0; 

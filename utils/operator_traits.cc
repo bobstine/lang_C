@@ -3,63 +3,65 @@
 #include "operator_traits.h"
 #include "function_utils.h"
 
+typedef float Scalar;
+
 // Sum
 
 template<> 
 std::string
-operator_traits< std::plus<double> >::name()   { return "sum"; }
+operator_traits< std::plus<Scalar> >::name()   { return "sum"; }
 
 template<> 
 std::string
-operator_traits< std::plus<double> >::symbol() { return "+"; }
+operator_traits< std::plus<Scalar> >::symbol() { return "+"; }
 
 template<> 
 std::string
-operator_traits< std::plus<double> >::parameters(std::plus<double> const&) { return ""; }
+operator_traits< std::plus<Scalar> >::parameters(std::plus<Scalar> const&) { return ""; }
 
 
 // Difference
 
 template<> 
 std::string
-operator_traits< std::minus<double> >::name()   { return "difference"; }
+operator_traits< std::minus<Scalar> >::name()   { return "difference"; }
 
 template<> 
 std::string
-operator_traits< std::minus<double> >::symbol() { return "*"; } 
+operator_traits< std::minus<Scalar> >::symbol() { return "*"; } 
 
 template<> 
 std::string
-operator_traits< std::minus<double> >::parameters(std::minus<double> const&) { return ""; }
+operator_traits< std::minus<Scalar> >::parameters(std::minus<Scalar> const&) { return ""; }
 
 
 // Product
 
 template<> 
 std::string
-operator_traits< std::multiplies<double> >::name()   { return "product"; }
+operator_traits< std::multiplies<Scalar> >::name()   { return "product"; }
 
 template<> 
 std::string
-operator_traits< std::multiplies<double> >::symbol() { return "*"; } 
+operator_traits< std::multiplies<Scalar> >::symbol() { return "*"; } 
 
 template<> 
 std::string
-operator_traits< std::multiplies<double> >::parameters(std::multiplies<double> const&) { return ""; }
+operator_traits< std::multiplies<Scalar> >::parameters(std::multiplies<Scalar> const&) { return ""; }
 
 
 // Divides
 
 template<> 
 std::string
-operator_traits< std::divides<double> >::name()   { return "divide"; }
+operator_traits< std::divides<Scalar> >::name()   { return "divide"; }
 
 template<> 
 std::string
-operator_traits< std::divides<double> >::symbol() { return "/"; }
+operator_traits< std::divides<Scalar> >::symbol() { return "/"; }
 
 template<> 
 std::string
-operator_traits< std::divides<double> >::parameters(std::divides<double> const&) { return ""; }
+operator_traits< std::divides<Scalar> >::parameters(std::divides<Scalar> const&) { return ""; }
 
 

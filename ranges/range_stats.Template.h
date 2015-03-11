@@ -3,15 +3,15 @@
 ////  Averages
 
 template <class I>
-inline double
-range_stats::average (Ranges::range<I> range, double divisor)
+inline Ranges::Scalar
+Ranges::average (Ranges::range<I> range, Ranges::Scalar divisor)
 {
-  return range_ops::accumulate(range,0.0)/divisor;
+  return range_ops::accumulate(range,(Ranges::Scalar)0.0)/divisor;
 }
 
 template <class Ix, class Iw>
-inline double
-range_stats::weighted_average (Ranges::range<Ix> r, double divisor, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_average (Ranges::range<Ix> r, Ranges::Scalar divisor, Ranges::range<Iw> wts)
 {
   return range_ops::inner_product(r,wts,0.0)/divisor;
 }
@@ -20,25 +20,25 @@ range_stats::weighted_average (Ranges::range<Ix> r, double divisor, Ranges::rang
 //    No automatic centering so that we can use sparse ranges.
 
 template <class I>
-inline double
-range_stats::sum_of_squares (Ranges::range<I> range)
+inline Ranges::Scalar
+Ranges::sum_of_squares (Ranges::range<I> range)
 {
   return range_ops::accumulate(make_unary_range(Function_Utils::Square(),range), 0.0);
 }
 
 
 template <class I>
-inline double
-range_stats::sum_of_squares (Ranges::range<I> range, double center)
+inline Ranges::Scalar
+Ranges::sum_of_squares (Ranges::range<I> range, Ranges::Scalar center)
 {
-  return range_ops::accumulate(make_unary_range(Function_Utils::CenteredSquare(center),range), 0.0);
+  return range_ops::accumulate(make_unary_range(Function_Utils::CenteredSquare(center),range), (Ranges::Scalar)0.0);
 }
 
 template<class I, class Iw>
-double
-range_stats::weighted_sum_of_squares (Ranges::range<I> x, Ranges::range<Iw> wts)
+Ranges::Scalar
+Ranges::weighted_sum_of_squares (Ranges::range<I> x, Ranges::range<Iw> wts)
 {
-  double wss (0.0);
+  Ranges::Scalar wss (0.0);
   typename range_traits< Ranges::range<Iw> >::const_iterator wPtr (begin(wts));
   for(typename range_traits< Ranges::range<I> >::const_iterator xPtr = begin(x); xPtr != end(x); ++xPtr, ++wPtr)
     wss += (*xPtr) * (*xPtr) * (*wPtr);
@@ -47,12 +47,12 @@ range_stats::weighted_sum_of_squares (Ranges::range<I> x, Ranges::range<Iw> wts)
 
 /*  Seems to kill GCC 3.3 on OS-x in logistic regression scoring code
 template <class I, class Iw>
-inline double
-range_stats::weighted_sum_of_squares (Ranges::range<I> r, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_sum_of_squares (Ranges::range<I> r, Ranges::range<Iw> wts)
 {
   return range_ops::accumulate(
 		    make_binary_range(
-				      std::multiplies<double>(),
+				      std::multiplies<Ranges::Scalar>(),
 				      make_unary_range(Function_Utils::Square(),r),
 				      wts),
 		    0.0);      
@@ -60,12 +60,12 @@ range_stats::weighted_sum_of_squares (Ranges::range<I> r, Ranges::range<Iw> wts)
 */
 
 template <class I, class Iw>
-inline double
-range_stats::weighted_sum_of_squares (Ranges::range<I> r, double center, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_sum_of_squares (Ranges::range<I> r, Ranges::Scalar center, Ranges::range<Iw> wts)
 {
   return range_ops::accumulate(
 		    make_binary_range(
-				      std::multiplies<double>(),
+				      std::multiplies<Ranges::Scalar>(),
 				      make_unary_range(Function_Utils::CenteredSquare(center),r),
 				      wts),
 		    0.0);      
@@ -74,31 +74,31 @@ range_stats::weighted_sum_of_squares (Ranges::range<I> r, double center, Ranges:
 // Note:  these are numerically 'desirable' but must be fixed for sparse ranges
 
 template <class I>
-inline double
-range_stats::variance (Ranges::range<I> range, double yBar, double df)
+inline Ranges::Scalar
+Ranges::variance (Ranges::range<I> range, Ranges::Scalar yBar, Ranges::Scalar df)
 {
   return sum_of_squares(range, yBar) / df;
 }
 
 template <class I, class Iw>
-inline double
-range_stats::weighted_variance (Ranges::range<I> r, double yBar, double df, Ranges::range<Iw>wts)
+inline Ranges::Scalar
+Ranges::weighted_variance (Ranges::range<I> r, Ranges::Scalar yBar, Ranges::Scalar df, Ranges::range<Iw>wts)
 {
   return weighted_sum_of_squares(r,yBar,wts) / df;
 }
 
 template <class I>
-inline double
-range_stats::standard_deviation (Ranges::range<I> range, double yBar, double df)
+inline Ranges::Scalar
+Ranges::standard_deviation (Ranges::range<I> range, Ranges::Scalar yBar, Ranges::Scalar df)
 {
-  return sqrt(variance(range, yBar, df));
+  return (Ranges::Scalar)sqrt(variance(range, yBar, df));
 }
 
 template <class I, class Iw>
-inline double
-range_stats::weighted_standard_deviation (Ranges::range<I> r, double yBar, double df, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_standard_deviation (Ranges::range<I> r, Ranges::Scalar yBar, Ranges::Scalar df, Ranges::range<Iw> wts)
 {
-  return sqrt(weighted_variance(r, yBar, df, wts));
+  return (Ranges::Scalar)sqrt(weighted_variance(r, yBar, df, wts));
 }
 
 
@@ -106,8 +106,8 @@ range_stats::weighted_standard_deviation (Ranges::range<I> r, double yBar, doubl
 
 
 template <class I1, class I2>
-inline double
-range_stats::covariance(Ranges::range<I1> y, double yBar, Ranges::range<I2> x, double xBar, double df)
+inline Ranges::Scalar
+Ranges::covariance(Ranges::range<I1> y, Ranges::Scalar yBar, Ranges::range<I2> x, Ranges::Scalar xBar, Ranges::Scalar df)
 {
   return covariance(make_unary_range(Function_Utils::Center(yBar),y),
 		    make_unary_range(Function_Utils::Center(xBar),x),
@@ -116,16 +116,16 @@ range_stats::covariance(Ranges::range<I1> y, double yBar, Ranges::range<I2> x, d
 
 
 template <class I1, class I2>
-inline double
-range_stats::covariance(Ranges::range<I1> y, Ranges::range<I2> x, double df)
+inline Ranges::Scalar
+Ranges::covariance(Ranges::range<I1> y, Ranges::range<I2> x, Ranges::Scalar df)
 { 
-  return range_ops::accumulate(make_binary_range(std::multiplies<double>(),y,x), 0.0) / df;
+  return range_ops::accumulate(make_binary_range(std::multiplies<Ranges::Scalar>(),y,x), 0.0) / df;
 }
 
 
 template <class I1, class I2, class Iw>
-inline double
-range_stats::weighted_covariance(Ranges::range<I1> y, double yBar, Ranges::range<I2> x,  double xBar, double df, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_covariance(Ranges::range<I1> y, Ranges::Scalar yBar, Ranges::range<I2> x,  Ranges::Scalar xBar, Ranges::Scalar df, Ranges::range<Iw> wts)
 {
   return weighted_covariance(make_unary_range(Function_Utils::Center(yBar),y),
 			     make_unary_range(Function_Utils::Center(xBar),x),
@@ -134,21 +134,21 @@ range_stats::weighted_covariance(Ranges::range<I1> y, double yBar, Ranges::range
 }
 
 template <class I1, class I2, class Iw>
-inline double
-range_stats::weighted_covariance(Ranges::range<I1> y, Ranges::range<I2> x, double df, Ranges::range<Iw> wts)
+inline Ranges::Scalar
+Ranges::weighted_covariance(Ranges::range<I1> y, Ranges::range<I2> x, Ranges::Scalar df, Ranges::range<Iw> wts)
 {
-  return range_ops::inner_product(make_binary_range(std::multiplies<double>(),y,x), wts, 0.0) / df;
+  return range_ops::inner_product(make_binary_range(std::multiplies<Ranges::Scalar>(),y,x), wts, 0.0) / df;
 }
 
 
 //  Cross-products are not so numerically sound, but avoid issues for sparse ranges
 
 template <class I1, class I2>
-inline double
-range_stats::cross_product (Ranges::range<I1> y, double yBar, Ranges::range<I2> x, double xBar, double n)
+inline Ranges::Scalar
+Ranges::cross_product (Ranges::range<I1> y, Ranges::Scalar yBar, Ranges::range<I2> x, Ranges::Scalar xBar, Ranges::Scalar n)
 {
   return
-    range_ops::accumulate(make_binary_range(std::multiplies<double>(), x, y),
+    range_ops::accumulate(make_binary_range(std::multiplies<Ranges::Scalar>(), x, y),
 			  0.0)
     - n * yBar * xBar;
 }
@@ -157,7 +157,7 @@ range_stats::cross_product (Ranges::range<I1> y, double yBar, Ranges::range<I2> 
 
 template <class R1, class R2, class R3, class Iter>
 void
-range_stats::fill_cross_product_vector (R1 const& y, double yBar,         //  iterates over scalars
+Ranges::fill_cross_product_vector (R1 const& y, Ranges::Scalar yBar,         //  iterates over scalars
 			   R2 const& x, R3 const& xBar,  //  iterates over vectors
 			   Iter cp)
 {

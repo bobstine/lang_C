@@ -1,4 +1,5 @@
 #include "features.Template.h"
+#include "column.Template.h"
 
 #include "range_stats.h"
 
@@ -373,14 +374,14 @@ InteractionFeature::range()          const
 {
   return make_anonymous_range(
 			      make_binary_range(
-						//		Function_Utils::CenteredMultiply(mCtr1,mCtr2),
-						[&](Scalar x1, Scalar x2)->Scalar { return (x1-mCtr1)*(x2-mCtr2); },
+						Function_Utils::CenteredMultiply(mCtr1,mCtr2),
+						// [&](Scalar x1, Scalar x2)->Scalar { return (x1-mCtr1)*(x2-mCtr2); },   // ??? how to make lambdas work
 						mFeature1->range(),
 						mFeature2->range()));
 }
 
 InteractionFeature::Scalar
-InteractionFeature::average()        const { return (Scalar) range_stats::average(range(), size()); }
+InteractionFeature::average()        const { return (Scalar) Ranges::average(range(), (Scalar)size()); }
 
 InteractionFeature::Scalar
 InteractionFeature::center()         const { return (Scalar) mFeature1->center()*mFeature2->center(); }

@@ -155,7 +155,6 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
   std::string      mCurrentName;
   std::string      mCurrentDesc;
   Column<F>        mCurrentColumn;
-
   
  public:
   ~ColumnStream() {  }

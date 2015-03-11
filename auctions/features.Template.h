@@ -65,7 +65,7 @@ SCALAR
 UnaryFeature<Op>::average()        const
 {
   if(std::isnan(mMean))
-    mMean = range_stats::average(range(), size());
+    mMean = (SCALAR)Ranges::average(range(), (SCALAR)size());
   return mMean;
 }
 
@@ -75,7 +75,7 @@ UnaryFeature<Op>::center()         const { return average(); }
 
 template<class Op>
 SCALAR
-UnaryFeature<Op>::scale()          const { return range_stats::standard_deviation(range(),mMean,size()); }
+UnaryFeature<Op>::scale()          const { return (SCALAR)Ranges::standard_deviation(range(),mMean,(SCALAR)size()); }
   
 
 template<class Op>
@@ -162,7 +162,7 @@ BinaryFeature<Op>::is_constant() const { return (mFeature1->is_constant() && mFe
 
 template<class Op>
 SCALAR
-BinaryFeature<Op>::average()    const  { return (SCALAR) range_stats::average(range(), size()); }
+BinaryFeature<Op>::average()    const  { return (SCALAR) Ranges::average(range(), (SCALAR)size()); }
 
 template<class Op>
 SCALAR
