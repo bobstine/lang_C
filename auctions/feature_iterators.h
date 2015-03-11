@@ -8,14 +8,11 @@
 #include <iostream>
 
 
-
 class BidOrder
 {
 public:
   bool operator()(Feature const& a, Feature const& b) const { return (a->entry_bid() < b->entry_bid()); }
 };
-
-
 
 //     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     QueueIterator     
 

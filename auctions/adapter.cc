@@ -53,12 +53,12 @@ Convert::gsl_matrix_into_features(gsl_matrix const* mat, int addContextRows)
 //   Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen     Eigen
 
 
-Eigen::MatrixXd
+MATRIX
 Convert::features_into_eigen_matrix(std::vector<Feature> const& fv, int skipContextRows)
 {
   const int k ((int)fv.size());
   const int n (fv[0]->size()-skipContextRows);
-  Eigen::MatrixXd mat(n,k);
+  MATRIX mat(n,k);
   
   for (int j=0; j<k; ++j)
   { FeatureABC::Iterator it=fv[0]->begin() + skipContextRows;
@@ -72,7 +72,7 @@ Convert::features_into_eigen_matrix(std::vector<Feature> const& fv, int skipCont
 
 
 std::vector<Feature>
-Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string namePrefix, int addContextRows)
+Convert::eigen_matrix_into_features(MATRIX const& mat, std::string namePrefix, int addContextRows)
 {
   std::vector<Feature> result;
 
@@ -80,10 +80,10 @@ Convert::eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string name
   for (int j=0; j<mat.cols(); ++j)
   { std::ostringstream name;
     name << namePrefix << "[" << j << "]";
-    Column col(name.str().c_str(), nRows);
-    double *boundary (col->begin()+addContextRows);
+    Column<SCALAR> col(name.str().c_str(), nRows);
+    SCALAR *boundary (col->begin()+addContextRows);
     std::fill(col->begin(), boundary, 0.0);
-    double *data (boundary);
+    SCALAR *data (boundary);
     for(int i=0; i<mat.rows(); ++i)
       *data++ = mat(i,j);
     result.push_back(Feature(col));

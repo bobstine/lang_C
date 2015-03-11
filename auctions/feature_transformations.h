@@ -1,6 +1,7 @@
 #ifndef _FEATURE_TRANSFORMATIONS_H_
 #define _FEATURE_TRANSFORMATIONS_H_
 
+#include "auction_base_types.h"
 #include "column.h"
 #include "features.h"
 #include "function_utils.h"
@@ -91,8 +92,8 @@ class BeamConstructor: public std::function<FeatureVector (std::pair<std::vector
   Feature linear_combination(Beam const& beam) const
   {
     FeatureVector const& modelFeatures = mAuction.model_features();
-    std::vector<double>  beta          = mAuction.model().beta();
-    std::vector<double>  beamCoefs;
+    std::vector<SCALAR>  beta          = mAuction.model().beta();
+    std::vector<SCALAR>  beamCoefs;
     std::vector<Feature> beamFeatures;
     beamCoefs.push_back(0.0);  // linear combination wants an intercept
     for(int i : beam)
@@ -187,10 +188,10 @@ class BuildCalibrationFeature: public std::function<FeatureVector(Model const*)>
   { // construct name for features as 'Y_hat_(number of vars)'
     std::ostringstream oss;
     oss << mSignature << pModel->q();
-    Column fit = Column(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
+    Column<SCALAR> fit = Column<SCALAR>(oss.str().c_str(), mSkip + pModel->n_total_cases());     // grab current fit
     // fill skipped values with mean, assuming mean of y is mean of fit
-    double *pFit (fit->begin());
-    double mean  (pModel->y_bar());
+    SCALAR *pFit (fit->begin());
+    SCALAR mean  (pModel->y_bar());
     for(int i=0; i<mSkip; ++i)
       *pFit++ = mean;
     // fill rest with predictions from model, then center the range

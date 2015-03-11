@@ -9,6 +9,8 @@
  *
  */
 
+#include "auction_base_types.h"
+
 #include "features.h"
 
 #include <Eigen/Dense>
@@ -23,11 +25,11 @@ namespace Convert
   
   // Convert features <--> eigen vectors  
   
-  Eigen::MatrixXd
+  MATRIX
     features_into_eigen_matrix(std::vector<Feature> const& fv, int skipContextRows);
   
   std::vector<Feature>
-    eigen_matrix_into_features(Eigen::MatrixXd const& mat, std::string namePrefix, int addContextRows);
+    eigen_matrix_into_features(MATRIX const& mat, std::string namePrefix, int addContextRows);
 }
 
 
@@ -48,8 +50,8 @@ class EigenAdapter: public std::unary_function<FeatureVector, FeatureVector>
   
   FeatureVector operator()(FeatureVector const& fv)
     {
-      Eigen::MatrixXd  in  = Convert::features_into_eigen_matrix(fv, mContextRows);
-      Eigen::MatrixXd  out = mOp(in);
+      MATRIX  in  = Convert::features_into_eigen_matrix(fv, mContextRows);
+      MATRIX  out = mOp(in);
       FeatureVector result = Convert::eigen_matrix_into_features(out, mNamePrefix, mContextRows);
       return result;
     }

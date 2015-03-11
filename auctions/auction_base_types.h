@@ -3,6 +3,7 @@
 
 
 #define SCALAR  float
-
+#define VECTOR  Eigen::VectorXf
+#define MATRIX  Eigen::MatrixXf
 
 #endif
