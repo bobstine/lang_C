@@ -106,7 +106,7 @@ template<class Op>
 void
 UnaryFeature<Op>::write_to (std::ostream& os) const
 {
-  os << class_name() << " " << operator_traits<Op>::symbol() << " " << operator_traits<Op>::parameters(mOp) << std::endl;
+  os << class_name() << " " << operator_traits<Op>::symbol() << std::endl;
   mFeature->write_to(os);
   FeatureABC::write_to(os);
 }
@@ -176,7 +176,7 @@ template<class Op>
 void
 BinaryFeature<Op>::write_to (std::ostream& os) const
 {
-  os << class_name() << " " <<  operator_traits<Op>::symbol() << " " << operator_traits<Op>::parameters(mOp) << std::endl;
+  os << class_name() << " " <<  operator_traits<Op>::symbol() << std::endl;
   mFeature1->write_to(os);
   mFeature2->write_to(os);
   FeatureABC::write_to(os);

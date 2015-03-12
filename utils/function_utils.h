@@ -5,6 +5,7 @@
   Utility functions used in various places, particularly in stat routines.
   Put them here to allow use of templates.
 
+  10 Mar 15 ... Remove the parameters field
   23 Mar 02 ... Update for GCC 3 style.
   
 */
@@ -37,13 +38,12 @@ namespace Function_Utils
     Scalar operator()(Scalar x) const { if (x >= 0) return (Scalar)sqrt(x); else return (Scalar)-7.7; }
   };
 
-
-  class Square : public std::unary_function<Scalar,Scalar> {
-  public:
-    Scalar operator()(Scalar x) const { return x*x; }
-  };
+  class Square : public std::unary_function<Scalar,Scalar>
+    {
+    public:
+      Scalar operator()(Scalar x) const { return x*x; }
+    };
   
-
   class CenteredSquare : public std::unary_function<Scalar,Scalar> {
   private:
     Scalar mCenter;
@@ -204,5 +204,6 @@ namespace Function_Utils
     { return v[mIndex]; }
   };
 }
+
 
 #endif

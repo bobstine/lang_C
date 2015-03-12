@@ -5,6 +5,8 @@
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 
+
+#include <functional>   // std::function
 #include <iostream>
 #include <fstream>
 
@@ -102,6 +104,10 @@ main ()
   Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);
   std::cout << "  xSq    " << xSq << std::endl << std::endl;
   xSq->write_to(std::cout);  
+
+  // a unary feature from a lambda function (compiles, but gives up the useful name/symbol decoration
+  Feature xLambda (std::function<Scalar(Scalar)>([](Scalar x) -> Scalar { return x*x; }), x);
+  std::cout << "  xLambda    " << xLambda << std::endl << std::endl;
 
   // make an interaction with the unary feature
   Feature prod (xx2, xSq);

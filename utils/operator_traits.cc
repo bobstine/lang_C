@@ -15,10 +15,6 @@ template<>
 std::string
 operator_traits< std::plus<Scalar> >::symbol() { return "+"; }
 
-template<> 
-std::string
-operator_traits< std::plus<Scalar> >::parameters(std::plus<Scalar> const&) { return ""; }
-
 
 // Difference
 
@@ -29,10 +25,6 @@ operator_traits< std::minus<Scalar> >::name()   { return "difference"; }
 template<> 
 std::string
 operator_traits< std::minus<Scalar> >::symbol() { return "*"; } 
-
-template<> 
-std::string
-operator_traits< std::minus<Scalar> >::parameters(std::minus<Scalar> const&) { return ""; }
 
 
 // Product
@@ -45,10 +37,6 @@ template<>
 std::string
 operator_traits< std::multiplies<Scalar> >::symbol() { return "*"; } 
 
-template<> 
-std::string
-operator_traits< std::multiplies<Scalar> >::parameters(std::multiplies<Scalar> const&) { return ""; }
-
 
 // Divides
 
@@ -59,9 +47,5 @@ operator_traits< std::divides<Scalar> >::name()   { return "divide"; }
 template<> 
 std::string
 operator_traits< std::divides<Scalar> >::symbol() { return "/"; }
-
-template<> 
-std::string
-operator_traits< std::divides<Scalar> >::parameters(std::divides<Scalar> const&) { return ""; }
 
 
