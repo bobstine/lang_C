@@ -3,10 +3,15 @@
 #ifndef _LINPACK_H_
 #define _LINPACK_H_
 
-void   daxpy  (int n, double *a, double *x, double *y);
-double ddot   (int n, double *x, double *y);
-double d_sign (double *x, double *y);
-double pow_dd (double *x, double *y);
+namespace Linpack {
 
+  typedef float Scalar;
+  
+  void   daxpy  (int n, Scalar *a, Scalar *x, Scalar *y);
+  Scalar ddot   (int n, Scalar *x, Scalar *y);
+  Scalar d_sign (Scalar *x, Scalar *y);
+  Scalar pow_dd (Scalar *x, Scalar *y);
+
+}
 #endif
 

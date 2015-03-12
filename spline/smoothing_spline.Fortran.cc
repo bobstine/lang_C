@@ -8,46 +8,45 @@
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define abs(a) (((a) >= 0) ? (a) : (-(a)))
 
-double bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv);
-int    interv_(double *xt, int *lxt, double *x, int *left, int *mflag);
-void   sknot(double *x, int *n, double *knot, int *k, int *allk);
-void   qsbart(double *dblParms, int *lngParms, double *xs, double *ys, double *ws,
-	      double *knot, double *coef, double *sz, double *lev, int *iparms, double *scrtch);
+Scalar bvalue_(Scalar *t, Scalar *bcoef, int *n, int *k, Scalar *x, int *jderiv);
+int    interv_(Scalar *xt, int *lxt, Scalar *x, int *left, int *mflag);
+void   sknot(Scalar *x, int *n, Scalar *knot, int *k, int *allk);
+void   qsbart(Scalar *dblParms, int *lngParms, Scalar *xs, Scalar *ys, Scalar *ws,
+	      Scalar *knot, Scalar *coef, Scalar *sz, Scalar *lev, int *iparms, Scalar *scrtch);
 
-int    bsplvd_(double *t, int *k, double *x, int *left, double *a, double *dbiatx, int *nderiv);
-int    bsplvb_(double *t, int *jhigh, int *index, double *x, int *left, double *biatx);
+int    bsplvd_(Scalar *t, int *k, Scalar *x, int *left, Scalar *a, Scalar *dbiatx, int *nderiv);
+int    bsplvb_(Scalar *t, int *jhigh, int *index, Scalar *x, int *left, Scalar *biatx);
 
-int    dpbfa_(double *abd, int *lda, int *n, int *m, int *info);
-int    dpbsl_(double *abd, int *lda, int * n, int *m, double *b);
+int    dpbfa_(Scalar *abd, int *lda, int *n, int *m, int *info);
+int    dpbsl_(Scalar *abd, int *lda, int * n, int *m, Scalar *b);
 
-int    sbart_(double *penalt, double *dofoff, double *xs, double *ys, double *ws, int *n,
-	      double *knot, int *nk, double *coef, double *sz,
-	      double *lev, double *crit, int *icrit, double *lambda, int *ispar, int *isetup,
-	      double *xwy, int *ld4, int *ldnk, int *ier);
-int    sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb);
-int    sinerp_(double *abd, int *ld4, int *nk, double *p1ip, double *p2ip, int *ldnk, int *flag_);
-int    sslvrg_(double *penalt, double *dofoff, double *x, double *y, double *w, int *n,
-	       double *knot, int *nk, double *coef, double *sz, 
-	       double *lev, double *crit, int *icrit, double *lambda, double *xwy, double *hBlock[], double *sBlock[],
-	       double *abd, double *p1ip, double *p2ip, int *ld4, int *ldnk, int *info);
-int    stxwx_(double *x, double *z, double *w, int *k, double *xknot,
-	      int  *n, double *y, double *hs0, double *hs1, double *hs2, double *hs3);
+int    sbart_(Scalar *penalt, Scalar *dofoff, Scalar *xs, Scalar *ys, Scalar *ws, int *n,
+	      Scalar *knot, int *nk, Scalar *coef, Scalar *sz,
+	      Scalar *lev, Scalar *crit, int *icrit, Scalar *lambda, int *ispar, int *isetup,
+	      Scalar *xwy, int *ld4, int *ldnk, int *ier);
+int    sgram_(Scalar *sg0, Scalar *sg1, Scalar *sg2, Scalar *sg3, Scalar *tb, int *nb);
+int    sinerp_(Scalar *abd, int *ld4, int *nk, Scalar *p1ip, Scalar *p2ip, int *ldnk, int *flag_);
+int    sslvrg_(Scalar *penalt, Scalar *dofoff, Scalar *x, Scalar *y, Scalar *w, int *n,
+	       Scalar *knot, int *nk, Scalar *coef, Scalar *sz, 
+	       Scalar *lev, Scalar *crit, int *icrit, Scalar *lambda, Scalar *xwy, Scalar *hBlock[], Scalar *sBlock[],
+	       Scalar *abd, Scalar *p1ip, Scalar *p2ip, int *ld4, int *ldnk, int *info);
+int    stxwx_(Scalar *x, Scalar *z, Scalar *w, int *k, Scalar *xknot,
+	      int  *n, Scalar *y, Scalar *hs0, Scalar *hs1, Scalar *hs2, Scalar *hs3);
 
-
-double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv)
+Scalar  bvalue_(Scalar *t, Scalar *bcoef, int *n, int *k, Scalar *x, int *jderiv)
 {
   /* System generated locals */
   int  i_1, i_2;
-  double ret_val;
+  Scalar ret_val;
   
   /* Local variables */
-  double fkmj;
+  Scalar fkmj;
   int  i, j, mflag, jcmin, jcmax, jdrvp1;
-  double aj[20];
+  Scalar aj[20];
   int  jc;
-  double dm[20];
+  Scalar dm[20];
   int  jj;
-  double dp[20];
+  Scalar dp[20];
   int  km1, imk, kmj, ilo, nmi;
 
   /*
@@ -171,7 +170,7 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
   }
   i_1 = km1;
   for (j = i; j <= i_1; ++j) {
-    aj[*k - j - 1] = (double)0.;
+    aj[*k - j - 1] = (Scalar)0.;
     /* L6: */
     dm[j - 1] = dm[i - 1];
   }
@@ -196,7 +195,7 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
   }
   i_1 = km1;
   for (j = jcmax; j <= i_1; ++j) {
-    aj[j] = (double)0.;
+    aj[j] = (Scalar)0.;
     dp[j - 1] = dp[jcmax - 1];
   }
   goto L20;
@@ -217,7 +216,7 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
   i_1 = *jderiv;
   for (j = 1; j <= i_1; ++j) {
     kmj = *k - j;
-    fkmj = (double) kmj;
+    fkmj = (Scalar) kmj;
     ilo = kmj;
     i_2 = kmj;
     for (jj = 1; jj <= i_2; ++jj) {
@@ -251,14 +250,14 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
 
 
 
-  int interv_(double *xt, int *lxt, double *x, int *left, int *mflag)
+  int interv_(Scalar *xt, int *lxt, Scalar *x, int *left, int *mflag)
   {
     int  ilo = 1;
     int  istep, middle, ihi; // c__4 = 4;
     
     /* Computes  left = max( i ; 1 <= i <= lxt  &&  xt(i) <= x )  . */
     /* ******  i n p u t  ****** */
-    /*  xt.....a double precision sequence, of length  lxt , assumed to be nondecreasing*/
+    /*  xt.....a Scalar precision sequence, of length  lxt , assumed to be nondecreasing*/
     /*  lxt....number of terms in the sequence  xt . */
     /*  x..... the point whose location with respect to the sequence  xt  is */
     /*         to be determined. */
@@ -283,7 +282,7 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
     /*  essary since the present call may have nothing to do with the previ- 	*/
     /*  ous call). then, if  xt(ilo) .le. x .lt. xt(ilo+1), we set  left = 	*/
     /*  ilo  and are done after just three comparisons. 			*/
-    /*     otherwise, we repeatedly double the difference  istep = ihi - ilo 	*/
+    /*     otherwise, we repeatedly Scalar the difference  istep = ihi - ilo 	*/
     /*  while also moving  ilo  and  ihi  in the direction of  x , until 	*/
     /*                      xt(ilo) .le. x .lt. xt(ihi) , 			*/
     /*  after which we use bisection to get, in addition, ilo+1 = ihi . 	*/
@@ -390,7 +389,7 @@ double  bvalue_(double *t, double *bcoef, int *n, int *k, double *x, int *jderiv
 
   
 int
-bsplvd_(double *t, int *k, double *x, int *left, double *a, double *dbiatx, int *nderiv)
+bsplvd_(Scalar *t, int *k, Scalar *x, int *left, Scalar *a, Scalar *dbiatx, int *nderiv)
 {
   /* System generated locals */
   int  a_dim1, a_offset, dbiatx_dim1, dbiatx_offset, i_1, i_2, i_3;
@@ -398,12 +397,12 @@ bsplvd_(double *t, int *k, double *x, int *left, double *a, double *dbiatx, int 
   
   /* Local variables */
   int  jlow, kp1mm, i, j, m, mhigh, jp1mid;
-  double fkp1mm;
+  Scalar fkp1mm;
   int  il;
-  double factor;
+  Scalar factor;
   int  ideriv;
   int  ldummy, kp1;
-  double sum;
+  Scalar sum;
 
 /* calls bsplvb */
 /* calculates value and deriv.s of all b-splines which do not vanish at x */
@@ -506,7 +505,7 @@ bsplvd_(double *t, int *k, double *x, int *left, double *a, double *dbiatx, int 
     i_1 = mhigh;
     for (m = 2; m <= i_1; ++m) {
 		kp1mm = kp1 - m;
-		fkp1mm = (double) kp1mm;
+		fkp1mm = (Scalar) kp1mm;
 		il = *left;
 		i = *k;
 
@@ -537,7 +536,7 @@ bsplvd_(double *t, int *k, double *x, int *left, double *a, double *dbiatx, int 
 
 	i_2 = *k;
 	for (i = 1; i <= i_2; ++i) {
-	    sum = (double)0.;
+	    sum = (Scalar)0.;
 	    jlow = max(i,m);
 	    i_3 = *k;
 	    for (j = jlow; j <= i_3; ++j) {
@@ -551,7 +550,7 @@ L99:
 } /* bsplvd_ */
 
 int
-bsplvb_(double *t, int *jhigh, int *index, double *x, int *left, double *biatx)
+bsplvb_(Scalar *t, int *jhigh, int *index, Scalar *x, int *left, Scalar *biatx)
 {
     /* Initialized data */
     /* static */ int  j = 1;
@@ -560,9 +559,9 @@ bsplvb_(double *t, int *jhigh, int *index, double *x, int *left, double *biatx)
     int  i_1;
 
     /* Local variables */
-    double term;
+    Scalar term;
     int  i;
-    /* static */ double saved, deltal[20], deltar[20];
+    /* static */ Scalar saved, deltal[20], deltar[20];
     int  jp1;
 
 /* Calculates the value of all possibly nonzero b-splines at  x  of order */
@@ -668,19 +667,19 @@ L99:
 
 
 int
-dpbfa_(double *abd, int *lda, int *n, int *m, int *info)
+dpbfa_(Scalar *abd, int *lda, int *n, int *m, int *info)
 {
     /* System generated locals */
     int  abd_dim1, abd_offset, i_1, i_2, i_3;
 
     /* Local variables */
-    //  MW  extern double ddot();
+    //  MW  extern Scalar ddot();
     int  j, k;
-    double s, t;
+    Scalar s, t;
     int  ik, jk, mu;
 
 
-/*     dpbfa factors a double precision symmetric positive definite */
+/*     dpbfa factors a Scalar precision symmetric positive definite */
 /*     matrix stored in band form. */
 
 /*     dpbfa is usually called by dpbco, but it can be called */
@@ -688,7 +687,7 @@ dpbfa_(double *abd, int *lda, int *n, int *m, int *info)
 
 /*     on entry */
 
-/*        abd     double precision(lda, n) */
+/*        abd     Scalar precision(lda, n) */
 /*                the matrix to be factored.  the columns of the upper */
 /*                triangle are stored in the columns of abd and the */
 /*                diagonals of the upper triangle are stored in the */
@@ -763,7 +762,7 @@ dpbfa_(double *abd, int *lda, int *n, int *m, int *info)
 	i_2 = *m;
 	for (k = mu; k <= i_2; ++k) {
 	    i_3 = k - mu;
-	    t = abd[k + j * abd_dim1] - ddot(i_3, &abd[ik + jk * abd_dim1], 
+	    t = abd[k + j * abd_dim1] - Linpack::ddot(i_3, &abd[ik + jk * abd_dim1], 
 		    &abd[mu + j * abd_dim1]);
 	    t /= abd[*m + 1 + jk * abd_dim1];
 	    abd[k + j * abd_dim1] = t;
@@ -775,7 +774,7 @@ L20:
 	s = abd[*m + 1 + j * abd_dim1] - s;
 /*     ......exit */
 	if (s <= 0.) { goto L40; }
-	abd[*m + 1 + j * abd_dim1] = sqrt(s);
+	abd[*m + 1 + j * abd_dim1] = (Scalar)sqrt(s);
     }
     *info = 0;
 L40:
@@ -783,26 +782,26 @@ L40:
 } /* dpbfa_ */
 
 int
-dpbsl_(double *abd, int *lda, int * n, int *m, double *b)
+dpbsl_(Scalar *abd, int *lda, int * n, int *m, Scalar *b)
 {
     /* System generated locals */
     int  abd_dim1, abd_offset, i_1, i_2;
 
     /* Local variables */
-    // MW extern double ddot();
+    // MW extern Scalar ddot();
     int  k;
-    double t;
+    Scalar t;
     // MW extern void daxpy();
     int  kb, la, lb, lm;
 
 
-/*     dpbsl solves the double precision symmetric positive definite */
+/*     dpbsl solves the Scalar precision symmetric positive definite */
 /*     band system  a*x = b */
 /*     using the factors computed by dpbco or dpbfa. */
 
 /*     on entry */
 
-/*        abd     double precision(lda, n) */
+/*        abd     Scalar precision(lda, n) */
 /*                the output from dpbco or dpbfa. */
 
 /*        lda     int  */
@@ -814,7 +813,7 @@ dpbsl_(double *abd, int *lda, int * n, int *m, double *b)
 /*        m       int  */
 /*                the number of diagonals above the main diagonal. */
 
-/*        b       double precision(n) */
+/*        b       Scalar precision(n) */
 /*                the right hand side vector. */
 
 /*     on return */
@@ -864,7 +863,7 @@ dpbsl_(double *abd, int *lda, int * n, int *m, double *b)
 	lm = min(i_2,*m);
 	la = *m + 1 - lm;
 	lb = k - lm;
-	t = ddot(lm, &abd[la + k * abd_dim1], &b[lb]);
+	t = Linpack::ddot(lm, &abd[la + k * abd_dim1], &b[lb]);
 	b[k] = (b[k] - t) / abd[*m + 1 + k * abd_dim1];
 /* L10: */
     }
@@ -881,7 +880,7 @@ dpbsl_(double *abd, int *lda, int * n, int *m, double *b)
 	lb = k - lm;
 	b[k] /= abd[*m + 1 + k * abd_dim1];
 	t = -b[k];
-	daxpy(lm, &t, &abd[la + k * abd_dim1], &b[lb]);
+	Linpack::daxpy(lm, &t, &abd[la + k * abd_dim1], &b[lb]);
 /* L20: */
     }
     return 0;
@@ -890,12 +889,12 @@ dpbsl_(double *abd, int *lda, int * n, int *m, double *b)
 
 
 void
-qsbart(double *dblParms, int *lngParms, double *xs, double *ys, double *ws,
-       double *knot, double *coef, double *sz, double *lev,
-       int *iparms, double *scrtch)
+qsbart(Scalar *dblParms, int *lngParms, Scalar *xs, Scalar *ys, Scalar *ws,
+       Scalar *knot, Scalar *coef, Scalar *sz, Scalar *lev,
+       int *iparms, Scalar *scrtch)
 {
   /* Former parameters */
-  double *penalt, *dofoff,  *crit, *lambda;
+  Scalar *penalt, *dofoff,  *crit, *lambda;
   int  *n, *nk, *isetup, *ld4, *ldnk, *ier;
   
   /* Uncode bundled parameters */
@@ -940,27 +939,27 @@ qsbart(double *dblParms, int *lngParms, double *xs, double *ys, double *ws,
 } /* qsbart_ */
 
 int
-sbart_(double *penalt, double *dofoff, double *xs, double *ys, double *ws, int *n,
-       double *knot, int *nk, double *coef, double *sz,
-       double *lev, double *crit, int *icrit, double *lambda, int *ispar, int *isetup,
-       double *xwy, int *ld4, int *ldnk, int *ier)
+sbart_(Scalar *penalt, Scalar *dofoff, Scalar *xs, Scalar *ys, Scalar *ws, int *n,
+       Scalar *knot, int *nk, Scalar *coef, Scalar *sz,
+       Scalar *lev, Scalar *crit, int *icrit, Scalar *lambda, int *ispar, int *isetup,
+       Scalar *xwy, int *ld4, int *ldnk, int *ier)
 {
     /* System generated locals */
     int  abd_dim1, abd_offset, p1ip_dim1, p1ip_offset, p2ip_dim1,  p2ip_offset, i_1;
-    double d_1, c_b80 = 16.0;
+    Scalar d_1, c_b80 = 16.0;
     
     /* RAS set parms manually for finding lambda */
-    double *lspar, *uspar, *tol, lo=0.0,up= 1.5,t=1e-8;    // May need to lower the tolerance t in order to get desired leverage
-    double *hs0, *hs1, *hs2, *hs3, *sg0, *sg1, *sg2, *sg3, *abd, *p1ip, *p2ip;
-    double *sBlock[4], *hBlock[4];
+    Scalar *lspar, *uspar, *tol, lo=0.0, up= 1.5, t=1e-8;    // May need to lower the tolerance t in order to get desired leverage
+    Scalar *hs0, *hs1, *hs2, *hs3, *sg0, *sg1, *sg2, *sg3, *abd, *p1ip, *p2ip;
+    Scalar *sBlock[4], *hBlock[4];
 	    
     /* Local variables */
-    double a, b, c, d, e;
+    Scalar a, b, c, d, e;
     int  i;
-    double p, q, r, u (0.0), v, w, x;
-    double ratio (0.0), t1 (0.0), t2 (0.0);
-    double ax, fu, fv, fw, fx, bx, xm;
-    double eps, tol1, tol2;
+    Scalar p, q, r, u (0.0), v, w, x;
+    Scalar ratio (0.0), t1 (0.0), t2 (0.0);
+    Scalar ax, fu, fv, fw, fx, bx, xm;
+    Scalar eps, tol1, tol2;
 
     /* RAS values for former parameters */
     lspar = &lo;
@@ -1019,8 +1018,8 @@ L23002:
     sgram_(&sg0[1], &sg1[1], &sg2[1], &sg3[1], &knot[1], nk);
     stxwx_(&xs[1], &ys[1], &ws[1], n, &knot[1], nk, &xwy[1], &hs0[1], &hs1[1],
 	     &hs2[1], &hs3[1]);
-    t1 = (double)0.;
-    t2 = (double)0.;
+    t1 = (Scalar)0.;
+    t2 = (Scalar)0.;
     i_1 = *nk - 3;
     for (i = 3; i <= i_1; ++i)
 		t1 += hs0[i];
@@ -1039,7 +1038,7 @@ L23005:
 L23011:
     ax = *lspar;
     bx = *uspar;
-    c = ((double)3. - sqrt(5.)) * (double).5;
+    c = ((Scalar)3. - sqrt(5.)) * (Scalar).5;
     eps = 1.;
 L10:
     eps /= 2.;
@@ -1053,9 +1052,9 @@ L23013:
     v = a + c * (b - a);
     w = v;
     x = v;
-    e = (double)0.;
-    d_1 = x * (double)6. - (double)2.;
-    *lambda = ratio * pow_dd(&c_b80, &d_1);
+    e = (Scalar)0.;
+    d_1 = x * (Scalar)6. - (Scalar)2.;
+    *lambda = ratio * Linpack::pow_dd(&c_b80, &d_1);
     sslvrg_(penalt, dofoff, &xs[1], &ys[1], &ws[1], n, &knot[1], nk, &coef[1],
 	     &sz[1], &lev[1], crit, icrit, lambda, &xwy[1], hBlock, sBlock, &abd[
 	    abd_offset], &p1ip[p1ip_offset], &p2ip[p2ip_offset], ld4, ldnk, 
@@ -1064,12 +1063,12 @@ L23013:
     fv = fx;
     fw = fx;
 L20:
-    xm = (a + b) * (double).5;
-    tol1 = eps * abs(x) + *tol / 3.;
-    tol2 = tol1 * 2.;
-    /* if (! ((d_1 = x - xm, abs(d_1)) <= tol2 - (b - a) * (double).5)) { */
+    xm = (a + b) * (Scalar).5;
+    tol1 = eps * abs(x) + *tol / (Scalar) 3.;
+    tol2 = tol1 * (Scalar) 2.;
+    /* if (! ((d_1 = x - xm, abs(d_1)) <= tol2 - (b - a) * (Scalar).5)) { */
     d_1 = x - xm;
-    if (abs(d_1) > tol2 - (b - a) * (double).5) { goto L23015; }
+    if (abs(d_1) > tol2 - (b - a) * (Scalar).5) { goto L23015; }
     goto L90;
 L23015:
     if (! (abs(e) <= tol1)) {
@@ -1080,7 +1079,7 @@ L23017:
     r = (x - w) * (fx - fv);
     q = (x - v) * (fx - fw);
     p = (x - v) * q - (x - w) * r;
-    q = (q - r) * (double)2.;
+    q = (q - r) * (Scalar)2.;
     if (! (q > 0.)) {
 	goto L23019;
     }
@@ -1089,7 +1088,7 @@ L23019:
     q = abs(q);
     r = e;
     e = d;
-    if (! (abs(p) >= (d_1 = q * (double).5 * r, abs(d_1)))) {
+    if (! (abs(p) >= (d_1 = q * (Scalar).5 * r, abs(d_1)))) {
 	goto L23021;
     }
     goto L40;
@@ -1110,13 +1109,13 @@ L23025:
 	goto L23027;
     }
     d_1 = xm - x;
-    d = d_sign(&tol1, &d_1);
+    d = Linpack::d_sign(&tol1, &d_1);
 L23027:
     if (! (b - u < tol2)) {
 	goto L23029;
     }
     d_1 = xm - x;
-    d = d_sign(&tol1, &d_1);
+    d = Linpack::d_sign(&tol1, &d_1);
 L23029:
     goto L50;
 L40:
@@ -1140,10 +1139,10 @@ L23035:
     if (! (abs(d) < tol1)) {
 	goto L23037;
     }
-    u = x + d_sign(&tol1, &d);
+    u = x + Linpack::d_sign(&tol1, &d);
 L23037:
-    d_1 = u * (double)6. - (double)2.;
-    *lambda = ratio * pow_dd(&c_b80, &d_1);
+    d_1 = u * (Scalar)6. - (Scalar)2.;
+    *lambda = ratio * Linpack::pow_dd(&c_b80, &d_1);
     sslvrg_(penalt, dofoff, &xs[1], &ys[1], &ws[1], n, &knot[1], nk, &coef[1],
 	     &sz[1], &lev[1], crit, icrit, lambda, &xwy[1], hBlock, sBlock, &abd[
 	    abd_offset], &p1ip[p1ip_offset], &p2ip[p2ip_offset], ld4, ldnk, 
@@ -1219,25 +1218,25 @@ L80:
     fv = fu;
     goto L20;
 L90:
-    d_1 = x * (double)6. - (double)2.;
-    *lambda = ratio * pow_dd(&c_b80, &d_1);
+    d_1 = x * (Scalar)6. - (Scalar)2.;
+    *lambda = ratio * Linpack::pow_dd(&c_b80, &d_1);
     *crit = fx;
     return 0;
 } /* sbart_ */
 
 int
-sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb)
+sgram_(Scalar *sg0, Scalar *sg1, Scalar *sg2, Scalar *sg3, Scalar *tb, int *nb)
 {
     /* System generated locals */
     int  i_1, i_2, c__4 = 4,c__3 = 3;
 
     /* Local variables */
-    double work[16];
+    Scalar work[16];
     int  i, mflag, ileft;
-    double vnikx[12]	/* was [4][3] */;
+    Scalar vnikx[12]	/* was [4][3] */;
     int  ii, jj;
-    double yw1[4], yw2[4];
-    double wpt;
+    Scalar yw1[4], yw2[4];
+    Scalar wpt;
 
     /* Parameter adjustments */
     --tb;
@@ -1249,10 +1248,10 @@ sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb)
     /* Function Body */
     i_1 = *nb;
     for (i = 1; i <= i_1; ++i) {
-		sg0[i] = (double)0.;
-		sg1[i] = (double)0.;
-		sg2[i] = (double)0.;
-		sg3[i] = (double)0.;
+		sg0[i] = (Scalar)0.;
+		sg1[i] = (Scalar)0.;
+		sg2[i] = (Scalar)0.;
+		sg3[i] = (Scalar)0.;
     }
     i_1 = *nb;
     for (i = 1; i <= i_1; ++i) {
@@ -1271,25 +1270,25 @@ sgram_(double *sg0, double *sg1, double *sg2, double *sg3, double *tb, int *nb)
 		for (ii = 1; ii <= 4; ++ii) {
 	   		jj = ii;
 	    	sg0[ileft - 4 + ii] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		 		- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		  		.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		 		- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		  		.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 	    	jj = ii + 1;
 	    	if (! (jj <= 4)) { goto L23012; }
 	    	sg1[ileft + ii - 4] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23012:
 	    	jj = ii + 2;
 	    	if (! (jj <= 4)) { goto L23014;}
 	    	sg2[ileft + ii - 4] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23014:
 	    	jj = ii + 3;
 	    	if (! (jj <= 4)) {goto L23016;}
 	    	sg3[ileft + ii - 4] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23016:		;
 		}
 	goto L23009;
@@ -1298,19 +1297,19 @@ L23008:
 		for (ii = 1; ii <= 3; ++ii) {
 	    	jj = ii;
 	    	sg0[ileft - 3 + ii] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		   		- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		   		- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 	    	jj = ii + 1;
 	    	if (! (jj <= 3)) goto L23022;
 	    	sg1[ileft + ii - 3] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23022:
 	    	jj = ii + 2;
 	    	if (! (jj <= 3)) goto L23024;
 	    	sg2[ileft + ii - 3] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23024: ;
 		}
 		goto L23019;
@@ -1319,13 +1318,13 @@ L23018:
 		for (ii = 1; ii <= 2; ++ii) {
 	    	jj = ii;
 	    	sg0[ileft - 2 + ii] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 	    	jj = ii + 1;
 	    	if (! (jj <= 2)) goto L23030;
 	    	sg1[ileft + ii - 2] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    - 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    .5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    - 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    .5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 L23030:	;
 		}
 		goto L23027;
@@ -1334,8 +1333,8 @@ L23026:
 		for (ii = 1; ii <= 1; ++ii) {
 	    	jj = ii;
 	    	sg0[ileft - 1 + ii] += wpt * (yw1[ii - 1] * yw1[jj - 1] + (yw2[ii 
-		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (double)
-		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (double).333);
+		    	- 1] * yw1[jj - 1] + yw2[jj - 1] * yw1[ii - 1]) * (Scalar)
+		    	.5 + yw2[ii - 1] * yw2[jj - 1] * (Scalar).333);
 		}
 L23032:
 L23027:
@@ -1346,16 +1345,16 @@ L23009: ;
 } /* sgram_ */
 
 int
-sinerp_(double *abd, int *ld4, int *nk, double *p1ip, double *p2ip, int *ldnk, int *flag_)
+sinerp_(Scalar *abd, int *ld4, int *nk, Scalar *p1ip, Scalar *p2ip, int *ldnk, int *flag_)
 {
     /* System generated locals */
     int  abd_dim1, abd_offset, p1ip_dim1, p1ip_offset, p2ip_dim1, 
 	    p2ip_offset, i_1;
-    double d_1, d_2, d_3, d_4;
+    Scalar d_1, d_2, d_3, d_4;
 
     /* Local variables */
     int  i, j, k;
-    double c0 (0.0), c1 (0.0), c2 (0.0), c3 (0.0), wjm1[1], wjm2[2], wjm3[3];
+    Scalar c0 (0.0), c1 (0.0), c2 (0.0), c3 (0.0), wjm1[1], wjm2[2], wjm3[3];
     wjm1[0] = 0.0;
     wjm2[0] = 0.0; wjm2[1] = 0.0;
     wjm3[0] = 0.0; wjm3[1] = 0.0; wjm3[2] = 0.0;
@@ -1381,7 +1380,7 @@ sinerp_(double *abd, int *ld4, int *nk, double *p1ip, double *p2ip, int *ldnk, i
     i_1 = *nk;
     for (i = 1; i <= i_1; ++i) {
 	j = *nk - i + 1;
-	c0 = 1. / abd[j * abd_dim1 + 4];
+	c0 = ((Scalar)1.) / abd[j * abd_dim1 + 4];
 	if (! (j <= *nk - 3)) {
 	    goto L23002;
 	}
@@ -1431,8 +1430,8 @@ L23003:
 /* Computing 2nd power */
 	d_4 = c3;
 	p1ip[j * p1ip_dim1 + 4] = d_1 * d_1 + d_2 * d_2 * wjm3[0] + c1 * (
-		float)2. * c2 * wjm3[1] + c1 * (double)2. * c3 * wjm3[2] + d_3 
-		* d_3 * wjm2[0] + c2 * (double)2. * c3 * wjm2[1] + d_4 * d_4 * 
+		float)2. * c2 * wjm3[1] + c1 * (Scalar)2. * c3 * wjm3[2] + d_3 
+		* d_3 * wjm2[0] + c2 * (Scalar)2. * c3 * wjm2[1] + d_4 * d_4 * 
 		wjm1[0];
 	wjm3[0] = wjm2[0];
 	wjm3[1] = wjm2[1];
@@ -1469,7 +1468,7 @@ L23019:
 	if (! (k >= 1)) {
 	    goto L23021;
 	}
-	c0 = (double)1. / abd[k * abd_dim1 + 4];
+	c0 = (Scalar)1. / abd[k * abd_dim1 + 4];
 	c1 = abd[(k + 3) * abd_dim1 + 1] * c0;
 	c2 = abd[(k + 2) * abd_dim1 + 2] * c0;
 	c3 = abd[(k + 1) * abd_dim1 + 3] * c0;
@@ -1488,15 +1487,15 @@ L23021:
 
 
 void
-sknot(double *x, int *n, double *knot, int *k, int *allk)
+sknot(Scalar *x, int *n, Scalar *knot, int *k, int *allk)
 {
     /* System generated locals */
     int  i_1;
-    double d_1, c_b161 = 2.0, c_b170 = 0.2;
+    Scalar d_1, c_b161 = 2.0, c_b170 = 0.2;
 
     /* Local variables */
     int  j (0), ndk (0);
-    double a1, a2, a3, a4;
+    Scalar a1, a2, a3, a4;
 
     /* Parameter adjustments */
     --knot;
@@ -1516,29 +1515,29 @@ L23000:
     if (! (*n >= 50 && *n < 200)) {
 	goto L23002;
     }
-    d_1 = a1 + (a2 - a1) * (*n - (double)50.) / (double)150.;
-    ndk = (int) pow_dd(&c_b161, &d_1);
+    d_1 = a1 + (a2 - a1) * (*n - (Scalar)50.) / (Scalar)150.;
+    ndk = (int) Linpack::pow_dd(&c_b161, &d_1);
     goto L23003;
 L23002:
     if (! (*n >= 200 && *n < 800)) {
 	goto L23004;
     }
-    d_1 = a2 + (a3 - a2) * (*n - (double)200.) / (double)600.;
-    ndk = (int) pow_dd(&c_b161, &d_1);
+    d_1 = a2 + (a3 - a2) * (*n - (Scalar)200.) / (Scalar)600.;
+    ndk = (int) Linpack::pow_dd(&c_b161, &d_1);
     goto L23005;
 L23004:
     if (! (*n >= 800 && *n < 3200)) {
 	goto L23006;
     }
-    d_1 = a3 + (a4 - a3) * (*n - (double)800.) / (double)2400.;
-    ndk = (int) pow_dd(&c_b161, &d_1);
+    d_1 = a3 + (a4 - a3) * (*n - (Scalar)800.) / (Scalar)2400.;
+    ndk = (int) Linpack::pow_dd(&c_b161, &d_1);
     goto L23007;
 L23006:
     if (! (*n >= 3200)) {
 	goto L23008;
     }
-    d_1 = (double) (*n - 3200);
-    ndk = (int) (pow_dd(&d_1, &c_b170) + (double)200.);
+    d_1 = (Scalar) (*n - 3200);
+    ndk = (int) (Linpack::pow_dd(&d_1, &c_b170) + (Scalar)200.);
 L23008:
 L23007:
 L23005:
@@ -1555,24 +1554,24 @@ L23001:
 } /* sknotl_ */
 
 int
-sslvrg_(double *penalt, double *dofoff, double *x, double *y, double *w, int *n,
-	double *knot, int *nk, double *coef, double *sz, 
-	double *lev, double *crit, int *icrit, double *lambda, double *xwy, double *hBlock[], double *sBlock[],
-	double *abd, double *p1ip, double *p2ip, int *ld4, int *ldnk, int *info)
+sslvrg_(Scalar *penalt, Scalar *dofoff, Scalar *x, Scalar *y, Scalar *w, int *n,
+	Scalar *knot, int *nk, Scalar *coef, Scalar *sz, 
+	Scalar *lev, Scalar *crit, int *icrit, Scalar *lambda, Scalar *xwy, Scalar *hBlock[], Scalar *sBlock[],
+	Scalar *abd, Scalar *p1ip, Scalar *p2ip, int *ld4, int *ldnk, int *info)
 {
     /* System generated locals */
     int  abd_dim1, abd_offset, p1ip_dim1, p1ip_offset, p2ip_dim1, 
 	    p2ip_offset, i_1, i_2;
-    double d_1, d_2, d_3, d_4, d_5;
+    Scalar d_1, d_2, d_3, d_4, d_5;
 	int c__0 = 0, c__1 = 1, c__4 = 4, c__3 = 3;
-	double *hs0, *hs1, *hs2, *hs3, *sg0, *sg1, *sg2, *sg3;
+	Scalar *hs0, *hs1, *hs2, *hs3, *sg0, *sg1, *sg2, *sg3;
 	
     /* Local variables */
-	double work[16];
+	Scalar work[16];
     int  i, j;
     int   mflag, ileft;
-    double b0, b1, b2, b3, vnikx[4], df, xv;
-    double eps, rss;
+    Scalar b0, b1, b2, b3, vnikx[4], df, xv;
+    Scalar eps, rss;
 
     /* Parameter adjustments */
     p2ip_dim1 = *ldnk;
@@ -1673,13 +1672,13 @@ L23020:
 		/* Computing 2nd power */
 		d_5 = w[i];
 		lev[i] = (p1ip[j * p1ip_dim1 + 4] * (d_1 * d_1) + p1ip[j * p1ip_dim1 
-			+ 3] * (double)2. * b0 * b1 + p1ip[j * p1ip_dim1 + 2] * (double)
-			2. * b0 * b2 + p1ip[j * p1ip_dim1 + 1] * (double)2. * b0 * b3 
+			+ 3] * (Scalar)2. * b0 * b1 + p1ip[j * p1ip_dim1 + 2] * (Scalar)
+			2. * b0 * b2 + p1ip[j * p1ip_dim1 + 1] * (Scalar)2. * b0 * b3 
 			+ p1ip[(j + 1) * p1ip_dim1 + 4] * (d_2 * d_2) + p1ip[(j + 1) *
-			 p1ip_dim1 + 3] * (double)2. * b1 * b2 + p1ip[(j + 1) * 
-			p1ip_dim1 + 2] * (double)2. * b1 * b3 + p1ip[(j + 2) * 
+			 p1ip_dim1 + 3] * (Scalar)2. * b1 * b2 + p1ip[(j + 1) * 
+			p1ip_dim1 + 2] * (Scalar)2. * b1 * b3 + p1ip[(j + 2) * 
 			p1ip_dim1 + 4] * (d_3 * d_3) + p1ip[(j + 2) * p1ip_dim1 + 3] *
-			 (double)2. * b2 * b3 + p1ip[(j + 3) * p1ip_dim1 + 4] * (d_4 * 
+			 (Scalar)2. * b2 * b3 + p1ip[(j + 3) * p1ip_dim1 + 4] * (d_4 * 
 			d_4)) * (d_5 * d_5);
     }
     if (! (*icrit == 1)) goto L23022;
@@ -1722,18 +1721,18 @@ L23023:
 } /* sslvrg_ */
 
 int
-stxwx_(double *x, double *z, double *w, int *k, double *xknot,
-	     int  *n, double *y, double *hs0, double *hs1, double *hs2, double *hs3)
+stxwx_(Scalar *x, Scalar *z, Scalar *w, int *k, Scalar *xknot,
+	     int  *n, Scalar *y, Scalar *hs0, Scalar *hs1, Scalar *hs2, Scalar *hs3)
 {
     /* System generated locals */
     int  i_1, i_2, c__4=4, c__1=1;
-    double d_1, d_2;
+    Scalar d_1, d_2;
 
     /* Local variables */
-    double work[16];
+    Scalar work[16];
     int  i, j, mflag, ileft;
-    double vnikx[4]	/* was [4][1] */;
-    double eps;
+    Scalar vnikx[4]	/* was [4][1] */;
+    Scalar eps;
 
     /* Parameter adjustments */
     --hs3;

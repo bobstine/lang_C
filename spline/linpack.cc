@@ -11,7 +11,8 @@
 /*	subroutine daxpy(n,da,dx,incx,dy,incy)	*/
 /*        returns ax+y back in y			*/
 
-void   daxpy  (int n, double *a, double *x, double *y)
+void
+Linpack::daxpy  (int n, Linpack::Scalar *a, Linpack::Scalar *x, Linpack::Scalar *y)
 {
 	int i;
 	
@@ -20,12 +21,13 @@ void   daxpy  (int n, double *a, double *x, double *y)
 }
 
 
-/*	double precision function ddot(n,dx,incx,dy,incy)	*/
+/*	was fixed double precision function ddot(n,dx,incx,dy,incy)	*/
 /*		dot product of x and y							*/
-double ddot(int n, double *x, double *y)
+Linpack::Scalar
+Linpack::ddot(int n, Linpack::Scalar *x, Linpack::Scalar *y)
 {
 	int i;
-	double result = 0.0;
+	Linpack::Scalar result = 0.0;
 	
 	for (i=0; i<n; ++i)
 		result += x[i] * y[i];
@@ -33,7 +35,8 @@ double ddot(int n, double *x, double *y)
 }
 
 /*  Returns x having the same sign as y */
-double d_sign(double *x, double *y)
+Linpack::Scalar
+Linpack::d_sign(Linpack::Scalar *x, Linpack::Scalar *y)
 {
   if (*y >= 0)
     return (*x >= 0) ? (*x) :  (-*x);
@@ -41,7 +44,8 @@ double d_sign(double *x, double *y)
     return (*x <  0) ? (*x) : (-*x);
 }
 
-double pow_dd(double *x, double *y)
+Linpack::Scalar
+Linpack::pow_dd(Linpack::Scalar *x, Linpack::Scalar *y)
 {
-  return( (double) pow(*x,*y));
+  return( (Scalar) pow(*x,*y));
 }

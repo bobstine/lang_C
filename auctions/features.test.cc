@@ -1,7 +1,7 @@
 #include "features.Template.h"
 #include "column.Template.h"
 
-// #include "smoothing_spline.h"
+#include "smoothing_spline.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 
@@ -79,13 +79,15 @@ main ()
   Feature d2 (i2Column);
   d1->set_attribute("parent", "group");
   d2->set_attribute("parent", "group");
-  { // find name in feature vector
+  // find name in feature vector
+  { 
     FeatureVector fv;
     fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
     std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
     std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
   }
   
+  if (false)
   { // a lag feature
     std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
     Feature lag2  (x,2);
@@ -97,7 +99,7 @@ main ()
     std::cout << "TEST: lag 3,1 ---> " << lag13 << std::endl;
     std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
   }
-
+  
   // a unary feature
   std::cout << "\nTEST: Now build unary feature... \n";
   std::cout << "  x      " << x   << std::endl;
@@ -113,8 +115,8 @@ main ()
   Feature prod (xx2, xSq);
   std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
 
-  { // indexed feature
-    std::cout << "\nTEST: indexed features (reverse):\n"
+  if (false)    // indexed feature
+  { std::cout << "\nTEST: indexed features (reverse):\n"
 	      << make_indexed_feature(x   , indices) << std::endl;
     std::cout << make_indexed_feature(xSq , indices) << std::endl;
     std::cout << make_indexed_feature(prod, indices) << std::endl;
@@ -156,7 +158,7 @@ main ()
   std::cout << "      " << lc << std::endl;			       
   
   // another unary feature
-  std::cout << "\nTEST: Now build unary composition features... \n";
+  std::cout << "\n\n\nTEST: Now build unary composition features... \n";
   Feature lOflc ( (Function_Utils::LogisticPos) Function_Utils::LogisticPos(), lc);
   std::cout <<   "      " << lOflc << std::endl;
   lOflc->write_to(std::cout);
@@ -167,23 +169,27 @@ main ()
   std::cout <<   "      " << xpx << std::endl;
   
   // and a spline feature (a very messy unary feature)
-  /*
-  std::cout << "\nTEST: Making the spline feature ... \n";
-  SmoothingSpline ss(3, begin(x->range()), begin(xx->range()), n);  // 3 df
-  Feature spline (ss.spline_operator(), x);
-  std::cout <<   "      " << spline << std::endl;
-  spline->write_to(std::cout);
-  */
+  if (true)
+  {
+    int df = 5;  
+    std::cout << "\nTEST: Making spline feature with " << df << " df ... \n";
+    SmoothingSpline ss(3, begin(x->range()), begin(xx->range()), n);  // 3 df
+    Feature spline (ss.spline_operator(), x);
+    std::cout <<   "      " << spline << std::endl;
+    spline->write_to(std::cout);
+  }
 
   // write features to a file
-  std::ofstream output("test/features.dat");
-  x->write_to(output);
-  xx->write_to(output);
-  xxxx->write_to(output);
-  xpx->write_to(output);
-  // spline->write_to(output);
-  output.close();
-
+  if (true)
+  {
+    std::ofstream output("test/features.dat");
+    x->write_to(output);
+    xx->write_to(output);
+    xxxx->write_to(output);
+    xpx->write_to(output);
+    // spline->write_to(output);
+    output.close();
+  }
 
   // read multiple features from file by converting into columns
   std::cout << "\nTEST: Building features from file of columns ... \n";

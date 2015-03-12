@@ -1,4 +1,4 @@
-// $Id: smoothing_spline.cc,v 1.24 2005/06/14 22:10:27 bob Exp $
+//  -*- c++ c*-
 
 /*
   From the spline code of Trevor for use in XLisp.
@@ -23,9 +23,11 @@
 
 namespace {
 
-  const double precision (1000.0);         // rounding on 0/1 to avoid knot singularity
+  typedef SmoothingSplineData::Scalar Scalar;
+  
+  const Scalar precision (1000.0);         // rounding on 0/1 to avoid knot singularity
 
-  double my_round(double x)  { return ((double) round(precision * x))/ precision;  }
+  Scalar my_round(Scalar x)  { return ((Scalar) round(precision * x))/ precision;  }
 
 }
 
@@ -34,8 +36,8 @@ namespace {
 void
 SmoothingSplineData::allocate_pointers()
 {
-  mKnots = new double[mNCoef+4];
-  mCoefs = new double[mNCoef];
+  mKnots = new Scalar[mNCoef+4];
+  mCoefs = new Scalar[mNCoef];
 }
 
 void
@@ -46,7 +48,7 @@ SmoothingSplineData::delete_pointers()
 }
 
 void
-SmoothingSplineData::copy_data(double const* coefs, double const* knots)
+SmoothingSplineData::copy_data(Scalar const* coefs, Scalar const* knots)
 {
   if (mCoefs) std::copy(coefs, coefs+mNCoef , mCoefs);
   else std::cerr << "SMSP: Warning. Copying empty smoothing spline data record.\n";
@@ -114,8 +116,8 @@ SmoothingSplineOperator::write_to (std::ostream& os) const
   data->write_to(os);
 }
 
-double
-SmoothingSplineOperator::map_to_0_1 (double x) const
+Scalar
+SmoothingSplineOperator::map_to_0_1 (Scalar x) const
 {
   if ((x > mMaxX) || (x < mMinX)) 
   { std::cout << "SMSP: Warning. " << x << " outside range [" << mMinX << ", " << mMaxX << "]\n";
@@ -126,19 +128,20 @@ SmoothingSplineOperator::map_to_0_1 (double x) const
 
 namespace     // Smoothing spline object and operator need these
 {
-
+  typedef SmoothingSpline::Scalar  Scalar;
+  
 #include "smoothing_spline.Fortran.cc"
 
 } // end of namespace
 
-double
-SmoothingSplineOperator::operator()(double x) const
+Scalar
+SmoothingSplineOperator::operator()(Scalar x) const
 {
   int order (0);
   int four  (4);
   SmoothingSplineData *data (sDataRegistry.data(mKey));
   int nc    (data->nCoef());
-  double mx (map_to_0_1(my_round(x)));
+  Scalar mx (map_to_0_1(my_round(x)));
   return bvalue_(data->knots(), data->coefs(), &nc, &four, &mx, &order);
 }
 
@@ -167,16 +170,16 @@ SmoothingSpline::print_unique_data () const
 void
 SmoothingSpline::alloc_internal_ptrs()
 {
-  mX       = new double[mN];
-  mY       = new double[mN];
-  mW       = new double[mN];
-  mUniqueX = new double[mN];          // max space, will get reduced in size
-  mUniqueY = new double[mN];
-  mUniqueW = new double[mN];
-  mMappedX = new double[mN];
-  mCoefs   = new double[mN + 6];      // May have more than data
-  mKnots   = new double[mN + 6 + 4];  // 4 more than coefs
-  mSmooth  = new double[mN];
+  mX       = new Scalar[mN];
+  mY       = new Scalar[mN];
+  mW       = new Scalar[mN];
+  mUniqueX = new Scalar[mN];          // max space, will get reduced in size
+  mUniqueY = new Scalar[mN];
+  mUniqueW = new Scalar[mN];
+  mMappedX = new Scalar[mN];
+  mCoefs   = new Scalar[mN + 6];      // May have more than data
+  mKnots   = new Scalar[mN + 6 + 4];  // 4 more than coefs
+  mSmooth  = new Scalar[mN];
   if ((mX == 0) || (mKnots == 0) || (mSmooth == 0))
     std::cerr << "\nSMSP: *** Allocation of internal pointers failed. *** \n\n";
 }
@@ -214,18 +217,18 @@ SmoothingSpline::compute_smooth(int df)
   mDF = df;
   int     nk  (mNCoef + 4);
   int     dim (nk * (nk+17) );
-  double *lev    = new double[mN];
-  double *smth   = new double[mN];
-  double *scrtch = new double[dim];
+  Scalar *lev    = new Scalar[mN];
+  Scalar *smth   = new Scalar[mN];
+  Scalar *scrtch = new Scalar[dim];
   if ((scrtch == 0) || (lev == 0) || (smth == 0))
   { std::cerr << "SMSP: *** Error *** Unable to allocate temp space to compute smoothing spline.\n";
     if (lev) delete lev;
     if (smth) delete smth;
     return;
   }
-  double  lambda (1.0);
-  double  dDF (df);
-  double  dParms[4] = {1.0, dDF, 1.0, lambda};
+  Scalar  lambda (1.0);
+  Scalar  dDF (df);
+  Scalar  dParms[4] = {1.0, dDF, 1.0, lambda};
   int     iParms[6] = {mNUnique, mNCoef, 0, 4, 1, 0};
   int     iCrit[2]  = {3,0};
   /*
@@ -238,9 +241,9 @@ SmoothingSpline::compute_smooth(int df)
   if (iParms[5])
     std::cerr << "SMSP: *** Non-zero error code returned from qsbart, ier/info = " << iParms[5] << std::endl;
   mLambda = dParms[3];
-  double totalLev (std::accumulate(lev, lev+mNUnique, 0.0)); 
+  Scalar totalLev (std::accumulate(lev, lev+mNUnique, 0.0)); 
   std::cerr << "SMSP: Lambda set to " << mLambda << " with total leverage " << totalLev << std::endl;
-  double ddf (df);
+  Scalar ddf (df);
   if (abs((totalLev - ddf)/ddf) > 0.05)
   { std::cerr << "SMSP: *** Warning. Sum of leverages not within 5% of target df.\n";
     std::ofstream output("test/problem_xy.txt");
@@ -263,18 +266,18 @@ SmoothingSpline::compute_smooth(int df)
 void
 SmoothingSpline::setup_unique_values()
 {
-  std::set<double>         uniq;
-  std::map<double, Vector> yMap;
-  std::map<double, Vector> wMap;
+  std::set<Scalar>         uniq;
+  std::map<Scalar, Vector> yMap;
+  std::map<Scalar, Vector> wMap;
   for (int i=0; i<mN; ++i)
   { mX[i] = my_round(mX[i]);     // round to avoid division by zero in knots
     uniq.insert(mX[i]);                // this step also sorts the x values
     yMap[mX[i]].push_back(mY[i]);
     wMap[mX[i]].push_back(mW[i]);
   }
-  std::set<double>::const_iterator it (uniq.begin());
+  std::set<Scalar>::const_iterator it (uniq.begin());
   for (int i=0; it != uniq.end(); ++it, ++i)
-  { double x = *it;
+  { Scalar x = *it;
     mUniqueW[i] = range_ops::accumulate(Ranges::make_range(wMap[x]),0.0);
     mUniqueX[i] = x;
     mUniqueY[i] = range_ops::inner_product(Ranges::make_range(yMap[x]),Ranges::make_range(wMap[x]),0.0) / mUniqueW[i];
@@ -298,7 +301,7 @@ SmoothingSpline::setup_unique_values()
 }
 
 void
-SmoothingSpline::bvalues(int *n, double *x, double *s, int *order) const
+SmoothingSpline::bvalues(int *n, Scalar *x, Scalar *s, int *order) const
 {
     int c__4 (4);
     int nc (mNCoef);

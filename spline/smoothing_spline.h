@@ -29,14 +29,17 @@
 
 class SmoothingSplineData
 {
+ public:
+  typedef  float  Scalar;
+ private:
   int      mNCoef;
-  double * mCoefs;
-  double * mKnots;   // 4 + num coefs  (to handle ends of data)
+  Scalar * mCoefs;
+  Scalar * mKnots;   // 4 + num coefs  (to handle ends of data)
 
  public:
   ~SmoothingSplineData () { delete_pointers(); }
   
-  SmoothingSplineData (int nCoef, double const* coefs, double const* knots)
+  SmoothingSplineData (int nCoef, Scalar const* coefs, Scalar const* knots)
     : mNCoef(nCoef), mCoefs(0), mKnots(0)
     { allocate_pointers(); copy_data(coefs,knots); }
   
@@ -51,8 +54,8 @@ class SmoothingSplineData
   int     nKnot ()                  const { return mNCoef + 4; }
   int     nCoef ()                  const { return mNCoef; }
 
-  double* coefs ()                  const { return mCoefs; }
-  double* knots ()                  const { return mKnots; }
+  Scalar* coefs ()                  const { return mCoefs; }
+  Scalar* knots ()                  const { return mKnots; }
 
   void read_from (std::istream& is);
   void write_to  (std::ostream& os) const;
@@ -61,14 +64,17 @@ class SmoothingSplineData
   void allocate_pointers();
   void delete_pointers  ();
 
-  void copy_data        (double const* coefs, double const* knots);
+  void copy_data        (Scalar const* coefs, Scalar const* knots);
 };
 
 
-class SmoothingSplineOperator : public std::unary_function<double,double>
+class SmoothingSplineOperator : public std::unary_function<SmoothingSplineData::Scalar,SmoothingSplineData::Scalar>
 {
+ public:
+  typedef  SmoothingSplineData::Scalar Scalar;
+    
   int                  mDF;
-  double               mMinX, mMaxX, mRngX;
+  Scalar               mMinX, mMaxX, mRngX;
   int                  mKey;       // key to locate knots and coefs in registry
 
   static DataRegistry<SmoothingSplineData> sDataRegistry;
@@ -85,7 +91,7 @@ class SmoothingSplineOperator : public std::unary_function<double,double>
       sDataRegistry.add_reference(mKey);  // inform registry of another link to data
     }
   
-  SmoothingSplineOperator (int df, double min, double max, int nCoef, double *coefs, double *knots)
+  SmoothingSplineOperator (int df, Scalar min, Scalar max, int nCoef, Scalar *coefs, Scalar *knots)
     : mDF(df), mMinX(min), mMaxX(max), mRngX(max-min), mKey(-1)
     {
       mKey = sDataRegistry.insert_data(new SmoothingSplineData(nCoef, coefs, knots), true);  // registry should delete
@@ -96,14 +102,14 @@ class SmoothingSplineOperator : public std::unary_function<double,double>
 
   SmoothingSplineOperator& operator= (SmoothingSplineOperator const& op);
     
-  double operator()(double x) const;
+  Scalar operator()(Scalar x) const;
 
   void   read_from (std::istream& is);
   void   print_to  (std::ostream& os) const;
   void   write_to  (std::ostream& os) const;
 
  private:
-  double map_to_0_1 (double x) const;
+  Scalar map_to_0_1 (Scalar x) const;
 };
 
 // operator traits
@@ -115,11 +121,6 @@ std::string operator_traits<SmoothingSplineOperator>::name() { return "spline"; 
 template<>
 inline
 std::string operator_traits<SmoothingSplineOperator>::symbol() { return "S"; }
-
-template<>
-inline
-std::string operator_traits<SmoothingSplineOperator>::parameters(SmoothingSplineOperator const& f)
-{ std::ostringstream os; f.write_to(os);  return os.str(); }
 
 												       
 inline
@@ -133,22 +134,26 @@ operator<<(std::ostream& os, SmoothingSplineOperator const& ssOp)
 
 class SmoothingSpline
 {
+ public:
+  typedef SmoothingSplineData::Scalar  Scalar;
+
+ private:
   int                  mN;               // number of input values
-  double              *mX, *mY, *mW;     // input data and count weights
-  double               mMinX, mMaxX, mRngX;
+  Scalar              *mX, *mY, *mW;     // input data and count weights
+  Scalar               mMinX, mMaxX, mRngX;
   int                  mDF;              // df for smooth
   int                  mNUnique;         // distinct X values
-  double              *mUniqueX, *mUniqueY, *mUniqueW;
-  double              *mMappedX;         // unique values on [0,1]
+  Scalar              *mUniqueX, *mUniqueY, *mUniqueW;
+  Scalar              *mMappedX;         // unique values on [0,1]
   int                  mNCoef;           // 4 more knots than coefs
-  double              *mKnots;
-  double              *mCoefs;
-  double               mLambda;
-  double              *mSmooth;
-  std::map<double,int> mMap;             // maps x values to y positions
+  Scalar              *mKnots;
+  Scalar              *mCoefs;
+  Scalar               mLambda;
+  Scalar              *mSmooth;
+  std::map<Scalar,int> mMap;             // maps x values to y positions
   
  public:
-  typedef std::vector<double> Vector;
+  typedef std::vector<Scalar> Vector;
 
   ~SmoothingSpline() { delete_internal_ptrs(); }
 
@@ -192,12 +197,12 @@ class SmoothingSpline
     }
   
   template <class Iter>
-    void compute_spline_at_x (int n, Ranges::range<Iter> input, double *s, int order = 0) const
+    void compute_spline_at_x (int n, Ranges::range<Iter> input, Scalar *s, int order = 0) const
     {
-      double *xPtr = new double[n];
+      Scalar *xPtr = new Scalar[n];
       if (xPtr)
       { map_to_0_1(input, xPtr);
-	std::cerr << "SMSP: Computing spline at " << xPtr[0] << " " << xPtr[1] << " ... with " << mNCoef << " coefs.\n";
+	std::clog << "SMSP: Computing spline at " << xPtr[0] << " " << xPtr[1] << " ... with " << mNCoef << " coefs.\n";
 	bvalues(&n, xPtr, s, &order);
 	delete xPtr;
       }
@@ -233,7 +238,7 @@ class SmoothingSpline
     }
 
   template<class Iter>
-    void map_to_0_1 (Ranges::range<Iter> x, double *mapped) const
+    void map_to_0_1 (Ranges::range<Iter> x, Scalar *mapped) const
     {
       int    hiCount (0);
       int    loCount (0);
@@ -265,7 +270,7 @@ class SmoothingSpline
   void   find_knots              ();
 
   void   compute_smooth(int df);
-  void   bvalues(int *n, double *x, double *s, int *order) const;
+  void   bvalues(int *n, Scalar *x, Scalar *s, int *order) const;
 };
 
   

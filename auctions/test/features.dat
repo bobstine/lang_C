@@ -17,7 +17,7 @@ FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [tes
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04^2)
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
-FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0FeatureABC 0   tried=0  inModel=0  bid=0BinaryFeature + 
+FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0FeatureABC 0   tried=0  inModel=0  bid=0BinaryFeature +
 ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
 FeatureABC 4  [first (column)]  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0
