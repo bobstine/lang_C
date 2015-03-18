@@ -151,8 +151,9 @@ Auction<ModelClass>::auction_next_feature ()
       features[j]->set_model_results(accepted, afterTaxBid);                // save attributes only from first attempt in auction or when accepted
     else
       debug("AUCT",4) << "Old feature " << features[j]->name() << " tested in auction.\n";
-    if (accepted) 
-    { debug("AUCT",0) << "+F+   " << features[j] << std::endl;              // show selected feature in output with key for grepping
+    if (accepted)
+    { debug("AUCT",0) << "+F+     " << features[j]->name() << std::endl;      // show selected feature in output with key for grepping
+      debug("AUCT",2) << " Detail:" << features[j] << std::endl;         
       mModelFeatures.push_back(features[j]);
     }                                                                       // dont retain calibration, singular, or repeat features
     else if ( (!is_calibration_feature(features[j])) && (pValue < 0.999) && newFeature )      
@@ -394,11 +395,14 @@ Auction<ModelClass>::total_expert_alpha () const
 
 template <class ModelClass>
 void
-Auction<ModelClass>::print_to (std::ostream& os) const
+Auction<ModelClass>::print_to (std::ostream& os, bool compact) const
 {
   os << std::endl << "     Auction    " << mExperts.size() << " bidders with total alpha " << total_expert_alpha() << std::endl;
   debugging::debug("AUCT",3) << mExperts << std::endl;
-  os << mModel << std::endl;
+  if (compact)
+    mModel.print_to(os, true);
+  else
+    os << mModel << std::endl;
 }
 
 

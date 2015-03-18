@@ -9,10 +9,12 @@
 
 #include "debug.h"
 #include "column.Template.h"
+#include "smoothing_spline.h"
 
 #include "auction_base_types.h"
 #include "feature_streams.Template.h"
 #include "feature_iterators.Template.h"
+#include "feature_transformations.Template.h"
 
 #include <iostream>
 #include <algorithm>
@@ -35,9 +37,11 @@ public:
   int  q()                      const  { return mQ; }
   void increment_q()                   { ++ mQ; std::cout << "TEST: Model q incremented to q=" << mQ << std::endl;}
   int n_total_cases()           const  { return mCases; }
+  int n_estimation_cases()      const  { return mCases; }   // pretty flaky
   SCALAR y_bar()                const  { return (SCALAR) 0.0; }
   
-  void fill_with_fit(SCALAR *x, bool) const  { for (int i=0; i<mCases;++i) *x++ = (SCALAR)(2.0*i); }
+  void fill_with_fit      (SCALAR *x, bool) const  { for (int i=0; i<mCases;++i) *x++ = (SCALAR)( 2.0*i); }
+  void fill_with_residuals(SCALAR *x      ) const  { for (int i=0; i<mCases;++i) *x++ = (SCALAR)(-2.0*i); }
   
   std::vector<std::string> predictor_names() const { std::vector<std::string> names; names.push_back("test"); return names; }
 };
@@ -190,8 +194,8 @@ main()
     bool const binaryResponse (false);
     Model model (featureVec1, featureVec2);
 
-    FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> > cs (make_calibration_stream
-									      ("test", model, gap, "Y_hat_", skip, binaryResponse));
+    FeatureStream< ModelIterator<Model>, BuildSplineCalibrationFeature<Model> > cs (make_spline_calibration_stream
+										    ("test", model, gap, "Y_hat_", skip, binaryResponse));
     std::cout << "  Initial calibration stream,  has_feature=" << cs.has_feature_vector() << std::endl
 	      << "  " << cs << std::endl;
     model.increment_q();

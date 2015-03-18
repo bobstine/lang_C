@@ -82,7 +82,7 @@ private:
   unsigned int           add_initial_features     (FeatureVector const& f);
   bool                   auction_next_feature     ();          
 
-  void print_to                  (std::ostream& os)                      const;
+  void print_to                  (std::ostream& os, bool compact=false)  const;
   void print_model_features_to   (std::ostream& os)                      const;
   void print_model_to            (std::ostream& os, bool useHTML=false)  const;
   void write_model_to            (std::ostream& os)                      const;

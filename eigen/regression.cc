@@ -476,18 +476,46 @@ namespace {
 }
 
 void
-LinearRegression::print_to (std::ostream& os) const
+LinearRegression::print_to (std::ostream& os, bool compact) const
 {
   os.precision(6);
-  os << mWeightStr << "Linear Regression";
-  if (is_binary())
-    os << "   Binary response";
-  os << "  y = " << mYName << "    (n=" << mN << ",k=" << mK << ") " << std::endl
-     << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
-     << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl << std::endl;
-  print_gamma_to(os);
+  if (compact)
+  { os << " R2=" << r_squared() << " RMSE=" << rmse() << std::endl;
+    std::vector<size_t> indices;
+    size_t Q = (size_t) q();
+    if (Q > 100)
+      indices = {0, Q-2, Q-1, Q};
+    else if (Q > 10)
+      indices = {0,Q-1,Q};
+    else
+      indices = {Q};
+    compact_print_gamma_to(os,indices);
+  }
+  else
+  { os << mWeightStr << "Linear Regression";
+    if (is_binary())
+      os << " (Binary response)";
+    os << "  y = " << mYName << "    (n=" << mN << ",k=" << mK << ") " << std::endl
+       << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
+       << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl << std::endl;
+    print_gamma_to(os);
+  }
 }
 
+void
+LinearRegression::compact_print_gamma_to (std::ostream&os, std::vector<size_t>indices) const
+{
+  Vector se (se_gamma());
+  { for (size_t j = 0; j<indices.size(); ++j)
+    { size_t k = indices[j];
+      os << "[" << std::setw(5) << k << "] "
+	 << std::setw(maxNameLen-15) << printed_name(mXNames[k])  << "    "
+	 << std::setw(9) << mGamma[k] << "  "
+	 << std::setw(8) << se[k]     << "  "
+	 << std::setw(8) << mGamma[k]/se[k] << std::endl;
+    }
+  }
+}
 
 
 void
@@ -593,27 +621,31 @@ ValidatedRegression::validation_confusion_matrix(Scalar threshold) const
 //     print_to     print_to     print_to     
 
 void
-ValidatedRegression::print_to(std::ostream& os, bool useHTML) const
+ValidatedRegression::print_to(std::ostream& os, bool compact) const
 {
-  if(useHTML)
-    os << "*** Note *** Code for ValidatedRegression does not implement HTML version of model summary" << std::endl;
   os.precision(6);
-  os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
-  if(block_size() > 0)
-    os << " with White SE(b=" << block_size() << ")";
-  os << std::endl
-     << "            Validation SS = " << validation_ss() << std::endl;
-  if (mModel.is_binary())
-  { os << "            Training   confusion matrix \n"
-       << estimation_confusion_matrix()
-       << std::endl;
-    if (n_validation_cases())
-    { os << "            Validation confusion matrix = \n"
-	 << validation_confusion_matrix()
-	 << std::endl;
-    }
+  if (compact)
+  { os << " CVSS=" << validation_ss() << " ";
+    mModel.print_to(os,true);
   }
-  os << mModel;
+  else
+  { os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
+    if(block_size() > 0)
+      os << " with White SE(b=" << block_size() << ")";
+    os << std::endl
+       << "            Validation SS = " << validation_ss() << std::endl;
+    if (mModel.is_binary())
+    { os << "            Training   confusion matrix \n"
+	 << estimation_confusion_matrix()
+	 << std::endl;
+      if (n_validation_cases())
+      { os << "            Validation confusion matrix = \n"
+	   << validation_confusion_matrix()
+	   << std::endl;
+      }
+    }
+    os << mModel;
+  }
 }
 
 void

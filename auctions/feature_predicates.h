@@ -10,7 +10,7 @@ namespace FeaturePredicates {
   
   bool           mutually_exclusive_categories_from_same_parent  (Feature const& f1, Feature const& f2);
 
-  bool           share_common_parent(Feature const& f1, Feature const& f2) ;
+  bool           share_common_parent_in_dependence_map(Feature const& f1, Feature const& f2) ;
 
   template< class Collection >
     bool         found_name_among_features (std::string const& name, Collection const& features, std::string const& description) ;
@@ -45,16 +45,20 @@ class SkipIfRelated
   Feature mFeature;
 public:
   SkipIfRelated(Feature const& f) : mFeature(f) {}
-  bool operator()(Feature const& f) const { return FeaturePredicates::share_common_parent(mFeature, f); }
+  bool operator()(Feature const& f) const { return FeaturePredicates::share_common_parent_in_dependence_map(mFeature, f); }
 };
 
 class SkipIfRelatedPair
 {  
 public:
-  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::share_common_parent(f, g); }
+  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::share_common_parent_in_dependence_map(f, g); }
 };
 
-
+class SkipIfIndicatorsOfSameParent
+{  
+public:
+  bool operator()(Feature const& f,Feature const& g) const { return FeaturePredicates::mutually_exclusive_categories_from_same_parent(f, g); }
+};
 
 class SkipIfInBasis
 {

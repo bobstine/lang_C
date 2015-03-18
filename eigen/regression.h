@@ -135,12 +135,13 @@ public:
   void      add_predictors (StringVec const& names, Matrix const& x);             // adds with no testing
   void      add_predictors (FStat const& fstat);
   
-  void      print_to       (std::ostream& os)                   const;
-  void      print_gamma_to (std::ostream& os)                   const;
-  void      print_beta_to  (std::ostream& os)                   const;
-  void      write_data_to  (std::ostream& os, int maxNumXCols)  const; // JMP style, with y followed by X columns (tab delimited)
+  void      print_to               (std::ostream& os, bool compact=false)         const;
+  void      print_gamma_to         (std::ostream& os)                             const;
+  void      compact_print_gamma_to (std::ostream& os, std::vector<size_t>indices) const;
+  void      print_beta_to          (std::ostream& os)                             const;
+  void      write_data_to          (std::ostream& os, int maxNumXCols)            const; // JMP style, with y followed by X columns (tab delimited) 
 
-  Matrix    check_orthogonality_matrix ()                       const; // returns r matrix from householder QR of internal G-S Q matrix
+  Matrix    check_orthogonality_matrix ()                         const; // returns r matrix from householder QR of internal G-S Q matrix
   
  private:
   void      allocate_memory();
@@ -218,7 +219,10 @@ public:
   template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
   template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
   
-  void print_to     (std::ostream& os, bool useHTML=false) const;
+  template <class Iter> void fill_with_residuals (Iter it)         const;
+  
+  void print_to     (std::ostream& os, bool compact=false) const;
+  void print_html_to(std::ostream& os)                     const;
   void write_data_to(std::ostream& os, int maxNumXCols)    const;       //  written in the internal order (estimation ->, then validation <-
   
 private:

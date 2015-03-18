@@ -38,6 +38,7 @@
 
 // templates
 #include "features.Template.h"
+#include "feature_transformations.Template.h"
 #include "feature_predicates.Template.h"
 #include "feature_iterators.Template.h"
 #include "feature_streams.Template.h"
@@ -222,8 +223,8 @@ main(int argc, char** argv)
   Scalar     alphaShare     (totalAlphaToSpend/(Scalar)streamNames.size());
   Scalar     alphaMain      (alphaShare * (Scalar)0.60);
   Scalar     alphaInt       (alphaShare * (Scalar)0.40);
-  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
-  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
+  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel               >, Identity>  FiniteStream;
+  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfIndicatorsOfSameParent>, Identity>  InteractionStream;
   
   std::vector<FeatureVector> featureVectors(streamNames.size());   // treat this guy with respect... lots of const refs to its elements
   
@@ -233,6 +234,7 @@ main(int argc, char** argv)
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
+    // 
     theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
 				 UniversalBoundedBidder<InteractionStream>(),
 				 make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
@@ -252,8 +254,8 @@ main(int argc, char** argv)
     if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
     theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder((SCALAR)0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
-							 nContextCases, yIsBinary)));
+				 make_spline_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+								nContextCases, yIsBinary)));  // spline ignores truncation at moment
   }
 
   
@@ -262,13 +264,22 @@ main(int argc, char** argv)
   {
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
-    Scalar totalTime (0.0);
+    Scalar totalTime              = 0.;
+    const int full_output_period  = 20;
+    int       full_output_timer   = full_output_period;
     while(round<numberRounds && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
       clock_t start;
       start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
-      	debug("AUCT",1) << theAuction << std::endl << std::endl;
+      { --full_output_timer;
+	if (full_output_timer == 0)
+	{ full_output_timer = full_output_period;
+	  debug("AUCT",1) << theAuction << std::endl << std::endl;
+	}
+	else
+	  theAuction.print_to(debug("AUCT",1), true); 
+      }
       Scalar time = (Scalar)time_since(start);
       totalTime += time;
       debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl << std::endl;

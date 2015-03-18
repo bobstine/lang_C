@@ -29,13 +29,15 @@ OPT = -O3 -std=c++11
 ###########################################################################
 
 level_0   = featureABC.o      bidders.o  
-level_1   = features.o      feature_transformations.o
-level_2   = feature_predicates.o
-level_3   = feature_iterators.o      adapter.o
-level_4   = feature_streams.o
-level_5   = experts.o
-level_6   = auction.o build_helper.o
-level_7   = build_auction.o
+level_1   = features.o   
+level_2   = feature_transformations.o
+level_3   = feature_predicates.o
+level_4   = feature_iterators.o      adapter.o
+level_5   = feature_streams.o
+level_6   = experts.o
+level_7   = auction.o build_helper.o
+level_8   = build_auction.o
+level_9   = 
 
 ############################################################################
 #
@@ -50,7 +52,7 @@ data/%.dat: data/%.csv
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
 # current auction target (build_auction has main)
-auction: $(above_8)
+auction: $(above_9)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
 logistic_test: auction.test
@@ -70,7 +72,7 @@ crash_test: auction.test
 #  Data in built in R, with 3 orthogonal streams
 #
 
-text_auction: text_auction.o $(above_6)
+text_auction: text_auction.o $(above_7)
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 run_text_auction: text_auction

@@ -1,3 +1,5 @@
+#ifndef _FEATURES_TEMPLATE_H
+#define _FEATURES_TEMPLATE_H
 #include "features.h"
 
 
@@ -6,20 +8,17 @@
 //  Feature constructors  (define after defining the different types of features)
 
 template<class Op>
-Feature::Feature(Op const& op, Feature const &x)
+Feature::Feature(Op op, Feature const &x)
 {
   mFP = new UnaryFeature<Op>(op,x);
 }
 
 
 template<class Op>
-Feature::Feature(Op const& op, Feature const &x1, Feature const& x2)
+Feature::Feature(Op op, Feature const &x1, Feature const& x2)
 {
   mFP = new BinaryFeature<Op>(op,x1,x2);
 }
-
-
-//  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature  UnaryFeature
 
 
 // UnaryFeature     UnaryFeature     UnaryFeature     UnaryFeature     UnaryFeature     UnaryFeature     UnaryFeature
@@ -183,3 +182,4 @@ BinaryFeature<Op>::write_to (std::ostream& os) const
 }
 
 
+#endif

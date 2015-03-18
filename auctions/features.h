@@ -85,13 +85,13 @@ class Feature
   Feature(int n, std::string name, std::vector<Scalar> b, std::vector<Feature> const& fv);
   Feature(int n,  std::vector<Scalar> b, std::vector<Feature> const& fv);
 
-  //  unary feature
+  //  unary feature (copy the operator!)
   template<class Op>
-    Feature(Op const& op, Feature const &x);
+    Feature(Op op, Feature const &x);
 
   //  binary feature
   template<class Op>
-    Feature(Op const& op, Feature const &x1, Feature const& x2);
+    Feature(Op op, Feature const &x1, Feature const& x2);
 
   //  output
   void write_to(std::ostream& os) const;
@@ -102,7 +102,6 @@ class Feature
   Feature&    operator=(Feature const& f);
   FeatureABC* operator->()                 const  { return mFP; }  
 };
-
 
 inline
 std::ostream&
@@ -317,7 +316,7 @@ class UnaryFeature : public FeatureABC
  public:
   virtual ~UnaryFeature() {}
   
-  UnaryFeature(Op const& op, Feature const& f)
+  UnaryFeature(Op op, Feature const& f)
     : FeatureABC(f->size()), mOp(op), mFeature(f), mMean(std::nan("")) { }
   
   string         class_name()       const;
@@ -352,7 +351,7 @@ class BinaryFeature : public FeatureABC
   Feature   mFeature2;
 
  public:  
-  BinaryFeature(Op const& op, Feature const& f1, Feature const& f2)
+  BinaryFeature(Op op, Feature const& f1, Feature const& f2)
     : FeatureABC(f1->size()), mOp(op), mFeature1(f1), mFeature2(f2) { }
 
   string         class_name()       const;

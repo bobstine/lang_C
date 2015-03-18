@@ -128,3 +128,18 @@ ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }
+
+
+template <class Iter>
+void
+ValidatedRegression::fill_with_residuals(Iter it) const
+{
+  Vector results (mLength);
+  // stuff into Eigen temp first
+  results.segment(        0           , n_estimation_cases()) = mModel.raw_residuals();
+  results.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - mModel.predictions(mValidationX);
+  // then reverse the cv twiddle
+  for(int i = 0; i<mLength; ++i)
+    *it++ = results(mPermute[i]);
+}
+

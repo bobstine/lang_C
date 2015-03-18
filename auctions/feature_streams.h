@@ -238,13 +238,24 @@ make_beam_stream (std::string name, Auction const& auction, std::vector<std::str
 
 
 template <class Model>
-FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-make_calibration_stream (std::string name, Model const& model, int gap, std::string signature, int skip, bool binary)
+FeatureStream< ModelIterator<Model>, BuildPolynomialCalibrationFeature<Model> >
+make_polynomial_calibration_stream (std::string name, Model const& model, int gap, std::string signature, int skip, bool binary)
 {
-  debug("FSTR",2) << "make_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
+  debug("FSTR",2) << "make_poly_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
   const int polyDegree = 3;
-  return FeatureStream< ModelIterator<Model>, BuildCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildCalibrationFeature<Model>(polyDegree, signature, skip, binary));
+  return FeatureStream< ModelIterator<Model>, BuildPolynomialCalibrationFeature<Model> >
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildPolynomialCalibrationFeature<Model>(polyDegree, signature, skip, binary));
+}
+
+
+template <class Model>
+FeatureStream< ModelIterator<Model>, BuildSplineCalibrationFeature<Model> >
+make_spline_calibration_stream (std::string name, Model const& model, int gap, std::string signature, int skip, bool binary)
+{
+  debug("FSTR",2) << "make_poly_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
+  const int splineDegree = 5;
+  return FeatureStream< ModelIterator<Model>, BuildSplineCalibrationFeature<Model> >
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildSplineCalibrationFeature<Model>(splineDegree, signature, skip, binary));
 }
 
 
@@ -270,12 +281,12 @@ make_threaded_subspace_stream (std::string name, Collection const& src, Trans co
 
 
 template <class Collection>
-FeatureStream< InteractionIterator<Collection, SkipIfRelatedPair>, Identity>
+FeatureStream< InteractionIterator<Collection, SkipIfIndicatorsOfSameParent>, Identity>
 make_interaction_stream (std::string name, Collection const& src, bool useSquares)
 {
+  typedef FeatureStream< InteractionIterator<Collection, SkipIfIndicatorsOfSameParent>, Identity> Result;
   debug("FSTR",3) << "make_interaction_stream (static) " << std::endl;
-  return FeatureStream< InteractionIterator<Collection,SkipIfRelatedPair>, Identity>
-    ("Interaction::"+name, InteractionIterator<Collection,SkipIfRelatedPair>(src, useSquares, SkipIfRelatedPair()), Identity());
+  return Result("Interaction::"+name, InteractionIterator<Collection,SkipIfIndicatorsOfSameParent>(src, useSquares, SkipIfIndicatorsOfSameParent()), Identity());
 }
 
 

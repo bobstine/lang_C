@@ -1,5 +1,5 @@
 // -*- c++ -*-
-#include "base_types.h"
+#include "eigen_base_types.h"
 #include "regression.h"
 #include "debug.h"
 

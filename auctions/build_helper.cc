@@ -84,9 +84,9 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
     auction.add_initial_features(lockIn);
     debug("AUCT",1) << auction << std::endl << std::endl;
   }
-  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel    >, Identity>  FiniteStream;
-  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfRelatedPair>, Identity>  InteractionStream;
-  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>, Identity>  CrossProductStream;
+  typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel               >, Identity>  FiniteStream;
+  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfIndicatorsOfSameParent>, Identity>  InteractionStream;
+  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>           , Identity>  CrossProductStream;
   const bool purgable = true;
   
   {
@@ -140,12 +140,6 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
 			       make_polynomial_stream("Skipped-feature polynomial", theAuction.rejected_features(), 3)     // poly degree
 			       ));
   
-  //  Calibration expert
-  if(calibration > 0)
-    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
-				 FitBidder(0.000005, calibrationSignature),                  
-				 make_calibration_stream("fitted_values", theRegr, calibration, calibrationSignature,
-							 nContextCases, yIsBinary)));
 
   //   Principle component type features
   theAuction.add_expert(Expert("PCA", source, !purgable, nContextCases, totalAlphaToSpend/6,                                    // kludge alpha share

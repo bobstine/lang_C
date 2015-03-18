@@ -1,4 +1,4 @@
-// $Id: smoothing_spline.h,v 1.24 2008/01/30 22:39:58 bob Exp $
+//  -*- c++ -*-
 
 #ifndef _SMOOTHING_SPLINE_H_
 #define _SMOOTHING_SPLINE_H_
