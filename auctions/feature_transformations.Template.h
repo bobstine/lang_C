@@ -90,8 +90,7 @@ BuildSplineCalibrationFeature<Model>::operator()(Model const* pModel) const
       *pFit++ = pModel->y_bar();
     }
   // fill rest with spline fit to residuals from model
-  const bool truncate = false;
-  pModel->fill_with_fit      (fit->begin() + mSkip, truncate);
+  pModel->fill_with_fit      (fit->begin() + mSkip, mTruncate);
   pModel->fill_with_residuals(res->begin() + mSkip);
   debugging::debug("CALB",3) << "Range of residuals/pred errors for spline is "
 			     << *range_ops::min_element(Ranges::make_range(res->begin() + mSkip, res->end())) << "  --  "

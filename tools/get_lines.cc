@@ -44,7 +44,7 @@ main(int argc, char ** argv)
 	std::cerr << "ERROR: Lines numbers must be sorted into increasing order\n";
       line0 = line;
     }
-    std::cout << "GetLines: Read " << linesToReturn.size() << " line numbers.\n";
+    std::clog << "GetLines: Read " << linesToReturn.size() << " line numbers.\n";
   }
   int k = 0;
   string theLine;

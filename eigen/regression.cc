@@ -128,10 +128,23 @@ LinearRegression::x_row (int i)            const
 LinearRegression::Vector
 LinearRegression::raw_fitted_values(LinearRegression::Scalar lo, LinearRegression::Scalar hi) const
 {
-  Vector fit = raw_fitted_values();
-  return fit.unaryExpr([lo,hi] (LinearRegression::Scalar x) -> LinearRegression::Scalar { if(x < lo) return lo; if(x < hi) return x; return hi; });
+  Vector fit = raw_fitted_values();     // insert 'soft max/min'
+  //  return fit.unaryExpr([lo,hi] (LinearRegression::Scalar x) -> LinearRegression::Scalar { if(x < lo) return lo; if(x < hi) return x; return hi; });
+  const SCALAR rate = 0.5;   // closer to zero, harder bound
+  return fit.unaryExpr([lo,hi,rate]
+		       (LinearRegression::Scalar x) -> LinearRegression::Scalar
+		       { if(x < lo)
+			 { SCALAR w = x-lo;
+			   return rate * ((SCALAR)exp(w)-(SCALAR)1);
+			 }
+			 else
+			 { if(x < hi) return x;
+			   else
+			   { SCALAR w = x-hi;
+			     return hi + rate * ((SCALAR)1.0 - (SCALAR) exp(-w));
+			   }
+			 }});
 }
-
 
 //     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes
 
