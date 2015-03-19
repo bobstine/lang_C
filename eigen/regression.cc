@@ -124,26 +124,40 @@ LinearRegression::x_row (int i)            const
   return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
 }
 
+namespace {
+  const SCALAR soft_rate = 0.5;
+
+  SCALAR
+  soft_min_at_zero (SCALAR x)    // pushes value below zero toward 0
+  { assert (x < 0);
+    return soft_rate * ((SCALAR)exp(x) - (SCALAR) 1) ;
+  }
+  
+  SCALAR
+  soft_max_at_one (SCALAR x)     // pushes value > 1 toward 1
+  { assert (x > 1.0);
+    return (SCALAR)1 + soft_rate * ((SCALAR)1 - (SCALAR)exp(1.0 - x));
+  }
+
+  SCALAR
+  soft_limits (SCALAR x)
+  { if (x < 0.0)
+      return soft_min_at_zero (x);
+    else
+    { if(x < 1.0) return x;
+      else return soft_max_at_one(x);
+    }
+  }
+}
 
 LinearRegression::Vector
-LinearRegression::raw_fitted_values(LinearRegression::Scalar lo, LinearRegression::Scalar hi) const
+LinearRegression::raw_fitted_values(bool truncate) const
 {
-  Vector fit = raw_fitted_values();     // insert 'soft max/min'
-  //  return fit.unaryExpr([lo,hi] (LinearRegression::Scalar x) -> LinearRegression::Scalar { if(x < lo) return lo; if(x < hi) return x; return hi; });
-  const SCALAR rate = 0.5;   // closer to zero, harder bound
-  return fit.unaryExpr([lo,hi,rate]
-		       (LinearRegression::Scalar x) -> LinearRegression::Scalar
-		       { if(x < lo)
-			 { SCALAR w = x-lo;
-			   return rate * ((SCALAR)exp(w)-(SCALAR)1);
-			 }
-			 else
-			 { if(x < hi) return x;
-			   else
-			   { SCALAR w = x-hi;
-			     return hi + rate * ((SCALAR)1.0 - (SCALAR) exp(-w));
-			   }
-			 }});
+  Vector fit = fitted_values().array()/mSqrtWeights.array(); 
+  if (!truncate)
+    return fit;
+  else
+    return fit.unaryExpr(&soft_limits);
 }
 
 //     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes
@@ -228,25 +242,17 @@ LinearRegression::se_beta() const
 
 
 LinearRegression::Vector
-LinearRegression::predictions(Matrix const& x) const
+LinearRegression::predictions(Matrix const& x, bool truncate) const
 {
   assert(q() == x.cols());
   Vector b (beta());
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
+  Vector preds =  (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
+  if (!truncate)
+    return preds;
   else
-    return (x * b.tail(x.cols())).array() + b(0);    // internal X has leading const column; input X lacks constant
-}
-
-LinearRegression::Vector
-LinearRegression::predictions(Matrix const& x, LinearRegression::Scalar lo, LinearRegression::Scalar hi) const
-{
-  Vector preds (predictions(x));
-  for(int i=0; i<preds.size(); ++i)
-  { if      (preds[i] < lo) preds[i] = lo;
-    else if (preds[i] > hi) preds[i] = hi;
-  }
-  return preds;  
+    return preds.unaryExpr(&soft_limits);
 }
 
 
@@ -392,8 +398,10 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 LinearRegression::bennett_evaluation () const
 {
-  const Scalar epsilon ((Scalar)1.0E-10);
-  Vector mu      (raw_fitted_values(epsilon, (Scalar)1.0-epsilon));                  // think of fit as E(Y), constrained to [eps,1-eps] interval
+  const Scalar up = (Scalar) 0.99999999999;
+  const Scalar dn = (Scalar) 0.00000000001;
+  Vector mu        = raw_fitted_values();                                    // think of fit as E(Y), constrained to [eps,1-eps] interval
+  mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                  // would match residuals IF other fit is bounded
   Scalar num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)

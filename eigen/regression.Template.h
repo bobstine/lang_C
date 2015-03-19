@@ -115,16 +115,8 @@ ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
 {
   Vector results (mLength);
   
-  if (truncate)
-  { Scalar min (0.0);
-    Scalar max (1.0);
-    results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(min,max);
-    results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,min,max);
-  }
-  else
-  { results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values();
-    results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX);
-  } 
+  results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
+  results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,truncate);
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }
