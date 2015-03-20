@@ -25,7 +25,7 @@ using debugging::debug;
 #include <random>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
-const unsigned int numberOfAllocatedColumns(3001);    
+const unsigned int numberOfAllocatedColumns(5001);    
 
 LinearRegression::Scalar abs_val(LinearRegression::Scalar x) { if (x < 0.0) return -x; else return x; }
 LinearRegression::Scalar max_abs(LinearRegression::Scalar x, LinearRegression::Scalar y) { LinearRegression::Scalar ax = abs_val(x); LinearRegression::Scalar ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
@@ -37,7 +37,7 @@ bool   close (LinearRegression::Scalar a, LinearRegression::Scalar b) { return a
 
 #define QQ()      (mQ.leftCols(mK))
 #define RR()      (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>())
-#define RINV()    (mR.topLeftCorner(mK,mK).inverse())                               // should use triangular: mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse()
+#define RINV()    (mR.topLeftCorner(mK,mK).inverse())          // should use triangular: mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse()
 
 
 //    Utils      Utils      Utils      Utils      Utils      Utils      Utils      Utils
@@ -314,7 +314,13 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
 {
   mTempNames = name_vec(xName);
   mTempK     = 1;
-  mQ.col(mK) = z.array() * mSqrtWeights.array();
+  if ((int)numberOfAllocatedColumns <= mK)
+  { std::cerr << "\n******************\n"
+	      << "ERROR: Aborting. Model size has reached internal dimension limit."
+	      << "\n******************\n";
+    return FStatistic();
+  }
+  mQ.col(mK) = z.array() * mSqrtWeights.array();     // will die here if mK is too large
   if (0.0 == sweep_Q_from_column(mK))
   { std::cout << "REGR: Singularity detected. SSz = 0 for predictor " << xName << "; returning empty F stat" << std::endl;
     return FStatistic();
@@ -357,6 +363,12 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 {
   mTempNames = xNames;
   mTempK     = (int) z.cols();
+  if ((int)numberOfAllocatedColumns <= mK+mTempK)
+  { std::cerr << "\n******************\n"
+	      << "ERROR: Aborting. Model size has reached internal dimension limit."
+	      << "\n******************\n";
+    return FStatistic();
+  }
   mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column(mK+k))
@@ -429,6 +441,10 @@ LinearRegression::update_fit(StringVec xNames)
     mGamma[mK+j]  = (mQ.col(mK+j).dot(mY)/(1+mLambda[mK+j]));
   }
   mK += mTempK;
+  if ((int)numberOfAllocatedColumns-5 < mK)
+    std::cerr << "\n********************\n"
+	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
+	      << "\n********************\n";
   mResiduals = mY - QQ() * mGamma.head(mK);   // Faster?  just mod the residuals rather than recalc
   mResidualSS= mResiduals.squaredNorm();      // Faster?  subtract new gamma'gamma
 }
