@@ -129,13 +129,13 @@ namespace {
 
   SCALAR
   soft_min_at_zero (SCALAR x)    // pushes value below zero toward 0
-  { assert (x < 0);
+  { assert (x <= 0);
     return soft_rate * ((SCALAR)exp(x) - (SCALAR) 1) ;
   }
   
   SCALAR
   soft_max_at_one (SCALAR x)     // pushes value > 1 toward 1
-  { assert (x > 1.0);
+  { assert (x >= 1.0);
     return (SCALAR)1 + soft_rate * ((SCALAR)1 - (SCALAR)exp(1.0 - x));
   }
 
@@ -144,7 +144,7 @@ namespace {
   { if (x < 0.0)
       return soft_min_at_zero (x);
     else
-    { if(x < 1.0) return x;
+    { if(x <= 1.0) return x;
       else return soft_max_at_one(x);
     }
   }
