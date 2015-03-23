@@ -49,7 +49,7 @@ public:
   typedef std::vector<std::string> StringVec;
   
 private:
-  int                      mN;             // number of actual obs without pseudo-rows used for shrinkage
+  int                      mN;             // number of actual obs without pseudo-rows used for shrinkage [ const to make easy to find where changed ]
   int                      mK;             // number of columns (including constant) in the model
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
   std::string              mWeightStr;
@@ -72,7 +72,7 @@ public:
   ~LinearRegression () {  }
 
   LinearRegression ()
-    :  mN(0) { }
+    :  mN(0),mK(0),mBlockSize(0) { }
   
   LinearRegression (std::string yName, Vector const& y, int blockSize) 
     : mN((int)y.size()), mK(0), mBlockSize(blockSize),
@@ -80,7 +80,7 @@ public:
       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
   
   LinearRegression (std::string yName, Vector const& y, std::vector<std::string> xNames, Matrix const& x, int blockSize)
-    :  mN((int)y.size()), mK(0), mBlockSize(blockSize),
+    :  mN((int)y.size()), mK(0),  mBlockSize(blockSize),
        mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
        mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames, x); }
   
