@@ -19,18 +19,27 @@ using debugging::debug;
 #include <Eigen/LU>
 #include <Eigen/QR>
 
-// #include "boost/shared_ptr.hpp"
-
 #include <iomanip>
 #include <random>
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(5001);    
 
-LinearRegression::Scalar abs_val(LinearRegression::Scalar x) { if (x < 0.0) return -x; else return x; }
-LinearRegression::Scalar max_abs(LinearRegression::Scalar x, LinearRegression::Scalar y) { LinearRegression::Scalar ax = abs_val(x); LinearRegression::Scalar ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
-int    min_int(int i, int j) { if(i<j) return i; else return j; }
-bool   close (LinearRegression::Scalar a, LinearRegression::Scalar b) { return abs_val(a-b) < 1.0e-50; }
+LinearRegression::Scalar
+abs_val(LinearRegression::Scalar x)
+{ if (x < 0.0) return -x; else return x; }
+
+LinearRegression::Scalar
+max_abs(LinearRegression::Scalar x, LinearRegression::Scalar y)
+{ LinearRegression::Scalar ax = abs_val(x); LinearRegression::Scalar ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
+
+int
+min_int(int i, int j)
+{ if(i<j) return i; else return j; }
+
+bool
+close(LinearRegression::Scalar a, LinearRegression::Scalar b)
+{ return abs_val(a-b) < 1.0e-50; }
 
 
 //   Macros      Macros      Macros      Macros      Macros
