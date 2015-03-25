@@ -421,19 +421,19 @@ LinearRegression::bennett_evaluation () const
 {
   const Scalar up = (Scalar) 0.99999999999;
   const Scalar dn = (Scalar) 0.00000000001;
-  Vector mu        = raw_fitted_values();                                    // think of fit as E(Y), constrained to [eps,1-eps] interval
+  Vector mu        = raw_fitted_values();                                          // think of fit as E(Y), constrained to [eps,1-eps] interval
   mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
-  Vector dev     (mY - mu);                                                  // would match residuals IF other fit is bounded
-  Scalar num     (dev.dot(mQ.col(mK)));                                      // z'(y-y^)
-  Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));      // sqrt(z'Dz)
+  Vector dev     (mY - mu);                                                        // would match residuals IF other fit is bounded
+  Scalar num     (dev.dot(mQ.col(mK)));                                            // z'(y-y^)
+  Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));    // sqrt(z'Dz)
   Scalar maxA    (0.0);
   for (int i=0; i<mN; ++i)
-    { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));             // largest possible error for this case
-    if (absZ > maxA) maxA = absZ;                                            // largest?
+    { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
+    if (absZ > maxA) maxA = absZ;                                                  // largest?
   }
   Scalar Mz      (maxA/rootZDZ);
-  Scalar tz      (abs_val(num)/rootZDZ);                    // num = get(mZE,0)
+  Scalar tz      (abs_val(num)/rootZDZ);                                           // num = get(mZE,0)
   return std::make_pair(tz, bennett_p_value(tz,Mz));
 }
 
