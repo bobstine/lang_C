@@ -1,26 +1,18 @@
 /*
-
   For explanation of shrinkage, see shrinkage.tex in work/papers/notes
-  
 */
 #include "debug.h"
-
 using debugging::debug;
 
-#pragma GCC optimize ("-O4")
-
-#include "regression.h"
+#include "linear_regression.h"
 #include "bennett.h"
-#include "eigen_iterator.h"
-#include "confusion_matrix.h"
 
-#include <thread>
-#include <cmath>
+#include <iomanip>
 #include <Eigen/LU>
 #include <Eigen/QR>
 
-#include <iomanip>
-#include <random>
+
+#pragma GCC optimize ("-O4")
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(5001);    
@@ -634,293 +626,56 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   }
 }
 
-//     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
+
+//     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression
 
 void
-ValidatedRegression::initialize_validation_ss()
-{ 
-  Scalar mean (mModel.y_bar());
-  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
+FastLinearRegression::allocate_projection_memory()
+{
+  mRandomQ           = Matrix(mN, mOmegaDim);
+  mRandomQOrthogonal = Matrix(mN, mOmegaDim);
 }
 
-//     confusion_matrix     confusion_matrix     confusion_matrix
-  
-ConfusionMatrix
-ValidatedRegression::estimation_confusion_matrix(Scalar threshold) const
+LinearRegression::Scalar
+FastLinearRegression::sweep_Q_from_column(int col)      const
 {
-  assert (mModel.is_binary());
-  Vector y = mModel.raw_y();
-  Vector fit = mModel.fitted_values();
-  return ConfusionMatrix(y.size(), EigenVectorIterator(&y), EigenVectorIterator(&fit), threshold);
+  if ((size_t)mK <= mOmegaDim)
+    return LinearRegression::sweep_Q_from_column(col);
+  if ((size_t)mK == (mOmegaDim+1))                  // init random matrices
+    mRandomQ           = mQ.block(0,1,mN,mK) * Matrix::Random(mN,mOmegaDim);
+  else 
+    mRandomQ += mQ.col(col) * Vector::Random(mOmegaDim).transpose();
+  Eigen::HouseholderQR<Matrix> QR;
+  QR.compute(mRandomQ);
+  mRandomQOrthogonal = QR.householderQ();
+  Scalar ss (approximate_ss(mQ.col(col)));
+  for(size_t j=0; j<mOmegaDim; ++j)
+  { mR(j,col) =  mRandomQOrthogonal.col(j).dot(mQ.col(col));
+    mQ.col(col).noalias() -= mR(j,col) * mQ.col(j);
+  }
+  Scalar ssz  (mQ.col(col).squaredNorm());
+  if (is_invalid_ss (ss, ssz)) return 0.0;
+  mQ.col(col) /= (Scalar) sqrt(ssz);
+  mR(col,col)  = (Scalar) sqrt(ssz);
+  return ssz;
 }
-
-ConfusionMatrix
-ValidatedRegression::validation_confusion_matrix(Scalar threshold) const
-{
-  assert (mModel.is_binary());
-  assert (n_validation_cases() > 0);
-  Vector pred = mModel.predictions(mValidationX);
-  return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
-}
-
-
-//     print_to     print_to     print_to     
-
-void
-ValidatedRegression::print_to(std::ostream& os, bool compact) const
-{
-  os.precision(6);
-  if (compact)
-  { os << " CVSS=" << validation_ss() << " ";
-    mModel.print_to(os,true);
-  }
-  else
-  { os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
-    if(block_size() > 0)
-      os << " with White SE(b=" << block_size() << ")";
-    os << std::endl
-       << "            Validation SS = " << validation_ss() << std::endl;
-    if (mModel.is_binary())
-    { os << "            Training   confusion matrix \n"
-	 << estimation_confusion_matrix()
-	 << std::endl;
-      if (n_validation_cases())
-      { os << "            Validation confusion matrix = \n"
-	   << validation_confusion_matrix()
-	   << std::endl;
-      }
-    }
-    os << mModel;
-  }
-}
-
-void
-ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
-{
-  // Note: does not return the data to the original ordering
-  mModel.write_data_to(os, maxNumXCols);
-  Vector preds (mModel.predictions(mValidationX));
-  for(int i=0; i<mValidationX.rows(); ++i)
-  { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
-    for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
-      os << '\t' << mValidationX(i,j);
-    os << std::endl;
-  }
-}
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-//     cross validation     cross validation     cross validation     cross validation     cross validation
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-const int    noBlocking    = 0;             // no white blocking
-const bool   noShrinkage   = false;         // no shrinkage
-const SCALAR singularPval  = (SCALAR)0.995; // threshold for deciding if added variable is 'too close' to singular
-
-
-/*
-  Regression worker fills a pre-allocated matrix with summary statistics from fitting a sequence
-  of progressively larger regression models constructed -- in given order -- from the input X
-  matrix.  The model is inialized with the columns in Xi (and included a constant).  The summary
-  statistics are RSS, R2 and AIC.
-*/
-
-class RegressionWorker
-{
-public:
-  typedef SCALAR Scalar;
-  typedef VECTOR Vector;
-  typedef MATRIX Matrix;
-  
-private:
-  Vector const*   mY;
-  Matrix const*   mXi;
-  Matrix const*   mX;
-  int             mSkipped;
-  Matrix      *   mResults;
-  bool            mTrace;
-
-public:    
-  RegressionWorker(Vector const* y, Matrix const* Xi, Matrix const* X, Matrix *results, bool trace)
-    :  mY(y), mXi(Xi), mX(X), mSkipped(0), mResults(results), mTrace(trace)
-    {
-      assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
-      assert( (mResults->rows() == (1+mX->cols())) && (mResults->cols() >= 3));  // fills first 3 columns of results; add row for initial model
-    }
-    
-  RegressionWorker(const RegressionWorker& rhs)
-    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSkipped(rhs.mSkipped), mResults(rhs.mResults), mTrace(rhs.mTrace) { }
-
-  void operator()()
-  {
-    std::vector<std::string> xNames;
-    for(int j=0; j<mXi->cols(); ++j) xNames.push_back("Xi_"+std::to_string(j));
-    LinearRegression regr("Y", *mY, noBlocking);
-    // check one at a time in case of singular model
-    for (int k=0; k<mXi->cols(); ++k)
-      add_predictor_if_useful(&regr, "Xi_"+std::to_string(k), mXi->col(k));
-    fill_results(regr, 0);
-    for (int k=0; k<mX ->cols(); ++k)
-    { add_predictor_if_useful(&regr, "XX_" +std::to_string(k), mX ->col(k));
-      fill_results(regr,k+1);
-    }
-  }
-
-  int number_skipped() const { return mSkipped; }
-  
-private:
-
-  void fill_results(LinearRegression const& regr, int k)
-    { (*mResults)(k,0) = regr.r_squared();
-      (*mResults)(k,1) = regr.residual_ss();
-      (*mResults)(k,2) = regr.aic_c();
-    }
-  
-  void add_predictor_if_useful(LinearRegression *regr, std::string name, Vector const& x, bool verbose=false)
-  { FStatistic f = regr->f_test_predictor(name, x);
-    if(f.f_stat() != 0.0)
-      regr->add_predictors();
-    else
-      ++mSkipped;
-    if (verbose) std::clog << "REGR: Trace of regression worker, q = " << regr->q() << " predictors (" << mSkipped << " skipped)" << std::endl
-			   << "      beta = " << regr->beta().transpose() << std::endl
-			   << "      r^2 = " << regr->r_squared() << "   RSS = " << regr->residual_ss() << std::endl;
-  }
-  
-};
-
-
-/*
-  Validation worker is similar to a regression worker, but rather than compute summary
-  statistics, it computes a CVSS based on the input iteratorr that tells it which cases
-  to exclude from the analysis.  The results are placed in the external CVSS array.
-*/
-class ValidationWorker
-{
-public:
-  typedef SCALAR Scalar;
-  typedef VECTOR Vector;
-  typedef MATRIX Matrix;
-  
-private:
-  Vector const*                      mY;
-  Matrix const*                      mXi;
-  Matrix const*                      mX;
-  std::vector<bool>::const_iterator  mSelector;
-  int                                mSkipped;
-  Vector                          *  mCVSS;
-  const Scalar                       mPtoEnter = (Scalar) 0.995;  // avoid singular variables
-
-public:    
-  ValidationWorker(Vector const* y, Matrix const* Xi, Matrix const* X,
-		   std::vector<bool>::const_iterator sel, Vector *cvss)
-    : mY(y), mXi(Xi), mX(X), mSelector(sel), mSkipped(0), mCVSS(cvss)
-    { 
-      assert( (mY->size() == mXi->rows()) && (mY->size() == mX->rows()) );
-      assert( (1+mX->cols())== (int)mCVSS->size() );   // need room for intial model
-    }
-  
-  ValidationWorker(const ValidationWorker& rhs)
-    : mY(rhs.mY), mXi(rhs.mXi), mX(rhs.mX), mSelector(rhs.mSelector), mSkipped(rhs.mSkipped), mCVSS(rhs.mCVSS), mPtoEnter(rhs.mPtoEnter) { }
-    
-  void operator()()
-  {
-    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, (int)mY->size(), noBlocking, noShrinkage);
-    std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
-    namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
-    if(mXi->cols()>0)
-    { for (int k=0; k<mXi->cols(); ++k)
-      { namedIter[0].second = EigenColumnIterator(mXi, k);
-	regr.add_predictors_if_useful(namedIter, singularPval);
-      }
-    }
-    (*mCVSS)[0] = regr.validation_ss();
-    namedIter[0].first = "vXX";
-    for (int k=0; k<mX->cols(); ++k)
-    { namedIter[0].second = EigenColumnIterator(mX, k);
-      std::pair<Scalar,Scalar> fAndP = regr.add_predictors_if_useful(namedIter, mPtoEnter);
-      if (fAndP.first == 0) ++mSkipped;  
-      (*mCVSS)[k+1] = regr.validation_ss();           // offset by 1 to accomodate first model
-    }
-  }
-  
-  int number_skipped() const { return mSkipped; }
-
-};
 
 
 void
-validate_regression(VECTOR    const& Y,
-		    MATRIX    const& Xi,      // preconditioning variables
-		    MATRIX    const& X,       // variables to add one-at-a-time
-		    int nFolds,
-		    MATRIX   &results,
-		    unsigned randomSeed)
+FastLinearRegression::update_fit(StringVec xNames)
 {
-  if ((results.rows() != (1+X.cols())) || (results.cols()!=4) )
-  { std::cerr << "REGR: Arguments to validate_regression misformed. dim(result)= (" << results.rows() << "," << results.cols()
-	      << ") with input data X having " << X.cols() << " columns." << std::endl;
-    return;
+  debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
+  if ((int)numberOfAllocatedColumns-5 < mK)
+    std::cerr << "\n********************\n"
+	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
+	      << "\n********************\n";
+  assert(xNames.size()==1);
+  assert (mTempK == (int)xNames.size());
+  for(size_t j=0; j<xNames.size(); ++j)
+  { mXNames.push_back(xNames[j]);
+    mGamma[mK+j]  = (mQ.col(mK+j).dot(mY)/(1+mLambda[mK+j]));
   }
-  int totalSkipped = 0;  // used to block threads till finish
-  // fit main model, filling first 3 columns of results with R2, RSS, AICc
-  bool trace = (randomSeed == 0);
-  RegressionWorker regrWorker(&Y, &Xi, &X, &results, trace);
-  debug("REGR",2) << "Starting main regression thread" << std::endl;
-  std::thread regrThread(regrWorker);
-  // construct random folds
-  if (nFolds > 0)
-  { std::vector<int> folds (Y.size());
-    for(int i=0; i<(int)folds.size(); ++i)
-      folds[i] = i % nFolds;
-    if (randomSeed != 0)
-      shuffle(folds.begin(), folds.end(), std::default_random_engine(randomSeed));
-    // write data to check code
-    if (false)
-    { MATRIX data(X.rows(),2+Xi.cols()+X.cols());
-      VECTOR dFold(folds.size());
-      for(int i=0; i<(int)folds.size(); ++i) dFold[i] = (SCALAR)folds[i];
-      data << dFold, Y , Xi , X; 
-      std::cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << std::endl;
-      std::string fileName ("regr_test_data.txt");
-      std::ofstream output(fileName.c_str());
-      output << "folds \t y";
-      for(int i=0; i<Xi.cols(); ++i) output << "\tXi_" << i;
-      for(int i=0; i<X.cols(); ++i) output << "\tX_" << i;
-      output.precision(7);
-      output << std::endl << data << std::endl;
-    }
-    // build validated regressions (construct each worker then launch thread)
-    debug("REGR",2) << "Building validation threads" << std::endl;
-    std::vector<std::vector<bool>>  selectors (nFolds);
-    std::vector<VECTOR *>           cvss      (nFolds);
-    std::vector<ValidationWorker *> workers   (nFolds);
-    std::vector<std::thread>        validationThreads(nFolds);
-    for (int fold=0; fold<nFolds; ++fold)
-    { for(int i=0; i<(int)folds.size(); ++i)
-	selectors[fold].push_back( folds[i] != fold );
-      cvss[fold]    = new VECTOR(1+X.cols());   // +1 for initial model results
-      workers[fold] = new ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold]);
-      debug("REGR",2) << "Starting validation thread #" << fold << std::endl;
-      validationThreads[fold] = std::thread(*workers[fold]);
-    }
-    for (int fold=0; fold<nFolds; ++fold)
-    { validationThreads[fold].join();
-      totalSkipped += workers[fold]->number_skipped();
-    }
-    debug("REGR",3) << "Total number of terms skipped during cross-validation was " << totalSkipped << std::endl;
-    //  accumulate CVSS vectors over folds
-    for(int fold=1; fold<nFolds; ++fold)
-      (*cvss[0]) += *cvss[fold];
-    // join initial thread that writes into results before adding cvss to results
-    regrThread.join();
-    results.col(3) = *cvss[0];
-    // free space
-    for(int fold=0; fold<nFolds; ++fold)
-    { delete cvss[fold];
-      delete workers[fold];
-    }
-  }
+  mK += mTempK;
+  mResiduals -= mQ.col(mK) * mGamma(mK); 
+  mResidualSS = mResiduals.squaredNorm();
 }
-  

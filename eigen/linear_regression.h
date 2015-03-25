@@ -13,14 +13,14 @@
 #include <vector>
 
 /*
-
   A LinearRegression object knows only about its data, and it uses
-  all of the data to fit the model. 
+  all of the data to fit the model. No notion of out-of-sample.
 
   All regression models define a set of weights, and the software
   minimizes the sum w_i(y_i-y^_i)^2.  Weights initialized to 1's when
   input weights are not defined.
 
+  25 Mar 2015 ... Add FastLinearRegression
   25 Nov 2013 ... Introduction of CV using multithreads  
    4 Jul 2011 ... Use weighed version in all cases rather than two versions of code.
   20 Mar 2011 ... In place gram-schmidt branch; port to Eigen3
@@ -34,20 +34,16 @@
     -- converting from data that is float to internal that is double *** conveniently ***.
 */
 
-
-
-//     LinearRegression      LinearRegression      LinearRegression      LinearRegression      LinearRegression      LinearRegression      
-
 class LinearRegression
 {
 public:
-  typedef SCALAR                   Scalar;      // vs double
+  typedef SCALAR                   Scalar;
   typedef VECTOR                   Vector;
   typedef MATRIX                   Matrix;
   typedef FStatistic               FStat;
   typedef std::vector<std::string> StringVec;
   
-private:
+protected:
   int                      mN;             // number of actual obs without pseudo-rows used for shrinkage [ const to make easy to find where changed ]
   int                      mK;             // number of columns (including constant) in the model
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
@@ -142,112 +138,20 @@ public:
  private:
   void      allocate_memory();
   void      add_constant();
-  Scalar    sweep_Q_from_column(int col)           const;              // only affect Q, R past those of current fit
-  void      update_fit(StringVec xNames);
+  std::pair<Scalar,Scalar> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
+
+protected:
   StringVec name_vec(std::string name)             const;              // inits a vector with one string
-  Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
   bool      is_binary_vector(Vector const& y)      const;              // used to determine whether to use Bennett bounds
   bool      is_invalid_ss (Scalar ss, Scalar ssz)  const;              // checks for singularity, nan, neg, inf
-  std::pair<Scalar,Scalar> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
+  Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
+
+  virtual Scalar sweep_Q_from_column(int col)      const;              // only affect Q, R past those of current fit
+  virtual   void update_fit(StringVec xNames);
 
   // idioms
   Vector squared_norm (Matrix const& a)                  const { return ((a.array() * a.array()).colwise().sum()); } // diagonal of a'a
 };
-
-
-
-//     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
-
-class ValidatedRegression
-{
-public:
-  typedef LinearRegression::Scalar        Scalar;
-  typedef LinearRegression::Vector        Vector;
-  typedef LinearRegression::Matrix        Matrix;
-
-private:
-  const int             mLength;            // total length estimation + validation
-  const bool            mShrink;        
-  int                   mN;                 // number of estimation rows as identified on start
-  std::vector<int>      mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
-  Vector                mValidationY;
-  Matrix                mValidationX;       // append when variable is added to model
-  Scalar                mValidationSS;      // cache validation ss, computed whenever model changes
-  LinearRegression      mModel;
-  
-public:
-  ~ValidatedRegression () {  }
-  
-  ValidatedRegression() : mLength(0), mShrink(false), mN(0), mPermute() { }
-  
-  template<class Iter, class BIter>
-  ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize, bool shrink)
-    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, blockSize); }
-
-  template<class Iter, class BIter, class WIter>
-  ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
-    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
-
-  Scalar goodness_of_fit()                      const  { return mModel.r_squared(); }
-  int block_size()                              const  { return mModel.block_size(); }
-  int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
-  int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
-  LinearRegression const& model()               const  { return mModel; }
-
-  Scalar y_bar()                                const  { return mModel.y_bar(); }
-  std::vector<Scalar>  beta()                   const  { std::vector<Scalar> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
-  std::vector<std::string> predictor_names()    const  { return mModel.predictor_names(); }
-
-  int n_total_cases()                           const  { return mLength; }
-  int n_validation_cases()                      const  { return mLength - mN; }
-  int n_estimation_cases()                      const  { return mN; }
-  
-  Scalar estimation_ss()                        const  { return mModel.residual_ss(); }
-  Scalar validation_ss()                        const  { return mValidationSS; }
-  std::pair<Scalar,Scalar> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
-
-  ConfusionMatrix estimation_confusion_matrix(float threshold=0.5) const;
-  ConfusionMatrix validation_confusion_matrix(float threshold=0.5) const;
-
-  template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
-  std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
-
-  template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
-  template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
-  
-  template <class Iter> void fill_with_residuals (Iter it)         const;
-  
-  void print_to     (std::ostream& os, bool compact=false) const;
-  void print_html_to(std::ostream& os)                     const;
-  void write_data_to(std::ostream& os, int maxNumXCols)    const;       //  written in the internal order (estimation ->, then validation <-
-  
-private:
-  
-  template<class Iter, class BIter>
-  void   initialize(std::string yName, Iter Y, BIter B, int blockSize);
-  template<class Iter, class BIter, class WIter>
-  void   initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize);
-  
-  void   initialize_validation_ss();
-  
-  template<class Iter>
-  Vector permuted_vector_from_iterator(Iter it) const;
-  
-};
-
-
-//      cross-validation     cross-validation     cross-validation     cross-validation     cross-validation
-
-void
-validate_regression(LinearRegression::Vector const& Y,     // response
-		    LinearRegression::Matrix const& Xi,    // initial block of Xs to initialize model
-		    LinearRegression::Matrix const& X,     // sequence to compute AIC, CVSS
-		    int nFolds,                            // how many folds for CV (0 means no CV)
-		    LinearRegression::Matrix      &result, // 4 columns: R2, RSS, AICc, CVSS; n = cols(X) rows
-		    unsigned randomSeed=26612);            // used to control random splits (does not call srand).
-                                                           // 0 forces deterministic split 0 1 2 3 0 1 2 3 etc for 4 fold
-
-///////////////////////////  Printing Operators  /////////////////////////////
 
 inline
 std::ostream&
@@ -260,20 +164,35 @@ operator<<(std::ostream& os, LinearRegression const& regr)
 }
 
 
-inline
-std::ostream&
-operator<<(std::ostream& os, ValidatedRegression const& regr)
+template <class Iter>
+void LinearRegression::fill_with_beta (Iter begin) const
 {
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
-  regr.print_to(os);
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
-  return os;
+  Vector b (beta());
+  for(int i=0; i<b.size(); ++i)
+    *begin++ = b[i];
+  return;
 }
 
+//     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     
 
+class FastLinearRegression : public LinearRegression
+{
+private:
+  size_t         mOmegaDim;              // number of columns in random projection
+  mutable Matrix mRandomQ;               // random projection of predictors
+  mutable Matrix mRandomQOrthogonal;     // orthgonal version of mRandomQ
 
-
-#include "regression.Template.h"
-
-
+public:
+  FastLinearRegression ()
+    : LinearRegression() { }
+  
+  FastLinearRegression (std::string yName, Vector const& y, size_t omegaDim) 
+    : LinearRegression(yName, y, 1), mOmegaDim(omegaDim) { allocate_projection_memory();  }
+  
+private:
+  void           allocate_projection_memory();
+  virtual Scalar sweep_Q_from_column(int col)      const;
+  virtual   void update_fit(StringVec xNames);
+};
+  
 #endif

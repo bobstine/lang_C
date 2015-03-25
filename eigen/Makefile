@@ -22,7 +22,8 @@ EXTERNAL_USES =
 ###########################################################################
 
 level_0   =  little_functions.o fstatistic.o eigen_iterator.o confusion_matrix.o
-level_1   =  eigen_svd.o  regression.o 
+level_1   =  linear_regression.o
+level_2   =  validated_regression.o eigen_svd.o 
 
 ############################################################################
 #
