@@ -2,6 +2,8 @@
 
 #include "file_utils.h"
 
+#include <dirent.h>
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -9,8 +11,8 @@
 
 namespace FileUtils {
   
-int count_fields (std::string const& fileName, int lineNumber)
-{
+  int count_fields (std::string const& fileName, int lineNumber)
+  {
     int counter, ch;
     int readingField;
     FILE *fp;
@@ -45,7 +47,7 @@ int count_fields (std::string const& fileName, int lineNumber)
     // Close file and return total number of columns
     fclose(fp);
     return (counter);
-}
+  }
   
   
   int count_lines (std::string const& fileName)
@@ -70,4 +72,29 @@ int count_fields (std::string const& fileName, int lineNumber)
     }
   }
 
+  //     files_in_directory     files_in_directory     files_in_directory     files_in_directory     files_in_directory
+  std::vector<std::string>
+  files_in_directory (std::string dir, bool verbose)
+  {
+    DIR *dp;
+    struct dirent *dirp;
+    
+    std::vector<std::string> files;
+    if((dp  = opendir(dir.c_str())) == NULL)
+      { std::cerr << "Error(" << errno << ") opening " << dir << std::endl;
+	return files;
+      }
+    while ((dirp = readdir(dp)) != NULL)
+      files.push_back(std::string(dirp->d_name));
+    closedir(dp);
+    if (verbose)
+      { std::clog << "     Found the following files: " ;
+	for(auto f : files) std::clog << f << ",";
+	std::clog << std::endl;
+      }
+    return files;
+  }
+
+
+  
 }

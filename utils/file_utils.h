@@ -8,7 +8,8 @@
 #define _FILE_UTILS_H_
 
 #include <string>
-  
+#include <vector>
+
 namespace FileUtils {
   
   // Counts number of space delimited column fields on chosen line
@@ -16,6 +17,10 @@ namespace FileUtils {
   
   // Counts the number of lines found in the text file.
   int count_lines (std::string const& fileName);
+
+  // files in directory
+  std::vector<std::string> files_in_directory (std::string dir);
+
 }
 
 #endif
