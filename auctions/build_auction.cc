@@ -123,8 +123,9 @@ main(int argc, char** argv)
 #endif
 
   // write configuration and record to file
+  string configuration;
   {
-    string configuration = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
+    configuration = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName + " --x_file=" + xFileName
       + " --output-path=" + outputPath + " --debug-level=" + std::to_string(debugLevel)
       + " --protect=" + std::to_string(protection) + " --rounds=" + std::to_string(numberRounds) + " --output-x="
       + std::to_string(maxNumOutputPredictors) + " --alpha=" + std::to_string(totalAlphaToSpend);
@@ -265,16 +266,18 @@ main(int argc, char** argv)
     theAuction.prepare_to_start_auction();
     const int minimum_residual_df = 10;                          // make sure don't try to fit more vars than cases
     Scalar totalTime              = 0.;
-    const int full_output_period  = 20;
-    int       full_output_timer   = full_output_period;
-    while(round<numberRounds && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
+    std::pair<Scalar,Scalar> rss0{theAuction.model().sums_of_squares()};      // resid ss, cv ss
+    const int fullOutputPeriod    = 25;
+    int       fullOutputTimer     = fullOutputPeriod;
+    bool      cvssCheck           = true;
+    while(round<numberRounds && cvssCheck && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
       clock_t start;
       start = clock();
       if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
-      { --full_output_timer;
-	if (full_output_timer == 0)
-	{ full_output_timer = full_output_period;
+      { --fullOutputTimer;
+	if (fullOutputTimer == 0)
+	{ fullOutputTimer = fullOutputPeriod;
 	  debug("AUCT",1) << theAuction << std::endl << std::endl;
 	}
 	else
@@ -282,8 +285,17 @@ main(int argc, char** argv)
       }
       Scalar time = (Scalar)time_since(start);
       totalTime += time;
-      debug("AUCT",0) << "Round " << round <<  " used " << time << std::endl << std::endl;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      std::pair<Scalar,Scalar> rss {theAuction.model().sums_of_squares()};
+      if(rss0.second+100 < rss.second)
+      { std::clog << "AUCT: *** Error *** CVSS has substantial increase in last round; exiting after writing model and full set of Xs.\n";
+	cvssCheck = false;
+	maxNumOutputPredictors = 2000;
+      }
+      else rss0 = rss;
+      debug("AUCT",0) << "Round " << round <<  " used " << time
+		      << "; current ss are (" << rss.first << "," << rss.second << ")"
+		      << std::endl << std::endl;
     }
     std::cout << "\n      -------  Auction ends after " << round << "/" << numberRounds
 	      << " rounds; average time " << totalTime/(Scalar)round << " per round \n\n" << theAuction << std::endl;
@@ -314,6 +326,7 @@ main(int argc, char** argv)
     { std::cerr << "AUCT: Cannot open output text file for writing model " << modelTextFileName << std::endl;
       return 1;
     }
+    output << configuration << std::endl << std::endl;
     theAuction.print_model_to(output);
     output.close();
   }

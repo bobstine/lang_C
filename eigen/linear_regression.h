@@ -4,8 +4,6 @@
 
 #include "eigen_base_types.h"
 #include "fstatistic.h"
-#include "eigen_iterator.h"
-#include "confusion_matrix.h"
 
 #include <Eigen/Core>
 
@@ -102,7 +100,7 @@ public:
   inline Vector    fitted_values()     const   { return mY - mResiduals; }
   inline Vector    raw_y()             const   { return mY.cwiseQuotient(mSqrtWeights); }                // raw versions remove the internal weights
   inline Vector    raw_residuals()     const   { return mResiduals.array()/mSqrtWeights.array(); }       //
-  Vector    raw_fitted_values(bool truncate=false) const;                                             // truncated to [0,1]
+  Vector    raw_fitted_values(bool truncate=false) const;                                             // truncated to soft limits on [0,1]
   Vector    x_row(int i)                           const; 
 
   Scalar    y_bar()                  const   { if (mK>0) return (Scalar) sqrt(mN)*mGamma(0); else return 0.0; }
@@ -118,7 +116,7 @@ public:
   void      fill_with_beta (Iter begin) const;
   
   StringVec predictor_names()        const   { return mXNames; }
-  Vector    predictions  (Matrix const& matrix, bool truncate=false)   const;    // truncate to [0,1]
+  Vector    predictions  (Matrix const& matrix, bool truncate=false)   const;    // truncate to soft limits on [0,1]
 
   FStat     f_test_predictor  (std::string name, Vector const& z)       const;    // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;    //           blocksize > 0 implies blocked white.
