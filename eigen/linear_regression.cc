@@ -168,7 +168,7 @@ LinearRegression::Vector
 LinearRegression::se_gamma_ls() const
 {
   LinearRegression::Scalar s2 (mResidualSS/(Scalar)(mN-mK));
-  Vector se (mLambda.unaryExpr([s2] (Scalar lam)->Scalar { return (Scalar)sqrt(s2/(1+lam)); }));
+  Vector se (mLambda.head(mK).unaryExpr([s2] (Scalar lam)->Scalar { return (Scalar)sqrt(s2/(1+lam)); }));
   return se;
 }
 
@@ -176,7 +176,7 @@ LinearRegression::se_gamma_ls() const
 LinearRegression::Vector
 LinearRegression::se_gamma() const
 {
-  if (mBlockSize==0)
+  if (mBlockSize == 0)
     return se_gamma_ls();
   else // compute sandwich estimates; differ from entry F since residuals are updated once added
   { Vector se2 (mK);
@@ -632,8 +632,9 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 void
 FastLinearRegression::allocate_projection_memory()
 {
-  mRandomQ           = Matrix(mN, mOmegaDim);
-  mRandomQOrthogonal = Matrix(mN, mOmegaDim);
+  mRandomQ                = Matrix(mN, mOmegaDim);
+  mRandomQOrthogonal      = Matrix(mN, mOmegaDim);
+  mRandomQOrthogonalNorm2 = Vector(    mOmegaDim);
 }
 
 LinearRegression::Scalar
@@ -642,15 +643,30 @@ FastLinearRegression::sweep_Q_from_column(int col)      const
   if ((size_t)mK <= mOmegaDim)
     return LinearRegression::sweep_Q_from_column(col);
   if ((size_t)mK == (mOmegaDim+1))                  // init random matrices
-    mRandomQ           = mQ.block(0,1,mN,mK) * Matrix::Random(mN,mOmegaDim);
-  else 
+    mRandomQ           = mQ.block(0,1,mN,mK) * Matrix::Random(mK,mOmegaDim);
+  else
     mRandomQ += mQ.col(col) * Vector::Random(mOmegaDim).transpose();
-  Eigen::HouseholderQR<Matrix> QR;
-  QR.compute(mRandomQ);
-  mRandomQOrthogonal = QR.householderQ();
+  mRandomQOrthogonal = mRandomQ;
+  // sweep constant
+  for(int j=0; j<mRandomQOrthogonal.cols(); ++j)
+  { Scalar mean = mRandomQOrthogonal.col(j).sum()/(Scalar) mRandomQOrthogonal.rows();
+    mRandomQOrthogonal.col(j).array() -= mean;
+  }
+  // GS in place; note that Qortho is *only* orthogonal.  Norms held separately
+  for(int j=0; j<mRandomQOrthogonal.cols(); ++j)
+  { mRandomQOrthogonalNorm2(j) = (Scalar) mRandomQOrthogonal.col(j).squaredNorm();
+    if (j+1 < mRandomQOrthogonal.cols())
+    { Vector b = (mRandomQOrthogonal.col(j).transpose() * mRandomQOrthogonal.rightCols(mRandomQOrthogonal.cols()-j-1));
+      b /= mRandomQOrthogonalNorm2(j);
+      for (int k=j+1; k<mRandomQOrthogonal.cols(); ++k)
+	mRandomQOrthogonal.col(k).noalias() -= b(k-j-1)*mRandomQOrthogonal.col(j);
+    }
+  }
+  //  std::cout << " Q means \n" << mRandomQOrthogonal.colwise().sum()/(Scalar)mRandomQOrthogonal.rows() << std::endl;
+  //  std::cout << " Q'Q \n" << mRandomQOrthogonal.transpose() * mRandomQOrthogonal << std::endl;
   Scalar ss (approximate_ss(mQ.col(col)));
   for(size_t j=0; j<mOmegaDim; ++j)
-  { mR(j,col) =  mRandomQOrthogonal.col(j).dot(mQ.col(col));
+  { mR(j,col) =  mRandomQOrthogonal.col(j).dot(mQ.col(col))/mRandomQOrthogonalNorm2(j);
     mQ.col(col).noalias() -= mR(j,col) * mQ.col(j);
   }
   Scalar ssz  (mQ.col(col).squaredNorm());

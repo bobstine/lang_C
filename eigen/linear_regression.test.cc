@@ -52,9 +52,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       ( 25000 );   
+  const int nRows       (300000 );   
   const int nCols       (     5 );
-  const int nAdd        (    25 );
+  const int nAdd        (   400 );
   
   // form random matrix for response and predictors
   Vector y  (Vector::Random(nRows));
@@ -115,11 +115,13 @@ int main(int, char **)
     cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << endl;
     cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << endl;
 
+    const int blockSize = 0;
+    const size_t omegaDimension = 10;
 #ifdef USE_WLS
-    LinearRegression regr("yyy", y, w, 0);
+    LinearRegression regr("yyy", y, w, blockSize);
 #else
-    LinearRegression      regr("yyy", y, 0);
-    FastLinearRegression fRegr("yyy", y, 0);
+    LinearRegression      regr("yyy", y, blockSize);
+    FastLinearRegression fRegr("yyy", y, omegaDimension);
 #endif
     cout << "TEST: Initialized regression " << endl << regr << endl;
     cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;
@@ -144,7 +146,6 @@ int main(int, char **)
     cout << "TEST: se(beta) = " << fRegr.se_beta().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
     cout << "\n========================================================================== \n";
-  
 
     cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << endl;
     regr.add_predictors();
@@ -173,15 +174,27 @@ int main(int, char **)
     cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << endl;
     cout << "\n========================================================================== \n";
 
-    for (int j=1; j<Z.cols(); ++j)
-    { FStatistic f  =  regr.f_test_predictor("Z["+std::to_string(j)+"]", Z.col(j));
-      regr.add_predictors();
-      FStatistic ff = fRegr.f_test_predictor("Z["+std::to_string(j)+"]", Z.col(j));
-      fRegr.add_predictors();
-      std::cout << "TEST: For j = " << j << " F stats are " << f.f_stat() << " and " << ff.f_stat() << endl;
+    {
+      clock_t beginTime, endTime;
+      double timeRegr=0, timeFast=0;
+      for (int j=1; j<Z.cols(); ++j)
+      { beginTime = clock();
+	FStatistic f  =  regr.f_test_predictor("Z["+std::to_string(j)+"]", Z.col(j));
+	regr.add_predictors();
+	endTime = clock();
+	timeRegr += (double)(endTime - beginTime);
+	beginTime = clock();
+	FStatistic ff = fRegr.f_test_predictor("Z["+std::to_string(j)+"]", Z.col(j));
+	fRegr.add_predictors();
+	endTime = clock();
+	timeFast += (double)(endTime - beginTime);
+	std::cout << "TEST: For j = " << j << " F stats are " << f.f_stat() << " and " << ff.f_stat() << endl;
+      }
+      std::cout << "TEST: time regr = " << timeRegr << "  time fast = " << timeFast << std::endl;
     }
   }
 
+  
   if (true)  // second test, adding X bundle at once
   {
 #ifdef USE_WLS

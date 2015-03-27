@@ -173,19 +173,21 @@ void LinearRegression::fill_with_beta (Iter begin) const
 
 //     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     
 
+
 class FastLinearRegression : public LinearRegression
 {
 private:
-  size_t         mOmegaDim;              // number of columns in random projection
-  mutable Matrix mRandomQ;               // random projection of predictors
-  mutable Matrix mRandomQOrthogonal;     // orthgonal version of mRandomQ
+  size_t         mOmegaDim;               // number of columns in random projection
+  mutable Matrix mRandomQ;                // random projection of predictors
+  mutable Matrix mRandomQOrthogonal;      // orthgonal version of mRandomQ
+  mutable Vector mRandomQOrthogonalNorm2; // norms for orthogonal (diag of R matrix)
 
 public:
   FastLinearRegression ()
     : LinearRegression() { }
   
   FastLinearRegression (std::string yName, Vector const& y, size_t omegaDim) 
-    : LinearRegression(yName, y, 1), mOmegaDim(omegaDim) { allocate_projection_memory();  }
+    : LinearRegression(yName, y, 0), mOmegaDim(omegaDim) { allocate_projection_memory();  }    // 0 for no blocking
   
 private:
   void           allocate_projection_memory();

@@ -255,8 +255,8 @@ main(int argc, char** argv)
     if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
     theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
 				 FitBidder((SCALAR)0.000005, calibrationSignature),                  
-				 make_spline_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
-								nContextCases, yIsBinary)));  // spline ignores truncation at moment
+				 make_polynomial_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
+								    nContextCases, yIsBinary))); 
   }
 
   
@@ -328,6 +328,14 @@ main(int argc, char** argv)
     }
     output << configuration << std::endl << std::endl;
     theAuction.print_model_to(output);
+    output << std::endl;
+    std::vector<SCALAR> b = theAuction.model().beta();
+    output  << "Beta[" << b.size() << "]" << std::endl;
+    for(size_t i=0; i<b.size(); ++i)
+    { if (0 == (i+1)%10) output << std::endl;
+      output << " " << b[i];
+    }
+    output << std::endl;
     output.close();
   }
   
