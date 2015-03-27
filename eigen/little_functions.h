@@ -3,12 +3,14 @@
 
 #include "eigen_base_types.h"
 
+inline
 SCALAR
 abs_val(SCALAR x)
 {
   return (x < 0.0) ? -x : x;
 }
 
+inline
 SCALAR
 max_abs(SCALAR x, SCALAR y)
 {
@@ -17,11 +19,13 @@ max_abs(SCALAR x, SCALAR y)
   return (ax >= ay) ? ax : ay;
 }
 
+inline
 int
 min_int(int i, int j)
 {
   return (i<j) ? i : j; }
 
+inline
 bool
 close(SCALAR a, SCALAR b)
 {

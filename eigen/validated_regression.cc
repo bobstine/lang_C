@@ -1,3 +1,9 @@
+#include "validated_regression.Template.h"
+#include "little_functions.h"
+
+#include "debug.h"
+
+#include <thread>
 
 //     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
 
@@ -234,7 +240,7 @@ validate_regression(VECTOR    const& Y,
   // fit main model, filling first 3 columns of results with R2, RSS, AICc
   bool trace = (randomSeed == 0);
   RegressionWorker regrWorker(&Y, &Xi, &X, &results, trace);
-  debug("REGR",2) << "Starting main regression thread" << std::endl;
+  debugging::debug("REGR",2) << "Starting main regression thread" << std::endl;
   std::thread regrThread(regrWorker);
   // construct random folds
   if (nFolds > 0)
@@ -259,7 +265,7 @@ validate_regression(VECTOR    const& Y,
       output << std::endl << data << std::endl;
     }
     // build validated regressions (construct each worker then launch thread)
-    debug("REGR",2) << "Building validation threads" << std::endl;
+    debugging::debug("REGR",2) << "Building validation threads" << std::endl;
     std::vector<std::vector<bool>>  selectors (nFolds);
     std::vector<VECTOR *>           cvss      (nFolds);
     std::vector<ValidationWorker *> workers   (nFolds);
@@ -269,14 +275,14 @@ validate_regression(VECTOR    const& Y,
 	selectors[fold].push_back( folds[i] != fold );
       cvss[fold]    = new VECTOR(1+X.cols());   // +1 for initial model results
       workers[fold] = new ValidationWorker(&Y, &Xi, &X, selectors[fold].begin(), cvss[fold]);
-      debug("REGR",2) << "Starting validation thread #" << fold << std::endl;
+      debugging::debug("REGR",2) << "Starting validation thread #" << fold << std::endl;
       validationThreads[fold] = std::thread(*workers[fold]);
     }
     for (int fold=0; fold<nFolds; ++fold)
     { validationThreads[fold].join();
       totalSkipped += workers[fold]->number_skipped();
     }
-    debug("REGR",3) << "Total number of terms skipped during cross-validation was " << totalSkipped << std::endl;
+    debugging::debug("REGR",3) << "Total number of terms skipped during cross-validation was " << totalSkipped << std::endl;
     //  accumulate CVSS vectors over folds
     for(int fold=1; fold<nFolds; ++fold)
       (*cvss[0]) += *cvss[fold];

@@ -1,6 +1,6 @@
 // -*- c++ -*-
 #include "eigen_base_types.h"
-#include "regression.h"
+#include "validated_regression.Template.h"
 #include "debug.h"
 
 #include <vector>
@@ -10,7 +10,6 @@
 #include <algorithm>
 
 #include <time.h>
-
 
 using std::cout;
 using std::endl;
@@ -43,14 +42,6 @@ int main(int, char **)
   debugging::debug_init(cout,2);  // Debug level 1 avoids most messages; raise number for more
   cout.precision(4);
   
-  // Time to fit regr with n = 200,000 rows  (optimization O4)       Add 3 to initial p
-  //                          Eigen 2 (b=0)    Eigen 3,MGS,b=1          Eigen 3,MGS,b=1
-  //                          13"     17"       13      17               13      17
-  //   p = 3 predictors      0.09 s  0.06      0.02   0.013              0.10    0.07
-  //      20                 1.3     0.8       0.04   0.025              0.23    0.15
-  //      40                         2.6       0.06   0.035              0.40    0.24
-  //      80                        10.5       0.10   0.060              0.78    0.44
-
   const int nRows       ( 25000 );   
   const int nCols       (     5 );
   const int nAdd        (    25 );
@@ -105,74 +96,7 @@ int main(int, char **)
     output << std::endl << data << endl;
   }
 
-    
-  if (true)
-  { cout << "\n\nTEST: basic test of the linear regression routine, adding variables one at a time." << endl;
-
-    Scalar mean (y.sum()/(Scalar)y.size());
-    cout << "TEST:  y-bar is " << mean << endl;
-    cout << "       y        " << y(0) << "  " << y(1) << "  " << y(2) << endl;
-    cout << "       centered " << y(0)-mean << "  " << y(1)-mean << "  " << y(2)-mean << endl;
-
-#ifdef USE_WLS
-    LinearRegression regr("yyy", y, w, 0);
-#else
-    LinearRegression regr("yyy", y, 0);
-#endif
-    cout << "TEST: Initialized regression " << endl << regr << endl;
-    cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;
-    cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-    
-    cout << "TEST: F test of X[0] " << regr.f_test_predictor("X[0]", X.col(0)) << endl;
-    regr.add_predictors();
-    cout << "TEST: regression after adding X[0] " << endl << regr << endl;
-    cout << "TEST: Beta     = " << regr.beta().transpose() << endl;
-    cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
-    cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-
-    cout << "TEST: F test of X[1]" << regr.f_test_predictor("X[1]", X.col(1)) << endl;
-    regr.add_predictors();
-    cout << "TEST: regression after adding X[1] " << endl << regr << endl;
-    cout << "TEST: Beta  = " << regr.beta().transpose() << endl;
-    cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
-    cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-
-    cout << "TEST: Several rows of X" << endl;
-    for (int i=0; i<10; ++i)
-      cout << "      [" << i << "]   " << regr.x_row(i).transpose() << endl;
-
-    cout << "TEST: F test of adding X[1] again " << regr.f_test_predictor("X1 again", X.col(1)) << endl;    // ??? Why does it not detect singular
-    regr.add_predictors();
-    cout << "TEST: regression after adding X[1] a second time " << endl << regr << endl;
-    cout << "TEST: Beta  = " << regr.beta().transpose() << endl;
-    cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
-    cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-
-    cout << "TEST: R matrix of the internal Q matrix (as check for orthogonality)...\n" << regr.check_orthogonality_matrix() << endl;
-  }
-
-
-  if (true)  // second test, adding X bundle at once
-  {
-#ifdef USE_WLS
-    LinearRegression regr("yyy", y, w, 0);
-#else
-    LinearRegression regr("yyy", y, 0);
-#endif
-    cout << "TEST: Initialized regression " << endl << regr << endl;
-    cout << "TEST: F test of X " << regr.f_test_predictors(xNames, X) << endl;
-    regr.add_predictors();
-    cout << "TEST: regression after adding X " << endl << regr << endl;
-    cout << "TEST: Beta  = " << regr.beta().transpose() << endl;
-    cout << "      SE    = " << regr.se_beta_ols().transpose() << endl;
-    cout << "TEST: Residuals (first 10) = " << regr.residuals().head(10).transpose() << endl << endl;
-    cout << "TEST: Several rows of X" << endl;
-    for (int i=0; i<10; ++i)
-      cout << "      [" << i << "]   " << regr.x_row(i).transpose() << endl;
-  }
-
-    
-  if(true)   // test threads for regression
+  if(false)   // test threads for regression
   { cout << "\n\nTEST: Testing threads code for CV." << endl;
     int nFolds = 20;
     Matrix results(1+Z.cols(), 4);           // extra row for base model
@@ -260,27 +184,6 @@ int main(int, char **)
       start=clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
       cout << "TEST: test of adding zcollection gives " << result << endl << vregr << endl;
     }
-
-    if(false)    // test validated regression, white tests
-    { bool shrink (false);
-      const int blockSize (5);
-      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
-      cout << "\n\n--------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
-      cout << vregr << endl;
-      std::pair<Scalar,Scalar> result;
-      result = vregr.add_predictors_if_useful (xcollection, 1.0);
-      cout << "TEST: test of adding initial xcollection gives " << result << endl << vregr << endl;
-      {
-	std::vector<std::pair<std::string, Scalar*> > collect1;
-	collect1.push_back(zcollection[0]);
-	start=clock(); result = vregr.add_predictors_if_useful (collect1,(Scalar)0.00001); print_time(start);
-      }
-      cout << "TEST: test of adding z[0] to x[0,1,2] model gives " << result << endl << vregr << endl;
-      start=clock(); result = vregr.add_predictors_if_useful (zcollection, 1.0); print_time(start);
-      cout << "TEST: test of adding zcollection gives " << result << endl << vregr << endl;
-    }
   }
-  
-
   return 0;
 }

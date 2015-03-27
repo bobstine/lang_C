@@ -4,6 +4,7 @@
 
 #include "eigen_base_types.h"
 #include "fstatistic.h"
+#include "linear_regression.h"
 #include "eigen_iterator.h"
 #include "confusion_matrix.h"
 
@@ -17,10 +18,6 @@
   A LinearRegression object knows only about its data, and it uses
   all of the data to fit the model.  A ValidatedRegression understands
   the concept that some data will be reserved for validation purposes.
-
-  All regression models define a set of weights, and the software
-  minimizes the sum w_i(y_i-y^_i)^2.  Weights initialized to 1's when
-  input weights are not defined.
 
   25 Nov 2013 ... Introduction of CV using multithreads  
    4 Jul 2011 ... Use weighed version in all cases rather than two versions of code.
@@ -42,19 +39,20 @@
 class ValidatedRegression
 {
 public:
-  typedef LinearRegression::Scalar        Scalar;
-  typedef LinearRegression::Vector        Vector;
-  typedef LinearRegression::Matrix        Matrix;
+  typedef LinearRegression          Regression;  // or fast
+  typedef Regression::Scalar        Scalar;
+  typedef Regression::Vector        Vector;
+  typedef Regression::Matrix        Matrix;
 
 private:
-  const int             mLength;            // total length estimation + validation
-  const bool            mShrink;        
-  int                   mN;                 // number of estimation rows as identified on start
-  std::vector<int>      mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
-  Vector                mValidationY;
-  Matrix                mValidationX;       // append when variable is added to model
-  Scalar                mValidationSS;      // cache validation ss, computed whenever model changes
-  LinearRegression      mModel;
+  const int          mLength;            // total length estimation + validation
+  const bool         mShrink;        
+  int                mN;                 // number of estimation rows as identified on start
+  std::vector<int>   mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
+  Vector             mValidationY;
+  Matrix             mValidationX;       // append when variable is added to model
+  Scalar             mValidationSS;      // cache validation ss, computed whenever model changes
+  Regression         mModel;
   
 public:
   ~ValidatedRegression () {  }
@@ -73,7 +71,7 @@ public:
   int block_size()                              const  { return mModel.block_size(); }
   int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
   int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
-  LinearRegression const& model()               const  { return mModel; }
+  Regression const& model()                     const  { return mModel; }
 
   Scalar y_bar()                                const  { return mModel.y_bar(); }
   std::vector<Scalar>  beta()                   const  { std::vector<Scalar> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
@@ -132,17 +130,6 @@ validate_regression(LinearRegression::Vector const& Y,     // response
 
 inline
 std::ostream&
-operator<<(std::ostream& os, LinearRegression const& regr)
-{
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
-  regr.print_to(os);
-  os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
-  return os;
-}
-
-
-inline
-std::ostream&
 operator<<(std::ostream& os, ValidatedRegression const& regr)
 {
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
@@ -150,11 +137,5 @@ operator<<(std::ostream& os, ValidatedRegression const& regr)
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
   return os;
 }
-
-
-
-
-#include "validated_regression.Template.h"
-
 
 #endif
