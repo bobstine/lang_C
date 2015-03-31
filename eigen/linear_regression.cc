@@ -632,56 +632,37 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 void
 FastLinearRegression::allocate_projection_memory()
 {
-  mRandomQ                = Matrix(mN, mOmegaDim);
-  mRandomQOrthogonal      = Matrix(mN, mOmegaDim);
-  mRandomQOrthogonalNorm2 = Vector(    mOmegaDim);
+  mM      = Matrix::Zero(    mN   , mOmegaDim);
+  mTtT    = Matrix::Zero(mOmegaDim, mOmegaDim);
 }
+
+// suppress warnings regarding Eigen conversions
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 
 LinearRegression::Scalar
 FastLinearRegression::sweep_Q_from_column(int col)      const
 {
-  if ((size_t)mK <= mOmegaDim)
+  if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column(col);
-  if ((size_t)mK == (mOmegaDim+1))                  // init random matrices
-    mRandomQ           = mQ.block(0,1,mN,mK) * Matrix::Random(mK,mOmegaDim);
-  else
-    mRandomQ += mQ.col(col) * Vector::Random(mOmegaDim).transpose();
-  mRandomQOrthogonal = mRandomQ;
-  // sweep constant
-  for(int j=0; j<mRandomQOrthogonal.cols(); ++j)
-  { Scalar mean = mRandomQOrthogonal.col(j).sum()/(Scalar) mRandomQOrthogonal.rows();
-    mRandomQOrthogonal.col(j).array() -= mean;
-  }
-  // GS in place; note that Qortho is *only* orthogonal.  Norms held separately
-  for(int j=0; j<mRandomQOrthogonal.cols(); ++j)
-  { mRandomQOrthogonalNorm2(j) = (Scalar) mRandomQOrthogonal.col(j).squaredNorm();
-    if (j+1 < mRandomQOrthogonal.cols())
-    { Vector b = (mRandomQOrthogonal.col(j).transpose() * mRandomQOrthogonal.rightCols(mRandomQOrthogonal.cols()-j-1));
-      b /= mRandomQOrthogonalNorm2(j);
-      for (int k=j+1; k<mRandomQOrthogonal.cols(); ++k)
-	mRandomQOrthogonal.col(k).noalias() -= b(k-j-1)*mRandomQOrthogonal.col(j);
-    }
-  }
-  //  std::cout << " Q means \n" << mRandomQOrthogonal.colwise().sum()/(Scalar)mRandomQOrthogonal.rows() << std::endl;
-  //  std::cout << " Q'Q \n" << mRandomQOrthogonal.transpose() * mRandomQOrthogonal << std::endl;
-  Scalar ss (approximate_ss(mQ.col(col)));
-  for(size_t j=0; j<mOmegaDim; ++j)
-  { mR(j,col) =  mRandomQOrthogonal.col(j).dot(mQ.col(col))/mRandomQOrthogonalNorm2(j);
-    mQ.col(col).noalias() -= mR(j,col) * mQ.col(j);
-  }
-  Scalar ssz  (mQ.col(col).squaredNorm());
+  mQ.col(col).array() -= mQ.sum() / (Scalar) mQ.rows();            // subtract mean
+  Scalar ss (approximate_ss(mQ.col(col)));                         // compare initial SS to post sweep SS to check for singularities
+  Vector b = mM.transpose() * mQ.col(col);                         // compute b = R^-1 R^-1' M'z
+  mTtT.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
+  mQ.col(col) -= mM * b;                                            // compute z = z - Mb
+  Scalar ssz  (mQ.col(col).squaredNorm());                          // check that SS dropped and is not nan
   if (is_invalid_ss (ss, ssz)) return 0.0;
-  mQ.col(col) /= (Scalar) sqrt(ssz);
-  mR(col,col)  = (Scalar) sqrt(ssz);
+  Scalar norm = (Scalar) sqrt(ssz);
+  mQ.col(col) /= norm;                                              // normalize swept column
+  mR(col,col)  = norm;
   return ssz;
 }
-
-
+ 
 void
 FastLinearRegression::update_fit(StringVec xNames)
 {
   debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
-  if ((int)numberOfAllocatedColumns-5 < mK)
+  if ((int)numberOfAllocatedColumns-5 < mK)      // watch that we are getting near matrix size limit
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";
@@ -691,7 +672,26 @@ FastLinearRegression::update_fit(StringVec xNames)
   { mXNames.push_back(xNames[j]);
     mGamma[mK+j]  = (mQ.col(mK+j).dot(mY)/(1+mLambda[mK+j]));
   }
-  mK += mTempK;
-  mResiduals -= mQ.col(mK) * mGamma(mK); 
+  Matrix w = Matrix::Random(mTempK,mOmegaDim);                        // update random projection, uni[-1,1]
+  mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z'w
+  Matrix Mtz = mM.transpose() * mQ.block(0,mK,mQ.rows(),mTempK);      // M'z
+  if (1 == mTempK)
+  { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of T'T; z~ = mQ[mK]
+      for(int k=j; k< (int) mOmegaDim; ++k)
+	mTtT(j,k) +=  w(0,j)*w(0,k) + Mtz(j,0)*w(0,k) + w(0,j)*Mtz(k,0);
+  }
+  else
+  { Matrix wtw = w.transpose() * w;
+    for(int j=0; j<(int)mOmegaDim; ++j)                               // update upper half of T'T; z~ = mQ[mK]
+      for(int k=j; k<(int)mOmegaDim; ++k)
+	mTtT(j,k) +=    wtw(j,k)    + Mtz.row(j).dot(w.col(k)) + Mtz.row(k).dot(w.col(k));
+  }
+  //  std::cout << "TEST: MtM [M is " << mM.rows() << " by " << mM.cols() << "]" << std::endl << mM.leftCols(5).transpose() * mM.leftCols(5) << std::endl;
+  //  std::cout << "TEST: TtT " << mTtT.rows() << " by " << mTtT.cols() << std::endl << mTtT.block(0,0,5,5) << std::endl;
+  mResiduals -= mQ.block(0,mK,mQ.rows(),mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
+  mK += mTempK;
 }
+
+#pragma GCC diagnostic pop
+

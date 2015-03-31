@@ -177,10 +177,9 @@ void LinearRegression::fill_with_beta (Iter begin) const
 class FastLinearRegression : public LinearRegression
 {
 private:
-  size_t         mOmegaDim;               // number of columns in random projection
-  mutable Matrix mRandomQ;                // random projection of predictors
-  mutable Matrix mRandomQOrthogonal;      // orthgonal version of mRandomQ
-  mutable Vector mRandomQOrthogonalNorm2; // norms for orthogonal (diag of R matrix)
+  size_t    mOmegaDim;               // number of columns in random projection
+  Matrix    mM;                      // random projection of predictors
+  Matrix    mTtT;                    // 'square' of upper triangular portion of M = Q T
 
 public:
   FastLinearRegression ()
@@ -191,7 +190,7 @@ public:
   
 private:
   void           allocate_projection_memory();
-  virtual Scalar sweep_Q_from_column(int col)      const;
+  virtual Scalar sweep_Q_from_column(int col)      const;    // sweeps using M and T formed from random projection
   virtual   void update_fit(StringVec xNames);
 };
   

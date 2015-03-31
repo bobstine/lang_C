@@ -57,6 +57,7 @@ int main(int, char **)
   const int nAdd        (   100 );
   
   // form random matrix for response and predictors
+  std::cout << "TEST: building " << nAdd << " input data vectors of length " << nRows << " to add after fit initial model with " << nCols << "\n";
   Vector y  (Vector::Random(nRows));
   Vector z  (Vector::Random(nRows));
   Vector w  (Vector::Zero  (nRows));
@@ -79,6 +80,7 @@ int main(int, char **)
 #endif
   
   // names for variables
+  std::cout << "TEST: Adding names for the input variables. \n";
   std::vector<string> xNames;
   std::vector<string> zNames;
   for (int i=0; i<nCols; ++i)
