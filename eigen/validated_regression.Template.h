@@ -2,17 +2,19 @@
 #define _VALIDATED_REGRESSION_TEMPLATE_H_
 
 #include "validated_regression.h"
+#include "little_functions.h"
 
 #include "debug.h"
   
+template <class Regr>
 template <class Iter>
-std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
-  ValidatedRegression::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, LinearRegression::Scalar pToEnter)
+  std::pair<typename ValidatedRegression<Regr>::Scalar,typename ValidatedRegression<Regr>::Scalar>
+  ValidatedRegression<Regr>::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter)
 {
   FStatistic f;
   int k ((int)c.size());                                                                  // k denotes the number of added variables
   std::vector<std::string> xNames;
-  LinearRegression::Matrix predictors(mLength,k);
+  typename Regr::Matrix predictors(mLength,k);
   for(int j=0; j<k; ++j)
   { xNames.push_back(c[j].first);
     predictors.col(j) = permuted_vector_from_iterator(c[j].second);
@@ -43,9 +45,10 @@ std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 }
 
 
+template<class Regr>
 template<class Iter, class BIter, class WIter>
   void
-  ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)
+  ValidatedRegression<Regr>::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)
 {
   Vector w (mLength);
   Vector y (mLength);
@@ -58,15 +61,16 @@ template<class Iter, class BIter, class WIter>
   }
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = LinearRegression(yName, y.head(mN), w.head(mN), blockSize);
+  mModel = Regr(yName, y.head(mN), w.head(mN), blockSize);
   if (mValidationY.size() > 0)
     initialize_validation_ss();  // needs mModel and mValidationY
 }
 
 
+template<class Regr>
 template<class Iter, class BIter>
   void
-  ValidatedRegression::initialize(std::string yName, Iter Y, BIter B, int blockSize)
+  ValidatedRegression<Regr>::initialize(std::string yName, Iter Y, BIter B, int blockSize)
 { 
   Vector y(mLength);
   int k  (mLength);
@@ -79,17 +83,18 @@ template<class Iter, class BIter>
   if (blockSize != 0) assert(mN % blockSize == 0);
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = LinearRegression(yName, y.head(mN), blockSize);
+  mModel = Regr(yName, y.head(mN), blockSize);
   if (mValidationY.size() > 0)
     initialize_validation_ss();  // needs mModel and mValidationY
 }
 
 
+template<class Regr>
 template<class Iter>
-LinearRegression::Vector
-ValidatedRegression::permuted_vector_from_iterator(Iter it) const
+typename Regr::Vector
+ValidatedRegression<Regr>::permuted_vector_from_iterator(Iter it) const
 {
-  LinearRegression::Vector v(mLength);
+  Vector v(mLength);
   if (n_validation_cases()>0)
   { for(int i=0; i<mLength; ++i, ++it)
       v[ mPermute[i] ] = *it;
@@ -102,9 +107,10 @@ ValidatedRegression::permuted_vector_from_iterator(Iter it) const
 }
 
 
+template <class Regr>
 template <class Iter>
 void
-ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
+ValidatedRegression<Regr>::fill_with_fit(Iter it, bool truncate) const
 {
   Vector results (mLength);
   
@@ -115,9 +121,10 @@ ValidatedRegression::fill_with_fit(Iter it, bool truncate) const
 }
 
 
+template <class Regr>
 template <class Iter>
 void
-ValidatedRegression::fill_with_residuals(Iter it) const
+ValidatedRegression<Regr>::fill_with_residuals(Iter it) const
 {
   Vector results (mLength);
   // stuff into Eigen temp first
@@ -126,6 +133,84 @@ ValidatedRegression::fill_with_residuals(Iter it) const
   // then reverse the cv twiddle
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
+}
+
+
+template <class Regr>
+void
+ValidatedRegression<Regr>::initialize_validation_ss()
+{ 
+  Scalar mean (mModel.y_bar());
+  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
+}
+
+//     confusion_matrix     confusion_matrix     confusion_matrix
+  
+template<class Regr>
+ConfusionMatrix
+ValidatedRegression<Regr>::estimation_confusion_matrix(Scalar threshold) const
+{
+  assert (mModel.is_binary());
+  Vector y = mModel.raw_y();
+  Vector fit = mModel.fitted_values();
+  return ConfusionMatrix(y.size(), EigenVectorIterator(&y), EigenVectorIterator(&fit), threshold);
+}
+
+template<class Regr>
+ConfusionMatrix
+ValidatedRegression<Regr>::validation_confusion_matrix(Scalar threshold) const
+{
+  assert (mModel.is_binary());
+  assert (n_validation_cases() > 0);
+  Vector pred = mModel.predictions(mValidationX);
+  return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
+}
+
+
+//     print_to     print_to     print_to     
+
+template<class Regr>
+void
+ValidatedRegression<Regr>::print_to(std::ostream& os, bool compact) const
+{
+  os.precision(6);
+  if (compact)
+  { os << " CVSS=" << validation_ss() << " ";
+    mModel.print_to(os,true);
+  }
+  else
+  { os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
+    if(block_size() > 0)
+      os << " with White SE(b=" << block_size() << ")";
+    os << std::endl
+       << "            Validation SS = " << validation_ss() << std::endl;
+    if (mModel.is_binary())
+    { os << "            Training   confusion matrix \n"
+	 << estimation_confusion_matrix()
+	 << std::endl;
+      if (n_validation_cases())
+      { os << "            Validation confusion matrix = \n"
+	   << validation_confusion_matrix()
+	   << std::endl;
+      }
+    }
+    os << mModel;
+  }
+}
+
+template<class Regr>
+void
+ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols) const
+{
+  // Note: does not return the data to the original ordering
+  mModel.write_data_to(os, maxNumXCols);
+  Vector preds (mModel.predictions(mValidationX));
+  for(int i=0; i<mValidationX.rows(); ++i)
+  { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
+    for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
+      os << '\t' << mValidationX(i,j);
+    os << std::endl;
+  }
 }
 
 #endif

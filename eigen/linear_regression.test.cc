@@ -54,7 +54,7 @@ int main(int, char **)
 
   const int nRows       (300000 );   
   const int nCols       (     5 );
-  const int nAdd        (   400 );
+  const int nAdd        (   100 );
   
   // form random matrix for response and predictors
   Vector y  (Vector::Random(nRows));
@@ -121,7 +121,7 @@ int main(int, char **)
     LinearRegression regr("yyy", y, w, blockSize);
 #else
     LinearRegression      regr("yyy", y, blockSize);
-    FastLinearRegression fRegr("yyy", y, omegaDimension);
+    FastLinearRegression fRegr("yyy", y, blockSize, omegaDimension);
 #endif
     cout << "TEST: Initialized regression " << endl << regr << endl;
     cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;

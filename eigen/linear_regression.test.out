@@ -1,0 +1,301 @@
+-*- mode: compilation; default-directory: "~/C/eigen/" -*-
+Compilation started at Tue Mar 31 11:18:48
+
+make -k -j 3 linear_regression.test; ./linear_regression.test
+set -e; g++-4.9 -I /usr/local/include -I /usr/include   -I/home/bob/C/random -I/home/bob/C/utils -L/home/bob/C/random -L/home/bob/C/utils  -g -std=c++11 -Wall -Wconversion -USINGLE -W -Woverloaded-virtual -O3  -std=c++11 -fmessage-length=0 -fexcess-precision=fast -MM  linear_regression.test.cc   \
+        | sed 's/\(linear_regression.test\)\.o[ :]*/\1.o linear_regression.test.dd : /g' > linear_regression.test.dd; [ -s linear_regression.test.dd ] || rm -f linear_regression.test.dd
+g++-4.9 -I /usr/local/include -I /usr/include   -I/home/bob/C/random -I/home/bob/C/utils -L/home/bob/C/random -L/home/bob/C/utils  -g -std=c++11 -Wall -Wconversion -USINGLE -W -Woverloaded-virtual -O3  -std=c++11 -fmessage-length=0 -fexcess-precision=fast -c linear_regression.test.cc -o linear_regression.test.o 
+Includes are: -I /usr/local/include -I /usr/include -I/home/bob/C/random -I/home/bob/C/utils
+Load libs are: -lrandom -lutils -lm -pthread
+Making executable test program. linear_regression.test
+g++-4.9 -I /usr/local/include -I /usr/include   -I/home/bob/C/random -I/home/bob/C/utils -L/home/bob/C/random -L/home/bob/C/utils  linear_regression.test.o linear_regression.o little_functions.o fstatistic.o eigen_iterator.o confusion_matrix.o -lrandom -lutils  -lm -pthread -o  linear_regression.test
+TEST:  Test of linear regression begins...
+
+
+
+TEST: basic test of the linear regression routine, adding variables one at a time.
+TEST:  y-bar is 100
+       y        100.7  99.79  100.6
+       centered 0.6802  -0.2114  0.566
+TEST: Initialized regression 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=1) 
+            Total SS    = 99746.6     R^2 = 0
+            Residual SS = 99746.6    RMSE = 0.576619
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576619   94988.2   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Initial beta = 99.9996    gamma = 54772
+TEST: Residuals (first 10) =  0.680779 -0.210831  0.566605  0.597282    0.8237 -0.604492 -0.329147  0.536865 -0.444046  0.108345
+
+ -------- 
+TEST: Initialized fast regression 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=1) 
+            Total SS    = 99746.6     R^2 = 0
+            Residual SS = 99746.6    RMSE = 0.576619
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576619   94988.2   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Initial fast gamma = 54772
+TEST: Residuals fast (first 10) =  0.680779 -0.210831  0.566605  0.597282    0.8237 -0.604492 -0.329147  0.536865 -0.444046  0.108345
+
+
+========================================================================== 
+TEST: F test of X[0] F(1,299999) = 0.116921 (p=0.732398) { ss = 1 } 
+TEST: regression after adding X[0] 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=2) 
+            Total SS    = 99746.6     R^2 = 1.19209e-06
+            Residual SS = 99746.4    RMSE = 0.57662
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772   0.57662   94988.1   0
+                                              X[0]     0.197293   0.57662  0.342155   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Beta     =     99.9996 0.000623705
+TEST: se(beta) = 0.00105276 0.00182287
+TEST: Residuals (first 10) =  0.680428 -0.210442  0.566628  0.596962  0.823593 -0.604866 -0.329628  0.536354 -0.443748  0.108963
+
+ -------- 
+TEST: F test of X[0] F(1,299999) = 0.116921 (p=0.732398) { ss = 1 } 
+TEST: regression after adding X[0] 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=2) 
+            Total SS    = 99746.6     R^2 = 0
+            Residual SS = 99746.6    RMSE = 0.57662
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772   0.57662   94988.1   0
+                                              X[0]     0.197293   0.57662  0.342155   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Beta     =     99.9996 0.000623705
+TEST: se(beta) = 0.00105276 0.00182287
+TEST: Residuals (first 10) =  0.680779 -0.210831  0.566605  0.597282    0.8237 -0.604492 -0.329147  0.536865 -0.444046  0.108345
+
+
+========================================================================== 
+TEST: F test of X[1]F(1,299998) = 0.11482 (p=0.734723) { ss = 1 } 
+TEST: regression after adding X[1] 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=3) 
+            Total SS    = 99746.6     R^2 = 1.07288e-06
+            Residual SS = 99746.5    RMSE = 0.576621
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576621     94988   0
+                                              X[0]     0.197293  0.576621  0.342154   0
+                                              X[1]    -0.195799  0.576621  -0.339563   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Gamma  =     54772  0.197293 -0.195799
+TEST: se(gamma) = 0.576621 0.576621 0.576621
+TEST: Residuals (first 10) =  0.680153   -0.2108  0.566391  0.597229  0.823738 -0.605019  -0.33007  0.535904 -0.443748  0.108688
+
+ -------- 
+TEST: F test of X[1]F(1,299998) = 0.114819 (p=0.734723) { ss = 1 } 
+TEST: fRegression after adding X[1] 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=3) 
+            Total SS    = 99746.6     R^2 = 0
+            Residual SS = 99746.6    RMSE = 0.576621
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576621   94987.9   0
+                                              X[0]     0.197293  0.576621  0.342154   0
+                                              X[1]    -0.195799  0.576621  -0.339562   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Gamma  =     54772  0.197293 -0.195799
+TEST: se(gamma) = 0.576621 0.576621 0.576621
+TEST: Residuals (first 10) =  0.680779 -0.210831  0.566605  0.597282    0.8237 -0.604492 -0.329147  0.536865 -0.444046  0.108345
+
+
+========================================================================== 
+TEST: Several rows of X
+      [0]          1 0.559834 -0.44353
+      [1]           1 -0.623382 -0.576864
+      [2]            1 -0.0325239  -0.376067
+      [3]          1 0.513115 0.427581
+      [4]          1 0.172075 0.229573
+      [5]           1  0.598115 -0.246563
+      [6]           1  0.771914 -0.714037
+      [7]           1  0.824511 -0.721001
+      [8]            1  -0.480036 0.00170529
+      [9]           1 -0.986259 -0.442353
+REGR1:	SSZ indicates near singular;  SSZ = 5.46796e-07
+REGR: Singularity detected. SSz = 0 for predictor X1 again; returning empty F stat
+TEST: F test of adding X[1] again F(0,0) = 0 (p=1) { ss = 0 } 
+TEST: regression after adding X[1] a second time 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=4) 
+            Total SS    = 99746.6     R^2 = 1.07288e-06
+            Residual SS = 99746.5    RMSE = 0.576622
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576622   94987.8   0
+                                              X[0]     0.197293  0.576622  0.342154   0
+                                              X[1]    -0.195799  0.576622  -0.339562   0
+                                          X1 again    -0.000490243  0.576622  -0.000850198   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Beta  = -nan -nan  inf -inf
+TEST: se(beta) = -nan -nan -nan -nan
+TEST: Residuals (first 10) =  0.680153   -0.2108  0.566391  0.597229  0.823738 -0.605019  -0.33007  0.535904 -0.443748  0.108688
+
+TEST: R matrix of the internal Q matrix (as check for orthogonality)...
+   -0.999824 -8.73115e-09  4.65661e-09  6.15512e-09
+           0            1 -1.29221e-08  2.68535e-08
+           0            0     0.999999  0.000739405
+           0            0            0  1.06394e-05
+
+========================================================================== 
+TEST: For j = 1 F stats are 0.84689 and 0.846903
+TEST: For j = 2 F stats are 0.0499151 and 0.0499126
+TEST: For j = 3 F stats are 0.403691 and 0.403688
+TEST: For j = 4 F stats are 0.325081 and 0.325095
+TEST: For j = 5 F stats are 1.30548 and 1.30549
+TEST: For j = 6 F stats are 0.183694 and 0.183698
+TEST: For j = 7 F stats are 0.441908 and 0.441875
+TEST: For j = 8 F stats are 0.13669 and 0.136679
+TEST: For j = 9 F stats are 5.22242 and 5.2269
+TEST: For j = 10 F stats are 0.00011203 and 0.000181284
+TEST: For j = 11 F stats are 0.368541 and 0.373373
+TEST: For j = 12 F stats are 0.865806 and 0.851232
+TEST: For j = 13 F stats are 0.459319 and 0.448685
+TEST: For j = 14 F stats are 3.74745 and 3.66507
+TEST: For j = 15 F stats are 0.919531 and 0.908694
+TEST: For j = 16 F stats are 0.956113 and 0.934472
+TEST: For j = 17 F stats are 6.57861 and 6.50549
+TEST: For j = 18 F stats are 0.905695 and 0.909404
+TEST: For j = 19 F stats are 0.140894 and 0.141906
+TEST: For j = 20 F stats are 0.46531 and 0.45582
+TEST: For j = 21 F stats are 0.52074 and 0.509038
+TEST: For j = 22 F stats are 0.0336105 and 0.0291183
+TEST: For j = 23 F stats are 1.27095 and 1.27255
+TEST: For j = 24 F stats are 0.115599 and 0.126309
+TEST: For j = 25 F stats are 0.199797 and 0.185034
+TEST: For j = 26 F stats are 0.0075809 and 0.00635435
+TEST: For j = 27 F stats are 0.0110025 and 0.0121226
+TEST: For j = 28 F stats are 0.158759 and 0.162404
+TEST: For j = 29 F stats are 0.356971 and 0.361995
+TEST: For j = 30 F stats are 0.871755 and 0.889143
+TEST: For j = 31 F stats are 0.520717 and 0.500552
+TEST: For j = 32 F stats are 0.318817 and 0.315438
+TEST: For j = 33 F stats are 0.595928 and 0.6058
+TEST: For j = 34 F stats are 0.305958 and 0.319424
+TEST: For j = 35 F stats are 0.000119701 and 4.74588e-06
+TEST: For j = 36 F stats are 0.820893 and 0.826921
+TEST: For j = 37 F stats are 5.30494 and 5.2839
+TEST: For j = 38 F stats are 0.496732 and 0.484336
+TEST: For j = 39 F stats are 2.5926 and 2.56033
+TEST: For j = 40 F stats are 1.15007 and 1.17102
+TEST: For j = 41 F stats are 0.839935 and 0.813306
+TEST: For j = 42 F stats are 1.48499 and 1.49538
+TEST: For j = 43 F stats are 3.36107 and 3.37608
+TEST: For j = 44 F stats are 0.352573 and 0.348693
+TEST: For j = 45 F stats are 0.706728 and 0.699419
+TEST: For j = 46 F stats are 0.226915 and 0.225975
+TEST: For j = 47 F stats are 0.967466 and 0.933812
+TEST: For j = 48 F stats are 0.611358 and 0.625275
+TEST: For j = 49 F stats are 0.590327 and 0.635218
+TEST: For j = 50 F stats are 1.44092 and 1.38983
+TEST: For j = 51 F stats are 0.046376 and 0.0402564
+TEST: For j = 52 F stats are 0.243419 and 0.227191
+TEST: For j = 53 F stats are 0.425482 and 0.434933
+TEST: For j = 54 F stats are 6.15088 and 6.1477
+TEST: For j = 55 F stats are 1.61206 and 1.60453
+TEST: For j = 56 F stats are 2.15107 and 2.20077
+TEST: For j = 57 F stats are 0.247467 and 0.259311
+TEST: For j = 58 F stats are 0.0900385 and 0.0711502
+TEST: For j = 59 F stats are 1.2118 and 1.19644
+TEST: For j = 60 F stats are 1.86884 and 1.84726
+TEST: For j = 61 F stats are 0.0137437 and 0.0127665
+TEST: For j = 62 F stats are 0.221432 and 0.211709
+TEST: For j = 63 F stats are 0.00247242 and 0.00494059
+TEST: For j = 64 F stats are 3.0436 and 3.03041
+TEST: For j = 65 F stats are 1.65263 and 1.59866
+TEST: For j = 66 F stats are 0.134121 and 0.136368
+TEST: For j = 67 F stats are 2.87194 and 2.8714
+TEST: For j = 68 F stats are 0.0725067 and 0.0878755
+TEST: For j = 69 F stats are 0.220055 and 0.225033
+TEST: For j = 70 F stats are 0.00631208 and 0.00622371
+TEST: For j = 71 F stats are 0.601726 and 0.595937
+TEST: For j = 72 F stats are 0.340529 and 0.331707
+TEST: For j = 73 F stats are 0.153027 and 0.159088
+TEST: For j = 74 F stats are 0.099702 and 0.0888459
+TEST: For j = 75 F stats are 0.0216334 and 0.0221328
+TEST: For j = 76 F stats are 0.104626 and 0.111722
+TEST: For j = 77 F stats are 0.0619257 and 0.0646666
+TEST: For j = 78 F stats are 0.648494 and 0.623149
+TEST: For j = 79 F stats are 0.801913 and 0.808787
+TEST: For j = 80 F stats are 0.0145728 and 0.0110942
+TEST: For j = 81 F stats are 1.60514 and 1.56593
+TEST: For j = 82 F stats are 0.490894 and 0.489957
+TEST: For j = 83 F stats are 0.99531 and 1.0205
+TEST: For j = 84 F stats are 0.319731 and 0.35269
+TEST: For j = 85 F stats are 0.0537282 and 0.0560433
+TEST: For j = 86 F stats are 0.735549 and 0.705992
+TEST: For j = 87 F stats are 0.391761 and 0.392755
+TEST: For j = 88 F stats are 2.73118 and 2.70179
+TEST: For j = 89 F stats are 0.382953 and 0.412603
+TEST: For j = 90 F stats are 0.192139 and 0.17878
+TEST: For j = 91 F stats are 0.343169 and 0.345749
+TEST: For j = 92 F stats are 0.0134771 and 0.0119958
+TEST: For j = 93 F stats are 0.851351 and 0.832712
+TEST: For j = 94 F stats are 0.387465 and 0.419577
+TEST: For j = 95 F stats are 0.391513 and 0.402816
+TEST: For j = 96 F stats are 0.83856 and 0.879129
+TEST: For j = 97 F stats are 3.14905 and 3.13089
+TEST: For j = 98 F stats are 7.15141 and 7.07369
+TEST: For j = 99 F stats are 0.108733 and 0.0992587
+TEST: time regr = 2.02239e+06  time fast = 1.73418e+06
+TEST: Initialized regression 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=1) 
+            Total SS    = 99746.6     R^2 = 0
+            Residual SS = 99746.6    RMSE = 0.576619
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576619   94988.2   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: F test of X F(5,299994) = 0.607011 (p=0.694581) { ss = 1 1 1 1 1 } 
+TEST: regression after adding X 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Linear Regression  y = yyy    (n=300000,k=6) 
+            Total SS    = 99746.6     R^2 = 1.17421e-05
+            Residual SS = 99745.4    RMSE = 0.576621
+
+                        Variable Name                   Gamma       OLS SE      t     Lambda
+                                         Intercept        54772  0.576621     94988   0
+                                                X0     0.197293  0.576621  0.342154   0
+                                                X1    -0.195799  0.576621  -0.339563   0
+                                                X2     0.363823  0.576621  0.630957   0
+                                                X3     0.393196  0.576621  0.681897   0
+                                                X4    -0.803482  0.576621  -1.39343   0
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+TEST: Beta  =      99.9996  0.000624293 -0.000613759   0.00115352   0.00124223  -0.00253757
+      SE    = 0.00105277 0.00182288 0.00182572  0.0018251 0.00182631 0.00182109
+TEST: Residuals (first 10) =  0.679123 -0.208633  0.564621   0.59684  0.821724 -0.602486 -0.328705  0.536606 -0.444756  0.108795
+
+TEST: Several rows of X
+      [0]           1  0.559834  -0.44353  0.488859 0.0882902 -0.141665
+      [1]           1 -0.623382 -0.576864 -0.167611  0.156685  0.850614
+      [2]            1 -0.0325239  -0.376067   0.612815   0.956534  0.0473725
+      [3]           1  0.513115  0.427581 0.0341395 -0.369895 -0.316998
+      [4]              1     0.172075     0.229573      0.83551 -0.000151038    -0.412496
+      [5]           1  0.598115 -0.246563 -0.473125 -0.409017  0.582293
+      [6]            1   0.771914  -0.714037  -0.435645  -0.799365 -0.0567148
+      [7]           1  0.824511 -0.721001 -0.249021  0.966778  0.631085
+      [8]            1  -0.480036 0.00170529   0.432635   0.943935   0.259184
+      [9]           1 -0.986259 -0.442353 -0.242058  0.493178   0.16839
+
+Compilation finished at Tue Mar 31 11:19:01

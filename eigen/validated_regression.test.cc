@@ -14,7 +14,7 @@
 using std::cout;
 using std::endl;
 
-
+// use following to add weights
 // #define USE_WLS
 
 std::ostream&
@@ -34,9 +34,10 @@ void print_time(time_t const& start)
 
 int main(int, char **)
 {
-  typedef LinearRegression::Scalar Scalar;
-  typedef LinearRegression::Vector Vector;
-  typedef LinearRegression::Matrix Matrix;
+  typedef LinearRegression                        Regression;
+  typedef ValidatedRegression<Regression>::Scalar Scalar;
+  typedef ValidatedRegression<Regression>::Vector Vector;
+  typedef ValidatedRegression<Regression>::Matrix Matrix;
   
   cout << "TEST:  Test of regression begins...\n\n";
   debugging::debug_init(cout,2);  // Debug level 1 avoids most messages; raise number for more
@@ -140,9 +141,9 @@ int main(int, char **)
     if(true) //  validated regression, standard F test
     { cout << "\n\n-----------------------------------------------------------------------------------\nTEST: test of standard F p-values\n";
 #ifdef USE_WLS
-      ValidatedRegression vregr("Y", yPtr, cv, wts, 2*nRows, 0, true);
+      ValidatedRegression<Regression> vregr("Y", yPtr, cv, wts, 2*nRows, 0, true);
 #else
-      ValidatedRegression vregr("Y", yPtr, cv,      2*nRows, 0, true);
+      ValidatedRegression<Regression> vregr("Y", yPtr, cv,      2*nRows, 0, true);
 #endif
       cout << vregr << endl;
       std::pair<Scalar,Scalar> result;
@@ -169,7 +170,7 @@ int main(int, char **)
     if(true) // validated regression, white tests
     { bool shrink (false);
       const int blockSize (1);
-      ValidatedRegression vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
+      ValidatedRegression<Regression> vregr("Y", yPtr, cv, 2*nRows, blockSize, shrink);
       cout << "\n\n----------------------------------------------------------------------\nTEST: check white p-values with block size " << blockSize << "\n";
       cout << vregr << endl;
       std::pair<Scalar,Scalar> result;

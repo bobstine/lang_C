@@ -186,8 +186,8 @@ public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, size_t omegaDim) 
-    : LinearRegression(yName, y, 0), mOmegaDim(omegaDim) { allocate_projection_memory();  }    // 0 for no blocking
+  FastLinearRegression (std::string yName, Vector const& y, int blockSize, size_t omegaDim) 
+    : LinearRegression(yName, y, blockSize), mOmegaDim(omegaDim) { allocate_projection_memory();  }    // 0 for no blocking
   
 private:
   void           allocate_projection_memory();

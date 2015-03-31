@@ -5,82 +5,6 @@
 
 #include <thread>
 
-//     ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression      ValidatedRegression 
-
-void
-ValidatedRegression::initialize_validation_ss()
-{ 
-  Scalar mean (mModel.y_bar());
-  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
-}
-
-//     confusion_matrix     confusion_matrix     confusion_matrix
-  
-ConfusionMatrix
-ValidatedRegression::estimation_confusion_matrix(Scalar threshold) const
-{
-  assert (mModel.is_binary());
-  Vector y = mModel.raw_y();
-  Vector fit = mModel.fitted_values();
-  return ConfusionMatrix(y.size(), EigenVectorIterator(&y), EigenVectorIterator(&fit), threshold);
-}
-
-ConfusionMatrix
-ValidatedRegression::validation_confusion_matrix(Scalar threshold) const
-{
-  assert (mModel.is_binary());
-  assert (n_validation_cases() > 0);
-  Vector pred = mModel.predictions(mValidationX);
-  return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
-}
-
-
-//     print_to     print_to     print_to     
-
-void
-ValidatedRegression::print_to(std::ostream& os, bool compact) const
-{
-  os.precision(6);
-  if (compact)
-  { os << " CVSS=" << validation_ss() << " ";
-    mModel.print_to(os,true);
-  }
-  else
-  { os << "Validated Regression      n(est) = " << mN << "    n(validate) = " << n_validation_cases() << "    ";
-    if(block_size() > 0)
-      os << " with White SE(b=" << block_size() << ")";
-    os << std::endl
-       << "            Validation SS = " << validation_ss() << std::endl;
-    if (mModel.is_binary())
-    { os << "            Training   confusion matrix \n"
-	 << estimation_confusion_matrix()
-	 << std::endl;
-      if (n_validation_cases())
-      { os << "            Validation confusion matrix = \n"
-	   << validation_confusion_matrix()
-	   << std::endl;
-      }
-    }
-    os << mModel;
-  }
-}
-
-void
-ValidatedRegression::write_data_to(std::ostream& os, int maxNumXCols) const
-{
-  // Note: does not return the data to the original ordering
-  mModel.write_data_to(os, maxNumXCols);
-  Vector preds (mModel.predictions(mValidationX));
-  for(int i=0; i<mValidationX.rows(); ++i)
-  { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
-    for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
-      os << '\t' << mValidationX(i,j);
-    os << std::endl;
-  }
-}
-
-
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 //     cross validation     cross validation     cross validation     cross validation     cross validation
@@ -166,15 +90,16 @@ private:
 
 /*
   Validation worker is similar to a regression worker, but rather than compute summary
-  statistics, it computes a CVSS based on the input iteratorr that tells it which cases
+  statistics, it computes a CVSS based on the input iterator that tells it which cases
   to exclude from the analysis.  The results are placed in the external CVSS array.
 */
 class ValidationWorker
 {
 public:
-  typedef SCALAR Scalar;
-  typedef VECTOR Vector;
-  typedef MATRIX Matrix;
+  typedef LinearRegression   Regression;
+  typedef Regression::Scalar Scalar;
+  typedef Regression::Vector Vector;
+  typedef Regression::Matrix Matrix;
   
 private:
   Vector const*                      mY;
@@ -199,7 +124,7 @@ public:
     
   void operator()()
   {
-    ValidatedRegression regr("yy", EigenVectorIterator(mY), mSelector, (int)mY->size(), noBlocking, noShrinkage);
+    ValidatedRegression<Regression> regr("yy", EigenVectorIterator(mY), mSelector, (int)mY->size(), noBlocking, noShrinkage);
     std::vector< std::pair<std::string,EigenColumnIterator> > namedIter;
     namedIter.push_back( std::make_pair("vXi",EigenColumnIterator(mXi,-1)) );
     if(mXi->cols()>0)

@@ -29,20 +29,21 @@
   Issues that have *not* been handled...
     -- weighted with bennett
     -- logistic loss
-    -- converting from data that is float to internal that is double *** conveniently ***.
+
 */
 
 
 
 //     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     ValidatedRegression     
 
+template<class Regr>
 class ValidatedRegression
 {
 public:
-  typedef LinearRegression          Regression;  // or fast
-  typedef Regression::Scalar        Scalar;
-  typedef Regression::Vector        Vector;
-  typedef Regression::Matrix        Matrix;
+  typedef Regr                     Regression;
+  typedef typename Regr::Scalar    Scalar;
+  typedef typename Regr::Vector    Vector;
+  typedef typename Regr::Matrix    Matrix;
 
 private:
   const int          mLength;            // total length estimation + validation
@@ -52,7 +53,7 @@ private:
   Vector             mValidationY;
   Matrix             mValidationX;       // append when variable is added to model
   Scalar             mValidationSS;      // cache validation ss, computed whenever model changes
-  Regression         mModel;
+  Regr               mModel;
   
 public:
   ~ValidatedRegression () {  }
@@ -71,7 +72,7 @@ public:
   int block_size()                              const  { return mModel.block_size(); }
   int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
   int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
-  Regression const& model()                     const  { return mModel; }
+  Regr  const& model()                          const  { return mModel; }
 
   Scalar y_bar()                                const  { return mModel.y_bar(); }
   std::vector<Scalar>  beta()                   const  { std::vector<Scalar> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
@@ -85,8 +86,8 @@ public:
   Scalar validation_ss()                        const  { return mValidationSS; }
   std::pair<Scalar,Scalar> sums_of_squares()    const  { return std::make_pair(estimation_ss(), mValidationSS); }
 
-  ConfusionMatrix estimation_confusion_matrix(float threshold=0.5) const;
-  ConfusionMatrix validation_confusion_matrix(float threshold=0.5) const;
+  ConfusionMatrix estimation_confusion_matrix(Scalar threshold=0.5) const;
+  ConfusionMatrix validation_confusion_matrix(Scalar threshold=0.5) const;
 
   template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
   std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
@@ -104,6 +105,7 @@ private:
   
   template<class Iter, class BIter>
   void   initialize(std::string yName, Iter Y, BIter B, int blockSize);
+
   template<class Iter, class BIter, class WIter>
   void   initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize);
   
@@ -128,9 +130,10 @@ validate_regression(LinearRegression::Vector const& Y,     // response
 
 ///////////////////////////  Printing Operators  /////////////////////////////
 
+template<class Regr>
 inline
 std::ostream&
-operator<<(std::ostream& os, ValidatedRegression const& regr)
+operator<<(std::ostream& os, ValidatedRegression<Regr> const& regr)
 {
   os << "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" << std::endl;
   regr.print_to(os);
