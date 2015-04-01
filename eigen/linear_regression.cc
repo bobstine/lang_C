@@ -645,15 +645,15 @@ FastLinearRegression::sweep_Q_from_column(int col)      const
 {
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column(col);
-  mQ.col(col).array() -= mQ.sum() / (Scalar) mQ.rows();            // subtract mean
-  Scalar ss (approximate_ss(mQ.col(col)));                         // compare initial SS to post sweep SS to check for singularities
+  mQ.col(col).array() -= mQ.col(col).sum() / (Scalar) mQ.rows();   // subtract mean
+  Scalar ss = mQ.col(col).squaredNorm();                           // compare initial SS to post sweep SS to check for singularities
   Vector b = mM.transpose() * mQ.col(col);                         // compute b = R^-1 R^-1' M'z
   mTtT.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
-  mQ.col(col) -= mM * b;                                            // compute z = z - Mb
-  Scalar ssz  (mQ.col(col).squaredNorm());                          // check that SS dropped and is not nan
+  mQ.col(col) -= mM * b;                                           // compute z = z - Mb
+  Scalar ssz  (mQ.col(col).squaredNorm());                         // check that SS dropped and is not nan
   if (is_invalid_ss (ss, ssz)) return 0.0;
   Scalar norm = (Scalar) sqrt(ssz);
-  mQ.col(col) /= norm;                                              // normalize swept column
+  mQ.col(col) /= norm;                                             // normalize swept column
   mR(col,col)  = norm;
   return ssz;
 }
@@ -662,7 +662,7 @@ void
 FastLinearRegression::update_fit(StringVec xNames)
 {
   debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
-  if ((int)numberOfAllocatedColumns-5 < mK)      // watch that we are getting near matrix size limit
+  if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";

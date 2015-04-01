@@ -54,7 +54,7 @@ int main(int, char **)
 
   const int nRows       (300000 );   
   const int nCols       (     5 );
-  const int nAdd        (   200 );
+  const int nAdd        (   100 );
   
   // form random matrix for response and predictors
   std::cout << "TEST: building " << nAdd << " input data vectors of length " << nRows << " to add after fit initial model with " << nCols << "\n";
