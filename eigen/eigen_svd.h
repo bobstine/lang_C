@@ -132,6 +132,4 @@ public:
   result_type operator()(Eigen::MatrixXd const& data) const;
 };
 
-#include "eigen_svd.Template.h"
-
 #endif

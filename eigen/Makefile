@@ -10,9 +10,8 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-OPT = -O3  -std=c++11
+OPT = -O3 
 
-# EXTERNAL_USES = boost_system boost_thread gomp
 EXTERNAL_USES = 
 
 ###########################################################################
@@ -21,18 +20,16 @@ EXTERNAL_USES =
 #
 ###########################################################################
 
-level_0   =  little_functions.o fstatistic.o eigen_iterator.o confusion_matrix.o
-level_1   =  linear_regression.o
-level_2   =  validated_regression.o eigen_svd.o 
+level_0   =  little_functions.o fstatistic.o confusion_matrix.o
+level_1   =  eigen_iterator.o 
+level_2   =  linear_regression.o eigen_svd.o 
+level_3   =  validated_regression.o 
 
 ############################################################################
 #
 #        Rules and definitions
 #
 ############################################################################
-
-include ../rules_for_makefiles
-
 
 tutorial: tutorial.o
 	$(GCC) $^ $(LDLIBS)  -o  $@
@@ -58,3 +55,8 @@ stoc_grad_test: stoc_grad
 	./stoc_grad -n    1000 -p   100 -k 1  > estimates.1
 	./stoc_grad -n  100000 -p  1000 -k 1  > estimates.2
 	./stoc_grad -n 1000000 -p 10000 -k 1  > estimates.3
+
+##############################################################################
+
+include ../rules_for_makefiles
+

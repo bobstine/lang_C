@@ -1,9 +1,4 @@
-#include "eigen_svd.h"
-
-#include "debug.h"
-
-#include <Eigen/SVD>
-
+#include "eigen_svd.Template.h"
 
 using debugging::debug;
 
