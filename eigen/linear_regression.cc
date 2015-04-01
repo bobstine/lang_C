@@ -12,7 +12,7 @@ using debugging::debug;
 #include <Eigen/QR>
 
 
-#pragma GCC optimize ("-O4")
+#pragma GCC optimize ("-O3")
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(5001);    
@@ -670,10 +670,10 @@ FastLinearRegression::update_fit(StringVec xNames)
   assert (mTempK == (int)xNames.size());
   for(size_t j=0; j<xNames.size(); ++j)
   { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).dot(mY)/(1+mLambda[mK+j]));
+    mGamma[mK+j]  = (mQ.col(mK+j).dot(mResiduals)/(1+mLambda[mK+j]));
   }
   Matrix w = Matrix::Random(mTempK,mOmegaDim);                        // update random projection, uni[-1,1]
-  mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z'w
+  mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z w'
   Matrix Mtz = mM.transpose() * mQ.block(0,mK,mQ.rows(),mTempK);      // M'z
   if (1 == mTempK)
   { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of T'T; z~ = mQ[mK]
