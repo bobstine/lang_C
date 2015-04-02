@@ -218,10 +218,10 @@ ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols) cons
   const bool showValidation = false;
   mModel.write_data_to(os, maxNumXCols, showValidation);  // show here with y value
   Vector        preds = mModel.test_predictions();
-  Matrix const& Q     = mModel.Q_matrix();
+  Matrix const& Q     = mModel.Q_basis_matrix();
   for(int i=0; i<n_validation_cases(); ++i)
   { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
-    for (int j=0; j<min_int(Q.cols(), maxNumXCols); ++j) 
+    for (int j=0; j<min_int((int)Q.cols(), maxNumXCols); ++j) 
       os << '\t' << Q(i+mN,j);                            // skip estimation rows in Q
     os << std::endl;
   }

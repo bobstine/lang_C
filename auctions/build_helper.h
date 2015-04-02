@@ -3,7 +3,7 @@
 
 #include "auction_base_types.h"
 #include "auction.h"
-#include "regression.h"
+#include "validated_regression.h"
 
 class FiniteCauchyShare
 {
@@ -24,14 +24,22 @@ public:
 };
 
 
-ValidatedRegression
+ValidatedRegression<FastLinearRegression>
 build_regression_model(Column<SCALAR> y, Column <SCALAR>inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
 
+int
+parse_column_format(std::string const& dataFileName, std::ostream&);
+
+Column<SCALAR>
+identify_cv_indicator(std::vector<Column<SCALAR>> const& columns);
+
+void
+round_elements_into_vector(Column<SCALAR> const& c, std::vector<int>::iterator b); 
 
 void
 add_source_experts_to_auction (FeatureSource const& src, int contextCases, SCALAR wealth,
 			       std::vector<FeatureVector> &featureStreams,
-			       Auction<ValidatedRegression> &auction);
+			       Auction<ValidatedRegression<FastLinearRegression>> &auction);
 
 SCALAR
 time_since(time_t const& start);

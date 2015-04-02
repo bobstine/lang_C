@@ -10,7 +10,7 @@
 #include "auction_base_types.h"
 
 #include "experts.Template.h"
-#include "regression.h"
+#include "validated_regression.h"
 
 #include "column.Template.h"
 #include "features.h"

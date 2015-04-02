@@ -54,7 +54,7 @@
 #include "column.Template.h"
 #include "light_threads.Template.h"
 
-#include "regression.h"
+#include "validated_regression.h"
 #include "eigen_svd.h"
 
 #include <iostream>
@@ -72,22 +72,15 @@ parse_arguments(int argc, char** argv,
 		int    &protection, bool   &shrink, int    &nRounds,
 		SCALAR &totalAlpha, int    &gap,    int    &debugLevel, int    &maxNumOutputPredictors);
 
-
-ValidatedRegression  build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, int blockSize, bool shrink, std::ostream& os);
-int                  parse_column_format(std::string const& dataFileName, std::ostream&);
-Column<SCALAR>       identify_cv_indicator(std::vector<Column<SCALAR>> const& columns);
-void                 round_elements_into_vector(Column<SCALAR> const& c, std::vector<int>::iterator b);
- 
+//     main     main     main     main     main     main     main     main     main     main     main     main     main
 
 int
 main(int argc, char** argv)
 {
   using debugging::debug;
   using std::string;
-  typedef SCALAR  Scalar;
-
   debug("AUCT",0) << "Version build 2.0 (18 Jan 2015)\n";
-  
+
   // Parse command line options
   
   Scalar   totalAlphaToSpend    ((Scalar)0.1);
@@ -191,10 +184,11 @@ main(int argc, char** argv)
   }
 
   // build model and initialize auction with tab-delimited stream for tracking progress
-
-  ValidatedRegression  theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
+ 
+  typedef ValidatedRegression<FastLinearRegression> Regression;
+  typedef Auction<Regression>                       RegressionAuction;
+  Regression theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
-  typedef Auction< ValidatedRegression > RegressionAuction;
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
   
   // open input data stream

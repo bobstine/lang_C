@@ -9,6 +9,7 @@
 // #include <functional>  mem_fun
 
 #include "auction.h"
+#include "validated_regression.Template.h"
 
 #include "debug.h"
 using debugging::debug;

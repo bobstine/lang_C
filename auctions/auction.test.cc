@@ -48,7 +48,7 @@
 #include "debug.h"
 #include "read_utils.h"     
 
-#include "regression.h"
+#include "validated_regression.h"
 #include "eigen_svd.h"
 
 #include <iostream>

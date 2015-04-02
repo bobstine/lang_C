@@ -1,4 +1,5 @@
 #include "build_helper.h"
+#include "validated_regression.Template.h"
 
 #include "debug.h"
 
@@ -11,6 +12,9 @@
 
 #include "light_threads.Template.h"
 #include "column.Template.h"
+
+
+typedef ValidatedRegression<FastLinearRegression>  Regression;
 
 
 void
@@ -37,7 +41,7 @@ FiniteCauchyShare::p(int j) const
 
 //     build_regression_model     build_regression_model     build_regression_model     build_regression_model
 
-ValidatedRegression
+Regression
 build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
 {
   bool  useSubset    (0 != inOut->size());
@@ -50,12 +54,12 @@ build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, i
     os << " without shrinkage." << std::endl;
   if (useSubset)
   { os << "        Validation cases identified by " << inOut << std::endl;
-    return ValidatedRegression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);
+    return Regression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);
   } 
   else
   { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
-    return ValidatedRegression (y->name(), y->begin()+prefixRows, noSelection             , nRows, blockSize, useShrinkage);  
+    return Regression(y->name(), y->begin()+prefixRows,       noSelection        , nRows, blockSize, useShrinkage);  
   } 
 }
 
@@ -63,7 +67,7 @@ build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, i
 
 void
 add_source_experts_to_auction (FeatureSource const& featureSource, int nContextCases, SCALAR wealth,
-			       std::vector<FeatureVector> &featureStreams, Auction<ValidatedRegression> &auction)
+			       std::vector<FeatureVector> &featureStreams, Auction<Regression> &auction)
 {
   using std::string;
   using debugging::debug;
