@@ -3,47 +3,22 @@
 
 #include "validated_regression.h"
 #include "little_functions.h"
-
 #include "debug.h"
-  
-template <class Regr>
-template <class Iter>
-  std::pair<typename ValidatedRegression<Regr>::Scalar,typename ValidatedRegression<Regr>::Scalar>
-  ValidatedRegression<Regr>::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter)
+
+
+template<class Regr>
+std::vector<typename ValidatedRegression<Regr>::Scalar>
+ValidatedRegression<Regr>::beta()  const
 {
-  FStatistic f;
-  int k ((int)c.size());                                                    // k denotes the number of added variables
-  std::vector<std::string> xNames;
-  typename Regr::Matrix predictors(mLength,k);
-  for(int j=0; j<k; ++j)
-  { xNames.push_back(c[j].first);
-    predictors.col(j) = permuted_vector_from_iterator(c[j].second);
+  std::vector<Scalar> b;
+  if(mModel.can_return_beta())
+  { b.resize(mModel.q()+1);
+    mModel.fill_with_beta(b.begin());
   }
-  if (k == 1)
-    f = mModel.f_test_predictor(xNames[0], predictors.col(0).head(mN));
-  else
-    f = mModel.f_test_predictors(xNames, predictors.topLeftCorner(mN,k));
-  debugging::debug("VALM",3) << k << " predictors; p-value=" << f.p_value() << " with bid=" << pToEnter << ". SE block size=" << block_size() << std::endl;
-  if((f.f_stat() == 0) || (f.p_value() > pToEnter))
-    return std::make_pair(f.f_stat(), f.p_value());
-  debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
-  if (0 == mModel.q())                                                        // first variable in model; rows & cols relative to a corner
-    mValidationX = predictors.bottomLeftCorner(n_validation_cases(), k);
-  else                                                                        // add additional columns
-  { Matrix x(mValidationX.rows(),mValidationX.cols()+k);
-    x.topLeftCorner(mValidationX.rows(), mValidationX.cols())  = mValidationX; // insert prior columns, then add new ones
-    x.topRightCorner(mValidationX.rows(), k                  ) = predictors.bottomLeftCorner(mValidationX.rows(), k);
-    mValidationX = x;
-  }
-  if(mShrink)
-    mModel.add_predictors(f);
-  else                            // omit f-stat to omit shrinkage
-    mModel.add_predictors();
-  if (n_validation_cases() > 0)   // update validation SS if have some 
-    mValidationSS = (mValidationY - mModel.predictions(mValidationX)).squaredNorm();
-  return std::make_pair(f.f_stat(), f.p_value());
+  return b;
 }
 
+//     initialize     initialize     initialize     initialize     initialize     initialize     initialize     initialize     
 
 template<class Regr>
 template<class Iter, class BIter, class WIter>
@@ -61,11 +36,13 @@ template<class Iter, class BIter, class WIter>
   }
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = Regr(yName, y.head(mN), w.head(mN), blockSize);
+  mModel = Regr(yName, y.head(mN), w.head(mN), mValidationY.size(), blockSize);
   if (mValidationY.size() > 0)
     initialize_validation_ss();  // needs mModel and mValidationY
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 
 template<class Regr>
 template<class Iter, class BIter>
@@ -83,11 +60,45 @@ template<class Iter, class BIter>
   if (blockSize != 0) assert(mN % blockSize == 0);
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = Regr(yName, y.head(mN), blockSize);
+  mModel = Regr(yName, y.head(mN), mValidationY.size(), blockSize);
   if (mValidationY.size() > 0)
     initialize_validation_ss();  // needs mModel and mValidationY
 }
 
+#pragma GCC diagnostic pop
+
+
+//     add_predictors_if_useful     add_predictors_if_useful     add_predictors_if_useful     add_predictors_if_useful
+
+template <class Regr>
+template <class Iter>
+  std::pair<typename ValidatedRegression<Regr>::Scalar,typename ValidatedRegression<Regr>::Scalar>
+  ValidatedRegression<Regr>::add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter)
+{
+  FStatistic f;
+  int k ((int)c.size());                                                // k denotes the number of added variables
+  std::vector<std::string> xNames;
+  typename Regr::Matrix predictors(mLength,k);
+  for(int j=0; j<k; ++j)
+  { xNames.push_back(c[j].first);
+    predictors.col(j) = permuted_vector_from_iterator(c[j].second);
+  }
+  if (k == 1)
+    f = mModel.f_test_predictor(xNames[0], predictors.col(0));
+  else
+    f = mModel.f_test_predictors(xNames, predictors.leftCols(k));
+  debugging::debug("VALM",3) << k << " predictors; p-value=" << f.p_value() << " with bid=" << pToEnter << ". SE block size=" << block_size() << std::endl;
+  if((f.f_stat() == 0) || (f.p_value() > pToEnter))
+    return std::make_pair(f.f_stat(), f.p_value());
+  debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
+  if(mShrink)  mModel.add_predictors(f);
+  else         mModel.add_predictors();                                  // omit f-stat to omit shrinkage
+  if (0 < mValidationY.size())                                           // update validation SS if have some 
+    mValidationSS = (mValidationY - mModel.test_predictions()).squaredNorm();
+  return std::make_pair(f.f_stat(), f.p_value());
+}
+
+//     permuted_vector_from_iterator     permuted_vector_from_iterator     permuted_vector_from_iterator     permuted_vector_from_iterator
 
 template<class Regr>
 template<class Iter>
@@ -99,13 +110,15 @@ ValidatedRegression<Regr>::permuted_vector_from_iterator(Iter it) const
   { for(int i=0; i<mLength; ++i, ++it)
       v[ mPermute[i] ] = *it;
   }
-  else // just copy directly into a eigen::vector
+  else // just copy directly into Eigen::vector
   { for(int i=0; i<mLength; ++i, ++it)
       v[ i ] = *it;
   }
   return v;
 }
 
+
+//     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_
 
 template <class Regr>
 template <class Iter>
@@ -115,11 +128,10 @@ ValidatedRegression<Regr>::fill_with_fit(Iter it, bool truncate) const
   Vector results (mLength);
   
   results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
-  results.segment(n_estimation_cases(), n_validation_cases()) = mModel.predictions(mValidationX,truncate);
+  results.segment(n_estimation_cases(), n_validation_cases()) = mModel.test_predictions(truncate);
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }
-
 
 template <class Regr>
 template <class Iter>
@@ -129,7 +141,7 @@ ValidatedRegression<Regr>::fill_with_residuals(Iter it) const
   Vector results (mLength);
   // stuff into Eigen temp first
   results.segment(        0           , n_estimation_cases()) = mModel.raw_residuals();
-  results.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - mModel.predictions(mValidationX);
+  results.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - mModel.test_predictions();
   // then reverse the cv twiddle
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
@@ -144,13 +156,14 @@ ValidatedRegression<Regr>::initialize_validation_ss()
   mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
 }
 
-//     confusion_matrix     confusion_matrix     confusion_matrix
+
+//     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     
   
 template<class Regr>
 ConfusionMatrix
 ValidatedRegression<Regr>::estimation_confusion_matrix(Scalar threshold) const
 {
-  assert (mModel.is_binary());
+  assert (mModel.has_binary_response());
   Vector y = mModel.raw_y();
   Vector fit = mModel.fitted_values();
   return ConfusionMatrix(y.size(), EigenVectorIterator(&y), EigenVectorIterator(&fit), threshold);
@@ -160,14 +173,14 @@ template<class Regr>
 ConfusionMatrix
 ValidatedRegression<Regr>::validation_confusion_matrix(Scalar threshold) const
 {
-  assert (mModel.is_binary());
+  assert (mModel.has_binary_response());
   assert (n_validation_cases() > 0);
-  Vector pred = mModel.predictions(mValidationX);
+  Vector pred = mModel.test_predictions();
   return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
 }
 
 
-//     print_to     print_to     print_to     
+//     print_to     print_to     print_to     print_to     print_to     print_to     print_to     print_to     print_to     
 
 template<class Regr>
 void
@@ -183,8 +196,8 @@ ValidatedRegression<Regr>::print_to(std::ostream& os, bool compact) const
     if(block_size() > 0)
       os << " with White SE(b=" << block_size() << ")";
     os << std::endl
-       << "            Validation SS = " << validation_ss() << std::endl;
-    if (mModel.is_binary())
+       << "          Validation SS = " << validation_ss() << std::endl;
+    if (mModel.has_binary_response())
     { os << "            Training   confusion matrix \n"
 	 << estimation_confusion_matrix()
 	 << std::endl;
@@ -200,15 +213,16 @@ ValidatedRegression<Regr>::print_to(std::ostream& os, bool compact) const
 
 template<class Regr>
 void
-ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols) const
+ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols) const    // Note: does not return the data to the original ordering
 {
-  // Note: does not return the data to the original ordering
-  mModel.write_data_to(os, maxNumXCols);
-  Vector preds (mModel.predictions(mValidationX));
-  for(int i=0; i<mValidationX.rows(); ++i)
+  const bool showValidation = false;
+  mModel.write_data_to(os, maxNumXCols, showValidation);  // show here with y value
+  Vector        preds = mModel.test_predictions();
+  Matrix const& Q     = mModel.Q_matrix();
+  for(int i=0; i<n_validation_cases(); ++i)
   { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
-    for (int j=0; j<min_int((int)mValidationX.cols(), maxNumXCols); ++j) 
-      os << '\t' << mValidationX(i,j);
+    for (int j=0; j<min_int(Q.cols(), maxNumXCols); ++j) 
+      os << '\t' << Q(i+mN,j);                            // skip estimation rows in Q
     os << std::endl;
   }
 }

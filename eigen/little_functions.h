@@ -32,4 +32,8 @@ close(SCALAR a, SCALAR b)
   return abs_val(a-b) < 1.0e-50;
 }
 
+bool
+is_binary_vector(VECTOR const& v);
+
+
 #endif

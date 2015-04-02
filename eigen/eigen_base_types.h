@@ -1,4 +1,7 @@
-#ifndef _BASE_TYPES_H
+#ifndef _EIGEN_BASE_TYPES_H
+#define _EIGEN_BASE_TYPES_H
+
+#include <Eigen/Core>
 
 #define use_small_scalar
 

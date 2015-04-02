@@ -51,9 +51,10 @@ public:
 
   void operator()()
   {
+    const int nTest = 0;
     std::vector<std::string> xNames;
     for(int j=0; j<mXi->cols(); ++j) xNames.push_back("Xi_"+std::to_string(j));
-    LinearRegression regr("Y", *mY, noBlocking);
+    LinearRegression regr("Y", *mY, nTest, noBlocking);
     // check one at a time in case of singular model
     for (int k=0; k<mXi->cols(); ++k)
       add_predictor_if_useful(&regr, "Xi_"+std::to_string(k), mXi->col(k));

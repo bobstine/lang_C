@@ -101,7 +101,7 @@ int main(int, char **)
   { cout << "\n\nTEST: Testing threads code for CV." << endl;
     int nFolds = 20;
     Matrix results(1+Z.cols(), 4);           // extra row for base model
-    validate_regression( y, X, Z, nFolds, results);
+    cross_validate_regression( y, X, Z, nFolds, results);
     cout << "TEST: Thread results for columns R2, RSS, AICc, and CVSS\n" << results << endl;
   }
   

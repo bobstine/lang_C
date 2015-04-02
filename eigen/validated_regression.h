@@ -48,10 +48,9 @@ public:
 private:
   const int          mLength;            // total length estimation + validation
   const bool         mShrink;        
-  int                mN;                 // number of estimation rows as identified on start
+  int                mN;                 // number of estimation rows (identified from CV indicator in initialization)
   std::vector<int>   mPermute;           // permute the input for 0/1 cross-validation scrambling; length of validation + estimation
   Vector             mValidationY;
-  Matrix             mValidationX;       // append when variable is added to model
   Scalar             mValidationSS;      // cache validation ss, computed whenever model changes
   Regr               mModel;
   
@@ -61,12 +60,12 @@ public:
   ValidatedRegression() : mLength(0), mShrink(false), mN(0), mPermute() { }
   
   template<class Iter, class BIter>
-  ValidatedRegression(std::string yName, Iter Y, BIter B, int len, int blockSize, bool shrink)
-    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, blockSize); }
+  ValidatedRegression(std::string yName, Iter Y, BIter B, int totalCases, int blockSize, bool shrink)
+    :  mLength(totalCases), mShrink(shrink), mN(0), mPermute(totalCases) { initialize(yName, Y, B, blockSize); }
 
   template<class Iter, class BIter, class WIter>
-  ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int len, int blockSize, bool shrink)
-    :  mLength(len), mShrink(shrink), mN(0), mPermute(len) { initialize(yName, Y, B, W, blockSize); }
+  ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int totalCases, int blockSize, bool shrink)
+    :  mLength(totalCases), mShrink(shrink), mN(0), mPermute(totalCases) { initialize(yName, Y, B, W, blockSize); }
 
   Scalar goodness_of_fit()                      const  { return mModel.r_squared(); }
   int block_size()                              const  { return mModel.block_size(); }
@@ -75,8 +74,8 @@ public:
   Regr  const& model()                          const  { return mModel; }
 
   Scalar y_bar()                                const  { return mModel.y_bar(); }
-  std::vector<Scalar>  beta()                   const  { std::vector<Scalar> b(mModel.q()+1); mModel.fill_with_beta(b.begin()); return b; }
   std::vector<std::string> predictor_names()    const  { return mModel.predictor_names(); }
+  std::vector<Scalar>  beta()                   const;
 
   int n_total_cases()                           const  { return mLength; }
   int n_validation_cases()                      const  { return mLength - mN; }
@@ -89,17 +88,19 @@ public:
   ConfusionMatrix estimation_confusion_matrix(Scalar threshold=0.5) const;
   ConfusionMatrix validation_confusion_matrix(Scalar threshold=0.5) const;
 
-  template <class Iter>                             // iterators must include training & test cases, ordered as in initial y (pval=1 adds if nonsing)
+  template <class Iter>                                                        // iterators include training & test cases, ordered as initial y (pval=1 adds if nonsing)
   std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
 
-  template <class Iter> void fill_with_fit(Iter it)                const  { fill_with_fit(it,false); }
-  template <class Iter> void fill_with_fit(Iter it, bool truncate) const;
+  template <class Iter>
+  void                     fill_with_fit(Iter it)                  const  { fill_with_fit(it,false); }
+  template <class Iter>
+  void                     fill_with_fit(Iter it, bool truncate)   const;
+  template <class Iter>
+  void                     fill_with_residuals (Iter it)         const;
   
-  template <class Iter> void fill_with_residuals (Iter it)         const;
-  
-  void print_to     (std::ostream& os, bool compact=false) const;
-  void print_html_to(std::ostream& os)                     const;
-  void write_data_to(std::ostream& os, int maxNumXCols)    const;       //  written in the internal order (estimation ->, then validation <-
+  void print_to     (std::ostream& os, bool compact=false)         const;
+  void print_html_to(std::ostream& os)                             const;
+  void write_data_to(std::ostream& os, int maxNumXCols)            const;       //  written in the internal order (estimation ->, then validation <-)
   
 private:
   

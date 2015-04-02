@@ -5,6 +5,7 @@
 using debugging::debug;
 
 #include "linear_regression.h"
+#include "little_functions.h"
 #include "bennett.h"
 
 #include <iomanip>
@@ -12,31 +13,16 @@ using debugging::debug;
 #include <Eigen/QR>
 
 
-#pragma GCC optimize ("-O3")
+#pragma GCC optimize ("-O2")
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(5001);    
 
-LinearRegression::Scalar
-abs_val(LinearRegression::Scalar x)
-{ if (x < 0.0) return -x; else return x; }
-
-LinearRegression::Scalar
-max_abs(LinearRegression::Scalar x, LinearRegression::Scalar y)
-{ LinearRegression::Scalar ax = abs_val(x); LinearRegression::Scalar ay = abs_val(y); if (ax >= ay) return ax; else return ay; }
-
-int
-min_int(int i, int j)
-{ if(i<j) return i; else return j; }
-
-bool
-close(LinearRegression::Scalar a, LinearRegression::Scalar b)
-{ return abs_val(a-b) < 1.0e-50; }
-
 
 //   Macros      Macros      Macros      Macros      Macros
 
-#define QQ()      (mQ.leftCols(mK))
+#define QQ()      (mQ.topLeftCorner(mN,mK))
+#define QQtest()  (mQ.bottomLeftCorner(mTest,mK))
 #define RR()      (mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>())
 #define RINV()    (mR.topLeftCorner(mK,mK).inverse())          // should use triangular: mR.topLeftCorner(mK,mK).triangularView<Eigen::Upper>().inverse()
 
@@ -49,25 +35,12 @@ LinearRegression::approximate_ss(Vector const& x) const
   Scalar sum (x[0]);
   Scalar ss   (0.0);
 
-  for (int i=1; i<x.size(); ++i)
+  for (int i=1; i<mN; ++i)   // only for est cases
   { sum += x[i];
     LinearRegression::Scalar dev = x[i]-(sum/(Scalar)i);
     ss += dev*dev;
   }
   return ss;
-}
-
-
-bool
-LinearRegression::is_binary_vector(Vector const& y)  const
-{
-  for(int i=0; i<y.size(); ++i)
-    if( (y[i] != 0) && (y[i] != 1) )
-    { debug("REGR",4) << "Response vector in regression is not binary; found value v[" << i << "] = " << y[i] << std::endl;
-      return false;
-    }
-  debug("REGR",4) << "Response vector in regression is binary." << std::endl;
-  return true;
 }
 
 
@@ -94,7 +67,7 @@ void
 LinearRegression::allocate_memory()
 {
   mResiduals = Vector(mN);
-  mQ         = Matrix(mN, numberOfAllocatedColumns);
+  mQ         = Matrix(mN+mTest, numberOfAllocatedColumns);
   mR         = Matrix(numberOfAllocatedColumns,numberOfAllocatedColumns);
   mLambda    = Vector(numberOfAllocatedColumns);
   mGamma     = Vector(numberOfAllocatedColumns);
@@ -106,12 +79,13 @@ LinearRegression::add_constant()
 {
   mK = 1;
   mXNames.push_back("Intercept");
-  mQ.col(0)    = mSqrtWeights;
+  mQ.col(0).head(mN) = mSqrtWeights;
+  mQ.col(0).tail(mTest) = Vector::Constant(mTest,(Scalar)1.0);
   mR(0,0)      = (Scalar) sqrt(mSqrtWeights.squaredNorm());
   mQ.col(0)   /= mR(0,0);
-  mGamma[0]    = mQ.col(0).dot(mY);
+  mGamma[0]    = mQ.col(0).head(mN).dot(mY);
   mLambda[0]   = 0.0;                               // dont shrink intercept
-  mResiduals   = mY -  mGamma[0] * mQ.col(0);
+  mResiduals   = mY -  mGamma[0] * mQ.col(0).head(mN);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 
@@ -187,7 +161,7 @@ LinearRegression::se_gamma() const
     }
     else // larger blocks, just diagonal
     { se2.setZero();
-      for(int row = 0; row <mN; row+=mBlockSize)
+      for(int row = 0; row < mN; row += mBlockSize)
       {	Vector eQ = mResiduals.segment(row,mBlockSize).transpose() * mQ.block(row,0,mBlockSize,mK);
 	se2.array() += eQ.array() * eQ.array();
       }
@@ -241,11 +215,29 @@ LinearRegression::se_beta() const
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
 
 LinearRegression::Vector
-LinearRegression::predictions(Matrix const& x, bool truncate) const
+LinearRegression::test_predictions  (bool truncate)   const
+{
+  if (q()==0)
+    return Vector::Constant(mN,y_bar());
+  Vector preds = QQtest() * mGamma.head(mK);
+  if (!truncate)
+    return preds;
+  else
+    return preds.unaryExpr(&soft_limits);
+}
+
+#pragma GCC diagnostic pop
+
+
+LinearRegression::Vector
+LinearRegression::predict(Matrix const& x, bool truncate) const
 {
   assert(q() == x.cols());
+  assert(can_return_beta());
   Vector b (beta());
   if (q() == 0)
     return Vector::Constant(x.rows(),b(0));
@@ -284,23 +276,23 @@ LinearRegression::is_invalid_ss (LinearRegression::Scalar ss, LinearRegression::
 }
 
 LinearRegression::Scalar
-LinearRegression::sweep_Q_from_column(int col) const
+LinearRegression::sweep_Q_from_column_and_normalize(int col) const
 {
   // all at once, classical GS
-  Scalar ss (approximate_ss(mQ.col(col)));
+  Scalar ss (approximate_ss(mQ.col(col).head(mN)));
   #ifdef _CLASSICAL_GS_
-  Vector delta  (mQ.leftCols(col).transpose() * mQ.col(col));
+  Vector delta = mQ.block(0,0,mN,col).transpose() * mQ.col(col).head(mN);
   debugging::debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
   mQ.col(col) = mQ.col(col) - mQ.leftCols(col) * delta;
   mR.col(col).head(col) = delta;
   #else
   //residual from each first, modified GS
   for(int j=0; j<col; ++j)
-  { mR(j,col) = mQ.col(j).dot(mQ.col(col));
+  { mR(j,col) = mQ.col(j).head(mN).dot(mQ.col(col).head(mN));
     mQ.col(col).noalias() -= mQ.col(j) * mR(j,col);
   }
   #endif
-  Scalar ssz  (mQ.col(col).squaredNorm());
+  Scalar ssz  (mQ.col(col).head(mN).squaredNorm());
   if (is_invalid_ss (ss, ssz)) return 0.0;
   mQ.col(col) /= (Scalar) sqrt(ssz);
   mR(col,col)  = (Scalar) sqrt(ssz);
@@ -313,6 +305,7 @@ LinearRegression::sweep_Q_from_column(int col) const
 FStatistic
 LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
 {
+  assert (z.size() == (mN + mTest));
   mTempNames = name_vec(xName);
   mTempK     = 1;
   if ((int)numberOfAllocatedColumns <= mK)
@@ -321,41 +314,38 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
 	      << "\n******************\n";
     return FStatistic();
   }
-  mQ.col(mK) = z.array() * mSqrtWeights.array();     // will die here if mK is too large
-  if (0.0 == sweep_Q_from_column(mK))
+  mQ.col(mK).head( mN  ) = z.head(mN).array() * mSqrtWeights.array();     // will die here if mK is too large
+  mQ.col(mK).tail(mTest) = z.tail(mTest);
+  if (0.0 == sweep_Q_from_column_and_normalize(mK))
   { std::cout << "REGR: Singularity detected. SSz = 0 for predictor " << xName << "; returning empty F stat" << std::endl;
     return FStatistic();
   }
   int residualDF (mN-mK);
   assert(residualDF > 0);
-  Scalar qe  (mQ.col(mK).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
+  Scalar qe  (mQ.col(mK).head(mN).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
   if (mBlockSize==0)
   { Scalar regrss (qe * qe);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, Vector::Ones(1));
   }
-  else                                              
-  { if (is_binary() && (mBlockSize == 1))            // use Bennett and fake F stat from squaring bennett t stat
-    { std::pair<Scalar,Scalar> test (bennett_evaluation());
-      debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
-      return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
-    }
-    else                                             // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
-    { Scalar qeeq (0.0);
-      if (mBlockSize == 1)
-      { Vector temp (mQ.col(mK).array() * mResiduals.array());
-	qeeq = temp.squaredNorm();
-      }
-      else
-      { assert (0 == mN % mBlockSize);
-	for(int row=0; row<mN; row +=mBlockSize)
-	{ Scalar ezi (mResiduals.segment(row,mBlockSize).dot(mQ.col(mK).segment(row,mBlockSize)));
-	  qeeq += ezi * ezi;
-	}
-      }
-      debugging::debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
-      return FStatistic(qe*qe/qeeq, 1, residualDF, Vector::Ones(1));
+  if (has_binary_response() && (mBlockSize == 1))             // use Bennett and fake F stat from squaring bennett t stat
+  { std::pair<Scalar,Scalar> test (bennett_evaluation());
+    debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
+    return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
+  }
+  Scalar qeeq (0.0);                                          // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
+  if (mBlockSize == 1)
+  { Vector temp (mQ.col(mK).head(mN).array() * mResiduals.array());
+    qeeq = temp.squaredNorm();
+  }
+  else
+  { assert (0 == mN % mBlockSize);
+    for(int row=0; row<mN; row +=mBlockSize)
+    { Scalar ezi (mResiduals.segment(row,mBlockSize).dot(mQ.col(mK).segment(row,mBlockSize)));
+      qeeq += ezi * ezi;
     }
   }
+  debugging::debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
+  return FStatistic(qe*qe/qeeq, 1, residualDF, Vector::Ones(1));
 }
 
 
@@ -370,9 +360,10 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 	      << "\n******************\n";
     return FStatistic();
   }
-  mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
+  mQ.block(0 ,mK, mN  ,z.cols()) =  mSqrtWeights.asDiagonal() * z.topRows(mN);
+  mQ.block(mN,mK,mTest,z.cols()) =  z.bottomRows(mTest);
   for(int k = 0; k<z.cols(); ++k)
-    if(0.0 == sweep_Q_from_column(mK+k))
+    if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
       return FStatistic();
   int residualDF (mN-mK-(int)z.cols());
   assert(residualDF > 0);
@@ -439,7 +430,7 @@ LinearRegression::update_fit(StringVec xNames)
   assert (mTempK == (int)xNames.size());
   for(unsigned int j=0; j<xNames.size(); ++j)
   { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).dot(mY)/(1+mLambda[mK+j]));
+    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mY)/(1+mLambda[mK+j]));
   }
   mK += mTempK;
   if ((int)numberOfAllocatedColumns-5 < mK)
@@ -458,9 +449,10 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
   assert((int)zNames.size() == z.cols());
   mTempNames = zNames;
   mTempK     = (int) z.cols();
-  mQ.block(0,mK,mN,z.cols()) =  mSqrtWeights.asDiagonal() * z;
+  mQ.block( 0,mK, mN  ,z.cols()) =  mSqrtWeights.asDiagonal() * z.topRows(mN);
+  mQ.block(mN,mK,mTest,z.cols()) = z.bottomRows(mTest);
   for(int k = 0; k<z.cols(); ++k)
-    if(0.0 == sweep_Q_from_column(mK+k))
+    if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
     { std::cerr << "REGR: *** Error *** Column " << k << " of forced-to-add predictors is collinear." << std::endl;
       return;
     }
@@ -494,13 +486,11 @@ void
 LinearRegression::add_predictors  ()   // no shrinkage
 {
   debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
-  Scalar lambda (0);
   for (unsigned int j=0; j<mTempNames.size(); ++j)
-    mLambda[mK+j] = lambda;
+    mLambda[mK+j] = (Scalar) 0;
   update_fit(mTempNames);
 }
-
-
+ 
 
 //     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     Printing     
 
@@ -531,9 +521,9 @@ LinearRegression::print_to (std::ostream& os, bool compact) const
   }
   else
   { os << mWeightStr << "Linear Regression";
-    if (is_binary())
+    if (has_binary_response())
       os << " (Binary response)";
-    os << "  y = " << mYName << "    (n=" << mN << ",k=" << mK << ") " << std::endl
+    os << "  y = " << mYName << "    (n=" << mN << ", nTest=" << mTest << ", k=" << mK << ") " << std::endl
        << "            Total SS    = " << mTotalSS    << "     R^2 = " << r_squared() << std::endl
        << "            Residual SS = " << mResidualSS << "    RMSE = " << rmse() << std::endl << std::endl;
     print_gamma_to(os);
@@ -581,6 +571,7 @@ LinearRegression::print_gamma_to (std::ostream&os) const
 void
 LinearRegression::print_beta_to (std::ostream&os) const
 {
+  assert (can_return_beta());
   Vector b   (beta());
   Vector se  (se_beta());
   os.precision(4);
@@ -601,7 +592,7 @@ LinearRegression::print_beta_to (std::ostream&os) const
 
 
 void
-LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
+LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool includeValidation) const
 {
   // number of columns of predictors
   int numX = min_int(mK-1,maxNumXCols);
@@ -615,8 +606,11 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
   Vector y    (raw_y());
   Vector res  (raw_residuals());
   Vector fit  (y - res);
-  for(int i=0; i<mN; ++i)
-  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" << y[i] ;
+  int limit = (includeValidation) ? mN + mTest : mN;
+  for(int i=0; i<limit; ++i)
+  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" ;
+    if (i<mN) os << y[i];
+    else      os << "NA";
     if(numX>0)
     { Vector row (x_row(i));
       for (int j=1; j<=numX; ++j)  // skip intercept
@@ -632,8 +626,8 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols) const
 void
 FastLinearRegression::allocate_projection_memory()
 {
-  mM      = Matrix::Zero(    mN   , mOmegaDim);
-  mTtT    = Matrix::Zero(mOmegaDim, mOmegaDim);
+  mM      = Matrix::Zero(mN + mTest, mOmegaDim);
+  mTtT    = Matrix::Zero( mOmegaDim, mOmegaDim);
 }
 
 // suppress warnings regarding Eigen conversions
@@ -641,16 +635,16 @@ FastLinearRegression::allocate_projection_memory()
 #pragma GCC diagnostic ignored "-Wconversion"
 
 LinearRegression::Scalar
-FastLinearRegression::sweep_Q_from_column(int col)      const
+FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 {
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
-    return LinearRegression::sweep_Q_from_column(col);
-  mQ.col(col).array() -= mQ.col(col).sum() / (Scalar) mQ.rows();   // subtract mean
-  Scalar ss = mQ.col(col).squaredNorm();                           // compare initial SS to post sweep SS to check for singularities
-  Vector b = mM.transpose() * mQ.col(col);                         // compute b = R^-1 R^-1' M'z
+    return LinearRegression::sweep_Q_from_column_and_normalize(col);
+  mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean
+  Scalar ss = mQ.col(col).head(mN).squaredNorm();                  // compare initial SS to post sweep SS to check for singularities
+  Vector b = mM.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = R^-1 R^-1' M'z
   mTtT.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
   mQ.col(col) -= mM * b;                                           // compute z = z - Mb
-  Scalar ssz  (mQ.col(col).squaredNorm());                         // check that SS dropped and is not nan
+  Scalar ssz  (mQ.col(col).head(mN).squaredNorm());                // check that SS dropped and is not nan
   if (is_invalid_ss (ss, ssz)) return 0.0;
   Scalar norm = (Scalar) sqrt(ssz);
   mQ.col(col) /= norm;                                             // normalize swept column
@@ -666,15 +660,15 @@ FastLinearRegression::update_fit(StringVec xNames)
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";
-  assert(xNames.size()==1);
+  assert (xNames.size()==1);
   assert (mTempK == (int)xNames.size());
   for(size_t j=0; j<xNames.size(); ++j)
   { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).dot(mResiduals)/(1+mLambda[mK+j]));
+    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mResiduals)/(1+mLambda[mK+j]));
   }
   Matrix w = Matrix::Random(mTempK,mOmegaDim);                        // update random projection, uni[-1,1]
   mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z w'
-  Matrix Mtz = mM.transpose() * mQ.block(0,mK,mQ.rows(),mTempK);      // M'z
+  Matrix Mtz = mM.topRows(mN).transpose() * mQ.block(0,mK,mN,mTempK); // M'z
   if (1 == mTempK)
   { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of T'T; z~ = mQ[mK]
       for(int k=j; k< (int) mOmegaDim; ++k)
@@ -688,7 +682,7 @@ FastLinearRegression::update_fit(StringVec xNames)
   }
   //  std::cout << "TEST: MtM [M is " << mM.rows() << " by " << mM.cols() << "]" << std::endl << mM.leftCols(5).transpose() * mM.leftCols(5) << std::endl;
   //  std::cout << "TEST: TtT " << mTtT.rows() << " by " << mTtT.cols() << std::endl << mTtT.block(0,0,5,5) << std::endl;
-  mResiduals -= mQ.block(0,mK,mQ.rows(),mTempK) * mGamma.segment(mK,mTempK); 
+  mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
   mK += mTempK;
 }
