@@ -149,12 +149,12 @@ public:
 
 
 void
-validate_regression(VECTOR    const& Y,
-		    MATRIX    const& Xi,      // preconditioning variables
-		    MATRIX    const& X,       // variables to add one-at-a-time
-		    int nFolds,
-		    MATRIX   &results,
-		    unsigned randomSeed)
+cross_validate_regression(VECTOR    const& Y,
+			  MATRIX    const& Xi,      // preconditioning variables
+			  MATRIX    const& X,       // variables to add one-at-a-time
+			  int nFolds,
+			  MATRIX   &results,
+			  unsigned randomSeed)
 {
   if ((results.rows() != (1+X.cols())) || (results.cols()!=4) )
   { std::cerr << "REGR: Arguments to validate_regression misformed. dim(result)= (" << results.rows() << "," << results.cols()

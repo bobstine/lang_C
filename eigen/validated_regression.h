@@ -120,7 +120,7 @@ private:
 //      cross-validation     cross-validation     cross-validation     cross-validation     cross-validation
 
 void
-validate_regression(LinearRegression::Vector const& Y,     // response
+cross_validate_regression(LinearRegression::Vector const& Y,     // response
 		    LinearRegression::Matrix const& Xi,    // initial block of Xs to initialize model
 		    LinearRegression::Matrix const& X,     // sequence to compute AIC, CVSS
 		    int nFolds,                            // how many folds for CV (0 means no CV)
