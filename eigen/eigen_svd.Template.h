@@ -1,6 +1,9 @@
+#ifndef _EIGEN_SVD_TEMPLATE_H_
+#define _EIGEN_SVD_TEMPLATE_H_
+
+#include "eigen_svd.h"
 #include "debug.h"
 
-// #include <Eigen/QR>
 #include <Eigen/Eigenvalues>
 
 
@@ -171,3 +174,6 @@ RKHS<K>::operator()(Eigen::MatrixXd const& input) const
   debug() << std::endl;
   return pc;
 }
+
+
+#endif
