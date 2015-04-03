@@ -38,11 +38,12 @@
 class LinearRegression
 {
 public:
-  typedef SCALAR                   Scalar;
-  typedef VECTOR                   Vector;
-  typedef MATRIX                   Matrix;
-  typedef FStatistic               FStat;
-  typedef std::vector<std::string> StringVec;
+  typedef SCALAR              Scalar;
+  typedef VECTOR              Vector;
+  typedef MATRIX              Matrix;
+  typedef FStatistic          FStat;
+  typedef std::string         string;
+  typedef std::vector<string> StringVec;
   
 protected:
   int                      mN;             // number of actual obs without pseudo-rows used for shrinkage [ const to make easy to find where changed ]
@@ -149,6 +150,7 @@ protected:
   bool      is_invalid_ss (Scalar ss, Scalar ssz)  const;              // checks for singularity, nan, neg, inf
   Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
 
+  virtual string output_label()                    const       { return "Linear Regression"; }
   virtual Scalar sweep_Q_from_column_and_normalize(int col)      const;              // only affect Q, R past those of current fit
   virtual   void update_fit(StringVec xNames);
 
@@ -195,6 +197,7 @@ public:
   
 private:
   void           allocate_projection_memory();
+  virtual string output_label()                    const       { return "Fast " + LinearRegression::output_label(); }
   virtual Scalar sweep_Q_from_column_and_normalize(int col)      const;    // sweeps using M and T formed from random projection
   virtual   void update_fit(StringVec xNames);
 };

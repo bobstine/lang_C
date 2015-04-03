@@ -14,9 +14,6 @@
 #include "column.Template.h"
 
 
-typedef ValidatedRegression<FastLinearRegression>  Regression;
-
-
 void
 FiniteCauchyShare::init()
 {

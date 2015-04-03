@@ -45,7 +45,7 @@ int main(int argc, char ** argv)
   parse_arguments(argc, argv, headerLines,  prefixCases, n, choose, balanceFile, blockSize,seed);
   if (n == 0) std::cin >> n;
   std::clog << "random_indicator --prefix=" << prefixCases << " -n" << n << " -c" << choose
-	    << "--balance=" << balanceFile << " --blocksize=" << blockSize << " --seed=" << seed;
+	    << " --balance=" << balanceFile << " --blocksize=" << blockSize << " --seed=" << seed;
   if (headerLines) std::clog << " --header";
   std::clog << std::endl;
   if ((!balanceFile.empty()) && (1<blockSize))

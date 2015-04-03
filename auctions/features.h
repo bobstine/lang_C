@@ -389,9 +389,9 @@ class FeatureSource
   typedef std::set<std::string>    StringSet;
 
  private:
-  const int                mSkip;           // skip this count of leading cases when transfer to model
-  std::vector<std::string> mStreams;        // use vector to keep ordered
-  FeatureVector            mFeatures;
+  const int        mSkip;           // skip this count of leading cases when transfer to model
+  StringVector     mStreams;        // use vector to keep ordered
+  FeatureVector    mFeatures;
   
  public:
 

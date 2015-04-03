@@ -408,8 +408,8 @@ LinearRegression::bennett_evaluation () const
   mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                        // would match residuals IF other fit is bounded
-  Scalar num     (dev.dot(mQ.col(mK)));                                            // z'(y-y^)
-  Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).cwiseProduct(mQ.col(mK)))));    // sqrt(z'Dz)
+  Scalar num     (dev.dot(mQ.col(mK).head(mN)));                                                  // z'(y-y^)
+  Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).head(mN).cwiseProduct(mQ.col(mK).head(mN))))); // sqrt(z'Dz)
   Scalar maxA    (0.0);
   for (int i=0; i<mN; ++i)
     { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
@@ -520,7 +520,7 @@ LinearRegression::print_to (std::ostream& os, bool compact) const
     compact_print_gamma_to(os,indices);
   }
   else
-  { os << mWeightStr << "Linear Regression";
+  { os << mWeightStr << output_label();
     if (has_binary_response())
       os << " (Binary response)";
     os << "  y = " << mYName << "    (n=" << mN << ", nTest=" << mTest << ", k=" << mK << ") " << std::endl
@@ -660,7 +660,6 @@ FastLinearRegression::update_fit(StringVec xNames)
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";
-  assert (xNames.size()==1);
   assert (mTempK == (int)xNames.size());
   for(size_t j=0; j<xNames.size(); ++j)
   { mXNames.push_back(xNames[j]);

@@ -181,12 +181,11 @@ main(int argc, char** argv)
 		    << yColumns.size() << " Ys, "
 		    << xColumns.size() << " Xs, and "
 		    << cColumns.size() << " context columns.\n";
-  }
+  } 
 
   // build model and initialize auction with tab-delimited stream for tracking progress
  
-  typedef ValidatedRegression<FastLinearRegression> Regression;
-  typedef Auction<Regression>                       RegressionAuction;
+  typedef Auction<Regression>  RegressionAuction;
   Regression theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
@@ -229,13 +228,16 @@ main(int argc, char** argv)
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
 				 make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
-    // 
-    theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
-				 UniversalBoundedBidder<InteractionStream>(),
-				 make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
-				 ));
+    if (false)
+    { // exclude these interaction streams within a stream
+      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
+				   UniversalBoundedBidder<InteractionStream>(),
+				   make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
+				   ));
+    }
   }
-  {
+  if (false)
+  { // beams don't yet recognize the new feature structure??? 
     const int gap = 3;
     typedef FeatureStream< BeamIterator <RegressionAuction>, BeamConstructor<RegressionAuction> > BeamStream;
     theAuction.add_expert(Expert("Beam", beam, purgable, nContextCases, alphaInt,
@@ -275,14 +277,15 @@ main(int argc, char** argv)
 	  debug("AUCT",1) << theAuction << std::endl << std::endl;
 	}
 	else
-	  theAuction.print_to(debug("AUCT",1), true); 
+	  theAuction.print_to(debug("AUCT",2), true); 
       }
       Scalar time = (Scalar)time_since(start);
       totalTime += time;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
       std::pair<Scalar,Scalar> rss {theAuction.model().sums_of_squares()};
-      if(rss0.second+100 < rss.second)
-      { std::clog << "AUCT: *** Error *** CVSS has substantial increase in last round; exiting after writing model and full set of Xs.\n";
+      if( 1.1*rss0.second < rss.second)
+      { std::clog << "AUCT: *** Error *** CVSS grew by more than 10% in last round from " << rss0.second
+		  << " to " << rss.second << "; exiting after writing model and full set of Xs.\n";
 	cvssCheck = false;
 	maxNumOutputPredictors = 2000;
       }

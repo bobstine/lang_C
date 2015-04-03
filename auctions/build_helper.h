@@ -23,8 +23,12 @@ public:
   SCALAR p(int j) const;
 };
 
+//  -------------------------------------------------------------------------------------
+//          Define regression type
+typedef  ValidatedRegression<FastLinearRegression>  Regression;
+//  -------------------------------------------------------------------------------------
 
-ValidatedRegression<FastLinearRegression>
+Regression
 build_regression_model(Column<SCALAR> y, Column <SCALAR>inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
 
 int
