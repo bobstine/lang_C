@@ -112,11 +112,13 @@ class Column
   Column();
   Column(Column<F> const& c);
   Column(char const* name, int n);
+
   Column(std::string name, std::string description, size_t n, std::istream& is);
   Column(char const* name, char const* description, size_t n, FILE *fp);
-
   template <class Iter>
     Column(char const* name, char const* description, size_t n, Iter source);
+  template<class Iter, class Function>
+    Column(std::string name, std::string description, size_t n, Iter iter, Function const& f);
   
   Column& operator= (Column const& c);
   
