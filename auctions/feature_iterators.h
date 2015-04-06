@@ -3,6 +3,7 @@
 
 #include "features.h"
 
+
 // for finite streams
 #include <queue>
 #include <iostream>
@@ -81,7 +82,6 @@ public:
   bool  points_to_valid_data()                { if(mNeedToCheck) advance_position();  return mPosition < mSource.size(); }
 
   DynamicIterator& operator++()               { assert(mPosition < mSource.size()); ++mPosition; advance_position(); return *this;}
-  //  DynamicIterator  operator++(int)            { DynamicIterator copy = *this; assert(mPosition < mSource.size()); ++mPosition; advance_position(); return copy;}
   
   Feature          operator*()          const { assert(mPosition < mSource.size()); return mSource[mPosition]; }
 
@@ -130,6 +130,47 @@ std::ostream&
 operator<< (std::ostream& os, CyclicIterator<Collection,Pred> const& it) { it.print_to(os); return os; }
 
 
+
+//     EigenwordIterator     EigenwordIterator     EigenwordIterator     EigenwordIterator     EigenwordIterator
+
+//     Never used as other iterators in this collection since it *builds* the features on the
+//     fly rather than indexing into an external collection as expected in auction.
+
+/*
+#include "simple_vocabulary.h"
+#include "simple_eigenword_dictionary.h"
+
+class EigenwordIterator
+{
+  std::string                      mName;
+  std::vector<std::string>         mTokens;
+  Text::SimpleEigenwordDictionary  mDictionary;
+  size_t                           mEigenDim;
+  std::vector<bool>                mUsedDim;
+  size_t                           mPosition;
+  size_t                           mNumberRemaining;
+  
+public:
+ EigenwordIterator(std::string name, std::vector<std::string> tokens, size_t dim, Text::SimpleEigenwordDictionary const& dict)
+   : mName(name),
+    mTokens(tokens), mDictionary(dict), mEigenDim(dim),
+    mUsedDim(std::vector<bool>(dim,false)), mPosition(0), mNumberRemaining(dim) { }
+  
+  int   number_remaining()              const { return (int)mNumberRemaining; }
+  bool  points_to_valid_data()          const { return (mNumberRemaining > 0); }
+
+  EigenwordIterator& operator++()            ;
+  Feature            operator*()        const;
+
+  void  print_to(std::ostream& os)      const;
+};
+
+
+inline
+std::ostream&
+operator<< (std::ostream& os, EigenwordIterator const& it) { it.print_to(os); return os; }
+*/
+  
 
 //     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator     LagIterator
 

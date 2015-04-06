@@ -87,6 +87,25 @@ main ()
     std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
   }
   
+
+  if (true)         // test eigenword feature iterator 
+  {
+    #include "simple_vocabulary.h"
+    #include "simple_eigenword_dictionary.h"
+
+    const bool downcase = false;
+    Text::SimpleVocabulary vocab = Text::make_simple_vocabulary("/home/bob/C/text/test.txt", downcase);
+    const int seed = 1234;
+    const size_t dim = 10;
+    Text::SimpleEigenwordDictionary dict = Text::make_random_simple_eigenword_dictionary(seed, dim, vocab);
+    FeatureVector fv = make_eigenword_feature_vector("/home/bob/C/text/test_tokens.txt", dim, dict);
+    for (size_t i=0; i<fv.size(); ++i)
+      std::cout << "TEST: Eigenword feature... " << fv[i] << " avg=" << fv[i]->average() << std::endl;
+    std::cout << std::endl;
+  }
+
+
+
   if (false)
   { // a lag feature
     std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";

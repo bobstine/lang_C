@@ -83,6 +83,22 @@ Column<F>::Column(char const* name, char const* description, size_t n, Iter sour
 
 
 template<class F>
+template <class Iter>
+Column<F>::Column(std::string name, std::string description, size_t n, Iter source) : mData( new ColumnData<F>(n) )
+{
+  mData->mName = name;
+  mData->mRole = extract_role_from_string(description);
+  mData->mDescription = description;
+  F *x (mData->mBegin);
+  while(n--)
+  { *x = *source;
+    ++x; ++source;
+  }
+  mData->init_properties();
+}
+
+
+template<class F>
 template <class Iter, class Function>
 Column<F>::Column(std::string name, std::string description, size_t n, Iter iter, Function const& func) : mData( new ColumnData<F>(n) )
 {

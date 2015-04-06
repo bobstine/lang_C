@@ -117,6 +117,8 @@ class Column
   Column(char const* name, char const* description, size_t n, FILE *fp);
   template <class Iter>
     Column(char const* name, char const* description, size_t n, Iter source);
+  template <class Iter>
+    Column(std::string name, std::string description, size_t n, Iter source);
   template<class Iter, class Function>
     Column(std::string name, std::string description, size_t n, Iter iter, Function const& f);
   

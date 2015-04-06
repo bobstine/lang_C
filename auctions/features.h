@@ -43,10 +43,11 @@
 #include "auction_base_types.h"
 
 #include "featureABC.h"
-#include "column.h"
+#include "column.Template.h"
 #include "range_stats.h"
 #include "operator_traits.h"
 #include "function_utils.h"
+#include "simple_eigenword_dictionary.h"
 
 #include <iostream>
 #include <sstream>
@@ -377,7 +378,8 @@ class BinaryFeature : public FeatureABC
 //  Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source    Feature Source
 
 /*
-  Extracts features with chosen attributes out of a vector of features.
+  Converts collection of columns into features.  Reports summary properties of collection,
+  such as number of cases, streams, etc.   Then provides filtering of these features.
 */
 
 
@@ -413,6 +415,11 @@ class FeatureSource
   void initialize (std::vector<Column<Scalar>> cols);
 
 };
+
+
+FeatureVector
+make_eigenword_feature_vector (std::string fileName, size_t dim, Text::SimpleEigenwordDictionary const& dict);
+
 
 #endif
 

@@ -29,9 +29,11 @@ main()
     Column<Scalar> c1 ("c1", "description 1", n, x.begin());
     Column<Scalar> c2 (c1);
     Column<Scalar> c3 (c2);
-    Column<Scalar> c4 ("c4", "description 2", n, y.begin());
-    Column<Scalar> c5 (c4);
-    
+    Column<Scalar> c4 ("c4", "description 4", n, y.begin());
+    int i=0;
+    Column<Scalar> c5 ("c5", "lambda sqrt " , n, i, [](int i)->Scalar { return (Scalar) sqrt((Scalar)i); } );
+    std::cout << "TEST: i at end of lambda initialization = " << i << std::endl;
+		       
     std::cout << "TEST: inserted data\n";
     std::cout << c1 << std::endl;
     std::cout << c2 << std::endl;
@@ -109,6 +111,7 @@ main()
     
     // or just read them all into a vector
     
+    if (false)
     {
       std::cout << "\n\nTEST: Second portion of file test.  Inserting from file.\n";
     

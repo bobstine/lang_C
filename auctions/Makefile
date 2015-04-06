@@ -15,7 +15,7 @@ default: auction.test
 
 PROJECT_NAME = auction
 
-USES =  eigen spline ranges random utils 
+USES =  text eigen spline ranges random utils 
 
 OPT = -O3 -std=c++11
 

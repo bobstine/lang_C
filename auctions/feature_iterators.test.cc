@@ -94,8 +94,8 @@ main()
   features[3]->set_attribute("category", "1");
   std::cout << "  -------------------------------------------------------\n";
   
-
-  if (true)         // test predicate
+  
+  if (false)         // test predicate
   {
     std::cout << "TEST: features f[2] and f[3] are mutually exclusive gives (should be 1): "
 	      << FeaturePredicates::mutually_exclusive_categories_from_same_parent(features[2],features[3]) << "   "

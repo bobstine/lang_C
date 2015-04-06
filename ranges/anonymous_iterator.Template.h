@@ -365,7 +365,9 @@ class anonymous_iterator<std::forward_iterator_tag,BaseIter>
 :   public anonymous_iterator_abc<typename std::iterator_traits<BaseIter>::iterator_category,
 				  typename std::iterator_traits<BaseIter>::value_type>
 {
- protected:  
+typedef float Scalar;
+
+protected:  
   BaseIter mIter;
   typedef typename std::iterator_traits<BaseIter>::value_type v_type;
   typedef typename std::iterator_traits<BaseIter>::iterator_category iterator_category;
@@ -400,7 +402,7 @@ class anonymous_iterator<std::forward_iterator_tag,BaseIter>
 
   virtual v_type operator*() const
     {
-      return (SCALAR)*mIter; 
+      return (Scalar)*mIter; 
     }
 
   virtual Parent* clone() const

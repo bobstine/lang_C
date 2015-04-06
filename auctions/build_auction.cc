@@ -27,9 +27,8 @@
    1 Aug 03 ... Created
 */
 
-#include "auction_base_types.h"
-#include "auction.Template.h"
 #include "build_helper.h"
+#include "auction.Template.h"
 
 // from ranges
 #include "range.h" 
@@ -127,8 +126,7 @@ main(int argc, char** argv)
     std::ofstream os (outputPath + "configuration");
     os << configuration << std::endl;
   }
-  // open additional files for output
-  
+  // open additional files for output  
   string        progressFileName (outputPath + "progress.txt");
   std::ofstream progressStream   (progressFileName.c_str());
   if (!progressStream)
@@ -145,16 +143,15 @@ main(int argc, char** argv)
 		  << "      model data  --> " << modelDataFileName << std::endl
 		  << "       model.txt  --> " << modelTextFileName << std::endl;  
   /* XF
-     Read columns from a file. The file is laid out with one column of values per row.
+     Read columns from a file. The source file is laid out with one column of values per row.
      Line 1: gives the number of cases
-     Line 2: name of the first variable (the response)
-          3: description of first variable     
-          4: data for the response
-     Line 5: name of the second variable  (X_1)
-          6: description of second variable (its property list)
+     Line 2: name of the first variable
+          3: description of first variable  (its property list)    
+          4: data for the first variable
+     Line 5: name of the second variable
+          6: description of second variable
 	  7: data for the second variable
-     Line 6: name of the third variable (X_2) 
-     ...
+     Line 6: name of the third variable      ...
      
      The reading is done by a FileColumnStream.  A column feature provides a named range
      of Scalars that learns a few properties of the data as it's read in (min, max, unique
@@ -190,7 +187,7 @@ main(int argc, char** argv)
   const string calibrationSignature ("Y_hat_");
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
   
-  // open input data stream
+  // convert input columns into features arranged in streams
   
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
