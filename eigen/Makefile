@@ -4,13 +4,18 @@ include ../c_flags
 #
 #        Options
 #
+#     -Ofast         same as "-O3 -ffast-math" enables optimizations (eg floating point reassociation)
+#     -flto          enable link time optimizations  (failed in subsequent link?)
+#     -mfpmath=sse   enables use of XMM registers in floating point instructions (instead of stack in x87 mode)
+#     -funroll-loops enables loop unrolling
+#
 ###########################################################################
 
 PROJECT_NAME = eigen
 
 USES = random utils
 
-OPT = -O3 
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
 EXTERNAL_USES = 
 

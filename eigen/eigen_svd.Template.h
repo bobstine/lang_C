@@ -86,6 +86,9 @@ SVD::standardize_columns_in_place (EigenMatrix& data, bool useSD)
 }
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
 template<class EigenMatrix>
 EigenMatrix
 SVD::random_linear_combinations (EigenMatrix const& data,int k)
@@ -93,6 +96,8 @@ SVD::random_linear_combinations (EigenMatrix const& data,int k)
   EigenMatrix rand = EigenMatrix::Random(data.cols(), k);
   return  rand * data;
 }
+
+#pragma GCC diagnostic pop
 
 
 

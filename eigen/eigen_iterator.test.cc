@@ -1,5 +1,5 @@
 #include "eigen_iterator.h"
-#include "regression.h"
+#include "linear_regression.h"
 
 #include <iostream>
 #include <algorithm>

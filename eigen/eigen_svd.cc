@@ -34,7 +34,6 @@ PCA::operator()(Eigen::MatrixXd const& data) const
 }
 
 
-
 //   Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    Kernel    
  
 std::string Kernel::Radial::classname          ("Radial Kernel");

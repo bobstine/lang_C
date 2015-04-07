@@ -17,10 +17,8 @@ PROJECT_NAME = auction
 
 USES =  text eigen spline ranges random utils 
 
-OPT = -O3 -std=c++11
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
-#  thread builds without gomp, but needed for auction
-#  EXTERNAL_USES = boost_system boost_thread gomp
 
 ###########################################################################
 #

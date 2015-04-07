@@ -1,6 +1,7 @@
-/*
-  For explanation of shrinkage, see shrinkage.tex in work/papers/notes
-*/
+// -*- c++; c-file-style: "bobstyle" -*-
+
+//  For explanation of shrinkage, see shrinkage.tex in work/papers/notes
+
 #include "debug.h"
 using debugging::debug;
 
@@ -11,9 +12,6 @@ using debugging::debug;
 #include <iomanip>
 #include <Eigen/LU>
 #include <Eigen/QR>
-
-
-#pragma GCC optimize ("-O2")
 
 const unsigned int maxNameLen (50);                                                 // max length shown when print model
 const unsigned int numberOfAllocatedColumns(5001);    
@@ -255,21 +253,21 @@ bool
 LinearRegression::is_invalid_ss (LinearRegression::Scalar ss, LinearRegression::Scalar ssz)          const
 {
   const    double    epsilon (1.0e-5);
-  debugging::debug("REGR",4) << "Initial SSz = " << ss << " becomes " << ssz << " after sweeping." << std::endl; 
+  debug("REGR",4) << "Initial SSz = " << ss << " becomes " << ssz << " after sweeping." << std::endl; 
   if (ssz <= 0.0)
-  { debugging::debug("REGR",1) << " *** Error: SSz <= 0.0 in regression." << std::endl;
+  { debug("REGR",1) << " *** Error: SSz <= 0.0 in regression." << std::endl;
     return true;
   }
   if(std::isnan(ssz))
-  { debugging::debug("REGR",1) << " *** Error: SSz = NaN in regression." << std::endl;
+  { debug("REGR",1) << " *** Error: SSz = NaN in regression." << std::endl;
     return true;
   }
   if(std::isinf(ssz))
-  { debugging::debug("REGR",1) << " *** Error: SSz = Inf in regression." << std::endl;
+  { debug("REGR",1) << " *** Error: SSz = Inf in regression." << std::endl;
     return true;
   }
   if(ssz/ss < epsilon)
-  { debugging::debug("REGR",1) << "SSZ indicates near singular;  SSZ = " << ssz << std::endl;
+  { debug("REGR",1) << "SSZ indicates near singular;  SSZ = " << ssz << std::endl;
     return true;
   }
   return false;
@@ -620,14 +618,30 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
   }
 }
 
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void
 FastLinearRegression::allocate_projection_memory()
 {
   mM      = Matrix::Zero(mN + mTest, mOmegaDim);
   mTtT    = Matrix::Zero( mOmegaDim, mOmegaDim);
+}
+
+void
+FastLinearRegression::apply_gradient_correction()
+{
+  const int q = (mK < 11) ? mK : 10;
+  debug("FREG",1) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
+		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
+  for (int j=1; j<mK; ++j)
+  { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
+    mResiduals -= dGamma * mQ.col(j).head(mN);
+    mGamma(j) += dGamma;
+  }
+  debug("FREG",1) << "After    gradient, RSS= " << mResiduals.squaredNorm()
+		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
 }
 
 // suppress warnings regarding Eigen conversions
@@ -655,6 +669,7 @@ FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 void
 FastLinearRegression::update_fit(StringVec xNames)
 {
+  ++mGradientCounter;
   debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
   if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
     std::cerr << "\n********************\n"
@@ -684,7 +699,12 @@ FastLinearRegression::update_fit(StringVec xNames)
   mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
   mK += mTempK;
+  if (mGradientPeriod == mGradientCounter)
+  { mGradientCounter = 0;
+    apply_gradient_correction();
+  }
 }
 
-#pragma GCC diagnostic pop
+#pragma GCC diagnostic push
+
 

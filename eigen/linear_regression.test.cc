@@ -41,7 +41,7 @@ int main(int, char **)
   typedef LinearRegression::Matrix Matrix;
   
   cout << "TEST:  Test of linear regression begins...\n\n";
-  debugging::debug_init(cout,2);
+  debugging::debug_init(cout,4);
   cout.precision(4);
   
   // Time to fit regr with n = 200,000 rows  (optimization O4)       Add 3 to initial p
@@ -52,7 +52,7 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       ( 300000 );   
+  const int nRows       (  30000 );   
   const int nCols       (      5 );
   const int nAdd        (    100 );
   
@@ -119,7 +119,6 @@ int main(int, char **)
 
     const int blockSize = 0;
     const int nTest = (int) y.size();
-    const size_t omegaDimension = 10;
 
     Matrix XX(2*X.rows(),X.cols());   // double up to text validation gives same
     XX.topRows   (X.rows()) = X;
@@ -131,7 +130,8 @@ int main(int, char **)
     LinearRegression regr("yyy", y, nTest, w, blockSize);
 #else
     LinearRegression      regr("yyy", y, nTest, blockSize);
-    FastLinearRegression fRegr("yyy", y, nTest, blockSize, omegaDimension);
+    FastLinearRegression fRegr("yyy", y, nTest, blockSize);
+    fRegr.set_gradient_period(15);
 #endif
     cout << "TEST: Initialized regression " << endl << regr << endl;
     cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;

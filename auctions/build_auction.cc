@@ -78,7 +78,6 @@ main(int argc, char** argv)
 {
   using debugging::debug;
   using std::string;
-  debug("AUCT",0) << "Version build 2.0 (18 Jan 2015)\n";
 
   // Parse command line options
   
@@ -113,6 +112,7 @@ main(int argc, char** argv)
 #else
   debugging::debug_init(std::clog, debugLevel);
 #endif
+  debug("AUCT",0) << "Version build 2.03 (7 Apr 2015) Fast regression, with gradient.\n";
 
   // write configuration and record to file
   string configuration;
@@ -181,12 +181,12 @@ main(int argc, char** argv)
   } 
 
   // build model and initialize auction with tab-delimited stream for tracking progress
- 
+  
   typedef Auction<Regression>  RegressionAuction;
   Regression theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
   const string calibrationSignature ("Y_hat_");
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
-  
+   
   // convert input columns into features arranged in streams
   
   FeatureSource featureSource (xColumns, nPrefixCases);

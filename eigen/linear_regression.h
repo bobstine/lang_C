@@ -46,7 +46,7 @@ public:
   typedef std::vector<string> StringVec;
   
 protected:
-  int                      mN;             // number of actual obs without pseudo-rows used for shrinkage [ const to make easy to find where changed ]
+  int                      mN;             // number of actual obs without pseudo-rows used for shrinkage
   int                      mTest;          // cases of X's reserved for validation testing
   int                      mK;             // number of columns (including constant) in the model
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
@@ -187,18 +187,23 @@ private:
   size_t    mOmegaDim;               // number of columns in random projection
   Matrix    mM;                      // random projection of predictors
   Matrix    mTtT;                    // 'square' of upper triangular portion of M = Q T
+  size_t    mGradientPeriod;         // resweep after adding this many predictors (0 means ignore correction)
+  size_t    mGradientCounter;
 
 public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize) 
-    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                                                            // match signature of linear_regression
+    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10), mGradientPeriod(100), mGradientCounter(0) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+
+  void set_gradient_period (size_t period)    { mGradientPeriod = period; }
   
 private:
   void           allocate_projection_memory();
-  virtual string output_label()                    const       { return "Fast " + LinearRegression::output_label(); }
-  virtual Scalar sweep_Q_from_column_and_normalize(int col)      const;    // sweeps using M and T formed from random projection
+  void           apply_gradient_correction();                         // sweeps all past predictors from residuals, updating mGamma        
+  virtual string output_label()                             const   { return "Fast " + LinearRegression::output_label(); }
+  virtual Scalar sweep_Q_from_column_and_normalize(int col) const;    // sweeps using M and T formed from random projection
   virtual   void update_fit(StringVec xNames);
 };
   
