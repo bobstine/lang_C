@@ -16,6 +16,8 @@ PROJECT_NAME = spline
 
 USES = ranges random utils
 
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+
 ###########################################################################
 #
 #	Objects ... objects are listed in order of precedence

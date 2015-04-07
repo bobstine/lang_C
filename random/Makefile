@@ -16,8 +16,7 @@ PROJECT_NAME = random
 
 USES     = utils
 
-OPT = -O3 -std=c++11                                                                                                                                                
-
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
 ###########################################################################
 #
