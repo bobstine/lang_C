@@ -13,8 +13,8 @@ include ../c_flags
 
 PROJECT_NAME = tools
 
-OPT = -O3
-
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+# OPT = -O3
 # OPT = -O3 -DNDEBUG
 
 USES = utils random
@@ -102,6 +102,13 @@ process_grades: process_grades.o
 # -------------------------------------------------------------------
 
 merge_movies: merge_movies.o
+	$(GCC) $< $(LDLIBS) -o $@
+
+# -------------------------------------------------------------------
+#  Play with NAN for use as missing data code
+# -------------------------------------------------------------------
+
+missing_test: missing_test.o
 	$(GCC) $< $(LDLIBS) -o $@
 
 

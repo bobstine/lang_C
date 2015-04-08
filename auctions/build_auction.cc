@@ -1,7 +1,7 @@
 /* 
   Builds the auction using parameters from the input parameter file.  The first
   line of the parameters file uses these options:
-	-a  total alpha to distribute           (default is 0.1... might ought to be less)
+  	-a  total alpha to distribute           (default is 0.1... might ought to be less)
 	-b  blocksize for white                 (default 0 is OLS; 1 for white; larger for corr)
 	-c  calibration df                      (default is no calibration)
         -d  debug level of output
