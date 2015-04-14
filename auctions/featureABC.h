@@ -149,18 +149,6 @@ operator<< (std::ostream& os, std::set<F> const& s)                 // default f
 
 inline
 std::ostream&
-operator<< (std::ostream& os, FeatureABC::Attributes const& attributes)
-{
-  os << " { ";
-  for (FeatureABC::Attributes::const_iterator it = attributes.begin(); it !=attributes.end(); ++it)
-    os << " [" << it->first << "=" << it->second << "]";
-  os << "}";
-  return os;
-}
-
-
-inline
-std::ostream&
 operator<< (std::ostream& os, FeatureABC::Arguments const& args)
 {
   for (FeatureABC::Arguments::const_iterator it=args.begin(); it!=args.end(); ++it)

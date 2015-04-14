@@ -9,6 +9,8 @@
 
 #include "read_utils.h"
 
+using std::string;
+
 
 int
 read_utils::ctoi(char c)
@@ -40,8 +42,31 @@ read_utils::ctoi(char c)
   }
 }
 
+//  Parse attributes
 
+const string equalStr {"="};
+const string commaStr {","};
 
+std::map<string,string>
+read_utils::parse_attributes_from_string (string const& line)
+{ 
+  std::cout << "TESTING: read_utils adding attributes from comma delimited paired assignment list:  " << line << std::endl;
+  size_t pos0 = 0, pos1 = 0;
+  std::map<string,string> attrMap;
+  while (true)
+  { pos1 = line.find(equalStr, pos0);
+    if(pos1 == std::string::npos) break;            // not found
+    string name = read_utils::trim(line.substr(pos0,pos1-pos0));
+    pos0 = pos1+1;
+    pos1 = line.find(commaStr, pos0);
+    if(pos1 == std::string::npos) pos1=line.size(); // no more options
+    string value = read_utils::trim(line.substr(pos0,pos1-pos0));
+    std::cout << "TESTING: name = " << name << "  value = " << value << std::endl;
+    attrMap[name]=value;
+    pos0 = pos1+1;
+  }
+  return attrMap;
+}
 
 
 //  This section of code handles standard C++ input
@@ -52,7 +77,7 @@ read_utils::ctoi(char c)
 std::istream&
 operator>>(std::istream& input, std::vector<double>& vec)
 {
-  std::string line;
+  string line;
   if(getline(input,line)) {
     std::istringstream ss(line);
     double x;
@@ -65,10 +90,10 @@ operator>>(std::istream& input, std::vector<double>& vec)
 
 //
 
-std::string
-get_word_from_string(std::string const& s)
+string
+get_word_from_string(string const& s)
 {
-  std::string r;
+  string r;
 
   for(std::string::const_iterator it=s.begin(); it != s.end(); ++it)
     if(' ' == *it)
@@ -132,7 +157,7 @@ read_int_from_file(FILE *input)
 
 // type traits
 
-std::string type_traits<double>::scanStr ("%lf");
-std::string type_traits<int>::scanStr ("%ld");
+string type_traits<double>::scanStr ("%lf");
+string type_traits<int>::scanStr ("%ld");
 
 

@@ -1,7 +1,7 @@
 #include "featureABC.h"
 
 #include "debug.h"
-#include "string_trim.h"
+#include "read_utils.h"
 #include "range_stats.h"
 
 FeatureABC::Arguments
@@ -29,29 +29,13 @@ FeatureABC::set_attribute(std::string name, std::string value)
   mAttributes[name]=trim(value);
 }
 
-const std::string equalStr {"="};
-const std::string commaStr {","};
-
 void
 FeatureABC::add_attributes_from_descriptive_string (std::string line)
 {
   using std::string;
-  
-  std::cout << "TESTING: adding attributes from comma delimited paired assignment list:  " << line << std::endl;
-  size_t pos0 = 0, pos1 = 0;
-  while (true)
-  { pos1 = line.find(equalStr, pos0);
-    if(pos1 == std::string::npos) break;            // not found
-    string name = line.substr(pos0,pos1-pos0);
-    pos0 = pos1+1;
-    pos1 = line.find(commaStr, pos0);
-    if(pos1 == std::string::npos) pos1=line.size(); // no more options
-    string value = line.substr(pos0,pos1-pos0);
-    std::cout << "TESTING: name = " << name << "  value = " << value << std::endl;
-    set_attribute(name, value);
-    pos0 = pos1+1;
-  }
-  std::cout << "TESTING: attributes added are " << attributes() << std::endl;
+
+  std::map<string,string> attr = parse_attributes_from_string(line);  // trimmed in here
+  for(auto p :attr) set_attribute(p.first, p.second);
 }
 
 

@@ -1,3 +1,5 @@
+// -*- c++ -*-
+
 #ifndef _COLUMN_TEMPLATE_H_
 #define _COLUMN_TEMPLATE_H_
 
@@ -5,12 +7,14 @@
 #include "debug.h"
 
 #include "read_utils.h"
-#include "string_trim.h"
 
+#include <map>
 #include <algorithm>
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -66,6 +70,22 @@ Column<F>::Column(char const* name, char const* description, size_t n, FILE *fp)
   mData->init_properties();
 }
 
+template<class F>
+Column<F>::Column(std::string name, std::string description, size_t n, std::istream& is) : mData( new ColumnData<F>(n) )
+{
+  mData->mName = name;
+  mData->mRole = extract_role_from_string(description);
+  mData->mDescription = description;
+  F *x (mData->mBegin);
+  while(n--)
+  { is >> *x;
+    ++x;
+  }
+  std::string restOfLine;
+  std::getline (is,restOfLine);  // flush rest of line
+  mData->init_properties();
+}
+
 
 template<class F>
 template <class Iter>
@@ -82,6 +102,15 @@ Column<F>::Column(char const* name, char const* description, size_t n, Iter sour
   mData->init_properties();
 }
 
+
+template<class F>
+Column<F>::Column(std::string name, std::string description, size_t n) : mData( new ColumnData<F>(n) )
+{
+  mData->mName = name;
+  mData->mRole = extract_role_from_string(description);
+  mData->mDescription = description;
+}
+  
 
 template<class F>
 template <class Iter>
@@ -115,9 +144,6 @@ Column<F>::Column(std::string name, std::string description, size_t n, Iter iter
 }
 
 
-
-
-
 template <class F>
 Column<F>& 
 Column<F>::operator= (Column<F> const& c)
@@ -129,24 +155,13 @@ Column<F>::operator= (Column<F> const& c)
   return *this;
 }
 
+
 template <class F>
 std::string
 Column<F>::extract_role_from_string(std::string const& str) const
 {
-  size_t pos0 = 0, pos1 = 0;
-  pos1 = str.find("=",pos0);
-  if(pos1 == std::string::npos) return "";
-  string name = str.substr(pos0,pos1);
-  pos0 = pos1+1;
-  pos1 = str.find(",",pos0);
-  if(pos1 == std::string::npos) pos1 = str.size();
-  string value = str.substr(pos0,pos1);
-  name = trim(name);
-  if("role" == name)
-  { value = trim(value);
-    return value;
-  }
-  else return "";
+  std::map<std::string,std::string> attrMap = read_utils::parse_attributes_from_string(str);
+  return attrMap["role"];  // defaults to ""
 }
 
 
@@ -195,18 +210,27 @@ ColumnData<F>::init_properties ()
 
 
 
+// ---  local
+
+void
+cleanup_name(std::string& name)
+{
+  name = read_utils::fill_blanks(read_utils::trim(name));    // no embedded blanks
+  name = read_utils::remove_special_chars(name, "*^");     // no special chars
+}
+
+
 ////    ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream     ColumnStream    
 
 template <class F>
 void
 ColumnStream<F>::initialize()
 {
-  // read number of cases (ignore number of columns)
-  std::string line;
+  std::string line;         // read number of cases (ignore number of columns)
   getline(mStream, line);
   std::istringstream ss(line);
   ss >> mN;
-  debug("CLMN",4) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
+  debug("CLMN",3) << "ColumnStream '" << mStreamName << "' open; expecting n = " << mN << " cases per variable.\n";
 }
 
 template <class F>
@@ -216,8 +240,7 @@ ColumnStream<F>::read_next_column()
   mCurrentName = "";
   if(!mStream.eof())
   { getline(mStream, mCurrentName);
-    mCurrentName = read_utils::fill_blanks(read_utils::trim(mCurrentName));    // no embedded blanks
-    mCurrentName = read_utils::remove_special_chars(mCurrentName, "*^");     // no special chars
+    cleanup_name(mCurrentName);
   }
   if (mCurrentName.empty())
   { debug("CLMN",4) << "Stream '" << mStreamName << "' now empty.\n";
@@ -228,6 +251,80 @@ ColumnStream<F>::read_next_column()
   mCurrentColumn = Column<F>(mCurrentName, mCurrentDesc, mN, mStream);
   return true;
 }
+
+
+//     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     
+
+template <class F>
+std::pair<int,int>
+insert_columns_from_stream (std::istream &input,
+			    std::map<std::string, std::map<std::string, std::vector<F>>> const& domainMaps,
+			    std::back_insert_iterator< std::vector<Column<F>> > it)
+{
+  using std::string;
+  
+  string theLine;
+  std::getline(input, theLine);
+  int nObs = std::stoi(theLine);                                          // file prefixed with n obs on first line 
+  debug("COLM",2) << "Reading columns with " << nObs << " observations from input stream.\n";
+  size_t colCounter = 0;
+  while(!input.eof())
+  { string varName;
+    std::getline(input, varName);
+    cleanup_name(varName);
+    string description;
+    std::getline(input, description);
+    description = read_utils::trim(description);
+    std::map<string,string> attr = read_utils::parse_attributes_from_string(description);
+    if (attr["role"]=="")                                                 // add role if not present
+    { if (0 == description.size())
+	description = "role=x";
+      else
+	description = "role=x," + description;
+    }
+    if (attr["type"]=="map")
+    { string stream = varName;
+      string domain = attr["domain"];
+      colCounter += insert_columns_from_map (input, nObs, varName+"_"+domain, description, domainMaps[domain], it);
+    }
+    else
+    { Column<F> aColumn{varName, description, nObs, input};
+      *it = aColumn;
+      ++it;
+      ++colCounter;
+    }
+  }
+  debug("CLMN",2) << "Inserted " << colCounter << " columns, each of length " << nObs << std::endl;
+  return std::make_pair(nObs,colCounter);
+}
+
+
+template <class F>
+size_t
+insert_columns_from_map(std::istream& input, size_t nObs, std::string namePrefix, std::string desc, std::map<std::string, std::vector<F>> theMap,
+			std::back_insert_iterator<std::vector<Column<F>>> it)
+{
+  size_t dim = theMap.begin()->second.size();
+  std::vector<Column<F>> theColumns(dim);      // name and allocate
+  for (size_t j=0; j<dim; ++j)                         
+    theColumns[j] = Column<F>(namePrefix+"_"+std::to_string(j), desc, nObs);
+  for(size_t i=0; i<nObs; ++i)
+  { std::string text;
+    input >> text;
+    std::vector<F> coord = theMap[text];   // what if not found???
+    assert(coord.size() = dim);
+    for(size_t j=0; j<dim; ++j)
+      theColumns[j].set_element(i, coord);
+  }
+  for(auto col : theColumns)
+  { *it = col;
+    ++it;
+  }
+  return dim;
+}
+
+      
+
 
 template <class F>
 std::pair<int,int>
@@ -243,9 +340,11 @@ insert_columns_from_stream (std::istream& is,
     ++colStream;
     col = *colStream;
   }
-  debug("CLMN",3) << "Inserted " << k << " columns from input stream, each of length " << n << std::endl;
+  debug("CLMN",2) << "Inserted " << k << " columns from input stream, each of length " << n << std::endl;
   return std::make_pair(n,k);
 }
+
+	       
 
 template <class F>
 void

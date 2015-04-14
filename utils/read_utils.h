@@ -11,18 +11,33 @@
 #define _READ_UTILS_H_
 
 #include <vector>
+#include <map>
+
 #include <iterator>
+#include <string>
 #include <iostream>
 #include <cstdio>
 #include <sstream>
 
+inline
+std::ostream&
+operator<< (std::ostream& os, std::map<std::string,std::string> const& attributes)
+{
+  if (0 == attributes.size()) return os;
+  auto it = attributes.begin();
+  os << it->first << "=" << it->second;
+  for (++it; it != attributes.end(); ++it) 
+    os << ", " << it->first << "=" << it->second;
+  return os;
+}
 
-//  trim strings
 
 namespace read_utils
 {
   int ctoi(char c);
   
+  //  trim strings with const& input
+
   inline std::string trim_right(const std::string &source , const std::string& t = " ")
   {
     std::string str = source;
@@ -44,6 +59,8 @@ namespace read_utils
       return source;
   }
 
+  // modify by filling blanks, handle special chars
+  
   inline std::string fill_blanks(const std::string src, const char c='_')
   {
     std::string result = src;
@@ -64,8 +81,13 @@ namespace read_utils
 	}
     return result;
   }
+
+  // parse = assigned attributes from a string
+
+  std::map<std::string, std::string>
+    parse_attributes_from_string(std::string const& str);
   
-// string stream io
+  // string stream io
 
   template <typename To, typename From>
     To

@@ -23,6 +23,7 @@
 #include <set>
 #include <assert.h>
 
+#include <string>
 #include <iostream>
 #include <math.h>
 
@@ -67,18 +68,20 @@ class ColumnData
  ColumnData(size_t n)            : mBegin(new Scalar[n]), mEnd(mBegin+n), mRefCount(1) { mN = (int)n; assert(mBegin != NULL); }
 
  public:
-  std::string     name()          const { return mName; }
-  std::string     role()          const { return mRole; }
-  std::string     description()   const { return mDescription; }
-  int             size()          const { return mN; }
-  Scalar          average()       const { return mAvg; }
-  Scalar          scale()         const { return (Scalar) ((mMax - mMin)/(Scalar)6.0); }
-  Scalar          min()           const { return mMin; }
-  Scalar          max()           const { return mMax; }
-  int             num_unique()    const { return mNumUnique; }
-  Scalar          element(int i)  const { return *(mBegin+i); }
-  Scalar*         begin()         const { return mBegin; }
-  Scalar*         end()           const { return mEnd; }
+  std::string     name()                const { return mName; }
+  std::string     role()                const { return mRole; }
+  std::string     description()         const { return mDescription; }
+  int             size()                const { return mN; }
+  Scalar          average()             const { return mAvg; }
+  Scalar          scale()               const { return (Scalar) ((mMax - mMin)/(Scalar)6.0); }
+  Scalar          min()                 const { return mMin; }
+  Scalar          max()                 const { return mMax; }
+  int             num_unique()          const { return mNumUnique; }
+  Scalar*         begin()               const { return mBegin; }
+  Scalar*         end()                 const { return mEnd; }
+  Scalar          element(size_t i)     const { return *(mBegin+i); }
+  void            set_element(int i, F value) { *(mBegin+i) = value; }
+  
   Ranges::range<Scalar*>       writable_range()  const { return Ranges::make_range(mBegin, mEnd); }
   Ranges::range<Scalar const*> range()           const { return Ranges::make_range(mBegin, mEnd); }
   std::set<Scalar>             unique_elements() const { return mUniqueElements; }
@@ -91,8 +94,6 @@ class ColumnData
  private:
   void            init_properties();
 };
-
-
 
 // Envelope
 
@@ -112,9 +113,12 @@ class Column
   Column();
   Column(Column<F> const& c);
   Column(char const* name, int n);
-
+  Column(std::string name, std::string description, size_t n);
+  
   Column(std::string name, std::string description, size_t n, std::istream& is);
+
   Column(char const* name, char const* description, size_t n, FILE *fp);
+
   template <class Iter>
     Column(char const* name, char const* description, size_t n, Iter source);
   template <class Iter>
@@ -179,7 +183,8 @@ class ColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
   bool read_next_column();
 };
 
-// Return number of observations and number of columns
+//     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     
+
 template<class F>
 std::pair<int,int>
   insert_columns_from_stream (std::istream& is,
@@ -191,6 +196,16 @@ template<class F>
 void
 insert_columns_from_stream (std::istream& is,
 			    std::map<std::string, std::back_insert_iterator< std::vector<Column<F>> > > insertMap);
+
+// Return number of obs and columns appended. Assume input file begins with common length n, then
+// subsequent columns in triples;  assigns role = x if not found;
+// input names available maps (eg, words -> eigenword map from word to numerics)
+
+template <class F>
+std::pair<int,int>
+  insert_columns_from_file (std::string fileName,
+			    std::map<std::string, std::map<std::string, std::vector<F>>> const& domainMaps,
+			    std::back_insert_iterator< std::vector<Column<F>> > it);
 
 
 // This version makes columns from an input file using C io rather than C++ (faster this way)
@@ -225,7 +240,6 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column<
   bool open_file();
   bool read_next_column_from_file();
 };
-
 
 template<class F>
 std::pair<int,int>
