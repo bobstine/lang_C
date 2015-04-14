@@ -34,7 +34,7 @@ level_4   = feature_iterators.o      adapter.o
 level_5   = feature_streams.o
 level_6   = experts.o
 level_7   = auction.o build_helper.o
-level_8   = build_auction.o
+level_8   = build_auction.o nlp_auction.o
 level_9   = 
 
 ############################################################################
@@ -49,8 +49,11 @@ data/%.dat: data/%.csv
 	rm -rf $@
 	/Users/bob/C/boost/csv_parser < $<  > $@
 
-# current auction target (build_auction has main)
-auction: $(above_9)
+# current auction target (build_auction and nlp_auction have main)
+auction: build_auction.o $(above_8)
+	$(GCC) $^ $(LDLIBS) -o  $@	
+
+nlp_auction: nlp_auction.o $(above_8)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
 logistic_test: auction.test

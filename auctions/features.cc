@@ -93,9 +93,6 @@ write_feature_vector_to (std::ostream& os, FeatureVector const& featureVec)
   }
 }
 
-
-
-
 FeatureVector
 features_with_name(std::string name, FeatureVector const& fv)
 {

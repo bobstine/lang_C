@@ -56,7 +56,7 @@ class ColumnData
   Scalar      mAvg;
   Scalar      mMin, mMax;
   int         mNumUnique;
-  std::set<F> mUniqueElements; // only held if mNumUnique is small
+  std::set<F> mUniqueElements;    // only held if mNumUnique is small
   Scalar *    mBegin;
   Scalar *    mEnd;
   int         mRefCount;
@@ -130,9 +130,7 @@ class Column
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
 
  private:
-
-  std::string  extract_role_from_string(std::string const& desc) const;
-  
+  std::string  extract_role_from_string(std::string const& desc) const;    // use comma delimited = pairs
 };
 
 template<class F>

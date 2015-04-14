@@ -13,7 +13,7 @@
   Column feature
 
        These directly reference a column in the underlying data.
-       Think of these like the names that JMP puts in the heads
+       These features are like 'names' that JMP puts in the heads
        of the columns in its data file.
 
   Interaction feature

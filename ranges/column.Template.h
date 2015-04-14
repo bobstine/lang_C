@@ -5,6 +5,7 @@
 #include "debug.h"
 
 #include "read_utils.h"
+#include "string_trim.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -132,15 +133,20 @@ template <class F>
 std::string
 Column<F>::extract_role_from_string(std::string const& str) const
 {
-  std::istringstream iss(str);
-  std::string term ("");
-  iss >> std::ws >> term;
-  if("role" == term)
-  { iss >> std::ws >> term;
-    return term;
+  size_t pos0 = 0, pos1 = 0;
+  pos1 = str.find("=",pos0);
+  if(pos1 == std::string::npos) return "";
+  string name = str.substr(pos0,pos1);
+  pos0 = pos1+1;
+  pos1 = str.find(",",pos0);
+  if(pos1 == std::string::npos) pos1 = str.size();
+  string value = str.substr(pos0,pos1);
+  name = trim(name);
+  if("role" == name)
+  { value = trim(value);
+    return value;
   }
-  else
-    return "";
+  else return "";
 }
 
 
