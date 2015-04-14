@@ -1,12 +1,8 @@
 #include "featureABC.h"
 
+#include "debug.h"
+#include "string_trim.h"
 #include "range_stats.h"
-
-#include <sstream>
-
-// trim string
-#include <boost/algorithm/string.hpp>  
-
 
 FeatureABC::Arguments
 FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Arguments const& a2) const
@@ -26,28 +22,36 @@ FeatureABC::has_attribute(std::string attrName)           const
   return ((mAttributes.end() != it) && (it->second.size() > 0));
 }
 
-
 void
 FeatureABC::set_attribute(std::string name, std::string value)
 {
-  //  std::cout << "TESTING: Adding attribute " << name << " with value " << value << std::endl;
-  mAttributes[name]=value;
+  name = trim(name);
+  mAttributes[name]=trim(value);
 }
 
+const std::string equalStr {"="};
+const std::string commaStr {","};
 
 void
-FeatureABC::add_attributes_from_paired_list (std::string list)
+FeatureABC::add_attributes_from_descriptive_string (std::string line)
 {
-  // std::cout << "TESTING: adding attributes from space-delimited paired list " << list << std::endl;
-  boost::algorithm::trim(list);
-  std::istringstream iss (list);
-  iss >> std::ws;
-  while (!iss.eof())
-  { std::string name;
-    std::string value;
-    iss >> name >> value;
+  using std::string;
+  
+  std::cout << "TESTING: adding attributes from comma delimited paired assignment list:  " << line << std::endl;
+  size_t pos0 = 0, pos1 = 0;
+  while (true)
+  { pos1 = line.find(equalStr, pos0);
+    if(pos1 == std::string::npos) break;            // not found
+    string name = line.substr(pos0,pos1-pos0);
+    pos0 = pos1+1;
+    pos1 = line.find(commaStr, pos0);
+    if(pos1 == std::string::npos) pos1=line.size(); // no more options
+    string value = line.substr(pos0,pos1-pos0);
+    std::cout << "TESTING: name = " << name << "  value = " << value << std::endl;
     set_attribute(name, value);
+    pos0 = pos1+1;
   }
+  std::cout << "TESTING: attributes added are " << attributes() << std::endl;
 }
 
 
@@ -65,10 +69,7 @@ FeatureABC::attribute_str_value(std::string attr) const
 int
 FeatureABC::attribute_int_value(std::string attr) const
 {
-  std::istringstream ss( attribute_str_value(attr) );
-  int value;
-  ss >> value;
-  return value;
+  return std::stoi(attribute_str_value(attr));
 }
       
 
@@ -76,10 +77,7 @@ FeatureABC::attribute_int_value(std::string attr) const
 FeatureABC::Scalar
 FeatureABC::attribute_scalar_value(std::string attr) const
 {
-  std::istringstream ss( attribute_str_value(attr) );
-  FeatureABC::Scalar value;
-  ss >> value;
-  return value;
+  return (Scalar)(std::stod(attribute_str_value(attr)));
 }
 
 
@@ -97,7 +95,7 @@ FeatureABC::read_from (std::istream& is)
   std::string prefix;
   is >> prefix;
   if (prefix != "FeatureABC")
-  { std::cout << "FETR: Read prefix did not match FeatureABC, got " << prefix << " instead.\n";
+  { std::cout << "FABC: Read prefix did not match FeatureABC, got " << prefix << " instead.\n";
     return;
   }
   int attributeCount (0);

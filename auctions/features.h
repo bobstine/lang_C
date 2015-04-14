@@ -150,7 +150,7 @@ class ColumnFeature : public FeatureABC
  public:
   virtual ~ColumnFeature() {};
   
- ColumnFeature(Column<Scalar> c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_paired_list(c->description()); }
+ ColumnFeature(Column<Scalar> c) : FeatureABC(c->size()), mColumn(c)  { add_attributes_from_descriptive_string(c->description()); }
 
   string        class_name()       const;
   string        name()             const;

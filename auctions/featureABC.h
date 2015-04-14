@@ -81,7 +81,7 @@ class FeatureABC
   Attributes            attributes()                              const { return mAttributes; }
   bool                  has_attribute(std::string attr)           const;
   void                  set_attribute(std::string name, std::string value);
-  void                  add_attributes_from_paired_list (std::string list);
+  void                  add_attributes_from_descriptive_string(std::string line);
   std::string           attribute_str_value(std::string attr)     const;
   int                   attribute_int_value(std::string attr)     const;
   Scalar                attribute_scalar_value(std::string attr)  const;
@@ -153,7 +153,7 @@ operator<< (std::ostream& os, FeatureABC::Attributes const& attributes)
 {
   os << " { ";
   for (FeatureABC::Attributes::const_iterator it = attributes.begin(); it !=attributes.end(); ++it)
-    os << " [" << it->first << " (" << it->second << ")]";
+    os << " [" << it->first << "=" << it->second << "]";
   os << "}";
   return os;
 }

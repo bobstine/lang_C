@@ -86,7 +86,6 @@ main ()
     std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
     std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
   }
-  
 
   if (true)         // test eigenword feature iterator 
   {
@@ -104,10 +103,8 @@ main ()
     std::cout << std::endl;
   }
 
-
-
-  if (false)
-  { // a lag feature
+  if (false)          // a lag feature
+  {
     std::cout << "\nTEST: lag the x feature by 2 and by 4: \n";
     Feature lag2  (x,2);
     Feature lag4  (x,4);
@@ -219,9 +216,9 @@ main ()
   Feature xCol0 (xColumns[0]);
   Feature xCol1 (xColumns[1]);
   std::cout << xCol0 << std::endl;
-  std::cout << "TEST: average of feature is "  << xCol0->center()                         << std::endl;
+  std::cout << "TEST: attributes of feature "  << xCol0->attributes()                     << std::endl;
+  std::cout << "      average of feature is "  << xCol0->center()                         << std::endl;
   std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
-
   
   delete [] x1;
   return 0;
