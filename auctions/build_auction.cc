@@ -162,7 +162,7 @@ main(int argc, char** argv)
   // Read response and associated control variables; read returns <n,k>
     
   typedef std::vector<Column<SCALAR>> ColumnVector;
-  ColumnVector yColumns, xColumns, cColumns;
+  ColumnVector yColumns, cColumns;
   {
     std::pair<int,int> dim;
     dim = insert_columns_from_file (responseFileName, std::back_insert_iterator<ColumnVector>(yColumns));
@@ -171,13 +171,7 @@ main(int argc, char** argv)
     dim = insert_columns_from_file (contextFileName,  std::back_insert_iterator<ColumnVector>(cColumns));
     debug("MAIN",2) << "Context file returns dimension " << dim.first << "x" << dim.second << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -2;
-    dim = insert_columns_from_file (xFileName,        std::back_insert_iterator<ColumnVector>(xColumns));
-    debug("MAIN",2) << "X file returns dimension " << dim.first << "x" << dim.second << std::endl;
-    if ((dim.first==0) || (dim.second==0)) return -3;
-    debug("MAIN",1) << "Input files produced "
-		    << yColumns.size() << " Ys, "
-		    << xColumns.size() << " Xs, and "
-		    << cColumns.size() << " context columns.\n";
+    debug("MAIN",1) << "Input files produced " << yColumns.size() << " Ys and " << cColumns.size() << " context columns.\n";
   } 
 
   // build model and initialize auction with tab-delimited stream for tracking progress
@@ -188,7 +182,16 @@ main(int argc, char** argv)
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
    
   // convert input columns into features arranged in streams
-  
+
+  ColumnVector xColumns;
+  {
+    std::pair<int,int> dim;
+    dim = insert_columns_from_file (xFileName,        std::back_insert_iterator<ColumnVector>(xColumns));
+    debug("MAIN",2) << "X file returns dimension " << dim.first << "x" << dim.second << std::endl;
+    if ((dim.first==0) || (dim.second==0)) return -3;
+    debug("MAIN",1) << "Input files produced " << xColumns.size() << " Xs.\n";
+  } 
+
   FeatureSource featureSource (xColumns, nPrefixCases);
   featureSource.print_summary(debug("MAIN",1));
   std::vector<string> streamNames (featureSource.stream_names());
