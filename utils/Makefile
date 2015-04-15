@@ -29,7 +29,7 @@ OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
 level_0   = debug.o timing.o order.o utils.o light_threads.o thread_functions.o
 level_1   = print_utils.o file_utils.o stat_utils.o function_utils.o bennett.o normal.o coding.o iterators.o operator_traits.o data_registry.o polyshrink.o c45_syntax.o property_list.o threshold.o read_utils.o line_search.o dynamic_array.o eigen_utils.o
-level_2   = tags.o
+level_2   = tags.o attributes.o
 
 ############################################################################
 #

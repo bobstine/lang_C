@@ -1,0 +1,28 @@
+10
+WR1
+type=map, domain=words
+w1 w2 w1 w1 w1 w2 w2 w3 w4 w2
+POS
+type=map, domain=categories
+aa a aaa a a aaa aa aa a aa
+X1
+role=x, parent=POS
+1 2 3 4 5 6 7 8 9 10
+X2
+role=x
+1 3 5 7 9 11 13 15 17 19
+X3
+role=x
+1 3 5 7 9 11 13 15 17 19
+X4
+none
+11 13 15 17 19 11 13 15 17 19
+X5
+role=x
+1 3 5 7 9 11 13 15 17 19
+X5
+role=x, copy=x5
+1 3 5 7 9 11 13 15 17 19
+X7
+
+1 3 5 7 9 11 13 15 17 19
