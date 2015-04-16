@@ -1,6 +1,7 @@
 #ifndef _FEATUREABC_H_
 #define _FEATUREABC_H_
 
+
 /* 
 
    Features are named anonymous ranges, with optional information
@@ -16,7 +17,8 @@
    the underlying features and their powers.  Base method returns an
    empty map --- though it would make sense to use this more
    creatively.
-   
+
+  16 Apr 15 ... Attributes defined in utils 
    1 May 11 ... Map for dependencies; simplify attributes to have string values
    9 Nov 09 ... Attributes as a map of two strings.
   17 Apr 09 ... Arguments hold name; (name, power) setup
@@ -27,6 +29,7 @@
 
 #include "auction_base_types.h"
 
+#include "attributes.h"
 #include "range_stats.h"
 #include "anonymous_iterator.h"
 
@@ -41,16 +44,12 @@ class FeatureABC
 {
  public:
   friend class Feature;
-
   typedef std::string string;
   typedef SCALAR      Scalar;
-  
- public:
   typedef anonymous_iterator_envelope<std::random_access_iterator_tag,Scalar> Iterator;
   typedef Ranges::range< Iterator >                                           Range;
   typedef std::map<Feature,int>                                               DependenceMap;
   typedef std::map<string, int>                                               Arguments;   // map sorts names, second is power
-  typedef std::map<string, string >                                           Attributes;  // allow multiple occurances of the attr 
   
  private:
   int            mRefCount;
@@ -66,31 +65,34 @@ class FeatureABC
   FeatureABC (int size)
     : mRefCount(1), mSize(size), mAttributes(), mTried(false), mInModel(false), mEntryBid((Scalar)0.0) { }
 
+  FeatureABC (int size, Attributes attr)
+    : mRefCount(1), mSize(size), mAttributes(attr), mTried(false), mInModel(false), mEntryBid((Scalar)0.0) { }
+
+
   FeatureABC (std::istream& is)
     : mRefCount(1), mSize(   0), mAttributes(), mTried(false), mInModel(false), mEntryBid((Scalar)0.0) { read_from(is); }
 
-  bool                  operator== (FeatureABC const* f)          const { return name() == f->name(); }
+  bool                  operator== (FeatureABC const* f)                    const { return name() == f->name(); }
 
-  int                   size()                                    const { return mSize; } 
+  int                   size()                                              const { return mSize; }
   
-  bool                  was_tried_in_model ()                     const { return mTried; }
-  bool                  is_used_in_model ()                       const { return mInModel; }
-  Scalar                entry_bid ()                              const { return mEntryBid; }
-  void                  set_model_results(bool used, Scalar bid)        { mTried=true; mInModel=used; mEntryBid=bid; }
+  bool                  was_tried_in_model ()                               const { return mTried; }
+  bool                  is_used_in_model ()                                 const { return mInModel; }
+  Scalar                entry_bid ()                                        const { return mEntryBid; }
+  void                  set_model_results(bool used, Scalar bid)                  { mTried=true; mInModel=used; mEntryBid=bid; }
 
-  Attributes            attributes()                              const { return mAttributes; }
-  bool                  has_attribute(std::string attr)           const;
-  void                  set_attribute(std::string name, std::string value);
-  void                  add_attributes_from_descriptive_string(std::string line);
-  std::string           attribute_str_value(std::string attr)     const;
-  int                   attribute_int_value(std::string attr)     const;
-  Scalar                attribute_scalar_value(std::string attr)  const;
+  Attributes            attributes()                                        const { return mAttributes; }
+  bool                  has_attribute(std::string attr)                     const { return mAttributes.has_attribute(attr); }
+  void                  set_attribute(std::string name, std::string value)        { mAttributes.set_attribute(name,value); }
+  std::string           attribute_str_value(std::string attr)               const { return mAttributes[attr]; }
+  int                   attribute_int_value(std::string attr)               const;
+  Scalar                attribute_scalar_value(std::string attr)            const;
 
-  virtual std::string   class_name()                              const { return "FeatureABC"; }
-  virtual DependenceMap dependence_map()                          const = 0; 
-  virtual int           degree()                                  const = 0;                 // # constituent features, eg 2 for simple interaction
-  virtual Arguments     arguments()                               const = 0;                 // map of names as in a product              
-  virtual std::string   name()                                    const = 0;                 // pure virtual, must maintain const
+  virtual std::string   class_name()                                        const { return "FeatureABC"; }
+  virtual DependenceMap dependence_map()                                    const = 0; 
+  virtual int           degree()                                            const = 0;                 // # constituent features, eg 2 for simple interaction
+  virtual Arguments     arguments()                                         const = 0;                 // map of names as in a product              
+  virtual std::string   name()                                              const = 0;                 // pure virtual, must maintain const
   
   virtual Iterator      begin ()                                  const = 0;                 //
   virtual Iterator      end ()                                    const = 0;                 //

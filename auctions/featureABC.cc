@@ -15,56 +15,17 @@ FeatureABC::join_arguments(FeatureABC::Arguments const& a1, FeatureABC::Argument
 
 //  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes  Attributes
 
-bool
-FeatureABC::has_attribute(std::string attrName)           const
-{
-  Attributes::const_iterator it (mAttributes.find(attrName));
-  return ((mAttributes.end() != it) && (it->second.size() > 0));
-}
-
-void
-FeatureABC::set_attribute(std::string name, std::string value)
-{
-  name = trim(name);
-  mAttributes[name]=trim(value);
-}
-
-void
-FeatureABC::add_attributes_from_descriptive_string (std::string line)
-{
-  using std::string;
-
-  std::map<string,string> attr = parse_attributes_from_string(line);  // trimmed in here
-  for(auto p :attr) set_attribute(p.first, p.second);
-}
-
-
-std::string
-FeatureABC::attribute_str_value(std::string attr) const
-{
-  for(Attributes::const_iterator it=mAttributes.begin(); it != mAttributes.end(); ++it)
-  { if (it->first == attr)
-      return it->second;
-  }
-  return std::string();
-}
-      
-
 int
 FeatureABC::attribute_int_value(std::string attr) const
 {
   return std::stoi(attribute_str_value(attr));
 }
-      
-
 
 FeatureABC::Scalar
 FeatureABC::attribute_scalar_value(std::string attr) const
 {
   return (Scalar)(std::stod(attribute_str_value(attr)));
 }
-
-
 
 bool
 FeatureABC::is_dummy() const
@@ -103,11 +64,7 @@ FeatureABC::read_from (std::istream& is)
 void
 FeatureABC::write_to (std::ostream& os)     const
 {
-  os << "FeatureABC " << mAttributes.size() << " ";
-  if (!mAttributes.empty())
-    for (Attributes::const_iterator pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
-      os << " [" << pA->first << " (" << pA->second << ")] ";
-  os << "  tried=" << mTried << "  inModel=" << mInModel << "  bid=" << mEntryBid;
+  os << name() << "  FeatureABC [attr: " << mAttributes << "]  tried=" << mTried << ", inModel=" << mInModel << ",  bid=" << mEntryBid;
 }
 
 
@@ -121,10 +78,7 @@ FeatureABC::write_values_to(std::ostream& os) const
 void
 FeatureABC::print_to(std::ostream& os) const
 {
-  os << name() ;
-  if (!mAttributes.empty())
-    for (Attributes::const_iterator pA = mAttributes.begin(); pA != mAttributes.end(); ++pA)
-      os << " [" << pA->first << " (" << pA->second << ")] ";
+  os << name() << " [attr: " << mAttributes << "] ";
   if (! mTried)
     os << " (not tried).";
   else

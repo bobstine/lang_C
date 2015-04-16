@@ -78,7 +78,7 @@ insert_columns_from_stream (std::istream &input,
     // expand mapped features as needed
     if (attributes["type"]=="map")
     { attributes.erase_attribute("type");           
-      attributes.add_attribute("parent", fieldName);
+      attributes.set_attribute("parent", fieldName);
       string domain = attributes["domain"];
       assert(domain != "");
       if(domain == "words")
@@ -123,8 +123,8 @@ insert_common_feature(string fieldName, Attributes attributes, std::vector<strin
     for(size_t i=0; i<n; ++i)
       if(1==missing[i]) numbers[i] = mean;
   }
-  attributes.add_attribute("role","x");
-  if(!attributes.present("stream")) attributes.add_attribute("stream","main");  
+  attributes.set_attribute("role","x");
+  if(!attributes.has_attribute("stream")) attributes.set_attribute("stream","main");  
   Column<Scalar> var1(fieldName, attributes, n, numbers.begin());
   colIter = var1;
   if (0<nMissing)
@@ -192,7 +192,7 @@ insert_categorical_bundle(string fieldName, Attributes attributes, std::vector<s
   auto cat = orderedCategoryMap.begin();
   for(size_t j=0; j<nCategories; ++j, ++cat) labels[j] = cat->second;  
   string streamName = fieldName + "_category";
-  attributes.add_attribute("stream", streamName);
+  attributes.set_attribute("stream", streamName);
   return insert_bundle(fieldName, attributes, dummyVars, std::vector<double>(0), 0, labels, "category", columnInserter);
 }
 
@@ -226,7 +226,7 @@ insert_eigenword_bundle(string fieldName, Attributes attributes, std::vector<str
   std::vector<string> labels{dictDim};
   for (size_t i=0; i<dictDim; ++i) labels[i] = "ew" + std::to_string(i);
   string attributeForLabels("");
-  attributes.add_attribute("stream",fieldName+"_coord");
+  attributes.set_attribute("stream",fieldName+"_coord");
   return insert_bundle(fieldName, attributes, coord, sum, nMissing, labels, attributeForLabels, columnInserter);
 }
 
@@ -247,7 +247,7 @@ insert_bundle(string bundleName, Attributes commonAttributes, std::vector<std::v
   if (0 < nMissing)  // write one missing indicator for the bundle
   { string varName = bundleName + "_" + "Missing";
     Attributes attributes = commonAttributes;
-    attributes.add_attribute("indicator", "missing");
+    attributes.set_attribute("indicator", "missing");
     Column<Scalar> missingIndicator{varName, attributes, n};
     Scalar *ptr = missingIndicator->begin();
     for(size_t i=0; i<n; ++i)
@@ -259,7 +259,7 @@ insert_bundle(string bundleName, Attributes commonAttributes, std::vector<std::v
   { string varName = bundleName + "_" + labels[d];
     Attributes attributes = commonAttributes;
     if (!attributeOfLabels.empty())
-      attributes.add_attribute(attributeOfLabels, labels[d]);
+      attributes.set_attribute(attributeOfLabels, labels[d]);
     Column<Scalar> theColumn{varName, attributes, n};
     Scalar *ptr = theColumn->begin();
     if(nMissing == 0)

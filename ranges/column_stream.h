@@ -97,7 +97,7 @@ insert_columns_from_stream (std::istream& is,
 			    std::map<std::string, std::vector<float>> const& dictionary,   // handles domain=words
 			    std::back_insert_iterator< std::vector<Column<float>> > it);
 
-//  only numerical columns for these; returns dimension of implied matrix
+//  only numerical columns for these; return dimension of implied matrix
 
 template<class F>
 std::pair<int,int>

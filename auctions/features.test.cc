@@ -1,20 +1,42 @@
 #include "features.Template.h"
 #include "column.Template.h"
+#include "column_stream.Template.h"
 
 #include "smoothing_spline.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
 
-
 #include <functional>   // std::function
 #include <iostream>
 #include <fstream>
+
+typedef float Scalar;
+
+std::map<std::string,std::vector<Scalar>>
+  make_test_dictionary()
+{
+  std::map<std::string,std::vector<Scalar>> dict;
+  std::vector<Scalar> v (5); v[0]=10.0; v[1]=11.0; v[2]=12.0; v[3]=13.0; v[4]=14.0;
+  dict["w1"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w2"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w3"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w4"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;  
+  dict["w5"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 100;  
+  dict["OOV"] = v;  
+  for(size_t i=0; i<v.size(); ++i) v[i] = std::nanf("missing"); 
+  dict["NA"] = v;
+  return dict;
+}
 
 int 
 main ()
 {
   const int n (20);
-  typedef float Scalar;
   
   // define the base data with name string and vector of numbers
   std::string name1("x1");
@@ -209,10 +231,18 @@ main ()
 
   // read multiple features from file by converting into columns
   std::cout << "\nTEST: Building features from file of columns ... \n";
-  std::pair<int,int> dim;
-  std::vector<Column<Scalar>> yColumns;
+  std::pair<size_t,size_t> dim;
   std::vector<Column<Scalar>> xColumns;
-  dim = insert_columns_from_file("/home/bob/C/ranges/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+  if (true)
+  { std::vector<Column<Scalar>> yColumns;
+    dim = insert_numerical_columns_from_file("/home/bob/C/ranges/test.data/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+  }
+  else
+  { std::ifstream input ("/home/bob/C/ranges/test.data/column_stream_test.dat");
+    size_t minCategorySize = 10;
+    // note: pair has different meaning here: number created, number offered (mapped features like eigenwords)
+    dim = insert_columns_from_stream(input, minCategorySize, make_test_dictionary(), back_inserter(xColumns));
+  }
   Feature xCol0 (xColumns[0]);
   Feature xCol1 (xColumns[1]);
   std::cout << xCol0 << std::endl;

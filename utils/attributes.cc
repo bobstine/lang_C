@@ -7,6 +7,14 @@ const string equalStr {"="};
 const string commaStr {","};
 
 void
+Attributes::set_attribute(std::string name, std::string value)
+{
+  using read_utils::trim;
+  mMap[trim(name)] = trim(value);
+}
+
+
+void
 Attributes::parse_attributes_from_string (string const& line)
 { 
   size_t pos0 = 0, pos1 = 0;

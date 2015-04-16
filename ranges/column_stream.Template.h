@@ -59,7 +59,7 @@ insert_numerical_columns_from_stream (std::istream& is,
 
 template <class F>
 void
-insert_columns_from_stream (std::istream& is,
+insert_numerical_columns_from_stream (std::istream& is,
 			    std::map<std::string, std::back_insert_iterator< std::vector<Column<F>> > > insertMap)
 {
   typedef std::map<std::string, std::back_insert_iterator< std::vector<Column<F>> > > NamedColumnInsertMap;
@@ -206,8 +206,8 @@ FileColumnStream<F>::read_next_column_from_file()
 
 template<class F>
 std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, 
-                          std::back_insert_iterator< std::vector<Column<F>> > it)
+insert_numerical_columns_from_file (std::string const& fileName, 
+				    std::back_insert_iterator< std::vector<Column<F>> > it)
 {
   FileColumnStream<F> colStream(fileName);
   int k (0);
@@ -231,9 +231,9 @@ insert_columns_from_file (std::string const& fileName,
 
 template <class F>
 std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, int ny,
-                          std::back_insert_iterator< std::vector<Column<F>> > yIt,
-                          std::back_insert_iterator< std::vector<Column<F>> > xIt)
+insert_numerical_columns_from_file (std::string const& fileName, int ny,
+				    std::back_insert_iterator< std::vector<Column<F>> > yIt,
+				    std::back_insert_iterator< std::vector<Column<F>> > xIt)
 {
   FileColumnStream<F> colStream(fileName);
   int k (0);
@@ -254,8 +254,8 @@ insert_columns_from_file (std::string const& fileName, int ny,
 
 template <class F>
 int
-insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
-                            std::back_insert_iterator< std::vector<Column<F>> > it)
+insert_numerical_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
+				    std::back_insert_iterator< std::vector<Column<F>> > it)
 {
   FILE *nameFile;
   nameFile = fopen(nameFileName.c_str(), "r");

@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 
+
 class Attributes
 {
  private:
@@ -16,12 +17,13 @@ class Attributes
  Attributes(): mMap() { }
  Attributes(std::string const& str) : mMap() { parse_attributes_from_string(str); }
 
+  bool        empty()                           const  { return mMap.empty(); }
   size_t      size()                            const  { return mMap.size(); }
-  bool        present(std::string attr)         const  { return (0 < mMap.count(attr)); }
+  bool        has_attribute(std::string attr)   const  { return (0 < mMap.count(attr)); }
   std::string operator[](std::string attr)      const  { auto it = mMap.find(attr); if(it != mMap.end()) return it->second; else return ""; }
 
-  void        add_attribute(std::string name, std::string value) { mMap[name] = value; }
-  void        erase_attribute(std::string name)                  { auto it = mMap.find(name); if(it !=mMap.end()) mMap.erase(it); }
+  void        set_attribute(std::string name, std::string value);
+  void        erase_attribute(std::string name)        { auto it = mMap.find(name); if(it !=mMap.end()) mMap.erase(it); }
 
   std::string as_string()                       const;
   void        print_to (std::ostream& os)       const;

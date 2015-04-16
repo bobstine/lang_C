@@ -9,38 +9,43 @@
 #include <vector>
 #include <iterator>
 
+using std::string;
+typedef float Scalar;  
+
+std::map<string,std::vector<Scalar>>
+  make_test_dictionary()
+{
+  std::map<string,std::vector<Scalar>> dict;
+  std::vector<Scalar> v (5); v[0]=10.0; v[1]=11.0; v[2]=12.0; v[3]=13.0; v[4]=14.0;
+  dict["w1"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w2"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w3"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
+  dict["w4"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 10;  
+  dict["w5"] = v;
+  for(size_t i=0; i<v.size(); ++i)  v[i] += 100;  
+  dict["OOV"] = v;  // need to define OOV and NA items   (unsure why auto generates a compiler warning on unused)
+  for(size_t i=0; i<v.size(); ++i) v[i] = std::nanf("missing"); 
+  dict["NA"] = v;
+  std::cout << "TEST: dictionary item dict[w1]= \n          " << dict["w1"] << std::endl;
+  std::cout << "TEST: dictionary item dict[w2]= \n          " << dict["w2"] << std::endl;
+  return dict;
+}
 
 int
 main()   
 {
-  using std::string;
   using debugging::debug;
   debugging::debug_init(std::clog, 5);
   
-  typedef float Scalar;
-  
-
   if (true)
   {
     std::cout << "\n\nTEST: NLP-style variables from maps.\n";
     // make a small test dictionary; note code will use full dictionary
-    std::map<string,std::vector<Scalar>> dict;
-    std::vector<Scalar> v (5); v[0]=10.0; v[1]=11.0; v[2]=12.0; v[3]=13.0; v[4]=14.0;
-    dict["w1"] = v;
-    for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
-    dict["w2"] = v;
-    for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
-    dict["w3"] = v;
-    for(size_t i=0; i<v.size(); ++i)  v[i] += 10;
-    dict["w4"] = v;
-    for(size_t i=0; i<v.size(); ++i)  v[i] += 10;  
-    dict["w5"] = v;
-    for(size_t i=0; i<v.size(); ++i)  v[i] += 100;  
-    dict["OOV"] = v;  // need to define OOV and NA items   (unsure why auto generates a compiler warning on unused)
-    for(size_t i=0; i<v.size(); ++i) v[i] = std::nanf("missing"); 
-    dict["NA"] = v;
-    std::cout << "TEST: dictionary item dict[w1]= \n          " << dict["w1"] << std::endl;
-    std::cout << "TEST: dictionary item dict[w2]= \n          " << dict["w2"] << std::endl;
+    std::map<string,std::vector<Scalar>> dict = make_test_dictionary();
 
     std::vector<Column<Scalar>> columns;
     const string testFile = "test.data/column_stream_test.dat";
@@ -117,7 +122,7 @@ main()
       std::map<std::string, std::back_insert_iterator< std::vector<Column<Scalar>> > > insertMap;
       insertMap.insert(std::make_pair("y", std::back_inserter(yColumns)));   // insert as pair since no default for back inserter
       insertMap.insert(std::make_pair("x", std::back_inserter(xColumns)));
-      insert_columns_from_stream(fileStream, insertMap); 
+      insert_numerical_columns_from_stream(fileStream, insertMap); 
       std::cout << "TEST: read " << yColumns.size() << " y columns and read " << xColumns.size() << " x columns\n";
     }
   } 
@@ -132,14 +137,14 @@ main()
       std::vector<Column<Scalar>> yColumns;
       std::vector<Column<Scalar>> xColumns;
       
-      // dim = insert_columns_from_file("/Users/bob/C/ranges/column_test.dat", 1, std::back_inserter(yColumns), std::back_inserter(xColumns));
-      // std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
+      dim = insert_numerical_columns_from_file("/Users/bob/C/ranges/test.data/column_stream_test.dat", 1, std::back_inserter(yColumns), std::back_inserter(xColumns));
+      std::cout << "TEST: x column vector has " << xColumns.size() << " columns; dims read as "  << dim << std::endl;
 
-      dim = insert_columns_from_file("/home/bob/C/projects/prep_error/auction_data/multinomial/Y_of",  std::back_inserter(yColumns));
+      dim = insert_numerical_columns_from_file("/home/bob/C/projects/prep_error/auction_data/multinomial/Y_of",  std::back_inserter(yColumns));
       std::cout << "TEST: Read Y file with dim = " << dim.first << "x" << dim.second << std::endl;
       int nRows (yColumns[0]->size());
       std::cout << "TEST: Y column named " << yColumns[0] << " holds " << nRows << " rows.\n";
-      dim = insert_columns_from_file("/home/bob/C/projects/prep_error/auction_data/multinomial/X",  std::back_inserter(yColumns));
+      dim = insert_numerical_columns_from_file("/home/bob/C/projects/prep_error/auction_data/multinomial/X",  std::back_inserter(yColumns));
       std::cout << "TEST: Read X file with dim = " << dim.first << "x" << dim.second << std::endl;
     }
 }
