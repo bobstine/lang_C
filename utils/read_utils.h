@@ -19,19 +19,6 @@
 #include <cstdio>
 #include <sstream>
 
-inline
-std::ostream&
-operator<< (std::ostream& os, std::map<std::string,std::string> const& attributes)
-{
-  if (0 == attributes.size()) return os;
-  auto it = attributes.begin();
-  os << it->first << "=" << it->second;
-  for (++it; it != attributes.end(); ++it) 
-    os << ", " << it->first << "=" << it->second;
-  return os;
-}
-
-
 namespace read_utils
 {
   int ctoi(char c);
@@ -82,10 +69,11 @@ namespace read_utils
     return result;
   }
 
-  // parse = assigned attributes from a string
-
-  std::map<std::string, std::string>
-    parse_attributes_from_string(std::string const& str);
+  inline std::string cleanup_name(std::string const& name)
+  {
+    std::string result = read_utils::fill_blanks(read_utils::trim(name));    // no embedded blanks
+    return read_utils::remove_special_chars(result, "*^");                   // no special chars
+  }
   
   // string stream io
 

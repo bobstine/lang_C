@@ -88,12 +88,13 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column<
 //  Each returns n obs and number columns appended. See code for each as to whether
 //  function expects stream or file to be prefixed with number of cases for each column.
 //  Only the next allows mapped variables (eg, eigenwords) and missing values (F = float).
-//  The dictionary *must* define a response for NA (missing) and OOV (not in dictionary).
+//  The dictionary *must* define NaN fields for NA (missing) and appropriate values for OOV.
 //  Returns pair: number columns read from stream, number columns written
 			
 std::pair<size_t,size_t>
 insert_columns_from_stream (std::istream& is,
-			    std::map<std::string, std::vector<float>> const& dictionary,      // handles domain=word
+			    size_t minCategorySize,                                        // category must have at least this many observations, domain=catetogories
+			    std::map<std::string, std::vector<float>> const& dictionary,   // handles domain=words
 			    std::back_insert_iterator< std::vector<Column<float>> > it);
 
 //  only numerical columns for these; returns dimension of implied matrix

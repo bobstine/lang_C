@@ -69,7 +69,7 @@ insert_columns_from_stream (std::istream& is,
   while(true) 
   { Column<F> col = *colStream;
     if(col->size() == 0) break;
-    debugging::debug("CLMN",3) << "Reading column " << col->name() << " with description " << col->description()
+    debugging::debug("CLMN",3) << "Reading column " << col->name() << " with attributes " << col->attributes()
 			       << "  [0]=" << *(col->begin()) << "  [n]=" << *(col->end()-1) << std::endl;
     ++colStream;
     std::string role (col->role());

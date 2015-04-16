@@ -24,14 +24,14 @@ OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 #           TESTED					UNTESTED
 level_0   = range.o                               composer.o evaluator.o 
 level_1   = range_traits.o column.o # ysparse_iterator.o 
-level_2   = function_iterators.o 
-level_3   = range_ops.o
-level_4   = range_stats.o anonymous_iterator.o
-
-# the above levels should now be "set in concrete" and not change very much.
-level_5   = vectorize.o  matrix.o
-level_6	  = apl.o
-level_7   = 
+level_2   = column_stream.o
+level_3   = function_iterators.o 
+level_4   = range_ops.o
+level_5   = range_stats.o anonymous_iterator.o
+# prior levels are pretty good
+level_6   = vectorize.o  matrix.o
+level_7	  = apl.o
+level_8   = 
 
 default: range_traits.test
 

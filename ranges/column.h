@@ -19,18 +19,15 @@
 #include <utility>
 #include <iterator>
 #include <vector>
-#include <map>
 #include <set>
 #include <assert.h>
 
 #include <string>
 #include <iostream>
-#include <math.h>
 
 #include "read_utils.h"
 #include "range.h"
-#include "debug.h"
-
+#include "attributes.h"
 
 template <class F>
 class Column;
@@ -38,8 +35,7 @@ class Column;
 class IntegerColumn;
 
 
-//     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     
-
+//     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData     ColumnData
 
 template <class F>
 class ColumnData
@@ -51,8 +47,7 @@ class ColumnData
   
  private:
   std::string mName;
-  std::string mRole;              // such as y, x or context
-  std::string mDescription;       // store whatever you want here
+  Attributes  mAttributes;
   int         mN;
   Scalar      mAvg;
   Scalar      mMin, mMax;
@@ -69,8 +64,8 @@ class ColumnData
 
  public:
   std::string     name()                const { return mName; }
-  std::string     role()                const { return mRole; }
-  std::string     description()         const { return mDescription; }
+  std::string     role()                const { return mAttributes["role"]; }
+  Attributes      attributes()          const { return mAttributes; }
   int             size()                const { return mN; }
   Scalar          average()             const { return mAvg; }
   Scalar          scale()               const { return (Scalar) ((mMax - mMin)/(Scalar)6.0); }
@@ -109,32 +104,29 @@ class Column
 
  public:
   ~Column() { if(--mData->mRefCount <= 0) delete mData; }
-  
+
+  // none of these init the column properties (since no data)
   Column();
   Column(Column<F> const& c);
-  Column(char const* name, int n);
-  Column(std::string name, std::string description, size_t n);
-  
-  Column(std::string name, std::string description, size_t n, std::istream& is);
-
+  Column(std::string name, Attributes const& attr, size_t n);
+  Column(std::string name, std::string description, size_t n)  : Column(name, Attributes(description), n) { }
+  Column(std::string name, int n)                              : Column(name, Attributes(), n) { }
+  // these initialize properties
+  Column(std::string name, Attributes const& attr, size_t n, std::istream& is);
   Column(char const* name, char const* description, size_t n, FILE *fp);
-
   template <class Iter>
-    Column(char const* name, char const* description, size_t n, Iter source);
-  template <class Iter>
-    Column(std::string name, std::string description, size_t n, Iter source);
+    Column(std::string name, Attributes const& attr, size_t n, Iter source);
   template<class Iter, class Function>
-    Column(std::string name, std::string description, size_t n, Iter iter, Function const& f);
+    Column(std::string name, Attributes const& attr, size_t n, Iter iter, Function const& f);
+  template <class Iter>
+    Column(char const* name, char const* description, size_t n, Iter source) : Column(std::string(name), Attributes(description), n, source) { }
   
   Column& operator= (Column const& c);
   
   ColumnData<F> * operator->()            const { return mData; }
-  
+
   void        init_properties()                 { mData->init_properties(); }
   void        print_to (std::ostream &os) const { os << "Column " ; mData->print_to(os); }
-
- private:
-  std::string  extract_role_from_string(std::string const& desc) const;    // use comma delimited = pairs
 };
 
 template<class F>
@@ -145,118 +137,6 @@ operator<<(std::ostream& os, Column<F> const& column)
   column.print_to(os);
   return os;
 }
-
-
-// Read columns as a stream from a stream input object:
-//        First line of stream gives number of observations expected for each column.
-//        Seems to work okay so long as this number is >= to the number present.
-//        Then come triples of lines for each column: name, description, data
-template <class F>
-class ColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
-{
-  std::istream&    mStream;
-  std::string      mStreamName;
-  int              mN;
-  int              mCount;
-  std::string      mCurrentName;
-  std::string      mCurrentDesc;
-  Column<F>        mCurrentColumn;
-  
- public:
-  ~ColumnStream() {  }
-  
-  ColumnStream (std::istream& is, std::string name)
-    :  mStream(is), mStreamName(name), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn()
-    { if (is) { initialize(); read_next_column(); } }
-
-  std::string      currentName()        const { return mCurrentName; }
-  std::string      currentDescription() const { return mCurrentDesc; }
-  
-  Column<F>        operator*()          const { return mCurrentColumn; }
-  ColumnStream<F>& operator++()               { ++mCount; read_next_column(); return *this; }
-
-  int              position()           const { return mCount; }
-  int              n()                  const { return mN;     }
-  
- private:
-  void initialize();
-  bool read_next_column();
-};
-
-//     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     insert_columns_from...     
-
-template<class F>
-std::pair<int,int>
-  insert_columns_from_stream (std::istream& is,
-			      std::back_insert_iterator< std::vector<Column<F>> > it);
-
-// Return collection of column vectors based on named variables
-// Names obtained from columnVector field as *first* pair of strings on description line
-template<class F>
-void
-insert_columns_from_stream (std::istream& is,
-			    std::map<std::string, std::back_insert_iterator< std::vector<Column<F>> > > insertMap);
-
-// Return number of obs and columns appended. Assume input file begins with common length n, then
-// subsequent columns in triples;  assigns role = x if not found;
-// input names available maps (eg, words -> eigenword map from word to numerics)
-
-template <class F>
-std::pair<int,int>
-  insert_columns_from_file (std::string fileName,
-			    std::map<std::string, std::map<std::string, std::vector<F>>> const& domainMaps,
-			    std::back_insert_iterator< std::vector<Column<F>> > it);
-
-
-// This version makes columns from an input file using C io rather than C++ (faster this way)
-
-template <class F>
-class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column<F> >
-{
-  std::string      mFileName;
-  int              mN;
-  int              mCount;
-  char             mCurrentName[maxColumnNameLength];
-  char             mCurrentDesc[maxColumnDescLength];
-  Column<F>        mCurrentColumn;
-  FILE*            mFile;
-  
- public:
-  ~FileColumnStream() { if (mFile) fclose(mFile); }
-  
-  FileColumnStream (std::string const& fileName)
-    :
-    mFileName(fileName), mN(0), mCount(0), mCurrentName(), mCurrentDesc(), mCurrentColumn(), mFile(0)
-    { open_file(); read_next_column_from_file(); }
-  
-  Column<F>            operator*()  const { return mCurrentColumn; }
-  FileColumnStream<F>& operator++()       { ++mCount; read_next_column_from_file(); return *this; }
-
-  int                  position()   const { return mCount; }
-  int                  n()          const { return mN;     }
-  void                 close_file()       { fclose(mFile); }
-  
- private:
-  bool open_file();
-  bool read_next_column_from_file();
-};
-
-template<class F>
-std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, 
-                          std::back_insert_iterator< std::vector<Column<F>> > it);
-
-
-template<class F>
-std::pair<int,int>
-insert_columns_from_file (std::string const& fileName, int ny,
-                          std::back_insert_iterator< std::vector<Column<F>> > yIt,
-                          std::back_insert_iterator< std::vector<Column<F>> > xIt);
-
-template<class F>
-int
-insert_columns_from_file (FILE *is, std::string const& nameFileName, int nRows,
-			  std::back_insert_iterator< std::vector<Column<F>> > it);
 
 
 //    Integer Columns     Integer Columns     Integer Columns     Integer Columns     Integer Columns     

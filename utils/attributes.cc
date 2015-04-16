@@ -24,13 +24,21 @@ Attributes::parse_attributes_from_string (string const& line)
 }
 
 
+string
+Attributes::as_string () const
+{
+  if (mMap.empty()) return "";
+  string result;
+  auto it = mMap.begin();
+  result = it->first + equalStr + it->second;
+  for (++it; it != mMap.end(); ++it) 
+    result += commaStr + it->first + equalStr + it->second;
+  return result;
+}
 
 void
 Attributes::print_to (std::ostream& os) const
 {
   if (mMap.empty()) return;
-  auto it = mMap.begin();
-  os << it->first << "=" << it->second;
-  for (++it; it != mMap.end(); ++it) 
-    os << ", " << it->first << "=" << it->second;
+  os << as_string();
 }

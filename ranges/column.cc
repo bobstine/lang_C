@@ -1,4 +1,5 @@
 #include "column.h"
+#include <math.h>
 
 //   IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      IntegerColumn      
 
