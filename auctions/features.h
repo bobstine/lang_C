@@ -47,7 +47,6 @@
 #include "range_stats.h"
 #include "operator_traits.h"
 #include "function_utils.h"
-#include "simple_eigenword_dictionary.h"
 
 #include <iostream>
 #include <sstream>
@@ -415,11 +414,6 @@ class FeatureSource
   void initialize (std::vector<Column<Scalar>> cols);
 
 };
-
-
-FeatureVector
-make_eigenword_feature_vector (std::string fileName, size_t dim, Text::SimpleEigenwordDictionary const& dict);
-
 
 #endif
 

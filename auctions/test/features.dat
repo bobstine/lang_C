@@ -1,23 +1,23 @@
 ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04InteractionFeature
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04InteractionFeature
  Dependence map is   {  (ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04^2)
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04^2)
 ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0InteractionFeature
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04ColumnFeature x1
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04x1^2   FeatureABC [attr: ]  tried=0, inModel=0,  bid=0InteractionFeature
  Dependence map is   {  (ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04^4)
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04^4)
 InteractionFeature
  Dependence map is   {  (ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04^2)
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04^2)
 ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0InteractionFeature
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04ColumnFeature x1
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04x1^2   FeatureABC [attr: ]  tried=0, inModel=0,  bid=0InteractionFeature
  Dependence map is   {  (ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04^2)
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04^2)
 ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0FeatureABC 0   tried=0  inModel=0  bid=0BinaryFeature +
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04ColumnFeature x1
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04x1^2   FeatureABC [attr: ]  tried=0, inModel=0,  bid=0x1^4   FeatureABC [attr: ]  tried=0, inModel=0,  bid=0BinaryFeature +
 ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04ColumnFeature x1
-FeatureABC 3  [test (value of test)]  [test_int (23423)]  [test_scl (234.235)]   tried=1  inModel=1  bid=0.04FeatureABC 0   tried=0  inModel=0  bid=0
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04ColumnFeature x1
+x1  FeatureABC [attr: test=value of test,test_int=23423,test_scl=234.235]  tried=1, inModel=1,  bid=0.04sum[ (x1)+(x1) ]  FeatureABC [attr: ]  tried=0, inModel=0,  bid=0

@@ -5,6 +5,7 @@
 #include "smoothing_spline.h"
 #include "range_ops.h"
 #include "anonymous_iterator.h"
+#include "debug.h"
 
 #include <functional>   // std::function
 #include <iostream>
@@ -37,7 +38,8 @@ int
 main ()
 {
   const int n (20);
-  
+  debugging::debug_init(std::clog, 5);
+
   // define the base data with name string and vector of numbers
   std::string name1("x1");
   std::string name2("x2");
@@ -101,28 +103,13 @@ main ()
   Feature d2 (i2Column);
   d1->set_attribute("parent", "group");
   d2->set_attribute("parent", "group");
-  // find name in feature vector
+
+  if (false)     // find name in feature vector
   { 
     FeatureVector fv;
     fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
     std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
     std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
-  }
-
-  if (true)         // test eigenword feature iterator 
-  {
-    #include "simple_vocabulary.h"
-    #include "simple_eigenword_dictionary.h"
-
-    const bool downcase = false;
-    Text::SimpleVocabulary vocab = Text::make_simple_vocabulary("/home/bob/C/text/test.txt", downcase);
-    const int seed = 1234;
-    const size_t dim = 10;
-    Text::SimpleEigenwordDictionary dict = Text::make_random_simple_eigenword_dictionary(seed, dim, vocab);
-    FeatureVector fv = make_eigenword_feature_vector("/home/bob/C/text/test_tokens.txt", dim, dict);
-    for (size_t i=0; i<fv.size(); ++i)
-      std::cout << "TEST: Eigenword feature... " << fv[i] << " avg=" << fv[i]->average() << std::endl;
-    std::cout << std::endl;
   }
 
   if (false)          // a lag feature
@@ -138,119 +125,122 @@ main ()
     std::cout << "TEST: lag 2,2 ---> " << lag22 << std::endl;
   }
   
-  // a unary feature
-  std::cout << "\nTEST: Now build unary feature... \n";
-  std::cout << "  x      " << x   << std::endl;
-  Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);
-  std::cout << "  xSq    " << xSq << std::endl << std::endl;
-  xSq->write_to(std::cout);  
-
-  // a unary feature from a lambda function (compiles, but gives up the useful name/symbol decoration
-  Feature xLambda (std::function<Scalar(Scalar)>([](Scalar x) -> Scalar { return x*x; }), x);
-  std::cout << "  xLambda    " << xLambda << std::endl << std::endl;
-
-  // make an interaction with the unary feature
-  Feature prod (xx2, xSq);
-  std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
-
+  if (false)           // unary features
+  {
+    std::cout << "\nTEST: Now build unary feature... \n";
+    std::cout << "  x      " << x   << std::endl;
+    Feature xSq ((Function_Utils::Square) Function_Utils::Square(), x);
+    std::cout << "  xSq    " << xSq << std::endl << std::endl;
+    xSq->write_to(std::cout);
+    // a unary feature from a lambda function (compiles, but gives up the useful name/symbol decoration
+    Feature xLambda (std::function<Scalar(Scalar)>([](Scalar x) -> Scalar { return x*x; }), x);
+    std::cout << "  xLambda    " << xLambda << std::endl << std::endl;
+    // make an interaction with the unary feature
+    Feature prod (xx2, xSq);
+    std::cout << "TEST: interaction of " << xx2->name() << " with " << xSq->name() << " is " << prod << std::endl;
+  }
+  
   if (false)    // indexed feature
-  { std::cout << "\nTEST: indexed features (reverse):\n"
+  {
+    std::cout << "\nTEST: indexed features (reverse):\n"
 	      << make_indexed_feature(x   , indices) << std::endl;
-    std::cout << make_indexed_feature(xSq , indices) << std::endl;
-    std::cout << make_indexed_feature(prod, indices) << std::endl;
+    std::cout << make_indexed_feature(xx2 , indices) << std::endl;
+    std::cout << make_indexed_feature(d1  , indices) << std::endl;
     std::cout << std::endl;
   }
-    
-  // make an interaction
-  Feature inter (x, dup);
-  std::cout << "TEST: center of x x duplicate interaction feature is " << inter->center() << std::endl;
-  std::cout << "TEST: begin of x x interaction feature is " << *(inter->begin()) << std::endl;
-  std::cout << "      " << inter << std::endl;
   
-  // now another interaction (that squares)
-  Feature xx(x, x);
-  std::cout << "TEST: center of xx interaction feature is " << xx->center() << std::endl;
-  std::cout << "TEST: *begin of xx interaction feature is " << *(xx->begin()) << std::endl;
-  std::cout << "      " << xx << std::endl;
-  
-  // an interaction of xx with xx
-  Feature xxxx(xx, xx);
-  std::cout << "TEST: center of xxxx interaction feature is " << xxxx->center() << std::endl;
-  std::cout << "      " << xxxx << std::endl;
+  if (false)    //  interactions
+  {
+    Feature inter (x, dup);
+    std::cout << "TEST: center of x x duplicate interaction feature is " << inter->center() << std::endl;
+    std::cout << "TEST: begin of x x interaction feature is " << *(inter->begin()) << std::endl;
+    std::cout << "      " << inter << std::endl;
+    // now another interaction (that squares)
+    Feature xx(x, x);
+    std::cout << "TEST: center of xx interaction feature is " << xx->center() << std::endl;
+    std::cout << "TEST: *begin of xx interaction feature is " << *(xx->begin()) << std::endl;
+    std::cout << "      " << xx << std::endl;
+    // an interaction of xx with xx
+    Feature xxxx(xx, xx);
+    std::cout << "TEST: center of xxxx interaction feature is " << xxxx->center() << std::endl;
+    std::cout << "      " << xxxx << std::endl;
+    // an interaction with odd names
+    Feature another(xx2,x);
+    std::cout << "TEST: interaction with odd name is " << another << std::endl;
+    // interact dummy variables
+    Feature zero(d1,d2);
+    std::cout << "TEST: interaction of two dummy variables is " << zero << std::endl;
+    std::cout << "      with mean value " << zero->average() << std::endl;
+    std::cout << "      attributes are " << zero->attributes() << std::endl  << std::endl;
+  }
 
-  // an interaction with odd names
-  Feature another(xx2,x);
-  std::cout << "TEST: interaction with odd name is " << another << std::endl;
-
-  // interact dummy variables
-  Feature zero(d1,d2);
-  std::cout << "TEST: interaction of two dummy variables is " << zero << std::endl;
-  std::cout << "      with mean value " << zero->average() << std::endl;
-  std::cout << "      attributes are " << zero->attributes() << std::endl  << std::endl;
+  if (false)      // a linear combination of several
+  {
+    std::vector<Scalar>      wts (3); wts[0] = (Scalar)0.7; wts[1] = (Scalar)100.0; wts[2] = (Scalar)10000;
+    std::vector<Feature> fv (2); fv[0] = dup ; fv[1] = x;
+    Feature lc(x->size(), wts, fv);
+    std::cout << "TEST: Linear combination feature with center " << lc->center() << std::endl;
+    std::cout << "      " << lc << std::endl;			       
+    // add unary feature as in logistic predictions
+    std::cout << "\n\n\nTEST: Now build unary composition features... \n";
+    Feature lOflc ( (Function_Utils::LogisticPos) Function_Utils::LogisticPos(), lc);
+    std::cout <<   "      " << lOflc << std::endl;
+    lOflc->write_to(std::cout);
+  }
   
-  // a linear combination of several
-  std::vector<Scalar>      wts (3); wts[0] = (Scalar)0.7; wts[1] = (Scalar)100.0; wts[2] = (Scalar)10000;
-  std::vector<Feature> fv (2); fv[0] = dup ; fv[1] = x;
-  Feature lc(x->size(), wts, fv);
-  std::cout << "TEST: Linear combination feature with center " << lc->center() << std::endl;
-  std::cout << "      " << lc << std::endl;			       
+  if (false)       // and a binary feature
+  {  
+    std::cout << "\nTEST: Now a binary feature... \n";
+    Feature  xpx  (std::plus<Scalar>(), x, x );
+    std::cout <<   "      " << xpx << std::endl;
+  }
   
-  // another unary feature
-  std::cout << "\n\n\nTEST: Now build unary composition features... \n";
-  Feature lOflc ( (Function_Utils::LogisticPos) Function_Utils::LogisticPos(), lc);
-  std::cout <<   "      " << lOflc << std::endl;
-  lOflc->write_to(std::cout);
-  
-  // and a binary feature
-  std::cout << "\nTEST: Now a binary feature... \n";
-  Feature  xpx  (std::plus<Scalar>(), x, x );
-  std::cout <<   "      " << xpx << std::endl;
-  
-  // and a spline feature (a very messy unary feature)
-  if (true)
+  if (false)       // and a spline feature (a very messy unary feature)
   {
     int df = 5;  
     std::cout << "\nTEST: Making spline feature with " << df << " df ... \n";
-    SmoothingSpline ss(3, begin(x->range()), begin(xx->range()), n);  // 3 df
+    SmoothingSpline ss(3, begin(x->range()), begin(x->range()), n);  // 3 df
     Feature spline (ss.spline_operator(), x);
     std::cout <<   "      " << spline << std::endl;
     spline->write_to(std::cout);
   }
-
-  // write features to a file
-  if (true)
+  
+  if (false)          // write features to a file
   {
     std::ofstream output("test/features.dat");
     x->write_to(output);
-    xx->write_to(output);
-    xxxx->write_to(output);
-    xpx->write_to(output);
-    // spline->write_to(output);
+    xx2->write_to(output);
+
     output.close();
   }
 
-  // read multiple features from file by converting into columns
-  std::cout << "\nTEST: Building features from file of columns ... \n";
-  std::pair<size_t,size_t> dim;
-  std::vector<Column<Scalar>> xColumns;
-  if (true)
-  { std::vector<Column<Scalar>> yColumns;
-    dim = insert_numerical_columns_from_file("/home/bob/C/ranges/test.data/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
-  }
-  else
-  { std::ifstream input ("/home/bob/C/ranges/test.data/column_stream_test.dat");
-    size_t minCategorySize = 10;
-    // note: pair has different meaning here: number created, number offered (mapped features like eigenwords)
-    dim = insert_columns_from_stream(input, minCategorySize, make_test_dictionary(), back_inserter(xColumns));
-  }
-  Feature xCol0 (xColumns[0]);
-  Feature xCol1 (xColumns[1]);
-  std::cout << xCol0 << std::endl;
-  std::cout << "TEST: attributes of feature "  << xCol0->attributes()                     << std::endl;
-  std::cout << "      average of feature is "  << xCol0->center()                         << std::endl;
-  std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
-  
+  if (true)         // read multiple features from file
+  { 
+    std::cout << "\nTEST: Building features from file of columns ... \n";
+    std::pair<size_t,size_t> dim;
+    std::vector<Column<Scalar>> xColumns;
+    if (false)      // pick numerical or mapped features
+    { std::vector<Column<Scalar>> yColumns;
+      dim = insert_numerical_columns_from_file("/home/bob/C/ranges/test.data/column_test.dat", 1, back_inserter(yColumns), back_inserter(xColumns));
+    }
+    else
+    { std::ifstream input ("/home/bob/C/ranges/test.data/column_stream_test.dat");
+      size_t minCategorySize = 10;
+      // note: dim has different meaning here: number created, number offered (mapped features like eigenwords)
+      std::cout << "TEST: Reading mapped features from file... \n";
+      dim = insert_columns_from_stream(input, minCategorySize, make_test_dictionary(), back_inserter(xColumns));
+      std::cout << "TEST: Constructed " << dim.second << " features from input of " << dim.first << " variables.\n";
+    }
+    Feature xCol0 (xColumns[0]);
+    Feature xCol1 (xColumns[1]);
+    std::cout << xCol0 << std::endl << xCol1 << std::endl;
+    std::cout << "TEST: attributes of feature "  << xCol0->attributes()                     << std::endl;
+    std::cout << "      average of feature is "  << xCol0->center()                         << std::endl;
+    std::cout << "      frequency of xCol[0]   " << xCol0->attribute_str_value("frequency") << std::endl;
+  }  
+
   delete [] x1;
   return 0;
 }
-    
+  
+  

@@ -92,9 +92,15 @@ class FileColumnStream : public std::iterator<std::forward_iterator_tag, Column<
 //  Returns pair: number columns read from stream, number columns written
 			
 std::pair<size_t,size_t>
+insert_columns_from_file (std::string fileName,
+			  size_t minCategorySize,                                        // category must have at least this many observations, domain=catetogories
+			  std::map<std::string, std::vector<float>> const& dictionary,   // handles domain=words
+			  std::back_insert_iterator< std::vector<Column<float>> > it);
+
+std::pair<size_t,size_t>
 insert_columns_from_stream (std::istream& is,
-			    size_t minCategorySize,                                        // category must have at least this many observations, domain=catetogories
-			    std::map<std::string, std::vector<float>> const& dictionary,   // handles domain=words
+			    size_t minCategorySize,                                     
+			    std::map<std::string, std::vector<float>> const& dictionary,
 			    std::back_insert_iterator< std::vector<Column<float>> > it);
 
 //  only numerical columns for these; return dimension of implied matrix

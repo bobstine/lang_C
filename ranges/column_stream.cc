@@ -40,8 +40,22 @@ insert_bundle(string bundleName, Attributes attributes, std::vector<std::vector<
 	      std::vector<string> const& labels, string attributeOfLabels,   // var name labels optionally added as attribute if not empty
 	      std::back_insert_iterator<std::vector< Column<Scalar>>> columnIterator);
 
-/////
-  
+/////  -----   Key function  -----
+
+std::pair<size_t,size_t>
+insert_columns_from_file (std::string fileName,
+			  size_t minCatSize,
+			  std::map<string, std::vector<Scalar>> const& dictionary,      // handles domain=word
+			  std::back_insert_iterator< std::vector<Column<Scalar>> > columnInserter)
+{
+  std::ifstream input(fileName);
+  if(!input.good())
+  { debug(tag,1) << " *** Error *** Count not open file " << fileName << " for input data.\n";
+    return std::make_pair(0,0);
+  }
+  return insert_columns_from_stream(input,minCatSize, dictionary, columnInserter);
+}
+
 std::pair<size_t,size_t>
 insert_columns_from_stream (std::istream &input,
 			    size_t minCatSize,
