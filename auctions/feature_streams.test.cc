@@ -12,7 +12,7 @@
 #include "smoothing_spline.h"
 
 #include "auction_base_types.h"
-#include "feature_streams.Template.h"
+#include "feature_streams.h"
 #include "feature_iterators.Template.h"
 #include "feature_transformations.Template.h"
 

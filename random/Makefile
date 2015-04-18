@@ -16,7 +16,9 @@ PROJECT_NAME = random
 
 USES     = utils
 
-OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+# OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+
+OPT = -O0
 
 ###########################################################################
 #

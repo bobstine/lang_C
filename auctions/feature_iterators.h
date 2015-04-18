@@ -104,14 +104,14 @@ class CyclicIterator
 {
   typedef typename Collection::const_iterator Iterator;
 
-  Collection const& mSource;         // someone else maintains
+  Collection        mSource;
   SkipPredicate     mSkipFeature;
   Iterator          mIter;
   int               mSize;
   
 public:
-  CyclicIterator(Collection const& source, SkipPredicate pred)
-    : mSource(source), mSkipFeature(pred), mIter(source.begin()), mSize((int)source.size()) { initialize(); }
+  CyclicIterator(Collection source, SkipPredicate pred)
+    : mSource(source), mSkipFeature(pred), mIter(mSource.begin()), mSize((int)mSource.size()) { initialize(); }
   
   int   number_remaining()              const { return mSize; }
   bool  points_to_valid_data()          const { return !mSource.empty() && (mSize > 0); }
@@ -289,10 +289,10 @@ operator<<(std::ostream& os, BeamIterator<A> bi)
 template< class Collection, class SkipPred >   // must be random access collection
 class BundleIterator
 {
-  Collection const&  mSource;      // maintained by someone else
-  unsigned int       mBundleSize;
-  SkipPred           mSkipPred;
-  unsigned int       mLoIndex, mHiIndex;
+  Collection       mSource;
+  unsigned int     mBundleSize;
+  SkipPred         mSkipPred;
+  unsigned int     mLoIndex, mHiIndex;
 public:
   BundleIterator(Collection const& source, int bundleSize, SkipPred pred) : mSource(source), mBundleSize(bundleSize), mSkipPred(pred), mLoIndex(0), mHiIndex(0) { }
 
@@ -329,20 +329,20 @@ class InteractionIterator
 private:
   typedef typename Collection::const_iterator Iter;
 
-  Collection const& mSource;
-  bool              mIncludeDiagonal;
-  SkipPred          mSkipPred;
-  Iter              mpDiagFeature, mpColFeature;
-  int               mRemain;
+  Collection  mSource;
+  bool        mIncludeDiagonal;
+  SkipPred    mSkipPred;
+  Iter        mpDiagFeature, mpColFeature;
+  int         mRemain;
   
 public:
   
   InteractionIterator(Collection const& src, bool useSquares, SkipPred pred)
     : mSource(src), mIncludeDiagonal(useSquares), mSkipPred(pred),
-    mpDiagFeature(src.begin()), mpColFeature(src.begin()), mRemain(initial_count((int)src.size())) { initialize(); }
+    mpDiagFeature(mSource.begin()), mpColFeature(mSource.begin()), mRemain(initial_count((int)src.size())) { initialize(); }
   
   int   number_remaining()           const { return mRemain; }
-  bool  points_to_valid_data ()                     const { return mRemain > 0; }
+  bool  points_to_valid_data ()      const { return mRemain > 0; }
 
   InteractionIterator& operator++();  
   Feature              operator*()   const;  
@@ -385,10 +385,10 @@ template <class Collection, class Pred>
 template<class SkipPred> 
 class CrossProductIterator
 {
-  FeatureVector const&          mSlowSource;
-  FeatureVector const&          mFastSource;
-  SkipPred                      mSkipPred;
-  unsigned                      mSlowIndex;
+  FeatureVector           mSlowSource;
+  FeatureVector           mFastSource;
+  SkipPred                mSkipPred;
+  unsigned                mSlowIndex;
   mutable std::vector<unsigned> mFastIndices;
 
  public:

@@ -87,7 +87,7 @@ main ()
   Feature x   (xColumn1);
   Feature xx2 (x2Column);
   Feature dup (xColumn2);
-  x->set_attribute ("test", "value of test");
+  x->set_attribute ("test", "value of test attribute");
   x->set_attribute ("test_int", "23423");
   x->set_attribute ("test_scl", "234.235");
   x->set_model_results(true, (Scalar)0.04);
@@ -104,12 +104,15 @@ main ()
   d1->set_attribute("parent", "group");
   d2->set_attribute("parent", "group");
 
-  if (false)     // find name in feature vector
-  { 
-    FeatureVector fv;
-    fv.push_back(x); fv.push_back(xx2); fv.push_back(dup);
-    std::cout << "\nTEST: eligible features are:\n" << fv << std::endl;
-    std::cout <<   "TEST: features with 'x' in name:\n" << features_with_name("x", fv) << std::endl;
+  if (true)     // find name in feature vector; check that tracks state
+  {
+    std::cout << "\nTEST: Testing use of reference to track state of feature.\n";
+    std::cout <<   "    : x int attribute is " << x->attribute_str_value("test_int") << std::endl;
+    std::vector<Feature> fv;
+    fv.push_back(x);
+    fv.push_back(xx2);
+    fv[0]->set_attribute("test_int"," 777 ");
+    std::cout <<   "    : x int attribute is " << x->attribute_str_value("test_int") << std::endl;
   }
 
   if (false)          // a lag feature

@@ -8,14 +8,14 @@
 //  Feature constructors  (define after defining the different types of features)
 
 template<class Op>
-Feature::Feature(Op op, Feature const &x)
+Feature::Feature(Op op, Feature x)
 {
   mFP = new UnaryFeature<Op>(op,x);
 }
 
 
 template<class Op>
-Feature::Feature(Op op, Feature const &x1, Feature const& x2)
+Feature::Feature(Op op, Feature  x1, Feature  x2)
 {
   mFP = new BinaryFeature<Op>(op,x1,x2);
 }

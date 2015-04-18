@@ -5,8 +5,6 @@ default: auction.test
 ../c_flags: 
 	ln -s ~/dot_files/c_flags.pb ../c_flags
 
-# $(warning Here we are!)
-
 ###########################################################################
 #
 #        Options
@@ -17,8 +15,9 @@ PROJECT_NAME = auction
 
 USES =  text eigen spline ranges random utils 
 
-OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+# OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
+OPT = -O0
 
 ###########################################################################
 #

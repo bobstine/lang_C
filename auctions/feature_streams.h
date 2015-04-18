@@ -294,7 +294,7 @@ inline
 FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity >
 make_cross_product_stream (std::string name, FeatureVector const& slow, FeatureVector const& fast)
 {
-  debug("FSTR",3) << "make_interaction_stream (static) " << std::endl;
+  debug("FSTR",3) << "make_cross_product_stream (static) " << std::endl;
   return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>
     ("CrossProduct::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity());
 }

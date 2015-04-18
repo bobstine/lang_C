@@ -1,5 +1,5 @@
 /*
-  18 Apr 15 ... Lots of changes while at Yahoo.
+  18 Apr 15 ... Lots of changes while at Yahoo: map features, rand proj
   10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
   21 Mar 10 ... More types of input information, neighborhoods and the context stream.	
@@ -11,6 +11,23 @@
   23 Mar 04 ... Revised to use the anonymous ranges and other objects; logistic regression.
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
+
+
+     Read columns from a file. The source file is laid out with one column of values per row.
+     Line 1: gives the number of cases
+     Line 2: name of the first variable
+          3: description of first variable  (its property list)    
+          4: data for the first variable
+     Line 5: name of the second variable
+          6: description of second variable
+	  7: data for the second variable
+     Line 6: name of the third variable      ...
+     
+     The reading is done by a FileColumnStream.  A column feature provides a named range
+     of Scalars that learns a few properties of the data as it's read in (min, max, unique
+     values). The space used by columns is allocated on reading in the function
+     FileColumnStream.  Space is managed within each column.
+
 */
 
 #include "build_helper.h"
@@ -26,7 +43,7 @@
 #include "feature_transformations.Template.h"
 #include "feature_predicates.Template.h"
 #include "feature_iterators.Template.h"
-#include "feature_streams.Template.h"
+#include "feature_streams.h"
 #include "bidders.h"
 #include "experts.Template.h"
 
@@ -71,7 +88,6 @@ main(int argc, char** argv)
   using std::string;
 
   // Parse command line options
-  
   Scalar   totalAlphaToSpend    ((Scalar)0.1);
   string   responseFileName     ("Y");
   string   contextFileName      ("cv_indicator");
@@ -88,8 +104,7 @@ main(int argc, char** argv)
   int      calibrationGap         (0);      // 0 means no calibration; otherwise gap between models offered calibration
   int      debugLevel             (3);
 
-  // lock these options
-
+  // Lock these options
   const int  nPrefixCases = 0;
   const int  nContextCases = 0;
   const int  blockSize   = 1;
@@ -99,7 +114,7 @@ main(int argc, char** argv)
 		  protection, useShrinkage, numberRounds, totalAlphaToSpend,
 		  calibrationGap, debugLevel, maxNumOutputPredictors);
   
-  // initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
+  // Initialize log stream (write to clog if debugging is on, otherwise to auction.log file)
   if (outputPath[outputPath.size()-1] != '/') outputPath += "/";
   string   debugFileName (outputPath + "progress.log");
 #ifdef NDEBUG
@@ -110,12 +125,12 @@ main(int argc, char** argv)
 #endif
   debug("AUCT",0) << "Version build 2.5 (17 Apr 2015) Fast regression with gradient, NLP features from mapped input.\n";
 
-  // write configuration and record to file
+  // Write configuration and record to file
   string configuration;
   {
     configuration = "auction --y_file=" + responseFileName + " --c_file=" + contextFileName
       + " --vocabulary=" + vocabFileName + " --dictionary=" + dictFileName + " --dict_dim=" + std::to_string(dictDim)
-      + " --min_size=" + std::to_string(minCategorySize) + "  --x_file=" + xFileName
+      + " --min_cat_size=" + std::to_string(minCategorySize) + "  --x_file=" + xFileName
       + " --output-path=" + outputPath + " --cal_gap=" + std::to_string(calibrationGap)
       + " --debug-level=" + std::to_string(debugLevel) + " --protect=" + std::to_string(protection)
       + " --rounds=" + std::to_string(numberRounds) + " --output-x=" + std::to_string(maxNumOutputPredictors)
@@ -141,22 +156,6 @@ main(int argc, char** argv)
 #endif
 		  << "      model data  --> " << modelDataFileName << std::endl
 		  << "       model.txt  --> " << modelTextFileName << std::endl;  
-  /* XF
-     Read columns from a file. The source file is laid out with one column of values per row.
-     Line 1: gives the number of cases
-     Line 2: name of the first variable
-          3: description of first variable  (its property list)    
-          4: data for the first variable
-     Line 5: name of the second variable
-          6: description of second variable
-	  7: data for the second variable
-     Line 6: name of the third variable      ...
-     
-     The reading is done by a FileColumnStream.  A column feature provides a named range
-     of Scalars that learns a few properties of the data as it's read in (min, max, unique
-     values). The space used by columns is allocated on reading in the function
-     FileColumnStream.  Space is managed within each column.
-  */
 
   // Read response and associated control variables; read returns <n,k>
   typedef std::vector<Column<SCALAR>> ColumnVector;
@@ -184,6 +183,7 @@ main(int argc, char** argv)
     const bool downcase = false;
     Text::SimpleVocabulary vocab = Text::make_simple_vocabulary(vocabFileName, downcase);
     Text::SimpleEigenwordDictionary dict = Text::make_simple_eigenword_dictionary(dictFileName, dictDim, vocab, downcase);
+    debug("MAIN",4) << "TESTING: have built vocab and dictionary.\n";
     std::pair<int,int> dim;
     dim = insert_columns_from_file (xFileName, minCategorySize, dict, std::back_insert_iterator<ColumnVector>(xColumns));
     debug("MAIN",2) << "X file returns " << dim.second << " features from " << dim.second << " variables." << std::endl;
@@ -191,7 +191,7 @@ main(int argc, char** argv)
     debug("MAIN",1) << "Input files produced " << xColumns.size() << " Xs.\n";
   } 
 
-  FeatureSource featureSource (xColumns, nPrefixCases);
+  FeatureSource featureSource (xColumns, nPrefixCases);                            // holds *all* features constructed from input X
   featureSource.print_summary(debug("MAIN",1));
   std::vector<string> streamNames (featureSource.stream_names());
   {
@@ -204,7 +204,7 @@ main(int argc, char** argv)
 	break;
       }
     }
-    debug("MAIN",1) << "Found " << streamNames.size() << " bidding streams; " << lockedFeatures.size() << " features are locked." << std::endl;
+    debug("MAIN",1) << "Found " << streamNames.size() << " input source streams; " << lockedFeatures.size() << " features are locked." << std::endl;
     if(lockedFeatures.size()>0) 
     { theAuction.add_initial_features(lockedFeatures);
       debug("AUCT",1) << theAuction << std::endl << std::endl;
@@ -217,24 +217,49 @@ main(int argc, char** argv)
   Scalar     alphaMain      (alphaShare * (Scalar)0.60);
   Scalar     alphaInt       (alphaShare * (Scalar)0.40);
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel               >, Identity>  FiniteStream;
-  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfIndicatorsOfSameParent>, Identity>  InteractionStream;
-  
-  std::vector<FeatureVector> featureVectors(streamNames.size());   // treat this guy with respect... lots of const refs to its elements
-  
-  for (int s=0; s < (int)streamNames.size(); ++s)
-  { debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to source experts for stream " << streamNames[s] << std::endl;	
-    featureVectors[s] = featureSource.features_with_attribute("stream", streamNames[s]);
+  //  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfIndicatorsOfSameParent>, Identity>  InteractionStream;
+  typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>           , Identity>  CrossProductStream;
+	
+  std::map<string, FeatureVector> featureVectors;   // treat this guy with respect... lots of const refs to its elements
+   
+  for (size_t s=0; s<streamNames.size(); ++s)
+  { string streamName = streamNames[s];
+    debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to expert for stream " << streamName << std::endl;	
+    FeatureVector fv = featureSource.features_with_attribute("stream", streamName);
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream(streamNames[s], featureVectors[s], SkipIfInModel())));
-    if (false)
-    { // exclude these interaction streams within a stream
-      theAuction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
-				   UniversalBoundedBidder<InteractionStream>(),
-				   make_interaction_stream("within " + streamNames[s], featureVectors[s], true)      // true implies include squared terms
-				   ));
+				 make_finite_stream(streamName, fv, SkipIfInModel())));
+  }
+
+  if (false)  // cross streams with matching name prefix (eg: WR1_WORD, WR1_POS)
+  { char delim = '_';
+    std::map<string,std::vector<string>> prefixMap;
+    for(string s : streamNames)
+    { size_t pos = s.find(delim);
+      if (pos != string::npos)
+      { string prefix = s.substr(0,pos);
+	prefixMap[prefix].push_back(s);
+	std::cout << "TEST: prefix = " << prefix << " with stream " << s << std::endl;
+      }
+    }
+    std::cout << "TEST: prefix map of " << prefixMap.size() << " elements: ";
+    for (auto p : prefixMap)
+    { std::cout <<"  {" <<  p.first << ",";
+      for (string n :p.second) std::cout << n << " ";
+      std::cout << "}   ";
+    }
+    for (auto p : prefixMap)
+    { if(p.second.size() == 2)
+      { string streamName1 = (p.second)[0];
+	string streamName2 = p.second[1];
+	string name = streamName1 + "x" + streamName2;
+	theAuction.add_expert(Expert("Cross["+name+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
+				     UniversalBoundedBidder<CrossProductStream>(),
+				     make_cross_product_stream(name, featureVectors[streamName1], featureVectors[streamName2])  ));
+      }
     }
   }
+  
   if (false)
   { // beams don't yet recognize the new feature structure??? 
     const int gap = 3;
@@ -374,7 +399,7 @@ parse_arguments(int argc, char** argv,
 	  {"dictionary",        1, 0, 'D'},  // has arg,
 	  {"dict_dim",          1, 0, 'd'},  // has arg,
 	  {"output_x",          1, 0, 'k'},  // has arg
-	  {"min_size",          1, 0, 'm'},  // has arg
+	  {"min_cat_size",      1, 0, 'm'},  // has arg
 	  {"output_path",       1, 0, 'o'},  // has arg,
 	  {"protection",        1, 0, 'p'},  // has arg,
 	  {"rounds",            1, 0, 'r'},  // has arg,

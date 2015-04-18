@@ -10,6 +10,7 @@
 #include "auction_base_types.h"
 #include "debug.h"
 #include "column.Template.h"
+#include "column_stream.Template.h"
 
 #include "features.h"
 #include "feature_iterators.Template.h"
@@ -24,11 +25,11 @@ class Model
 private:
   int mQ;
   int mCases;
-  FeatureList mAccepted;
-  FeatureList mRejected;
+  FeatureVector mAccepted;
+  FeatureVector mRejected;
   
 public:
-  Model(FeatureList const& accept, FeatureList const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
+  Model(FeatureVector const& accept, FeatureVector const& reject) : mQ(0), mCases(10), mAccepted(accept), mRejected(reject) { }
 
   int q()                       const  { return mQ; }
   void increment_q()                   { ++ mQ; }
@@ -54,9 +55,9 @@ main()
   
   // build vector of columns from file
   //  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
-  const std::string columnFileName ("test/bank_post45.dat");
+  const std::string columnFileName ("test/bank_post45.head.dat");
   std::vector<Column<SCALAR>> columns;
-  insert_columns_from_file(columnFileName, back_inserter(columns));
+  insert_numerical_columns_from_file(columnFileName, back_inserter(columns));
   std::cout << "TEST: Data file " << columnFileName << " produced vector of " << columns.size() << " columns.\n";
   std::cout << "TEST: col[ 0]    " << columns[ 0] << std::endl;
   std::cout << "TEST: col[ 1]    " << columns[ 1] << std::endl;
@@ -67,17 +68,14 @@ main()
   std::cout << "TEST: Feature from column 0 is " << f0 << std::endl;
   
   FeatureVector features, featureVec1,  featureVec2;
-  FeatureList   featureList1, featureList2;
   std::cout << "\n\nTEST: Building collections of features\n";
   const int numberOfFeatures (10);
   for (int i=0; i<numberOfFeatures; ++i)
   { features.push_back(Feature(columns[i]));
-    featureList1.push_back(Feature(columns[i]));
-    featureList1.push_back(Feature(columns[i+numberOfFeatures]));
     featureVec1.push_back(Feature(columns[i]));
-    featureVec2.push_back(Feature(columns[i+numberOfFeatures]));
     std::cout << "      : Adding feature " << features[i] << std::endl;
   }
+  featureVec2 = featureVec1;
   // make a constant feature
   int n (columns[0]->size());
   SCALAR x[n];
@@ -133,19 +131,20 @@ main()
     std::cout << "TEST_queue: complete, it = " << it << std::endl;
   }
 
-
-  if (false)         // test cyclic iterator
+  if (true)         // test cyclic iterator
   { 
     std::cout << "\n\nTEST: making cyclic iterator over finite collection\n";
+    std::cout << "      First feature in input vector  is " << features[0] << std::endl;
+    std::cout << "      second feature in input vector is " << features[1] << std::endl;
     CyclicIterator<FeatureVector, SkipNone> it (features, SkipNone());
-
     for(int i=0; i<20; ++i)
     { if (it.points_to_valid_data())
-	std::cout << "TEST_cyclic: *it = " << (*it)->name() << std::endl;
-      ++it;
+      { std::cout << "TEST_cyclic: i = " << i;
+	std::cout << "   *it = " << (*it)->name() << std::endl;
+	++it;
+      }
     }
   }
-
 
   if (false)         // test dynamic iterator
   {
@@ -187,7 +186,7 @@ main()
   if (false)    //        test model iterator
   {
     std::cout << "\n\nTEST:  make model iterator\n";
-    Model model (featureList1, featureList2);
+    Model model (featureVec1, featureVec2);
     ModelIterator<Model> it (model,0);
     
     int max (4);

@@ -15,7 +15,7 @@
 #include "column.Template.h"
 #include "features.h"
 #include "feature_iterators.Template.h"
-#include "feature_streams.Template.h"
+#include "feature_streams.h"
 
 #include <iostream>
 #include <iomanip>

@@ -21,12 +21,12 @@ Feature::Feature(Column<Scalar> const &c)
   mFP = new ColumnFeature(c);
 }  
 
-Feature::Feature(Feature const& f, size_t lag, size_t blockSize)
+Feature::Feature(Feature f, size_t lag, size_t blockSize)
 {
   mFP = new LagFeature(f,lag,blockSize);
 }
 	
-Feature::Feature(Feature const& f1, Feature const& f2)
+Feature::Feature(Feature f1, Feature f2)
 {
   mFP = new InteractionFeature(f1,f2);
 }
@@ -75,40 +75,22 @@ Feature::write_to (std::ostream& os) const
 
 //  utilities     utilities     utilities     utilities     utilities     utilities     utilities     utilities
 
-
-void
-write_feature_vector_to (std::ostream& os, FeatureVector const& featureVec)
+std::vector<Feature>
+features_with_name(std::string name, std::vector<Feature> const& fv)
 {
-  int max (10);
-  int n   ((int)featureVec.size());
-  int show = (max < n) ? max : n;
-  for (int i = 0; i < show; ++i)
-  { featureVec[i]->write_to(os);
-    os << std::endl;
-  }
-  if (max < n)
-  { os << "   ..... " << n-show-1 << " .....\n";
-    featureVec[n-1]->write_to(os);
-    os << std::endl;
-  }
-}
-
-FeatureVector
-features_with_name(std::string name, FeatureVector const& fv)
-{
-  FeatureVector result;
-  for (FeatureVector::const_iterator it=fv.begin(); it != fv.end(); ++it)
-  { std::string fname ((*it)->name());
+  std::vector<Feature> result;
+  for (auto f : fv)
+  { std::string fname (f->name());
     if (std::string::npos != fname.find(name))
-      result.push_back(*it);
+      result.push_back(f);
   }
   return result;
 }
 
-FeatureVector
-features_with_attribute(std::string attribute, std::string value, FeatureVector const& fv)
+std::vector<Feature>
+features_with_attribute(std::string attribute, std::string value, std::vector<Feature> const& fv)
 {
-  FeatureVector result;
+  std::vector<Feature> result;
   for(auto f : fv)
   { std::string v = f->attribute_str_value(attribute);
     if(v == value)
@@ -119,7 +101,7 @@ features_with_attribute(std::string attribute, std::string value, FeatureVector 
 
   
 Feature
-make_indexed_feature(Feature const& f, IntegerColumn const& i)
+make_indexed_feature(Feature f, IntegerColumn const& i)
 {
   debugging::debug("IDXF",3) << "Creating indexed feature from '" << f->name() << " with " << f->size()
 			     << " elements and " << i->size() << " indices from " << i->name() << ".\n";
@@ -618,9 +600,9 @@ FeatureSource::features_with_attribute (std::string attr) const
 {
   std::vector< Feature > fv;
 
-  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
-    if ( (*f)->has_attribute(attr) )
-      fv.push_back(*f);
+  for(auto f : mFeatures)
+    if ( f->has_attribute(attr) )
+      fv.push_back(f);
   return fv;
 }
 
@@ -630,9 +612,9 @@ FeatureSource::features_with_attribute (std::string attr, std::string value) con
 {
   std::vector< Feature > fv;
 
-  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
-    if ( (*f)->has_attribute(attr) && ((*f)->attribute_str_value(attr) == value)  )
-      fv.push_back(*f);
+  for(auto f : mFeatures)
+    if ( f->has_attribute(attr) && (f->attribute_str_value(attr) == value)  )
+      fv.push_back(f);
   return fv;
 }
 
@@ -642,15 +624,15 @@ FeatureSource::features_with_attributes (std::set<std::string> const& attrs) con
 {
   std::set< Feature > features;
 
-  for(FeatureVector::const_iterator f = mFeatures.begin(); f != mFeatures.end(); ++f)
-    for(StringSet::const_iterator s = attrs.begin(); s != attrs.end(); ++s)
-      if ( (*f)->has_attribute(*s) )
-      {	features.insert(*f);
+  for(auto f : mFeatures)
+    for(std::string attr : attrs)
+      if ( f->has_attribute(attr) )
+      {	features.insert(f);
 	break;
       }
-  FeatureVector fv;
-  for(std::set<Feature>::const_iterator sv=features.begin(); sv!=features.end(); ++sv)
-    fv.push_back(*sv);
+  std::vector<Feature> fv;
+  for(auto f : features)
+    fv.push_back(f);
   return fv;
 }
 

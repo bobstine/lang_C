@@ -37,7 +37,7 @@
 #include "range_ops.h"
 #include "adapter.h"
 #include "anonymous_iterator.h"
-#include "feature_streams.Template.h"
+#include "feature_streams.h"
 #include "light_threads.Template.h"
 
 // for constant iterator 

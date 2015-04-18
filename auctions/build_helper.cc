@@ -6,7 +6,7 @@
 #include "features.Template.h"
 #include "feature_predicates.Template.h"
 #include "feature_iterators.Template.h"
-#include "feature_streams.Template.h"
+#include "feature_streams.h"
 #include "bidders.h"
 #include "experts.Template.h"
 

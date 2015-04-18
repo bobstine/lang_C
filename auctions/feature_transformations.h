@@ -29,14 +29,14 @@ class FeatureTransformation
   Operator      mOp;
  public:
  FeatureTransformation(Operator op)   : mOp(op) { }
-  FeatureVector operator()(argument_type const& arg)  { return mOp(arg); }
+  FeatureVector operator()(argument_type arg)  { return mOp(arg); }
 };
 
 
 
 //     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     Identity     
 
-class Identity: public std::function<FeatureVector (Feature)>
+class Identity: public std::function<std::vector<Feature> (Feature)>
 {
  public:
   FeatureVector operator()(Feature f)        const { FeatureVector fv; fv.push_back(f); return fv; }
