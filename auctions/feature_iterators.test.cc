@@ -145,30 +145,6 @@ main()
       }
     }
   }
-
-  if (false)         // test dynamic iterator
-  {
-    std::cout << "\n\nTEST: dynamic iterator\n";
-    FeatureVector fv;
-    DynamicIterator<FeatureVector, SkipNone> it (fv, SkipNone());
-
-    int nToAdd (3);
-    for (int i=0; i<nToAdd; ++i)
-      fv.push_back(features[i]);
-    while(it.points_to_valid_data())
-    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
-      ++it;
-    }
-    for (int i=0; i<nToAdd; ++i)
-      fv.push_back(features[nToAdd + i]);
-    std::cout << "FV.size() " << fv.size() << std::endl;
-    while(it.points_to_valid_data())
-    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
-      ++it;
-    }
-    std::cout << "FV.size() " << fv.size() << " and iterator valid=" << it.points_to_valid_data() << std::endl;
-  }
-
   
   if (false)     //    test lag iterators
   {   
@@ -181,7 +157,6 @@ main()
     }
     std::cout << "TEST_lag: completed, it = " << it << std::endl;
   }
-
     
   if (false)    //        test model iterator
   {
@@ -198,7 +173,6 @@ main()
     }
     std::cout << "TEST_model: completed, it = " << it << std::endl;
   }
-
 
   if(false)           // test subspace iterator
   {
@@ -218,8 +192,6 @@ main()
     std::cout << "TEST_bundle: completed " << it << std::endl;
   }
 
-
-
   if (true)     // test interaction iterator
   { std::cout << "\n\nTEST:  Test interaction iterator with vector features:\n";
     FeatureVector fv;
@@ -238,9 +210,29 @@ main()
     std::cout << "TEST_inter: completed " << it << std::endl;
   }
 
+
+  if (true)    // test static cross-product iterator
+  { std::cout << "\n\nTEST:  test static cross-product iterator.\n";
+    FeatureVector featuresSlow, featuresFast;
+    featuresSlow.push_back(Feature(columns[0]));  std::cout << "Slow <- " << columns[0]->name() << std::endl;
+    featuresSlow.push_back(Feature(columns[1]));  std::cout << "Slow <- " << columns[1]->name() << std::endl;
+    featuresFast.push_back(Feature(columns[2]));  std::cout << "Fast <- " << columns[2]->name() << std::endl;
+    featuresFast.push_back(Feature(columns[3]));  std::cout << "Fast <- " << columns[3]->name() << std::endl;
+    featuresFast.push_back(Feature(columns[4]));  std::cout << "Fast <- " << columns[4]->name() << std::endl;    
+    CrossProductIterator<SkipIfRelatedPair> it (featuresSlow, featuresFast, SkipIfRelatedPair());
+    std::cout << "TEST_cp: initial state of iterator is " << it << std::endl;
+    int more (20);
+    while(it.points_to_valid_data() && --more)
+    { std::cout << "TEST_cp: *it = " << *it << std::endl;
+      ++it;
+      std::cout << it << std::endl;
+    }
+    std::cout << "TEST_cp: completed testing of cross-product iterator " << it << std::endl;
+  }
+
   
 
-  if (false)    // test dyanamic cross-product iterator
+  if (false)    // test dynamic cross-product iterator
   { std::cout << "\n\nTEST:  test cross-product iterator.\n";
     FeatureVector featuresSlow, featuresFast;
     CrossProductIterator<SkipIfRelatedPair> it (featuresSlow, featuresFast, SkipIfRelatedPair());
@@ -288,6 +280,30 @@ main()
     std::cout << "TEST_cp: completed " << it << std::endl;
   }
   
+
+  if (false)         // test dynamic iterator
+  {
+    std::cout << "\n\nTEST: dynamic iterator\n";
+    FeatureVector fv;
+    DynamicIterator<FeatureVector, SkipNone> it (fv, SkipNone());
+
+    int nToAdd (3);
+    for (int i=0; i<nToAdd; ++i)
+      fv.push_back(features[i]);
+    while(it.points_to_valid_data())
+    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
+      ++it;
+    }
+    for (int i=0; i<nToAdd; ++i)
+      fv.push_back(features[nToAdd + i]);
+    std::cout << "FV.size() " << fv.size() << std::endl;
+    while(it.points_to_valid_data())
+    { std::cout << "TEST_dynamic: it = " << it << "     *it = " << (*it)->name() << std::endl;
+      ++it;
+    }
+    std::cout << "FV.size() " << fv.size() << " and iterator valid=" << it.points_to_valid_data() << std::endl;
+  }
+
   
   std::cout << "\n\nDONE:\n";
   return 0;

@@ -104,22 +104,21 @@ class CyclicIterator
 {
   typedef typename Collection::const_iterator Iterator;
 
-  Collection        mSource;
-  SkipPredicate     mSkipFeature;
-  Iterator          mIter;
-  int               mSize;
+  Collection     mSource;
+  SkipPredicate  mSkipFeature;
+  size_t         mPosition;
   
 public:
   CyclicIterator(Collection source, SkipPredicate pred)
-    : mSource(source), mSkipFeature(pred), mIter(mSource.begin()), mSize((int)mSource.size()) { initialize(); }
+    : mSource(source), mSkipFeature(pred), mPosition(0) { initialize(); }
   
-  int   number_remaining()              const { return mSize; }
-  bool  points_to_valid_data()          const { return !mSource.empty() && (mSize > 0); }
+  int   number_remaining()              const { return (int) mSource.size(); }
+  bool  points_to_valid_data()          const { return !mSource.empty(); }
 
   CyclicIterator& operator++();
-  Feature         operator*()           const { return *mIter; }
+  Feature         operator*()           const { return mSource[mPosition]; }
 
-  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (points_to_valid_data()) os << *mIter << " ";  else os << " empty "; }
+  void  print_to(std::ostream& os)      const { os << "CyclicIterator @ "; if (points_to_valid_data()) os << mSource[mPosition] << " ";  else os << " empty "; }
 
  private:
   void initialize();
@@ -383,29 +382,63 @@ template <class Collection, class Pred>
 */                                                                                                              
                                                                                                                 
 template<class SkipPred> 
-class CrossProductIterator
+class DynamicCrossProductIterator
 {
-  FeatureVector           mSlowSource;
-  FeatureVector           mFastSource;
+  FeatureVector const&    mSlowSource;
+  FeatureVector const&    mFastSource;
   SkipPred                mSkipPred;
   unsigned                mSlowIndex;
   mutable std::vector<unsigned> mFastIndices;
 
  public:
- CrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, SkipPred p)
+ DynamicCrossProductIterator(FeatureVector const& slow, FeatureVector const& fast, SkipPred p)
+   : mSlowSource(slow), mFastSource(fast), mSkipPred(p), mSlowIndex(0), mFastIndices() { update_index_vector(); }
+  
+  int                           number_remaining ()    const;
+  bool                          points_to_valid_data() const;
+ 
+  Feature                       operator*()            const;
+  DynamicCrossProductIterator& operator++();
+  
+  void print_to (std::ostream& os)                     const;
+    
+ private:
+  void update_index_vector()                const;
+  void print_indices(std::ostream& os)      const;
+};
+
+template<class Pred>
+  inline
+  std::ostream&
+  operator<< (std::ostream& os, DynamicCrossProductIterator<Pred> const& it) { it.print_to(os); return os; }
+
+
+// This version handles static sources, rather than dynamic as above. Repeats in cycles
+
+template<class SkipPred> 
+class CrossProductIterator
+{
+  FeatureVector                 mSlowSource;
+  FeatureVector                 mFastSource;
+  SkipPred                      mSkipPred;
+  mutable   unsigned            mSlowIndex;
+  mutable std::vector<unsigned> mFastIndices;
+
+ public:
+ CrossProductIterator(FeatureVector slow, FeatureVector fast, SkipPred p)
    : mSlowSource(slow), mFastSource(fast), mSkipPred(p), mSlowIndex(0), mFastIndices() { update_index_vector(); }
   
   int                   number_remaining ()    const;
   bool                  points_to_valid_data() const;
 
-  Feature               operator*()         const;
+  Feature               operator*()            const;
   CrossProductIterator& operator++();
   
-  void print_to (std::ostream& os)          const;
+  void print_to (std::ostream& os)             const;
     
  private:
-  void update_index_vector()                const;
-  void print_indices(std::ostream& os)      const;
+  void update_index_vector()                   const;
+  void print_indices(std::ostream& os)         const;
 };
                                                                                                                                                            
 

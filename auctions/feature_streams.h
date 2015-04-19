@@ -73,7 +73,7 @@ private:
   std::string     mName;
   Iterator        mIterator;
   Transform       mTransform;
-  FeatureVector   mFeatureVector;
+  FeatureVector   mFeatureVector;    // constructed by trans(iterator)
   
 public:
   ~FeatureStream() { }
@@ -169,7 +169,7 @@ private:
 
 template<class Collection, class Pred>
 FeatureStream< CyclicIterator<Collection, Pred>, Identity>
-make_finite_stream (std::string name, Collection const& source, Pred pred)
+make_finite_stream (std::string name, Collection source, Pred pred)
 {
   debug("FSTR",3) << "make_finite_stream (cyclic) " << name << " from " << source.size() << " features." << std::endl;
   return FeatureStream< CyclicIterator<Collection, Pred>, Identity>
@@ -179,7 +179,7 @@ make_finite_stream (std::string name, Collection const& source, Pred pred)
 
 template<class Collection, class Pred, class Operator>
 FeatureStream<DynamicIterator<Collection, Pred>, Operator>
-make_dynamic_stream (std::string name, Collection const& source, Pred pred, Operator op)
+make_dynamic_stream (std::string name, Collection source, Pred pred, Operator op)
 {
   debug("FSTR",3) << "make_dynamic_stream " << name << std::endl;
   return FeatureStream< DynamicIterator<Collection, Pred>, Operator >
@@ -189,7 +189,7 @@ make_dynamic_stream (std::string name, Collection const& source, Pred pred, Oper
 
 inline  
 FeatureStream<LagIterator, Identity>
-make_lag_stream (std::string name, Feature const& f, int maxLag, int numberCycles, int blockSize)
+make_lag_stream (std::string name, Feature f, int maxLag, int numberCycles, int blockSize)
 {
   debug("FSTR",3) << "make_lag_stream " << name << " from feature " << f << std::endl;
   return FeatureStream<LagIterator, Identity>
@@ -199,7 +199,7 @@ make_lag_stream (std::string name, Feature const& f, int maxLag, int numberCycle
 
 template <class Collection>
 FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
-make_polynomial_stream (std::string name, Collection const& src, int degree)
+make_polynomial_stream (std::string name, Collection src, int degree)
 {
   debug("FSTR",3) << "make_polynomial_stream " << name << std::endl;
   return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildPolynomialFeatures >
@@ -209,7 +209,7 @@ make_polynomial_stream (std::string name, Collection const& src, int degree)
 
 template <class Collection>
 FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
-make_neighborhood_stream (std::string name, Collection const& src, IntegerColumn const& col)
+make_neighborhood_stream (std::string name, Collection src, IntegerColumn const& col)
 {
   debug("FSTR",3) << "make_neighborhood_stream " << name << std::endl;
   return FeatureStream< DynamicIterator<Collection, SkipIfDerived>, BuildNeighborhoodFeature>
@@ -219,7 +219,7 @@ make_neighborhood_stream (std::string name, Collection const& src, IntegerColumn
 
 template <class Collection>
 FeatureStream< QueueIterator<Collection, SkipIfRelated>, BuildProductFeature>
-make_feature_product_stream (std::string name, Feature const& f, Collection const& c)
+make_feature_product_stream (std::string name, Feature f, Collection const& c)
 {
   debug("FSTR",3) << "make_feature_product_stream from feature " << f->name() << std::endl;
   return FeatureStream< QueueIterator<Collection,SkipIfRelated>, BuildProductFeature>
@@ -262,7 +262,7 @@ make_spline_calibration_stream (std::string name, Model const& model, int gap, s
 
 template <class Collection, class Trans>
 FeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
-make_subspace_stream (std::string name, Collection const& src, Trans const& trans, int bundleSize)
+make_subspace_stream (std::string name, Collection src, Trans trans, int bundleSize)
 {
   debug("FSTR",3) << "make_subspace_stream with bundle size " << bundleSize << std::endl;
   return FeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
@@ -272,7 +272,7 @@ make_subspace_stream (std::string name, Collection const& src, Trans const& tran
 
 template <class Collection, class Trans>
 ThreadedFeatureStream< BundleIterator<Collection, SkipIfInBasis>, Trans >
-make_threaded_subspace_stream (std::string name, Collection const& src, Trans const& trans, int bundleSize)
+make_threaded_subspace_stream (std::string name, Collection src, Trans trans, int bundleSize)
 {
   debug("FSTR",3) << "make_threaded_subspace_stream with bundle size " << bundleSize << std::endl;
   return ThreadedFeatureStream< BundleIterator<Collection,SkipIfInBasis>, Trans>
@@ -282,7 +282,7 @@ make_threaded_subspace_stream (std::string name, Collection const& src, Trans co
 
 template <class Collection>
 FeatureStream< InteractionIterator<Collection, SkipIfIndicatorsOfSameParent>, Identity>
-make_interaction_stream (std::string name, Collection const& src, bool useSquares)
+make_interaction_stream (std::string name, Collection src, bool useSquares)
 {
   typedef FeatureStream< InteractionIterator<Collection, SkipIfIndicatorsOfSameParent>, Identity> Result;
   debug("FSTR",3) << "make_interaction_stream (static) " << std::endl;
@@ -292,14 +292,12 @@ make_interaction_stream (std::string name, Collection const& src, bool useSquare
 
 inline
 FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity >
-make_cross_product_stream (std::string name, FeatureVector const& slow, FeatureVector const& fast)
+make_cross_product_stream (std::string name, FeatureVector slow, FeatureVector fast)
 {
   debug("FSTR",3) << "make_cross_product_stream (static) " << std::endl;
   return FeatureStream< CrossProductIterator<SkipIfRelatedPair>, Identity>
     ("CrossProduct::"+name, CrossProductIterator<SkipIfRelatedPair>(slow, fast, SkipIfRelatedPair()), Identity());
 }
 
-
-///////////////////////////////////////////////////////////////////////
 
 #endif

@@ -98,34 +98,20 @@ template<class Collection, class Pred>
   void
   CyclicIterator<Collection, Pred>::initialize()
 {
-  while(mSkipFeature(*mIter))
-  { --mSize;
-    ++mIter;
-    if (mIter == mSource.end())
-    { std::cerr << "FITR: *** ERROR *** Source for cyclic iterator is empty.\n";
-      mIter = mSource.begin();
-    }
-  }
+  std::remove_if(mSource.begin(), mSource.end(), mSkipFeature);
+  if (mSource.empty())
+    std::cerr << "FITR: *** ERROR *** Source for initializing cyclic iterator is empty.\n";
 }
 
 template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
   CyclicIterator<Collection, Pred>::operator++()
 {
-  int size = (int) mSource.size();
-  int count = (int) std::count_if(mSource.begin(), mSource.end(), mSkipFeature);
-  mSize = size - count;
-  if (mSize == 0)
-    std::cerr << "FITR: Warning. Cyclic iterator has no more elements to increment\n";
-  else
-  { ++mIter;
-    if(mIter == mSource.end())
-      mIter = mSource.begin();
-    while(mSkipFeature(*mIter))
-    { ++mIter;
-      if (mIter == mSource.end())
-	mIter = mSource.begin();
-    }
+  ++mPosition;
+  if (mPosition == mSource.size()) mPosition = 0;
+  while(mSkipFeature(mSource[mPosition]))
+  { mSource.erase(mSource.begin() + mPosition);
+    if (mPosition == mSource.size()) mPosition = 0;
   }
   return *this;
 }
@@ -246,8 +232,6 @@ template<class Source, class Pred>
   if(points_to_valid_data()) os << " @ " << (*mpDiagFeature)->name() << " x "<< (*mpColFeature)->name();
 }
 
-
-
 //   CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator     CrossProductIterator
 
 template<class Pred>
@@ -255,7 +239,12 @@ bool
 CrossProductIterator<Pred>::points_to_valid_data()             const
 {
   update_index_vector();
-  return (mSlowIndex < mSlowSource.size()) && (mFastIndices[mSlowIndex] < mFastSource.size());
+  if (! ( (mSlowIndex < mSlowSource.size()) && (mFastIndices[mSlowIndex] < mFastSource.size()) ))
+  { mSlowIndex = 0;
+    mFastIndices.clear();
+  }
+  update_index_vector();
+  return true;
 }
 
 template<class Pred>
@@ -263,12 +252,12 @@ int
 CrossProductIterator<Pred>::number_remaining () const
 {
   if (! points_to_valid_data() ) return 0;
-  int n (0);
+  unsigned n (0);
   for (unsigned iSlow=0; iSlow < mSlowSource.size(); ++iSlow)
-    n += (int)mFastSource.size() - mFastIndices[iSlow];
+    n += mFastSource.size() - mFastIndices[iSlow];
   debugging::debug("CPIT",4) << " CP of vectors of sizes " << mSlowSource.size() << " x " << mFastSource.size()
 			     << " has " << n << " remaining features." << std::endl;
-  return n;
+  return (int) n;
 }
 
 template<class Pred>
