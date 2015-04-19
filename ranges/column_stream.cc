@@ -53,6 +53,7 @@ insert_columns_from_file (std::string fileName,
   { debug(tag,1) << " *** Error *** Count not open file " << fileName << " for input data.\n";
     return std::make_pair(0,0);
   }
+  debug(tag,2) << "Reading columns from input file " << fileName << std::endl;
   return insert_columns_from_stream(input,minCatSize, dictionary, columnInserter);
 }
 
@@ -75,6 +76,7 @@ insert_columns_from_stream (std::istream &input,
     string fieldName;
     std::getline(input, fieldName);
     read_utils::cleanup_name(fieldName);
+    if (fieldName.empty()) break; // read blank line
     debug(tag,3) << "Building column from field " << fieldName << std::endl;
     if (0 < allFieldNames[fieldName])
     { ++allFieldNames[fieldName];

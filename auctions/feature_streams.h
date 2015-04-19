@@ -169,7 +169,7 @@ private:
 
 template<class Collection, class Pred>
 FeatureStream< CyclicIterator<Collection, Pred>, Identity>
-make_finite_stream (std::string name, Collection source, Pred pred)
+make_cyclic_stream (std::string name, Collection source, Pred pred)
 {
   debug("FSTR",3) << "make_finite_stream (cyclic) " << name << " from " << source.size() << " features." << std::endl;
   return FeatureStream< CyclicIterator<Collection, Pred>, Identity>

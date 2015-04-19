@@ -418,11 +418,11 @@ template<class Pred>
 template<class SkipPred> 
 class CrossProductIterator
 {
-  FeatureVector                 mSlowSource;
-  FeatureVector                 mFastSource;
-  SkipPred                      mSkipPred;
-  mutable   unsigned            mSlowIndex;
-  mutable std::vector<unsigned> mFastIndices;
+  FeatureVector               mSlowSource;
+  FeatureVector               mFastSource;
+  SkipPred                    mSkipPred;
+  mutable   size_t            mSlowIndex;
+  mutable std::vector<size_t> mFastIndices;
 
  public:
  CrossProductIterator(FeatureVector slow, FeatureVector fast, SkipPred p)

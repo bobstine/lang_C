@@ -252,7 +252,7 @@ int
 CrossProductIterator<Pred>::number_remaining () const
 {
   if (! points_to_valid_data() ) return 0;
-  unsigned n (0);
+  size_t n (0);
   for (unsigned iSlow=0; iSlow < mSlowSource.size(); ++iSlow)
     n += mFastSource.size() - mFastIndices[iSlow];
   debugging::debug("CPIT",4) << " CP of vectors of sizes " << mSlowSource.size() << " x " << mFastSource.size()

@@ -106,7 +106,7 @@ add_source_experts_to_auction (FeatureSource const& featureSource, int nContextC
       featureStreams.push_back( featureSource.features_with_attribute("stream", streamNames[s]));
       auction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				   UniversalBoundedBidder<FiniteStream>(), 
-				   make_finite_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
+				   make_cyclic_stream(streamNames[s],featureStreams[s], SkipIfInModel())));
       auction.add_expert(Expert("Interact["+streamNames[s]+"]", source, !purgable, nContextCases, alphaInt,     // less avoids tie 
 				   UniversalBoundedBidder<InteractionStream>(),
 				   make_interaction_stream("within " + streamNames[s],

@@ -9,5 +9,6 @@ auction
 csv_parser
 cv*.indicator
 text_auction
+nlp_auction
 auction_data
 auction_temp

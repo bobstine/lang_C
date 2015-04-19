@@ -46,7 +46,7 @@
 #include "feature_streams.h"
 #include "bidders.h"
 #include "experts.Template.h"
-
+ 
 // for constant iterator 
 #include "iterators.h"
 
@@ -69,6 +69,19 @@
 #include <getopt.h>
 #include <time.h> 
 #include <assert.h>
+
+inline
+std::ostream&
+operator<< (std::ostream& os, std::map<std::string, std::vector<std::string>> map)
+{
+  os << "[" << map.size() << "] ";
+  for (auto p : map)
+  { os << "{" << p.first << ", ";
+    for (std::string n :p.second) os << n << " ";
+    os << "} ";
+  }
+  return os;
+}
 
 void
 parse_arguments(int argc, char** argv,
@@ -219,19 +232,17 @@ main(int argc, char** argv)
   typedef FeatureStream< CyclicIterator      <FeatureVector, SkipIfInModel               >, Identity>  FiniteStream;
   //  typedef FeatureStream< InteractionIterator <FeatureVector, SkipIfIndicatorsOfSameParent>, Identity>  InteractionStream;
   typedef FeatureStream< CrossProductIterator<               SkipIfRelatedPair>           , Identity>  CrossProductStream;
-	
-  std::map<string, FeatureVector> featureVectors;   // treat this guy with respect... lots of const refs to its elements
-   
+
   for (size_t s=0; s<streamNames.size(); ++s)
   { string streamName = streamNames[s];
     debug("MAIN",1) << "Allocating alpha $" << alphaShare << " to expert for stream " << streamName << std::endl;	
     FeatureVector fv = featureSource.features_with_attribute("stream", streamName);
     theAuction.add_expert(Expert("Strm["+streamNames[s]+"]", source, !purgable, nContextCases, alphaMain,
 				 UniversalBoundedBidder<FiniteStream>(), 
-				 make_finite_stream(streamName, fv, SkipIfInModel())));
+				 make_cyclic_stream(streamName, fv, SkipIfInModel())));
   }
 
-  if (false)  // cross streams with matching name prefix (eg: WR1_WORD, WR1_POS)
+  if (true)  // cross streams with matching name prefix (eg: WR1_WORD, WR1_POS)
   { char delim = '_';
     std::map<string,std::vector<string>> prefixMap;
     for(string s : streamNames)
@@ -239,23 +250,21 @@ main(int argc, char** argv)
       if (pos != string::npos)
       { string prefix = s.substr(0,pos);
 	prefixMap[prefix].push_back(s);
-	std::cout << "TEST: prefix = " << prefix << " with stream " << s << std::endl;
+	debug("MAIN",4) << "TEST: prefix = " << prefix << " identified in stream with name " << s << std::endl;
       }
     }
-    std::cout << "TEST: prefix map of " << prefixMap.size() << " elements: ";
-    for (auto p : prefixMap)
-    { std::cout <<"  {" <<  p.first << ",";
-      for (string n :p.second) std::cout << n << " ";
-      std::cout << "}   ";
-    }
+    debug("MAIN",3) << "Prefix map used to build cross-products is " << prefixMap << std::endl;
     for (auto p : prefixMap)
     { if(p.second.size() == 2)
       { string streamName1 = (p.second)[0];
 	string streamName2 = p.second[1];
 	string name = streamName1 + "x" + streamName2;
+	debug("MAIN",1) << "Making cross-product expert with names " << name << std::endl << std::endl;
+	FeatureVector fv1 = featureSource.features_with_attribute("stream", streamName1);
+	FeatureVector fv2 = featureSource.features_with_attribute("stream", streamName2);
 	theAuction.add_expert(Expert("Cross["+name+"]", source, !purgable, nContextCases, alphaInt,       // less avoids tie 
 				     UniversalBoundedBidder<CrossProductStream>(),
-				     make_cross_product_stream(name, featureVectors[streamName1], featureVectors[streamName2])  ));
+				     make_cross_product_stream(name, fv1, fv2)   ));
       }
     }
   }
