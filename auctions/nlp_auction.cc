@@ -194,18 +194,17 @@ main(int argc, char** argv)
   ColumnVector xColumns;
   { 
     const bool downcase = false;
+    debug("MAIN",3) << "Building vocabularty and dictionary.\n";
     Text::SimpleVocabulary vocab = Text::make_simple_vocabulary(vocabFileName, downcase);
     Text::SimpleEigenwordDictionary dict = Text::make_simple_eigenword_dictionary(dictFileName, dictDim, vocab, downcase);
-    debug("MAIN",4) << "TESTING: have built vocab and dictionary.\n";
     std::pair<int,int> dim;
     dim = insert_columns_from_file (xFileName, minCategorySize, dict, std::back_insert_iterator<ColumnVector>(xColumns));
-    debug("MAIN",2) << "X file returns " << dim.second << " features from " << dim.second << " variables." << std::endl;
+    debug("MAIN",2) << "X column file produced " << dim.second << " features from " << dim.second << " variables." << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -3;
-    debug("MAIN",1) << "Input files produced " << xColumns.size() << " Xs.\n";
   } 
 
   FeatureSource featureSource (xColumns, nPrefixCases);                            // holds *all* features constructed from input X
-  featureSource.print_summary(debug("MAIN",1));
+  featureSource.print_summary(debug("MAIN",0));
   std::vector<string> streamNames (featureSource.stream_names());
   {
     FeatureVector lockedFeatures;

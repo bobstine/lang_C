@@ -113,7 +113,7 @@ public:
     : mSource(source), mSkipFeature(pred), mPosition(0) { initialize(); }
   
   int   number_remaining()              const { return (int) mSource.size(); }
-  bool  points_to_valid_data()          const { return !mSource.empty(); }
+  bool  points_to_valid_data();
 
   CyclicIterator& operator++();
   Feature         operator*()           const { return mSource[mPosition]; }

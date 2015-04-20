@@ -104,15 +104,28 @@ template<class Collection, class Pred>
 }
 
 template<class Collection, class Pred>
+  bool
+  CyclicIterator<Collection, Pred>::points_to_valid_data()
+{
+  assert (mPosition < mSource.size());
+  while(mSkipFeature(mSource[mPosition]))
+  { std::cout << "TEST: ERASE item " << mSource[mPosition]->name() << " in position " << mPosition << " with size = " << mSource.size() << std::endl;
+    mSource.erase(mSource.begin() + mPosition);
+    if(mSource.size() == 0) return false;
+    if (mPosition == mSource.size())
+      mPosition = 0;
+    else ++mPosition;
+  }
+  return true;
+}
+
+
+template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
   CyclicIterator<Collection, Pred>::operator++()
 {
   ++mPosition;
   if (mPosition == mSource.size()) mPosition = 0;
-  while(mSkipFeature(mSource[mPosition]))
-  { mSource.erase(mSource.begin() + mPosition);
-    if (mPosition == mSource.size()) mPosition = 0;
-  }
   return *this;
 }
 

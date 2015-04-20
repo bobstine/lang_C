@@ -122,6 +122,7 @@ Auction<ModelClass>::auction_next_feature ()
   Scalar  afterTaxBid = tax_bid(expert, bid);
   assert(afterTaxBid > 0);
   // extract chosen features, optionally print name of first
+  debug("AUCT",2) << "Getting feature from winning expert " << expert->name() << std::endl;
   FeatureVector features (expert->feature_vector());
   if (features.empty())
   { debug("AUCT",-1) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
