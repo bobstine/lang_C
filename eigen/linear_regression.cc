@@ -632,9 +632,9 @@ FastLinearRegression::allocate_projection_memory()
 void
 FastLinearRegression::apply_gradient_correction()
 {
-  debugging::debug("FREG",0) << "Apply gradient correction " << std::endl;
+  debugging::debug("FREG",0) << "Apply gradient correction with mK=" << mK << std::endl;
   const int q = (mK < 11) ? mK : 10;
-  debug("FREG",1) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
+  debug("FREG",0) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()   // was 1
 		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
   for (int j=1; j<mK; ++j)
   { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
@@ -675,7 +675,7 @@ FastLinearRegression::update_fit(StringVec xNames)
 {
   debugging::debug("FREG",0) << "Update_fit, grad counter = " << mGradientCounter << std::endl;
   ++mGradientCounter;
-  debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
+  debugging::debug("FREG",0) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";  // was 3
   if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
