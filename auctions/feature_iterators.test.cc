@@ -51,7 +51,7 @@ operator<< (std::ostream& os, Model const& m) { os << "Model @ q = " << m.q() <<
 int
 main()
 {
-  debugging::debug_init(std::cout,4);
+  debugging::debug_init(std::cout,5);
   
   // build vector of columns from file
   //  const std::string columnFileName ("/Users/bob/C/gsl_tools/data/bank_post45.dat");
@@ -142,7 +142,7 @@ main()
     fv.push_back(features[1]);
     fv.push_back(features[2]);
     CyclicIterator<FeatureVector, SkipIfInModel> it (fv, SkipIfInModel());
-    for(int i=0; i<7; ++i)
+    for(int i=0; i<6; ++i)
     { if (it.points_to_valid_data())
       { std::cout << "TEST_cyclic: i = " << i;
 	std::cout << "   *it = " << (*it)->name() << std::endl;
@@ -151,16 +151,17 @@ main()
       else std::cout << "TEST_cyclic: does not point to valid data.\n";
     }
     std::cout << "TEST_cyclic: now reset so point to model.\n";
-    for(int i=0; i<7; ++i)
+    for(int i=0; i<6; ++i)
     { std::cout << "          : Top of loop, with " << it.number_remaining() << " features left in cyclic stream.\n";
       if (it.points_to_valid_data())
-      { std::cout << "TEST_cyclic: i = " << i;
-	std::cout << "   *it = " << (*it)->name() << std::endl;
-	std::cout << "           : " << (*it)->name() << " now in model.\n";
+      { std::cout << "TEST_cyclic: i = " << i << "   *it name = " << (*it)->name() << " will be added to model" << std::endl;
 	(*it)->set_model_results(true, (Scalar)0.01);   // pretend added to model
 	++it;
       }
-      else std::cout << "TEST_cyclic: does not point to valid data.\n";
+      else
+      { std::cout << "TEST_cyclic: does not point to valid data.\n";
+	break;
+      }
     }
   }
   
