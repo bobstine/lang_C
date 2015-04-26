@@ -101,21 +101,21 @@ main(int argc, char** argv)
   using std::string;
 
   // Parse command line options
-  Scalar   totalAlphaToSpend    ((Scalar)0.1);
-  string   responseFileName     ("Y");
-  string   contextFileName      ("cv_indicator");
+  Scalar   totalAlphaToSpend    ((Scalar)2.0);
+  string   responseFileName     ("auction_data/Y_to");
+  string   contextFileName      ("auction_data/cv_indicator");
   string   vocabFileName        ("vocabulary.txt");
   string   dictFileName         ("eigenwords.txt");
-  int      dictDim              (10);
-  size_t   minCategorySize      (0);
-  string   xFileName            ("x.dat");
-  string   outputPath           ("/home/bob/C/auctions/test/log/"); 
+  int      dictDim              (200);
+  size_t   minCategorySize      (2000);
+  string   xFileName            ("auction_data/Xpipe_to");
+  string   outputPath           ("auction_temp/to"); 
   int      protection           (  3);
   bool     useShrinkage       (false);
   int      numberRounds         (200);
   int      maxNumOutputPredictors (0);
-  int      calibrationGap         (0);      // 0 means no calibration; otherwise gap between models offered calibration
-  int      debugLevel             (3);
+  int      calibrationGap         (25);      // 0 means no calibration; otherwise gap between models offered calibration
+  int      debugLevel             (1);
 
   // Lock these options
   const int  nPrefixCases = 0;
