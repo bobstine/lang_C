@@ -632,18 +632,17 @@ FastLinearRegression::allocate_projection_memory()
 void
 FastLinearRegression::apply_gradient_correction()
 {
-  debugging::debug("FREG",0) << "Apply gradient correction with mK=" << mK << std::endl;
+  debugging::debug("FREG",3) << "Apply gradient correction with mK=" << mK << std::endl;
   const int q = (mK < 11) ? mK : 10;
-  debug("FREG",0) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()   // was 1
-		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
+  debug("FREG",2) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()   // was 1
+		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
   for (int j=1; j<mK; ++j)
   { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
     mResiduals -= dGamma * mQ.col(j).head(mN);
     mGamma(j) += dGamma;
   }
-  debug("FREG",1) << "After    gradient, RSS= " << mResiduals.squaredNorm()
-		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
-  debugging::debug("FREG",0) << "Apply gradient correction completed." << std::endl;
+  debug("FREG",2) << "After    gradient, RSS= " << mResiduals.squaredNorm()
+		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
 }
 
 // suppress warnings regarding Eigen conversions
@@ -653,7 +652,7 @@ FastLinearRegression::apply_gradient_correction()
 LinearRegression::Scalar
 FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 {
-  debugging::debug("FREG",0) << "Sweep_Q_from_col " << col << std::endl;
+  debugging::debug("FREG",4) << "Sweep_Q_from_col " << col << std::endl;
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column_and_normalize(col);
   mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean
@@ -666,16 +665,14 @@ FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
   Scalar norm = (Scalar) sqrt(ssz);
   mQ.col(col) /= norm;                                             // normalize swept column
   mR(col,col)  = norm;
-  debugging::debug("FREG",0) << "Sweep_Q_from_col " << col << " completed" << std::endl;
   return ssz;
 }
  
 void
 FastLinearRegression::update_fit(StringVec xNames)
 {
-  debugging::debug("FREG",0) << "Update_fit, grad counter = " << mGradientCounter << std::endl;
   ++mGradientCounter;
-  debugging::debug("FREG",0) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";  // was 3
+  debugging::debug("FREG",4) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";  // was 3
   if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
@@ -708,7 +705,6 @@ FastLinearRegression::update_fit(StringVec xNames)
   { mGradientCounter = 0;
     apply_gradient_correction();
   }
-  debugging::debug("FREG",0) << "Update_fit, grad counter = " << mGradientCounter << " completed." << std::endl;
 }
 
 #pragma GCC diagnostic push

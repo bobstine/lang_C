@@ -1,4 +1,4 @@
-/*
+/* 
   18 Apr 15 ... Lots of changes while at Yahoo: map features, rand proj
   10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
