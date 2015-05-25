@@ -422,19 +422,25 @@ LinearRegression::bennett_evaluation () const
 //     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor
 
 void
-LinearRegression::update_fit(StringVec xNames)
+LinearRegression::update_names_and_gamma(StringVec xNames)
 {
   debugging::debug("REGR",3) << "Updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
-  assert (mTempK == (int)xNames.size());
-  for(unsigned int j=0; j<xNames.size(); ++j)
-  { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mY)/(1+mLambda[mK+j]));
-  }
-  mK += mTempK;
-  if ((int)numberOfAllocatedColumns-5 < mK)
+  if ((int)numberOfAllocatedColumns-5 < mK+(int)xNames.size())
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";
+  assert (mTempK == (int)xNames.size());
+  for(unsigned int j=0; j<xNames.size(); ++j)
+  { mXNames.push_back(xNames[j]);
+    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mResiduals)/(1+mLambda[mK+j]));
+  }
+}
+
+void
+LinearRegression::update_fit(StringVec xNames)
+{
+  update_names_and_gamma(xNames);
+  mK += mTempK;
   mResiduals = mY - QQ() * mGamma.head(mK);   // Faster?  just mod the residuals rather than recalc
   mResidualSS= mResiduals.squaredNorm();      // Faster?  subtract new gamma'gamma
 }
@@ -447,7 +453,7 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
   assert((int)zNames.size() == z.cols());
   mTempNames = zNames;
   mTempK     = (int) z.cols();
-  mQ.block( 0,mK, mN  ,z.cols()) =  mSqrtWeights.asDiagonal() * z.topRows(mN);
+  mQ.block( 0,mK, mN  ,z.cols()) = mSqrtWeights.asDiagonal() * z.topRows(mN);
   mQ.block(mN,mK,mTest,z.cols()) = z.bottomRows(mTest);
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
@@ -625,8 +631,8 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
 void
 FastLinearRegression::allocate_projection_memory()
 {
-  mM      = Matrix::Zero(mN + mTest, mOmegaDim);
-  mTtT    = Matrix::Zero( mOmegaDim, mOmegaDim);
+  mA      = Matrix::Zero(mN + mTest, mOmegaDim);
+  mAtA    = Matrix::Zero( mOmegaDim, mOmegaDim);
 }
 
 void
@@ -655,11 +661,13 @@ FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
   debugging::debug("FREG",4) << "Sweep_Q_from_col " << col << std::endl;
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column_and_normalize(col);
+
+  std::cout << "\nTESTING: Running fast sweep...\n";
   mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean
   Scalar ss = mQ.col(col).head(mN).squaredNorm();                  // compare initial SS to post sweep SS to check for singularities
-  Vector b = mM.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = R^-1 R^-1' M'z
-  mTtT.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
-  mQ.col(col) -= mM * b;                                           // compute z = z - Mb
+  Vector b = mA.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = (A'A)-1 A'z
+  mCholAtA.solveInPlace (b);                                       // mAtA.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
+  mQ.col(col) -= mA * b;                                           // compute z = z - Ab
   Scalar ssz  (mQ.col(col).head(mN).squaredNorm());                // check that SS dropped and is not nan
   if (is_invalid_ss (ss, ssz)) return 0.0;
   Scalar norm = (Scalar) sqrt(ssz);
@@ -671,36 +679,28 @@ FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 void
 FastLinearRegression::update_fit(StringVec xNames)
 {
-  ++mGradientCounter;
-  debugging::debug("FREG",4) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";  // was 3
-  if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
-    std::cerr << "\n********************\n"
-	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
-	      << "\n********************\n";
-  assert (mTempK == (int)xNames.size());
-  for(size_t j=0; j<xNames.size(); ++j)
-  { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mResiduals)/(1+mLambda[mK+j]));
-  }
+  update_names_and_gamma(xNames);
   Matrix w = Matrix::Random(mTempK,mOmegaDim);                        // update random projection, uni[-1,1]
-  mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z w'
-  Matrix Mtz = mM.topRows(mN).transpose() * mQ.block(0,mK,mN,mTempK); // M'z
+  mA += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // A <- A + z w'
+  Matrix Atz = mA.topRows(mN).transpose() * mQ.block(0,mK,mN,mTempK); // A'z
   if (1 == mTempK)
-  { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of T'T; z~ = mQ[mK]
+  { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of A'A; z~ = mQ[mK]
       for(int k=j; k< (int) mOmegaDim; ++k)
-	mTtT(j,k) +=  w(0,j)*w(0,k) + Mtz(j,0)*w(0,k) + w(0,j)*Mtz(k,0);
+	mAtA(j,k) +=  w(0,j)*w(0,k) + Atz(j,0)*w(0,k) + w(0,j)*Atz(k,0);
   }
   else
   { Matrix wtw = w.transpose() * w;
-    for(int j=0; j<(int)mOmegaDim; ++j)                               // update upper half of T'T; z~ = mQ[mK]
+    for(int j=0; j<(int)mOmegaDim; ++j)                               // update upper half of A'A; z~ = mQ[mK]
       for(int k=j; k<(int)mOmegaDim; ++k)
-	mTtT(j,k) +=    wtw(j,k)    + Mtz.row(j).dot(w.col(k)) + Mtz.row(k).dot(w.col(k));
+	mAtA(j,k) +=    wtw(j,k)    + Atz.row(j).dot(w.col(k)) + Atz.row(k).dot(w.col(k));
   }
-  //  std::cout << "TEST: MtM [M is " << mM.rows() << " by " << mM.cols() << "]" << std::endl << mM.leftCols(5).transpose() * mM.leftCols(5) << std::endl;
-  //  std::cout << "TEST: TtT " << mTtT.rows() << " by " << mTtT.cols() << std::endl << mTtT.block(0,0,5,5) << std::endl;
+  mCholAtA = Eigen::LDLT<Matrix,Eigen::Upper> (mAtA);
+  //  std::cout << "TEST: AtA [A is " << mA.rows() << " by " << mA.cols() << "]" << std::endl << mA.leftCols(5).transpose() * mA.leftCols(5) << std::endl;
+  //  std::cout << "TEST: AtA " << mAtA.rows() << " by " << mAtA.cols() << std::endl << mAtA.block(0,0,5,5) << std::endl;
   mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
   mK += mTempK;
+  ++mGradientCounter;
   if (mGradientPeriod == mGradientCounter)
   { mGradientCounter = 0;
     apply_gradient_correction();

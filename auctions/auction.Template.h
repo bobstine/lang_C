@@ -176,7 +176,7 @@ Auction<ModelClass>::auction_next_feature ()
   return accepted;
 }
 
-
+ 
 template<class ModelClass>
 int
 Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom

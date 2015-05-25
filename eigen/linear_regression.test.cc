@@ -133,10 +133,11 @@ int main(int, char **)
     FastLinearRegression fRegr("yyy", y, nTest, blockSize);
     fRegr.set_gradient_period(15);
 #endif
+    cout << "\n========================================================================== \n";
     cout << "TEST: Initialized regression " << endl << regr << endl;
     cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << " -------- \n";
+    cout << " ---------------------  fast  ------------------------------------------------------ \n";
     cout << "TEST: Initialized fast regression " << endl << fRegr << endl;
     cout << "TEST: Initial fast gamma = " << fRegr.gamma().transpose() << endl;
     cout << "TEST: Residuals fast (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
@@ -148,7 +149,7 @@ int main(int, char **)
     cout << "TEST: Beta     = " << regr.beta().transpose() << endl;
     cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << " -------- \n";
+    cout << " ----------------------  fast  ----------------------------------------------------- \n";
     cout << "TEST: F test of XX[0] " << fRegr.f_test_predictor("XX[0]", XX.col(0)) << endl;
     fRegr.add_predictors();
     cout << "TEST: regression after adding XX[0] " << endl << fRegr << endl;
@@ -163,7 +164,7 @@ int main(int, char **)
     cout << "TEST: Gamma  = " << regr.gamma().transpose() << endl;
     cout << "TEST: se(gamma) = " << regr.se_gamma().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << " -------- \n";
+    cout << " -----------------------  fast  ---------------------------------------------------- \n";
     cout << "TEST: F test of XX[1]" << fRegr.f_test_predictor("XX[1]", XX.col(1)) << endl;
     fRegr.add_predictors();
     cout << "TEST: fRegression after adding XX[1] " << endl << fRegr << endl;
@@ -209,7 +210,7 @@ int main(int, char **)
   }
 
   
-  if (true)  // second test, adding X bundle at once
+  if (false)  // second test, adding X bundle at once
   {
     const int nTest = 0;
 #ifdef USE_WLS

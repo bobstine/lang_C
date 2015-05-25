@@ -146,6 +146,7 @@ public:
   std::pair<Scalar,Scalar> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
 
 protected:
+  void      update_names_and_gamma(StringVec xNames);
   StringVec name_vec(std::string name)             const;              // inits a vector with one string
   bool      is_invalid_ss (Scalar ss, Scalar ssz)  const;              // checks for singularity, nan, neg, inf
   Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
@@ -180,22 +181,24 @@ void LinearRegression::fill_with_beta (Iter begin) const
 
 //     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     
 
+#include <Eigen/Cholesky>
 
 class FastLinearRegression : public LinearRegression
 {
 private:
-  size_t    mOmegaDim;               // number of columns in random projection
-  Matrix    mM;                      // random projection of predictors
-  Matrix    mTtT;                    // 'square' of upper triangular portion of M = Q T
-  size_t    mGradientPeriod;         // resweep after adding this many predictors (0 means ignore correction)
+  size_t    mOmegaDim;                          // number of columns in random projection
+  Matrix    mA;                                 // accumulates random projection of predictors
+  Matrix    mAtA;                               // upper triangular portion of A'A
+  Eigen::LDLT<Matrix,Eigen::Upper> (mCholAtA);  // choleskey decomp of A'A
+  size_t    mGradientPeriod;                    // resweep after adding this many predictors (0 means ignore correction)
   size_t    mGradientCounter;
 
 public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                                                            // match signature of linear_regression
-    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10), mGradientPeriod(100), mGradientCounter(0) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                                                             // match signature of linear_regression
+    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10), mGradientPeriod(50), mGradientCounter(0) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
 
   void set_gradient_period (size_t period)    { mGradientPeriod = period; }
   
