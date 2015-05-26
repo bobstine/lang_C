@@ -700,11 +700,12 @@ FastLinearRegression::update_fit(StringVec xNames)
   mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
   mK += mTempK;
-  ++mGradientCounter;
+  /*  ++mGradientCounter;
   if (mGradientPeriod == mGradientCounter)
   { mGradientCounter = 0;
     apply_gradient_correction();
   }
+  */
 }
 
 #pragma GCC diagnostic push

@@ -173,10 +173,57 @@ Auction<ModelClass>::auction_next_feature ()
   }
   std::pair<Scalar,Scalar> rss (mModel.sums_of_squares());                  // resid ss, cv ss
   if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second;
+  if (accepted) perform_gradient_adjustment_if_needed();
   return accepted;
 }
 
- 
+
+template <class Model>
+void
+Auction<Model>::perform_gradient_adjustment_if_needed () 
+{
+  // track changes in RSS
+  Scalar rss =  mModel.estimation_ss();
+  Scalar rssChange = mPriorRSS - rss;
+  mPriorRSS = rss;
+  mSmoothRSSChange = 0.75f * mSmoothRSSChange + 0.25f * rssChange;
+  if(mSmoothRSSChange <= 0.0)
+  { std::cerr << tag << " *** Mild error *** Smooth RSS change is <=0 at " << mSmoothRSSChange << std::endl;
+    mSmoothRSSChange = mModel.sigma_hat();
+  }
+  ++mGradientCounter;
+  // take gradient step when reach period
+  if(mGradientCounter==mGradientPeriod)  
+  { mGradientCounter = 0;
+    int k = 0;
+    Scalar relImprove = 0;
+    std::pair<Scalar,Scalar> ss;
+    do
+    { mModel.regression().apply_gradient_correction();
+      ss = mModel.sums_of_squares();
+      relImprove = (ss.first-mPriorRSS)/mSmoothRSSChange;
+      mPriorRSS = ss.first;
+      ++k;
+      debugging::debug("AUCT",3) << "Gradient improvement is " << relImprove << " with k= " << k << std::endl;
+    } while ((relImprove > 5.0) && (k < 4));
+    // adjust period for calling gradient
+    if(k > 2)
+    { mGradientPeriod = std::max(5, mGradientPeriod/2);
+      debugging::debug("AUCT",1) << "Gradient period reduced to " << mGradientPeriod << std::endl;
+    }
+    else if (relImprove < 1.1)
+    { mGradientPeriod = std::min(100, 2 * mGradientPeriod);
+      debugging::debug("AUCT",1) << "Gradient period increased to " << mGradientPeriod << std::endl;
+    }
+    // write gradient line to progress file
+    mProgressStream << mRound << "\t\t\t";
+    for (int b=0; b<number_of_experts(); ++b)
+      mProgressStream << "\t\t\t";
+    mProgressStream << "\t\t\t\tgradient_" << k << "\tGradient\t\t" << ss.first << "\t" <<  ss.second << std::endl;
+  }
+}
+
+
 template<class ModelClass>
 int
 Auction<ModelClass>::purge_empty_experts()  // purges if does not have feature and custom

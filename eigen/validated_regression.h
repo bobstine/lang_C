@@ -15,9 +15,9 @@
 
 /*
 
-  A LinearRegression object knows only about its data, and it uses
-  all of the data to fit the model.  A ValidatedRegression understands
-  the concept that some data will be reserved for validation purposes.
+  A LinearRegression object only uses first N cases to fit model.
+  A ValidatedRegression understands the concept that some data will be
+  reserved for validation purposes.
 
   25 Nov 2013 ... Introduction of CV using multithreads  
    4 Jul 2011 ... Use weighed version in all cases rather than two versions of code.
@@ -67,11 +67,12 @@ public:
   ValidatedRegression(std::string yName, Iter Y, BIter B, WIter W, int totalCases, int blockSize, bool shrink)
     :  mLength(totalCases), mShrink(shrink), mN(0), mPermute(totalCases) { initialize(yName, Y, B, W, blockSize); }
 
-  Scalar goodness_of_fit()                      const  { return mModel.r_squared(); }
-  int block_size()                              const  { return mModel.block_size(); }
-  int q()                                       const  { return mModel.q(); }   // number of slopes (not including intercept)
-  int residual_df()                             const  { return n_estimation_cases() - 1 - mModel.q(); }
-  Regr  const& model()                          const  { return mModel; }
+  Scalar      goodness_of_fit()                 const  { return mModel.r_squared(); }
+  int         block_size()                      const  { return mModel.block_size(); }
+  int         q()                               const  { return mModel.q(); }   // number of slopes (not including intercept)
+  Scalar      sigma_hat()                       const  { return mModel.rmse(); }
+  int         residual_df()                     const  { return n_estimation_cases() - 1 - mModel.q(); }
+  Regr   &    regression()                             { return mModel; }       // *reference* to the model
 
   Scalar y_bar()                                const  { return mModel.y_bar(); }
   std::vector<std::string> predictor_names()    const  { return mModel.predictor_names(); }

@@ -189,22 +189,19 @@ private:
   size_t    mOmegaDim;                          // number of columns in random projection
   Matrix    mA;                                 // accumulates random projection of predictors
   Matrix    mAtA;                               // upper triangular portion of A'A
-  Eigen::LDLT<Matrix,Eigen::Upper> (mCholAtA);  // choleskey decomp of A'A
-  size_t    mGradientPeriod;                    // resweep after adding this many predictors (0 means ignore correction)
-  size_t    mGradientCounter;
+  Eigen::LDLT<Matrix,Eigen::Upper> (mCholAtA);  // cholesky decomp of A'A
 
 public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                                                             // match signature of linear_regression
-    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10), mGradientPeriod(50), mGradientCounter(0) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                    // match signature of linear_regression
+    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10)  { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
 
-  void set_gradient_period (size_t period)    { mGradientPeriod = period; }
+  void apply_gradient_correction ();                // sweeps all past predictors from residuals, updating mGamma        
   
 private:
   void           allocate_projection_memory();
-  void           apply_gradient_correction();                         // sweeps all past predictors from residuals, updating mGamma        
   virtual string output_label()                             const   { return "Fast " + LinearRegression::output_label(); }
   virtual Scalar sweep_Q_from_column_and_normalize(int col) const;    // sweeps using M and T formed from random projection
   virtual   void update_fit(StringVec xNames);
