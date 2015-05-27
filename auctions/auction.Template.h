@@ -172,8 +172,11 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream)  mProgressStream << "\t\t" << amount;
   }
   std::pair<Scalar,Scalar> rss (mModel.sums_of_squares());                  // resid ss, cv ss
-  if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second;
-  if (accepted) perform_gradient_adjustment_if_needed();
+  if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second; 
+  if (accepted)
+  { if (mProgressStream) mProgressStream << std::endl;
+    perform_gradient_adjustment_if_needed();
+  }
   return accepted;
 }
 
@@ -186,12 +189,13 @@ Auction<Model>::perform_gradient_adjustment_if_needed ()
   Scalar rss =  mModel.estimation_ss();
   Scalar rssChange = mPriorRSS - rss;
   mPriorRSS = rss;
-  mSmoothRSSChange = 0.75f * mSmoothRSSChange + 0.25f * rssChange;
+  mSmoothRSSChange = 0.90f * mSmoothRSSChange + 0.10f * rssChange;
   if(mSmoothRSSChange <= 0.0)
-  { std::cerr << tag << " *** Mild error *** Smooth RSS change is <=0 at " << mSmoothRSSChange << std::endl;
+  { std::cerr << tag << " *** Mild error *** Smooth RSS change " << mSmoothRSSChange << " <=0 at round " << mRound << "; reset to sigma-hat." << std::endl;
     mSmoothRSSChange = mModel.sigma_hat();
   }
   ++mGradientCounter;
+  debug("AUCT",4) << "Gradient: Counter = " << mGradientCounter << "  rss=" << rss << "  rssChange=" << rssChange << "  mSmoothRSSChange=" << mSmoothRSSChange << std::endl;
   // take gradient step when reach period
   if(mGradientCounter==mGradientPeriod)  
   { mGradientCounter = 0;
@@ -201,10 +205,10 @@ Auction<Model>::perform_gradient_adjustment_if_needed ()
     do
     { mModel.regression().apply_gradient_correction();
       ss = mModel.sums_of_squares();
-      relImprove = (ss.first-mPriorRSS)/mSmoothRSSChange;
+      relImprove = (mPriorRSS-ss.first)/mSmoothRSSChange;
+      debug("AUCT",4) << "Gradient: prior RSS = " << mPriorRSS << " ss.first=" << ss.first << "  relImprove=" << relImprove << "  k=" << k << std::endl;
       mPriorRSS = ss.first;
       ++k;
-      debugging::debug("AUCT",3) << "Gradient improvement is " << relImprove << " with k= " << k << std::endl;
     } while ((relImprove > 5.0) && (k < 4));
     // adjust period for calling gradient
     if(k > 2)
@@ -219,7 +223,7 @@ Auction<Model>::perform_gradient_adjustment_if_needed ()
     mProgressStream << mRound << "\t\t\t";
     for (int b=0; b<number_of_experts(); ++b)
       mProgressStream << "\t\t\t";
-    mProgressStream << "\t\t\t\tgradient_" << k << "\tGradient\t\t" << ss.first << "\t" <<  ss.second << std::endl;
+    mProgressStream << "\t\t\t\tgradient_" << k << "\tGradient\t\t" << ss.first << "\t" << ss.second;
   }
 }
 

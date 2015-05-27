@@ -640,14 +640,15 @@ FastLinearRegression::apply_gradient_correction()
 {
   debugging::debug("FREG",3) << "Apply gradient correction with mK=" << mK << std::endl;
   const int q = (mK < 11) ? mK : 10;
-  debug("FREG",2) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()   // was 1
+  debug("FREG",2) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
 		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
   for (int j=1; j<mK; ++j)
   { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
     mResiduals -= dGamma * mQ.col(j).head(mN);
+    mResidualSS = mResiduals.squaredNorm();
     mGamma(j) += dGamma;
   }
-  debug("FREG",2) << "After    gradient, RSS= " << mResiduals.squaredNorm()
+  debug("FREG",2) << "After    gradient, RSS= " << mResidualSS
 		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
 }
 
@@ -658,11 +659,9 @@ FastLinearRegression::apply_gradient_correction()
 LinearRegression::Scalar
 FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 {
-  debugging::debug("FREG",4) << "Sweep_Q_from_col " << col << std::endl;
+  debugging::debug("FREG",4) << "Sweep_Q_from_col (fast after omega cols); col= " << col << std::endl;
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column_and_normalize(col);
-
-  std::cout << "\nTESTING: Running fast sweep...\n";
   mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean
   Scalar ss = mQ.col(col).head(mN).squaredNorm();                  // compare initial SS to post sweep SS to check for singularities
   Vector b = mA.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = (A'A)-1 A'z
@@ -700,12 +699,6 @@ FastLinearRegression::update_fit(StringVec xNames)
   mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
   mResidualSS = mResiduals.squaredNorm();
   mK += mTempK;
-  /*  ++mGradientCounter;
-  if (mGradientPeriod == mGradientCounter)
-  { mGradientCounter = 0;
-    apply_gradient_correction();
-  }
-  */
 }
 
 #pragma GCC diagnostic push
