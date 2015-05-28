@@ -139,7 +139,9 @@ Auction<ModelClass>::auction_next_feature ()
     debug("AUCT",3) << "Details of winning expert: " << expert << std::endl;
   }
   // build variables for testing, conversion adjusts for initial context rows
+  clock_t start = clock();
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
+  debug("AUCT",0) << "Timing... mModel.add_predictors_if_useful took " << time_since(start) << " sec.\n";
   Scalar pValue (result.second);
   debug("AUCT",3) << "Test results are  <" << result.first << "," << pValue << ">\n";
   if (mProgressStream)
@@ -488,7 +490,8 @@ template <class ModelClass>
 void
 Auction<ModelClass>::write_model_data_to(std::ostream& os, int numXCols)       const
 {
-  mModel.write_data_to(os, numXCols);
+  bool rawOrder = true;   // print in the order of data
+  mModel.write_data_to(os, numXCols, rawOrder);
 }
 
 

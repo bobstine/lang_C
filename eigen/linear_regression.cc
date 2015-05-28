@@ -1,5 +1,6 @@
 // -*- c++; c-file-style: "bobstyle" -*-
 
+
 //  For explanation of shrinkage, see shrinkage.tex in work/papers/notes
 
 #include "debug.h"

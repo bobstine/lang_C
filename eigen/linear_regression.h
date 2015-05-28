@@ -195,8 +195,11 @@ public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                    // match signature of linear_regression
-    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10)  { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                       // match signature of linear_regression
+    : LinearRegression(yName, y, nTest,      blockSize), mOmegaDim(10)  { allocate_projection_memory();  }  // 0 for no blocking; lock in omega dim
+
+  FastLinearRegression (std::string yName, Vector const& y, Vector const& wts, int nTest, int blockSize)
+    : LinearRegression(yName, y, nTest, wts, blockSize), mOmegaDim(10)  { allocate_projection_memory();  }   
 
   void apply_gradient_correction ();                                  // sweeps all past predictors from residuals, updating mGamma        
   

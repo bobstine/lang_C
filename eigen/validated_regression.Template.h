@@ -36,7 +36,7 @@ template<class Iter, class BIter, class WIter>
   }
   mValidationY = y.tail(mLength-mN);
   debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = Regr(yName, y.head(mN), w.head(mN), mValidationY.size(), blockSize);
+  mModel = Regr(yName, y.head(mN), w.head(mN), (int)mValidationY.size(), blockSize);
   if (mValidationY.size() > 0)
     initialize_validation_ss();  // needs mModel and mValidationY
 }
@@ -123,10 +123,10 @@ ValidatedRegression<Regr>::permuted_vector_from_iterator(Iter it) const
 template <class Regr>
 template <class Iter>
 void
+
 ValidatedRegression<Regr>::fill_with_fit(Iter it, bool truncate) const
 {
   Vector results (mLength);
-  
   results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
   results.segment(n_estimation_cases(), n_validation_cases()) = mModel.test_predictions(truncate);
   for(int i = 0; i<mLength; ++i)
@@ -213,16 +213,42 @@ ValidatedRegression<Regr>::print_to(std::ostream& os, bool compact) const
 
 template<class Regr>
 void
-ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols) const    // Note: does not return the data to the original ordering
+ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols, bool rawOrder) const
 {
-  const bool showValidation = false;
-  mModel.write_data_to(os, maxNumXCols, showValidation);  // show here with y value
-  Vector        preds = mModel.test_predictions();
-  Matrix const& Q     = mModel.Q_basis_matrix();
-  for(int i=0; i<n_validation_cases(); ++i)
-  { os << "val\t" << preds[i] << '\t' << mValidationY[i]-preds[i] << '\t' << mValidationY[i];
-    for (int j=0; j<min_int((int)Q.cols(), maxNumXCols); ++j) 
-      os << '\t' << Q(i+mN,j);                            // skip estimation rows in Q
+  // determine index to use
+  std::vector<int> index = mPermute;
+  if (!rawOrder) // leave in permuted order
+  { for(size_t i=0; i<index.size(); ++i)
+      index[i] = (int)i;
+  }
+  // build vectors that join est and val cases
+  bool truncate = true;
+  Vector preds = mModel.test_predictions(truncate);
+  Vector fit (mLength);
+  fit.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
+  fit.segment(n_estimation_cases(), n_validation_cases()) = preds;
+  Vector res (mLength); 
+  res.segment(        0           , n_estimation_cases()) = mModel.raw_residuals();
+  res.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - preds;
+  Vector y   (mLength);
+  y.segment  (        0           , n_estimation_cases()) = mModel.raw_y();
+  y.segment  (n_estimation_cases(), n_validation_cases()) = mValidationY;
+  // write header line
+  os << "Role\tFit\tResidual\tY";
+  int numX = min_int(maxNumXCols, mModel.q());
+  std::vector<std::string> xNames = mModel.predictor_names();
+  for (int j=1; j<=numX; ++j) os << '\t' << xNames[j];
+  os << std::endl;
+  // output in permuted order
+  for(int i = 0; i<mLength; ++i)
+  { int pi = index[i];
+    std::string roleString = (pi < n_estimation_cases()) ? "est" : "val";
+    os << roleString << '\t' << fit[pi] << '\t' << res[pi] << '\t' << y[pi];
+    if(0 < numX)
+    { Vector x = mModel.x_row(pi);
+      for(int j=1; j<=numX; ++j)
+	os << '\t' << x[j];
+    }
     os << std::endl;
   }
 }

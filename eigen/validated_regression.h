@@ -93,15 +93,15 @@ public:
   std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
 
   template <class Iter>
-  void                     fill_with_fit(Iter it)                  const  { fill_with_fit(it,false); }
+  void                     fill_with_fit(Iter it)                      const  { fill_with_fit(it,false); }
   template <class Iter>
-  void                     fill_with_fit(Iter it, bool truncate)   const;
+  void                     fill_with_fit(Iter it, bool truncate)       const;
   template <class Iter>
-  void                     fill_with_residuals (Iter it)         const;
+  void                     fill_with_residuals (Iter it)               const;
   
-  void print_to     (std::ostream& os, bool compact=false)         const;
-  void print_html_to(std::ostream& os)                             const;
-  void write_data_to(std::ostream& os, int maxNumXCols)            const;       //  written in the internal order (estimation ->, then validation <-)
+  void print_to     (std::ostream& os, bool compact=false)             const;
+  void print_html_to(std::ostream& os)                                 const;
+  void write_data_to(std::ostream& os, int maxNumXCols, bool rawOrder) const;       //  internal order is (estimation ->, then validation <-)
   
 private:
   

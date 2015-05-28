@@ -39,24 +39,33 @@ FiniteCauchyShare::p(int j) const
 //     build_regression_model     build_regression_model     build_regression_model     build_regression_model
 
 Regression
-build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
+build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, Column<SCALAR> weights, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os)
 {
   bool  useSubset    (0 != inOut->size());
   int   nRows        ((int)y->size()-prefixRows);
   
-  os << "Building regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y;
+  os << "Building ";
+  if (0 < weights->size())
+    os << "weighted ";
+  os <<"regression with " << y->size() << "-" << prefixRows << "=" << nRows << " cases; response is " << y;
   if (useShrinkage)
     os << " with shrinkage." << std::endl;
   else
     os << " without shrinkage." << std::endl;
   if (useSubset)
   { os << "        Validation cases identified by " << inOut << std::endl;
-    return Regression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, nRows, blockSize, useShrinkage);
+    if (0 < weights->size())
+      return Regression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, weights->begin()+prefixRows, nRows, blockSize, useShrinkage);
+    else
+      return Regression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows,                              nRows, blockSize, useShrinkage);
   } 
   else
   { os << "        No validation.\n";
     constant_iterator<bool>   noSelection(true);
-    return Regression(y->name(), y->begin()+prefixRows,       noSelection        , nRows, blockSize, useShrinkage);  
+    if(0 < weights->size())
+      return Regression(y->name(), y->begin()+prefixRows, inOut->begin()+prefixRows, weights->begin()+prefixRows, nRows, blockSize, useShrinkage);
+    else
+      return Regression(y->name(), y->begin()+prefixRows,       noSelection        ,                              nRows, blockSize, useShrinkage);  
   } 
 }
 
