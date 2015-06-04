@@ -58,7 +58,7 @@ BuildPolynomialCalibrationFeature<Model>::operator()(Model const* pModel) const
   for(int i=0; i<mSkip; ++i)
     *pFit++ = mean;
   // fill rest with predictions from model, then center the range
-  pModel->fill_with_fit(fit->begin() + mSkip, mTruncate);
+  pModel->fill_with_fit(fit->begin() + mSkip);
   debugging::debug("CALB",1) << "Range of fit/predictions (truncate=" << mTruncate << ") returned to calibrator by model is  "
 			     << *range_ops::min_element(Ranges::make_range(fit->begin() + mSkip, fit->end())) << "  --  "
 			     << *range_ops::max_element(Ranges::make_range(fit->begin() + mSkip, fit->end())) << std::endl;				 

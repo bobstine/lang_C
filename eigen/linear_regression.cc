@@ -66,6 +66,7 @@ void
 LinearRegression::allocate_memory()
 {
   mResiduals = Vector(mN);
+  mFitted    = Vector(mN+mTest);
   mQ         = Matrix(mN+mTest, numberOfAllocatedColumns);
   mR         = Matrix(numberOfAllocatedColumns,numberOfAllocatedColumns);
   mLambda    = Vector(numberOfAllocatedColumns);
@@ -84,13 +85,21 @@ LinearRegression::add_constant()
   mQ.col(0)   /= mR(0,0);
   mGamma[0]    = mQ.col(0).head(mN).dot(mY);
   mLambda[0]   = 0.0;                               // dont shrink intercept
-  mResiduals   = mY -  mGamma[0] * mQ.col(0).head(mN);
+  mFitted      = mGamma[0] * mQ.col(0);
+  mResiduals   = mY -  mFitted.head(mN);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 
 
-//     Accessors      Accessors      Accessors      Accessors      Accessors      Accessors      
+//     Accessors      Accessors      Accessors      Accessors      Accessors      Accessors
 
+LinearRegression::Vector
+LinearRegression::raw_fitted_values()    const
+{
+  Vector fit = mFitted;
+  fit.segment(0,mN).array() /= mSqrtWeights.array();
+  return fit;
+}
 
 LinearRegression::Vector
 LinearRegression::x_row (int i)            const
@@ -124,15 +133,23 @@ namespace {
   }
 }
 
-LinearRegression::Vector
-LinearRegression::raw_fitted_values(bool truncate) const
-{
+/*
+
+  This code was used in experiments to truncate predictions in binary models
+  to lie closer to the interval [0,1].  Not so useful in the end, and mostly
+  relevant in the context of calibration.
+  
+  inline
+  LinearRegression::Vector
+  LinearRegression::raw_fitted_values() const
+  {
   Vector fit = fitted_values().array()/mSqrtWeights.array(); 
-  if (!truncate)
-    return fit;
+  if (!mBinary)
+  return fit;
   else
-    return fit.unaryExpr(&soft_limits);
-}
+  return fit.unaryExpr(&soft_limits);
+  }
+*/
 
 //     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes
 
@@ -214,15 +231,18 @@ LinearRegression::se_beta() const
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
+/*
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wconversion"
 
 LinearRegression::Vector
 LinearRegression::test_predictions  (bool truncate)   const
 {
   if (q()==0)
     return Vector::Constant(mN,y_bar());
+  clock_t timeCalc = clock();
   Vector preds = QQtest() * mGamma.head(mK);
+  debugging::debug("VALM",0) << "LRegr Time  ... calc pred in add predictors used " << (float)(clock()-timeCalc)/CLOCKS_PER_SEC << " sec.\n";
   if (!truncate)
     return preds;
   else
@@ -230,7 +250,7 @@ LinearRegression::test_predictions  (bool truncate)   const
 }
 
 #pragma GCC diagnostic pop
-
+*/
 
 LinearRegression::Vector
 LinearRegression::predict(Matrix const& x, bool truncate) const
@@ -441,8 +461,12 @@ void
 LinearRegression::update_fit(StringVec xNames)
 {
   update_names_and_gamma(xNames);
+  for(int j=0; j<mTempK; ++j)
+  { Vector delta = mQ.col(mK+j) * mGamma[mK+j];
+    mFitted    += delta; 
+    mResiduals -= delta.head(mN);
+  }
   mK += mTempK;
-  mResiduals = mY - QQ() * mGamma.head(mK);   // Faster?  just mod the residuals rather than recalc
   mResidualSS= mResiduals.squaredNorm();      // Faster?  subtract new gamma'gamma
 }
 
@@ -608,9 +632,9 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
-  Vector y    (raw_y());
-  Vector res  (raw_residuals());
-  Vector fit  (y - res);
+  Vector y    (raw_y            ());
+  Vector res  (raw_residuals    ());
+  Vector fit  (raw_fitted_values());
   int limit = (includeValidation) ? mN + mTest : mN;
   for(int i=0; i<limit; ++i)
   { os << "est\t" << fit[i] << "\t" << res[i] << "\t" ;
@@ -645,11 +669,13 @@ FastLinearRegression::apply_gradient_correction()
 		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
   for (int j=1; j<mK; ++j)
   { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
-    mResiduals -= dGamma * mQ.col(j).head(mN);
-    mResidualSS = mResiduals.squaredNorm();
     mGamma(j) += dGamma;
+    Vector delta = dGamma * mQ.col(j);
+    mFitted    += delta;
+    mResiduals -= delta.head(mN);
   }
-  debug("FREG",2) << "After    gradient, RSS= " << mResidualSS
+  mResidualSS = mResiduals.squaredNorm();
+ debug("FREG",2) << "After    gradient, RSS= " << mResidualSS
 		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
 }
 
@@ -695,10 +721,10 @@ FastLinearRegression::update_fit(StringVec xNames)
 	mAtA(j,k) +=    wtw(j,k)    + Atz.row(j).dot(w.col(k)) + Atz.row(k).dot(w.col(k));
   }
   mCholAtA = Eigen::LDLT<Matrix,Eigen::Upper> (mAtA);
-  //  std::cout << "TEST: AtA [A is " << mA.rows() << " by " << mA.cols() << "]" << std::endl << mA.leftCols(5).transpose() * mA.leftCols(5) << std::endl;
-  //  std::cout << "TEST: AtA " << mAtA.rows() << " by " << mAtA.cols() << std::endl << mAtA.block(0,0,5,5) << std::endl;
-  mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
-  mResidualSS = mResiduals.squaredNorm();
+  Vector delta = mQ.block(0,mK,mN+mTest,mTempK) * mGamma.segment(mK,mTempK); 
+  mFitted     += delta;
+  mResiduals  -= delta.head(mN);
+  mResidualSS  = mResiduals.squaredNorm();
   mK += mTempK;
 }
 

@@ -93,9 +93,7 @@ public:
   std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
 
   template <class Iter>
-  void                     fill_with_fit(Iter it)                      const  { fill_with_fit(it,false); }
-  template <class Iter>
-  void                     fill_with_fit(Iter it, bool truncate)       const;
+  void                     fill_with_fit(Iter it)                      const;
   template <class Iter>
   void                     fill_with_residuals (Iter it)               const;
   

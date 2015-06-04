@@ -184,9 +184,17 @@ main(int argc, char** argv)
     debug("MAIN",1) << "Input files produced " << yColumns.size() << " Ys and " << cColumns.size() << " context columns.\n";
   } 
 
+  // build weighed model if weights detected in second column of yColumns (empty column implies no weights)
+  Column<SCALAR> weights("weights","none",0);
+  if ((yColumns.size() == 2) && (yColumns[1]->role()=="weights"))
+  { debug("MAIN",0) << "Y file includes weights; will fit weighted models.\n";
+    weights = yColumns[1];
+  }
+  else debug("MAIN",0) << "Y file does not include weights; will fit ols models.\n";
+  
   // build model and initialize auction with tab-delimited stream for tracking progress
   typedef Auction<Regression>  RegressionAuction;
-  Regression theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
+  Regression theRegr = build_regression_model (yColumns[0], cColumns[0], weights, nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));    
   const string calibrationSignature ("Y_hat_");
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
    
@@ -300,9 +308,11 @@ main(int argc, char** argv)
     bool      cvssCheck           = true;
     while(round<numberRounds && cvssCheck && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
-      clock_t start;
-      start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
+      clock_t start = clock();
+      bool accepted = theAuction.auction_next_feature();
+      Scalar time = (Scalar)time_since(start);
+      totalTime += time;
+      if (accepted)                                             // true when adds predictor; show the current model
       { --fullOutputTimer;
 	if (fullOutputTimer == 0)
 	{ fullOutputTimer = fullOutputPeriod;
@@ -311,8 +321,6 @@ main(int argc, char** argv)
 	else
 	  theAuction.print_to(debug("AUCT",2), true); 
       }
-      Scalar time = (Scalar)time_since(start);
-      totalTime += time;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
       std::pair<Scalar,Scalar> rss {theAuction.model().sums_of_squares()};
       if( 1.1*rss0.second < rss.second)

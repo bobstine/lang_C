@@ -52,9 +52,9 @@ int main(int, char **)
   //      40                         2.6       0.06   0.035              0.40    0.24
   //      80                        10.5       0.10   0.060              0.78    0.44
 
-  const int nRows       (  30000 );   
+  const int nRows       (   3000 );   
   const int nCols       (      5 );
-  const int nAdd        (    100 );
+  const int nAdd        (     50 );
   
   // form random matrix for response and predictors
   std::cout << "TEST: building " << nAdd << " input data vectors of length " << nRows << " to add after fit initial model with " << nCols << "\n";
@@ -95,7 +95,7 @@ int main(int, char **)
   }
 
   //  write data so that can check in JMP/R
-  if (false && nRows < 1000)
+  if (true)
   { Matrix data(nRows,1+nCols+nAdd);
     data << y , X , Z; 
     cout << "TEST:  Writing data in external order as created, first four rows are\n" << data.topRows(4) << endl;
@@ -131,9 +131,10 @@ int main(int, char **)
 #else
     LinearRegression      regr("yyy", y, nTest, blockSize);
     FastLinearRegression fRegr("yyy", y, nTest, blockSize);
-    fRegr.set_gradient_period(15);
 #endif
-    cout << "\n========================================================================== \n";
+    cout << "\n========================================================================== \n"
+	 << "  Initial model"
+	 << "\n========================================================================== \n";
     cout << "TEST: Initialized regression " << endl << regr << endl;
     cout << "TEST: Initial beta = " << regr.beta().transpose() << "    gamma = " << regr.gamma().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
@@ -141,8 +142,10 @@ int main(int, char **)
     cout << "TEST: Initialized fast regression " << endl << fRegr << endl;
     cout << "TEST: Initial fast gamma = " << fRegr.gamma().transpose() << endl;
     cout << "TEST: Residuals fast (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << "\n========================================================================== \n";
-    
+
+    cout << "\n========================================================================== \n"
+	 << "  Add XX[0]"
+	 << "\n========================================================================== \n";
     cout << "TEST: F test of XX[0] " << regr.f_test_predictor("XX[0]", XX.col(0)) << endl;
     regr.add_predictors();
     cout << "TEST: regression after adding XX[0] " << endl << regr << endl;
@@ -156,11 +159,15 @@ int main(int, char **)
     cout << "TEST: Beta     = " << fRegr.beta().transpose() << endl;
     cout << "TEST: se(beta) = " << fRegr.se_beta().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << "\n========================================================================== \n";
 
+    cout << "\n========================================================================== \n"
+	 << "  Add XX[1]"
+	 << "\n========================================================================== \n";
     cout << "TEST: F test of XX[1]" << regr.f_test_predictor("XX[1]", XX.col(1)) << endl;
     regr.add_predictors();
     cout << "TEST: regression after adding XX[1] " << endl << regr << endl;
+    cout << "TEST: Beta     = " << regr.beta().transpose() << endl;
+    cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
     cout << "TEST: Gamma  = " << regr.gamma().transpose() << endl;
     cout << "TEST: se(gamma) = " << regr.se_gamma().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
@@ -171,14 +178,33 @@ int main(int, char **)
     cout << "TEST: Gamma  = " << fRegr.gamma().transpose() << endl;
     cout << "TEST: se(gamma) = " << fRegr.se_gamma().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
-    cout << "\n========================================================================== \n";
-
-    cout << "TEST: Several rows of XX" << endl;
-    for (int i=0; i<10; ++i)
-      cout << "      [" << i << "]   " << regr.x_row(i).transpose() << endl;
-    cout << "TEST: F test of adding XX[1] again " << regr.f_test_predictor("XX1 again", XX.col(1)) << endl;    // ??? Why does it not detect singular
+    
+    cout << "\n========================================================================== \n"
+	 << "  Add XX[2]"
+	 << "\n========================================================================== \n";
+    cout << "TEST: F test of XX[2]" << regr.f_test_predictor("XX[2]", XX.col(2)) << endl;
     regr.add_predictors();
-    cout << "TEST: regression after adding XX[1] a second time " << endl << regr << endl;
+    cout << "TEST: regression after adding XX[2] " << endl << regr << endl;
+    cout << "TEST: Beta     = " << regr.beta().transpose() << endl;
+    cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
+    cout << "TEST: Gamma  = " << regr.gamma().transpose() << endl;
+    cout << "TEST: se(gamma) = " << regr.se_gamma().transpose() << endl;
+    cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
+    cout << " -----------------------  fast  ---------------------------------------------------- \n";
+    cout << "TEST: F test of XX[2]" << fRegr.f_test_predictor("XX[2]", XX.col(2)) << endl;
+    fRegr.add_predictors();
+    cout << "TEST: fRegression after adding XX[2] " << endl << fRegr << endl;
+    cout << "TEST: Gamma  = " << fRegr.gamma().transpose() << endl;
+    cout << "TEST: se(gamma) = " << fRegr.se_gamma().transpose() << endl;
+    cout << "TEST: Residuals (first 10) = " << fRegr.raw_residuals().head(10).transpose() << endl << endl;
+
+    cout << "\n========================================================================== \n"
+	 << "  Add copy of prior feature XX[1]"
+	 << "\n========================================================================== \n";
+    LinearRegression::FStat fstat = regr.f_test_predictor("XX1 again", XX.col(1));
+    cout << "TEST: F test of adding XX[1] again " << fstat << endl;      // It should detect singular and not add
+    if(0 < fstat.f_stat()) regr.add_predictors(fstat);
+    cout << "TEST: regression after optionally adding a second time " << endl << regr << endl;
     cout << "TEST: Beta  = " << regr.beta().transpose() << endl;
     cout << "TEST: se(beta) = " << regr.se_beta().transpose() << endl;
     cout << "TEST: Residuals (first 10) = " << regr.raw_residuals().head(10).transpose() << endl << endl;
@@ -201,8 +227,8 @@ int main(int, char **)
 	timeFast += (double)(endTime - beginTime);
 	std::cout << "TEST: For j = " << j << " F stats are " << f.f_stat() << " and " << ff.f_stat() << endl;
 	std::cout << "TEST: RSS   = " << regr.residual_ss() << " and fast = " << fRegr.residual_ss() << endl;
-	Vector  res = y -  regr.test_predictions();
-	Vector fRes = y - fRegr.test_predictions();
+	Vector  res = regr.residuals();
+	Vector fRes = fRegr.residuals();
 	std::cout << "TEST: PRESS = " << res.squaredNorm() << " and fast = " << fRes.squaredNorm() << endl << endl;
       }
       std::cout << "TEST: time regr = " << timeRegr << "  time fast = " << timeFast << std::endl;

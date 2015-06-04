@@ -1,10 +1,11 @@
 #ifndef _VALIDATED_REGRESSION_TEMPLATE_H_
 #define _VALIDATED_REGRESSION_TEMPLATE_H_
 
+#include <time.h>
+
 #include "validated_regression.h"
 #include "little_functions.h"
 #include "debug.h"
-
 
 template<class Regr>
 std::vector<typename ValidatedRegression<Regr>::Scalar>
@@ -19,27 +20,6 @@ ValidatedRegression<Regr>::beta()  const
 }
 
 //     initialize     initialize     initialize     initialize     initialize     initialize     initialize     initialize     
-
-template<class Regr>
-template<class Iter, class BIter, class WIter>
-  void
-  ValidatedRegression<Regr>::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)
-{
-  Vector w (mLength);
-  Vector y (mLength);
-  int  k (mLength);
-  for(int i=0; i<mLength; ++i, ++Y, ++W, ++B)
-  { if (*B)   // use for estimation, increment mN
-    { y[mN] = *Y; w[mN] = *W; mPermute[i] = mN; ++mN; }
-    else      // reverse to the end for validation
-    { --k; y[k] = *Y; w[k] = *W; mPermute[i]=k; }
-  }
-  mValidationY = y.tail(mLength-mN);
-  debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
-  mModel = Regr(yName, y.head(mN), w.head(mN), (int)mValidationY.size(), blockSize);
-  if (mValidationY.size() > 0)
-    initialize_validation_ss();  // needs mModel and mValidationY
-}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -68,6 +48,36 @@ template<class Iter, class BIter>
 #pragma GCC diagnostic pop
 
 
+template <class Regr>
+void
+ValidatedRegression<Regr>::initialize_validation_ss()
+{ 
+  Scalar mean (mModel.y_bar());
+  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
+}
+
+
+template<class Regr>
+template<class Iter, class BIter, class WIter>
+  void
+  ValidatedRegression<Regr>::initialize(std::string yName, Iter Y, BIter B, WIter W, int blockSize)
+{
+  Vector w (mLength);
+  Vector y (mLength);
+  int  k (mLength);
+  for(int i=0; i<mLength; ++i, ++Y, ++W, ++B)
+  { if (*B)   // use for estimation, increment mN
+    { y[mN] = *Y; w[mN] = *W; mPermute[i] = mN; ++mN; }
+    else      // reverse to the end for validation
+    { --k; y[k] = *Y; w[k] = *W; mPermute[i]=k; }
+  }
+  mValidationY = y.tail(mLength-mN);
+  debugging::debug("VALM",3) << "Initializing weighted validation model, estimation size = " << mN << " with validation size = " << mValidationY.size() << std::endl;
+  mModel = Regr(yName, y.head(mN), w.head(mN), (int)mValidationY.size(), blockSize);
+  if (mValidationY.size() > 0)
+    initialize_validation_ss();  // needs mModel and mValidationY
+}
+
 //     add_predictors_if_useful     add_predictors_if_useful     add_predictors_if_useful     add_predictors_if_useful
 
 template <class Regr>
@@ -83,18 +93,24 @@ template <class Iter>
   { xNames.push_back(c[j].first);
     predictors.col(j) = permuted_vector_from_iterator(c[j].second);
   }
+  clock_t timeTest = clock();
   if (k == 1)
     f = mModel.f_test_predictor(xNames[0], predictors.col(0));
   else
     f = mModel.f_test_predictors(xNames, predictors.leftCols(k));
   debugging::debug("VALM",3) << k << " predictors; p-value=" << f.p_value() << " with bid=" << pToEnter << ". SE block size=" << block_size() << std::endl;
+  debugging::debug("VALM",4) << "Regr Timing ... test time in add predictors used " << (float)(clock()-timeTest)/CLOCKS_PER_SEC << " sec.\n";
   if((f.f_stat() == 0) || (f.p_value() > pToEnter))
     return std::make_pair(f.f_stat(), f.p_value());
   debugging::debug("VALM",3) << "Adding " << k << " predictors to model; first is " << c[0].first << std::endl;
+  clock_t timeAdd = clock();
   if(mShrink)  mModel.add_predictors(f);
   else         mModel.add_predictors();                                  // omit f-stat to omit shrinkage
+  debugging::debug("VALM",4) << "Regr Timing ...      time to add predictors used " << (float)(clock()-timeAdd)/CLOCKS_PER_SEC << " sec.\n";
+  clock_t timeVal = clock();
   if (0 < mValidationY.size())                                           // update validation SS if have some 
-    mValidationSS = (mValidationY - mModel.test_predictions()).squaredNorm();
+    mValidationSS = (mValidationY - mModel.fitted_values().segment(mN,mLength-mN)).squaredNorm();
+  debugging::debug("VALM",0) << "Regr Timing ... vald time in add predictors used " << (float)(clock()-timeVal)/CLOCKS_PER_SEC << " sec.\n";
   return std::make_pair(f.f_stat(), f.p_value());
 }
 
@@ -124,11 +140,9 @@ template <class Regr>
 template <class Iter>
 void
 
-ValidatedRegression<Regr>::fill_with_fit(Iter it, bool truncate) const
+ValidatedRegression<Regr>::fill_with_fit(Iter it) const
 {
-  Vector results (mLength);
-  results.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
-  results.segment(n_estimation_cases(), n_validation_cases()) = mModel.test_predictions(truncate);
+  Vector results = mModel.raw_fitted_values();
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }
@@ -146,16 +160,6 @@ ValidatedRegression<Regr>::fill_with_residuals(Iter it) const
   for(int i = 0; i<mLength; ++i)
     *it++ = results(mPermute[i]);
 }
-
-
-template <class Regr>
-void
-ValidatedRegression<Regr>::initialize_validation_ss()
-{ 
-  Scalar mean (mModel.y_bar());
-  mValidationSS = mValidationY.unaryExpr([mean](Scalar x)->Scalar { return x-mean; }).squaredNorm();
-}
-
 
 //     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     confusion_matrix     
   
@@ -175,7 +179,7 @@ ValidatedRegression<Regr>::validation_confusion_matrix(Scalar threshold) const
 {
   assert (mModel.has_binary_response());
   assert (n_validation_cases() > 0);
-  Vector pred = mModel.test_predictions();
+  Vector pred = mModel.fitted_values().segment(mN, mLength-mN);
   return ConfusionMatrix(mValidationY.size(), EigenVectorIterator(&mValidationY), EigenVectorIterator(&pred), threshold);
 }
 
@@ -222,14 +226,10 @@ ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols, bool
       index[i] = (int)i;
   }
   // build vectors that join est and val cases
-  bool truncate = true;
-  Vector preds = mModel.test_predictions(truncate);
-  Vector fit (mLength);
-  fit.segment(        0           , n_estimation_cases()) = mModel.raw_fitted_values(truncate);
-  fit.segment(n_estimation_cases(), n_validation_cases()) = preds;
+  Vector fit (mModel.raw_fitted_values());
   Vector res (mLength); 
   res.segment(        0           , n_estimation_cases()) = mModel.raw_residuals();
-  res.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - preds;
+  res.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - fit.segment(mN,mLength-mN);
   Vector y   (mLength);
   y.segment  (        0           , n_estimation_cases()) = mModel.raw_y();
   y.segment  (n_estimation_cases(), n_validation_cases()) = mValidationY;
