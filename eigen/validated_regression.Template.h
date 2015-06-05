@@ -110,7 +110,7 @@ template <class Iter>
   clock_t timeVal = clock();
   if (0 < mValidationY.size())                                           // update validation SS if have some 
     mValidationSS = (mValidationY - mModel.fitted_values().segment(mN,mLength-mN)).squaredNorm();
-  debugging::debug("VALM",0) << "Regr Timing ... vald time in add predictors used " << (float)(clock()-timeVal)/CLOCKS_PER_SEC << " sec.\n";
+  debugging::debug("VALM",4) << "Regr Timing ... vald time in add predictors used " << (float)(clock()-timeVal)/CLOCKS_PER_SEC << " sec.\n";
   return std::make_pair(f.f_stat(), f.p_value());
 }
 
@@ -227,7 +227,8 @@ ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols, bool
   }
   // build vectors that join est and val cases
   Vector fit (mModel.raw_fitted_values());
-  Vector res (mLength); 
+  Vector res (mLength);
+  assert(res.size()==fit.size());
   res.segment(        0           , n_estimation_cases()) = mModel.raw_residuals();
   res.segment(n_estimation_cases(), n_validation_cases()) = mValidationY - fit.segment(mN,mLength-mN);
   Vector y   (mLength);

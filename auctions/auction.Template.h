@@ -107,8 +107,6 @@ Auction<ModelClass>::auction_next_feature ()
 {
   clock_t real_start = clock();
   bool accepted;
-  {
-  clock_t start = clock();
   ++mRound;
   debug("AUCT",1) << "-------------  Begin auction round #" << mRound << "  -------------" << std::endl; 
   // reap empty custom experts 
@@ -149,7 +147,7 @@ Auction<ModelClass>::auction_next_feature ()
   debug("AUCT",3) << "Test results are  <" << result.first << "," << pValue << ">\n";
   if (mProgressStream)
     mProgressStream << "\t" << pValue << "\t" << remove_comma(features[0]->name());
-  debug("AUCT",0) << "Timing... mModel.add_predictors_if_useful took " << time_since(startAdd) << " sec.\n";
+  debug("AUCT",4) << "Timing... mModel.add_predictors_if_useful took " << time_since(startAdd) << " sec.\n";
   // report bid result
   clock_t startSummary = clock();
   Scalar amount;
@@ -180,17 +178,15 @@ Auction<ModelClass>::auction_next_feature ()
   }
   std::pair<Scalar,Scalar> rss (mModel.sums_of_squares());                  // resid ss, cv ss
   if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second; 
-  debug("AUCT",0) << "Timing... summary took " << time_since(startSummary) << " sec.\n";
+  debug("AUCT",4) << "Timing... summary took " << time_since(startSummary) << " sec.\n";
   // apply gradient adjustment as needed
   clock_t startGrad = clock();
   if (accepted)
   { if (mProgressStream) mProgressStream << std::endl;
     perform_gradient_adjustment_if_needed();
   }
-  debug("AUCT",0) << "Timing... gradient took " << time_since(startGrad) << " sec.\n";
-  debug("AUCT",0) << "Timing... auction_next_feature took " << time_since(start) << " sec.\n";
-  }
-  debug("AUCT",0) << "Timing... real_time took " << time_since(real_start) << " sec.\n";
+  debug("AUCT",4) << "Timing... gradient took " << time_since(startGrad) << " sec.\n";
+  debug("AUCT",3) << "Timing... auction_next_feature took " << time_since(real_start) << " sec.\n";
   return accepted;
 }
 
@@ -235,7 +231,7 @@ Auction<Model>::perform_gradient_adjustment_if_needed ()
     }
     // write gradient line to progress file
     mProgressStream << mRound << "\t\t\t";
-    for (int b=0; b<number_of_experts(); ++b)
+    for (int b=0; b<mNumInitialExperts; ++b)
       mProgressStream << "\t\t\t";
     mProgressStream << "\t\t\t\tgradient_" << k << "\tGradient\t\t" << ss.first << "\t" << ss.second;
   }

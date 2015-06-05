@@ -11,7 +11,7 @@
   23 Mar 04 ... Revised to use the anonymous ranges and other objects; logistic regression.
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
-
+ 
 
      Read columns from a file. The source file is laid out with one column of values per row.
      Line 1: gives the number of cases
@@ -327,7 +327,7 @@ main(int argc, char** argv)
       { std::clog << "AUCT: *** Error *** CVSS grew by more than 10% in last round from " << rss0.second
 		  << " to " << rss.second << "; exiting after writing model and full set of Xs.\n";
 	cvssCheck = false;
-	maxNumOutputPredictors = 2000;
+	maxNumOutputPredictors = 20;
       }
       else rss0 = rss;
       debug("AUCT",0) << "Round " << round <<  " used " << time

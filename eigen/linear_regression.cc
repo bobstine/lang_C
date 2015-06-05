@@ -104,7 +104,10 @@ LinearRegression::raw_fitted_values()    const
 LinearRegression::Vector
 LinearRegression::x_row (int i)            const
 {
-  return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
+  if(i < mN)
+    return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
+  else
+    return mQ.row(i).head(mK) * RR();
 }
 
 namespace {
@@ -301,7 +304,7 @@ LinearRegression::sweep_Q_from_column_and_normalize(int col) const
   Scalar ss (approximate_ss(mQ.col(col).head(mN)));
   #ifdef _CLASSICAL_GS_
   Vector delta = mQ.block(0,0,mN,col).transpose() * mQ.col(col).head(mN);
-  debugging::debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
+  debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
   mQ.col(col) = mQ.col(col) - mQ.leftCols(col) * delta;
   mR.col(col).head(col) = delta;
   #else
@@ -339,6 +342,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   { std::cout << "REGR: Singularity detected. SSz = 0 for predictor " << xName << "; returning empty F stat" << std::endl;
     return FStatistic();
   }
+  debug("REGR",4) << "Computing F-statistic for one predictor with block size = " << mBlockSize << std::endl;
   int residualDF (mN-mK);
   assert(residualDF > 0);
   Scalar qe  (mQ.col(mK).head(mN).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
@@ -348,7 +352,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   }
   if (has_binary_response() && (mBlockSize == 1))             // use Bennett and fake F stat from squaring bennett t stat
   { std::pair<Scalar,Scalar> test (bennett_evaluation());
-    debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
+    debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
     return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
   }
   Scalar qeeq (0.0);                                          // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
@@ -363,7 +367,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
       qeeq += ezi * ezi;
     }
   }
-  debugging::debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
+  debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
   return FStatistic(qe*qe/qeeq, 1, residualDF, Vector::Ones(1));
 }
 
@@ -384,12 +388,13 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
       return FStatistic();
+  debug("REGR",5) << "Computing F-statistic for " << xNames.size() << " predictors.\n" << std::endl;
   int residualDF (mN-mK-(int)z.cols());
   assert(residualDF > 0);
   Vector Qe  (mQ.block(0,mK,mN,mTempK).transpose() * mResiduals);    // new gamma coefs
   if (mBlockSize==0)
   { Scalar regrss (Qe.squaredNorm());
-    debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << ")" << std::endl;
+    debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << ")" << std::endl;
     return FStatistic(regrss, mTempK, mResidualSS-regrss, residualDF, Vector::Ones(z.cols()));
   }
   else
@@ -409,7 +414,7 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
       }
     }
     Scalar ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
-    debugging::debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
+    debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
     return FStatistic(ss/(Scalar)mTempK, mTempK, residualDF, Vector::Ones(z.cols()));
   }
 }
@@ -421,9 +426,10 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 LinearRegression::bennett_evaluation () const
 {
+  debug("REGR",4) << "Preparing for bennett evaluation" << std::endl;
   const Scalar up = (Scalar) 0.99999999999;
   const Scalar dn = (Scalar) 0.00000000001;
-  Vector mu        = raw_fitted_values();                                          // think of fit as E(Y), constrained to [eps,1-eps] interval
+  Vector mu       = raw_fitted_values().head(mN);                                  // think of fit as E(Y), constrained to [eps,1-eps] interval
   mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
   Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                        // would match residuals IF other fit is bounded
@@ -445,7 +451,7 @@ LinearRegression::bennett_evaluation () const
 void
 LinearRegression::update_names_and_gamma(StringVec xNames)
 {
-  debugging::debug("REGR",3) << "Updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
+  debug("REGR",3) << "Updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
   if ((int)numberOfAllocatedColumns-5 < mK+(int)xNames.size())
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
@@ -494,7 +500,7 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
 void
 LinearRegression::add_predictors  (FStatistic const& fstat)
 {
-  debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
+  debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
   Scalar lambda (0);
   Scalar F (fstat.f_stat());
   if (F > 0) // dont shrink those with F == 0
@@ -514,7 +520,7 @@ LinearRegression::add_predictors  (FStatistic const& fstat)
 void
 LinearRegression::add_predictors  ()   // no shrinkage
 {
-  debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
+  debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
   for (unsigned int j=0; j<mTempNames.size(); ++j)
     mLambda[mK+j] = (Scalar) 0;
   update_fit(mTempNames);
@@ -663,7 +669,7 @@ FastLinearRegression::allocate_projection_memory()
 void
 FastLinearRegression::apply_gradient_correction()
 {
-  debugging::debug("FREG",3) << "Apply gradient correction with mK=" << mK << std::endl;
+  debug("FREG",3) << "Apply gradient correction with mK=" << mK << std::endl;
   const int q = (mK < 11) ? mK : 10;
   debug("FREG",2) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
 		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
@@ -686,7 +692,7 @@ FastLinearRegression::apply_gradient_correction()
 LinearRegression::Scalar
 FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 {
-  debugging::debug("FREG",4) << "Sweep_Q_from_col (fast after omega cols); col= " << col << std::endl;
+  debug("FREG",4) << "Sweep_Q_from_col (fast after omega cols); col= " << col << std::endl;
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column_and_normalize(col);
   mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean

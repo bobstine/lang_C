@@ -69,7 +69,7 @@ private:
   
   Scalar                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
-  int                    number_of_experts ()       const { return (int) mExperts.size(); }
+  int                    number_of_experts()        const { return (int) mExperts.size(); }
   int                    add_expert(Expert e)             { mExperts.push_back(e); return (int)mExperts.size(); }
   Scalar                 total_expert_alpha ()      const;
   Scalar                 recovered_alpha()          const { return mRecoveredAlpha; }
