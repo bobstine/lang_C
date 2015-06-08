@@ -243,8 +243,8 @@ make_polynomial_calibration_stream (std::string name, Model const& model, int ga
 {
   debug("FSTR",2) << "make_poly_calibration_stream; gap between = " << gap << "  initial skip = " << skip << " cases      binary = " << binary << std::endl;
   const int polyDegree = 3;
-  return FeatureStream< ModelIterator<Model>, BuildPolynomialCalibrationFeature<Model> >
-    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildPolynomialCalibrationFeature<Model>(polyDegree, signature, skip, binary));
+  return FeatureStream< ModelIterator<Model>, BuildPolynomialCalibrationFeature<Model> >       
+    ("Calibration::"+name, ModelIterator<Model>(model, gap), BuildPolynomialCalibrationFeature<Model>(polyDegree, signature, skip, binary)); // calibrate binary
 }
 
 

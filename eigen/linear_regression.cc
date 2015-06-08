@@ -111,6 +111,8 @@ LinearRegression::x_row (int i)            const
 }
 
 namespace {
+
+
   const SCALAR soft_rate = 0.5;
 
   SCALAR
@@ -426,22 +428,27 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 LinearRegression::bennett_evaluation () const
 {
-  debug("REGR",4) << "Preparing for bennett evaluation" << std::endl;
+  debug("REGR",4) << "Bennett: Entering Bennett evaluation" << std::endl;
   const Scalar up = (Scalar) 0.99999999999;
   const Scalar dn = (Scalar) 0.00000000001;
   Vector mu       = raw_fitted_values().head(mN);                                  // think of fit as E(Y), constrained to [eps,1-eps] interval
+  debug("REGR",4) << "Bennett: mu head=" << mu.head(5).transpose() << "   tail=" << mu.tail(5).transpose() << std::endl;
+  debug("REGR",4) << "Bennett: wts head=" << mWeights.head(5).transpose() << "   tail=" << mWeights.tail(5).transpose() << std::endl;
   mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
-  Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
+  Vector var     (Vector::Ones(mN));
+  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                        // would match residuals IF other fit is bounded
   Scalar num     (dev.dot(mQ.col(mK).head(mN)));                                                  // z'(y-y^)
   Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).head(mN).cwiseProduct(mQ.col(mK).head(mN))))); // sqrt(z'Dz)
+  debug("REGR",4) << "Bennett: num=" << num << "   root=" << rootZDZ << std::endl;
   Scalar maxA    (0.0);
   for (int i=0; i<mN; ++i)
-    { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
+  { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
     if (absZ > maxA) maxA = absZ;                                                  // largest?
   }
   Scalar Mz      (maxA/rootZDZ);
   Scalar tz      (abs_val(num)/rootZDZ);                                           // num = get(mZE,0)
+  debug("REGR",4) << "Bennett: maxA=" << maxA << "   tz=" << tz << std::endl;
   return std::make_pair(tz, bennett_p_value(tz,Mz));
 }
 
@@ -632,7 +639,7 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
   // number of columns of predictors
   int numX = min_int(mK-1,maxNumXCols);
   // prefix line with var names; intercept is name[0]
-  os << "Role\tFit\tResidual\t" << mYName;
+  os << "Role\tWeight\tFit\tResidual\t" << mYName;
   // skip the intercept in column 0
   for(int j=1; j<=numX; ++j)  
     os << "\t" << mXNames[j];
@@ -643,9 +650,8 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
   Vector fit  (raw_fitted_values());
   int limit = (includeValidation) ? mN + mTest : mN;
   for(int i=0; i<limit; ++i)
-  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" ;
-    if (i<mN) os << y[i];
-    else      os << "NA";
+  { if (i<mN) os << "est\t" << mWeights[i] << '\t' << fit[i] << '\t' << res[i] << "\t" << y[i] ;
+    else      os << "val\t" <<    1        << '\t' << fit[i] << '\t' << "NA"   << "\t" << "NA" ;
     if(numX>0)
     { Vector row (x_row(i));
       for (int j=1; j<=numX; ++j)  // skip intercept

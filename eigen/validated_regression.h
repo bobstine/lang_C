@@ -89,11 +89,11 @@ public:
   ConfusionMatrix estimation_confusion_matrix(Scalar threshold=0.5) const;
   ConfusionMatrix validation_confusion_matrix(Scalar threshold=0.5) const;
 
-  template <class Iter>                                                        // iterators include training & test cases, ordered as initial y (pval=1 adds if nonsing)
+  template <class Iter>                                                              // iterators include training & test cases, ordered as initial y (pval=1 adds if nonsing)
   std::pair<Scalar,Scalar> add_predictors_if_useful (std::vector<std::pair<std::string, Iter> > const& c, Scalar pToEnter);
 
   template <class Iter>
-  void                     fill_with_fit(Iter it)                      const;
+  void                     fill_with_fit(Iter it, bool truncate)       const;       // truncation is typically to 0/1
   template <class Iter>
   void                     fill_with_residuals (Iter it)               const;
   

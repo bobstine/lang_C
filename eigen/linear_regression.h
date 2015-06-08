@@ -104,7 +104,7 @@ public:
   inline Scalar    aic_c()                const   { Scalar n((Scalar)mN), k((Scalar)mK); return (Scalar) n*(Scalar)log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
   inline Scalar    r_squared()            const   { return (Scalar) 1.0 - mResidualSS/mTotalSS; }
   inline Scalar    adj_r_squared()        const   { return (Scalar) 1.0 - (mResidualSS/(Scalar)(mN-mK)) / (mTotalSS/(Scalar)(mN-1)); }
-  
+
   inline Vector    y()                    const   { return mY; }
          Scalar    y_bar()                const   { return mY.head(mN).dot(mWeights.head(mN))/mWeights.head(mN).sum(); }  // weighted mean as appropriate
   inline Vector    raw_y()                const   { return mY.cwiseQuotient(mSqrtWeights); }                   // raw versions remove the internal weights
@@ -112,6 +112,7 @@ public:
   inline Vector    raw_residuals()        const   { return mResiduals.array()/mSqrtWeights.array(); }          // only mN of these
   inline Vector    fitted_values()        const   { return mFitted; }                                          // truncated to soft limits on [0,1] if binary
          Vector    raw_fitted_values()    const;
+  inline Vector    weights()              const   { return mWeights;}
   
   Vector           x_row(int i)           const;
   Vector           gamma()                const   { return mGamma.head(mK); }

@@ -289,7 +289,7 @@ main(int argc, char** argv)
   if(calibrationGap > 0)
   { bool yIsBinary  (yColumns[0]->is_dummy());
     if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
-    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                // 100 implies endow with lots of money
+    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                // 100 implies lots of alpha
 				 FitBidder((SCALAR)0.000005, calibrationSignature),                  
 				 make_polynomial_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
 								    nContextCases, yIsBinary))); 

@@ -2,6 +2,7 @@
 #define _VALIDATED_REGRESSION_TEMPLATE_H_
 
 #include <time.h>
+#include <algorithm>   // min/max
 
 #include "validated_regression.h"
 #include "little_functions.h"
@@ -136,15 +137,24 @@ ValidatedRegression<Regr>::permuted_vector_from_iterator(Iter it) const
 
 //     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_     fill_with_
 
+namespace {
+
+  SCALAR bound_to_0_1(SCALAR x)
+  {
+    return std::min((SCALAR)1.0, std::max((SCALAR)0.0,x));
+  }
+}
+
 template <class Regr>
 template <class Iter>
 void
-
-ValidatedRegression<Regr>::fill_with_fit(Iter it) const
+ValidatedRegression<Regr>::fill_with_fit(Iter it, bool truncate) const
 {
-  Vector results = mModel.raw_fitted_values();
-  for(int i = 0; i<mLength; ++i)
-    *it++ = results(mPermute[i]);
+  Vector fit = mModel.raw_fitted_values();
+  if (!truncate)
+    for(int i = 0; i<mLength; ++i) *it++ = fit(mPermute[i]);
+  else
+    for(int i = 0; i<mLength; ++i) *it++ = bound_to_0_1(fit(mPermute[i]));
 }
 
 template <class Regr>
@@ -234,8 +244,11 @@ ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols, bool
   Vector y   (mLength);
   y.segment  (        0           , n_estimation_cases()) = mModel.raw_y();
   y.segment  (n_estimation_cases(), n_validation_cases()) = mValidationY;
+  Vector w = Vector::Ones(mLength);
+  w.segment  (        0           , n_estimation_cases()) = mModel.weights();
+  
   // write header line
-  os << "Role\tFit\tResidual\tY";
+  os << "Role\tWeight\tFit\tResidual\tY";
   int numX = min_int(maxNumXCols, mModel.q());
   std::vector<std::string> xNames = mModel.predictor_names();
   for (int j=1; j<=numX; ++j) os << '\t' << xNames[j];
@@ -244,7 +257,7 @@ ValidatedRegression<Regr>::write_data_to(std::ostream& os, int maxNumXCols, bool
   for(int i = 0; i<mLength; ++i)
   { int pi = index[i];
     std::string roleString = (pi < n_estimation_cases()) ? "est" : "val";
-    os << roleString << '\t' << fit[pi] << '\t' << res[pi] << '\t' << y[pi];
+    os << roleString << '\t' << w[pi] << '\t' << fit[pi] << '\t' << res[pi] << '\t' << y[pi];
     if(0 < numX)
     { Vector x = mModel.x_row(pi);
       for(int j=1; j<=numX; ++j)
