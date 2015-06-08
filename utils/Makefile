@@ -14,8 +14,8 @@ INSTALL_PATH = ../utils
 
 PROJECT_NAME = utils
 
-# OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
-OPT = -O0
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+# OPT = -O0
 
 # USES = 
 

@@ -100,8 +100,27 @@ template<class Collection, class Pred>
 {
   std::remove_if(mSource.begin(), mSource.end(), mSkipFeature);
   if (mSource.empty())
-    std::cerr << "FITR: *** ERROR *** Source for initializing cyclic iterator is empty.\n";
+    std::cerr << "CITR: *** ERROR *** Source for initializing cyclic iterator is empty.\n";
 }
+
+template<class Collection, class Pred>
+  bool
+  CyclicIterator<Collection, Pred>::points_to_valid_data()
+{
+  if (mSource.empty()) return false;
+  assert (mPosition < mSource.size());
+  while(mSkipFeature(mSource[mPosition]))
+  { mSource.erase(mSource.begin() + mPosition);  // effectively ++mPosition
+    if(mSource.size() == 0)
+    { debug("CITR",3) << "Cyclic iterator erasing last element.\n";
+      return false;
+    }
+    if (mPosition == mSource.size())
+      mPosition = 0;
+  }
+  return true;
+}
+
 
 template<class Collection, class Pred>
   CyclicIterator<Collection, Pred>&
@@ -109,10 +128,6 @@ template<class Collection, class Pred>
 {
   ++mPosition;
   if (mPosition == mSource.size()) mPosition = 0;
-  while(mSkipFeature(mSource[mPosition]))
-  { mSource.erase(mSource.begin() + mPosition);
-    if (mPosition == mSource.size()) mPosition = 0;
-  }
   return *this;
 }
 

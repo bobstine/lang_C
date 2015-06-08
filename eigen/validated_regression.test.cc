@@ -163,8 +163,8 @@ int main(int, char **)
       // force to add all Z's
       start = clock(); result = vregr.add_predictors_if_useful (zcollection, (Scalar)1.0); print_time(start);
       cout << "TEST: test of adding zcollection gives " << result << endl << vregr << endl;
-      // test the writing of data
-      //      vregr.write_data_to (cout);
+      // test the writing of data is quite slow for big problems
+      // vregr.write_data_to (cout, 100, true);
     }
     
     if(true) // validated regression, white tests

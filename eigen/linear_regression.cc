@@ -1,5 +1,6 @@
 // -*- c++; c-file-style: "bobstyle" -*-
 
+
 //  For explanation of shrinkage, see shrinkage.tex in work/papers/notes
 
 #include "debug.h"
@@ -65,6 +66,7 @@ void
 LinearRegression::allocate_memory()
 {
   mResiduals = Vector(mN);
+  mFitted    = Vector(mN+mTest);
   mQ         = Matrix(mN+mTest, numberOfAllocatedColumns);
   mR         = Matrix(numberOfAllocatedColumns,numberOfAllocatedColumns);
   mLambda    = Vector(numberOfAllocatedColumns);
@@ -83,21 +85,34 @@ LinearRegression::add_constant()
   mQ.col(0)   /= mR(0,0);
   mGamma[0]    = mQ.col(0).head(mN).dot(mY);
   mLambda[0]   = 0.0;                               // dont shrink intercept
-  mResiduals   = mY -  mGamma[0] * mQ.col(0).head(mN);
+  mFitted      = mGamma[0] * mQ.col(0);
+  mResiduals   = mY -  mFitted.head(mN);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
 }
 
 
-//     Accessors      Accessors      Accessors      Accessors      Accessors      Accessors      
+//     Accessors      Accessors      Accessors      Accessors      Accessors      Accessors
 
+LinearRegression::Vector
+LinearRegression::raw_fitted_values()    const
+{
+  Vector fit = mFitted;
+  fit.segment(0,mN).array() /= mSqrtWeights.array();
+  return fit;
+}
 
 LinearRegression::Vector
 LinearRegression::x_row (int i)            const
 {
-  return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
+  if(i < mN)
+    return mQ.row(i).head(mK) * RR() / mSqrtWeights[i];
+  else
+    return mQ.row(i).head(mK) * RR();
 }
 
 namespace {
+
+
   const SCALAR soft_rate = 0.5;
 
   SCALAR
@@ -123,15 +138,23 @@ namespace {
   }
 }
 
-LinearRegression::Vector
-LinearRegression::raw_fitted_values(bool truncate) const
-{
+/*
+
+  This code was used in experiments to truncate predictions in binary models
+  to lie closer to the interval [0,1].  Not so useful in the end, and mostly
+  relevant in the context of calibration.
+  
+  inline
+  LinearRegression::Vector
+  LinearRegression::raw_fitted_values() const
+  {
   Vector fit = fitted_values().array()/mSqrtWeights.array(); 
-  if (!truncate)
-    return fit;
+  if (!mBinary)
+  return fit;
   else
-    return fit.unaryExpr(&soft_limits);
-}
+  return fit.unaryExpr(&soft_limits);
+  }
+*/
 
 //     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes     Slopes
 
@@ -213,15 +236,18 @@ LinearRegression::se_beta() const
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
+/*
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wconversion"
 
 LinearRegression::Vector
 LinearRegression::test_predictions  (bool truncate)   const
 {
   if (q()==0)
     return Vector::Constant(mN,y_bar());
+  clock_t timeCalc = clock();
   Vector preds = QQtest() * mGamma.head(mK);
+  debugging::debug("VALM",0) << "LRegr Time  ... calc pred in add predictors used " << (float)(clock()-timeCalc)/CLOCKS_PER_SEC << " sec.\n";
   if (!truncate)
     return preds;
   else
@@ -229,7 +255,7 @@ LinearRegression::test_predictions  (bool truncate)   const
 }
 
 #pragma GCC diagnostic pop
-
+*/
 
 LinearRegression::Vector
 LinearRegression::predict(Matrix const& x, bool truncate) const
@@ -280,7 +306,7 @@ LinearRegression::sweep_Q_from_column_and_normalize(int col) const
   Scalar ss (approximate_ss(mQ.col(col).head(mN)));
   #ifdef _CLASSICAL_GS_
   Vector delta = mQ.block(0,0,mN,col).transpose() * mQ.col(col).head(mN);
-  debugging::debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
+  debug("REGR",4) << "Classical GS; sweeping Q from col " << col << "; delta=" << delta.transpose() << std::endl;
   mQ.col(col) = mQ.col(col) - mQ.leftCols(col) * delta;
   mR.col(col).head(col) = delta;
   #else
@@ -318,6 +344,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   { std::cout << "REGR: Singularity detected. SSz = 0 for predictor " << xName << "; returning empty F stat" << std::endl;
     return FStatistic();
   }
+  debug("REGR",4) << "Computing F-statistic for one predictor with block size = " << mBlockSize << std::endl;
   int residualDF (mN-mK);
   assert(residualDF > 0);
   Scalar qe  (mQ.col(mK).head(mN).dot(mResiduals));           // slope of added var is  gamma (e'z)/(z'z = 1)
@@ -327,7 +354,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   }
   if (has_binary_response() && (mBlockSize == 1))             // use Bennett and fake F stat from squaring bennett t stat
   { std::pair<Scalar,Scalar> test (bennett_evaluation());
-    debugging::debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
+    debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
     return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
   }
   Scalar qeeq (0.0);                                          // compute white estimate; in scalar case, reduces to (z'e)^2/(z'(e^2)z)
@@ -342,7 +369,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
       qeeq += ezi * ezi;
     }
   }
-  debugging::debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
+  debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
   return FStatistic(qe*qe/qeeq, 1, residualDF, Vector::Ones(1));
 }
 
@@ -363,12 +390,13 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
       return FStatistic();
+  debug("REGR",5) << "Computing F-statistic for " << xNames.size() << " predictors.\n" << std::endl;
   int residualDF (mN-mK-(int)z.cols());
   assert(residualDF > 0);
   Vector Qe  (mQ.block(0,mK,mN,mTempK).transpose() * mResiduals);    // new gamma coefs
   if (mBlockSize==0)
   { Scalar regrss (Qe.squaredNorm());
-    debugging::debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << ")" << std::endl;
+    debug("REGR",3) << "F-stat components (" << regrss << "/" << mTempK << ")/(" << mResidualSS-regrss << "/" << residualDF << ")" << std::endl;
     return FStatistic(regrss, mTempK, mResidualSS-regrss, residualDF, Vector::Ones(z.cols()));
   }
   else
@@ -388,7 +416,7 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
       }
     }
     Scalar ss = (Qe.transpose() * QeeQ.inverse() * Qe)(0,0);
-    debugging::debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
+    debug("REGR",3) << "F-stat = " << ss << "/" << mTempK << " with " << residualDF << " residual DF." << std::endl;
     return FStatistic(ss/(Scalar)mTempK, mTempK, residualDF, Vector::Ones(z.cols()));
   }
 }
@@ -400,21 +428,27 @@ LinearRegression::f_test_predictors (std::vector<std::string> const& xNames, Mat
 std::pair<LinearRegression::Scalar,LinearRegression::Scalar>
 LinearRegression::bennett_evaluation () const
 {
+  debug("REGR",4) << "Bennett: Entering Bennett evaluation" << std::endl;
   const Scalar up = (Scalar) 0.99999999999;
   const Scalar dn = (Scalar) 0.00000000001;
-  Vector mu        = raw_fitted_values();                                          // think of fit as E(Y), constrained to [eps,1-eps] interval
+  Vector mu       = raw_fitted_values().head(mN);                                  // think of fit as E(Y), constrained to [eps,1-eps] interval
+  debug("REGR",4) << "Bennett: mu head=" << mu.head(5).transpose() << "   tail=" << mu.tail(5).transpose() << std::endl;
+  debug("REGR",4) << "Bennett: wts head=" << mWeights.head(5).transpose() << "   tail=" << mWeights.tail(5).transpose() << std::endl;
   mu.unaryExpr([&up,&dn](Scalar x)->Scalar { if(x>up) return up; if(x<dn) return dn; return x;}) ;
-  Vector var     (Vector::Ones(mN));  var = mu.array() * (var - mu).array();
+  Vector var     (Vector::Ones(mN));
+  var = mu.array() * (var - mu).array();
   Vector dev     (mY - mu);                                                        // would match residuals IF other fit is bounded
   Scalar num     (dev.dot(mQ.col(mK).head(mN)));                                                  // z'(y-y^)
   Scalar rootZDZ ((Scalar)sqrt (var.dot(mQ.col(mK).head(mN).cwiseProduct(mQ.col(mK).head(mN))))); // sqrt(z'Dz)
+  debug("REGR",4) << "Bennett: num=" << num << "   root=" << rootZDZ << std::endl;
   Scalar maxA    (0.0);
   for (int i=0; i<mN; ++i)
-    { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
+  { Scalar absZ (abs_val(mQ(i,mK) * max_abs(mu[i], (Scalar)1.0-mu[i])));         // largest possible error for this case
     if (absZ > maxA) maxA = absZ;                                                  // largest?
   }
   Scalar Mz      (maxA/rootZDZ);
   Scalar tz      (abs_val(num)/rootZDZ);                                           // num = get(mZE,0)
+  debug("REGR",4) << "Bennett: maxA=" << maxA << "   tz=" << tz << std::endl;
   return std::make_pair(tz, bennett_p_value(tz,Mz));
 }
 
@@ -422,20 +456,30 @@ LinearRegression::bennett_evaluation () const
 //     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor     Add predictor
 
 void
-LinearRegression::update_fit(StringVec xNames)
+LinearRegression::update_names_and_gamma(StringVec xNames)
 {
-  debugging::debug("REGR",3) << "Updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
-  assert (mTempK == (int)xNames.size());
-  for(unsigned int j=0; j<xNames.size(); ++j)
-  { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mY)/(1+mLambda[mK+j]));
-  }
-  mK += mTempK;
-  if ((int)numberOfAllocatedColumns-5 < mK)
+  debug("REGR",3) << "Updating fit, first of " << xNames.size() << " is " << xNames[0] << "\n";
+  if ((int)numberOfAllocatedColumns-5 < mK+(int)xNames.size())
     std::cerr << "\n********************\n"
 	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
 	      << "\n********************\n";
-  mResiduals = mY - QQ() * mGamma.head(mK);   // Faster?  just mod the residuals rather than recalc
+  assert (mTempK == (int)xNames.size());
+  for(unsigned int j=0; j<xNames.size(); ++j)
+  { mXNames.push_back(xNames[j]);
+    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mResiduals)/(1+mLambda[mK+j]));
+  }
+}
+
+void
+LinearRegression::update_fit(StringVec xNames)
+{
+  update_names_and_gamma(xNames);
+  for(int j=0; j<mTempK; ++j)
+  { Vector delta = mQ.col(mK+j) * mGamma[mK+j];
+    mFitted    += delta; 
+    mResiduals -= delta.head(mN);
+  }
+  mK += mTempK;
   mResidualSS= mResiduals.squaredNorm();      // Faster?  subtract new gamma'gamma
 }
 
@@ -447,7 +491,7 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
   assert((int)zNames.size() == z.cols());
   mTempNames = zNames;
   mTempK     = (int) z.cols();
-  mQ.block( 0,mK, mN  ,z.cols()) =  mSqrtWeights.asDiagonal() * z.topRows(mN);
+  mQ.block( 0,mK, mN  ,z.cols()) = mSqrtWeights.asDiagonal() * z.topRows(mN);
   mQ.block(mN,mK,mTest,z.cols()) = z.bottomRows(mTest);
   for(int k = 0; k<z.cols(); ++k)
     if(0.0 == sweep_Q_from_column_and_normalize(mK+k))
@@ -463,7 +507,7 @@ LinearRegression::add_predictors (StringVec const& zNames, Matrix const& z)
 void
 LinearRegression::add_predictors  (FStatistic const& fstat)
 {
-  debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
+  debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; entry stat for added predictors is " << fstat << std::endl;
   Scalar lambda (0);
   Scalar F (fstat.f_stat());
   if (F > 0) // dont shrink those with F == 0
@@ -483,7 +527,7 @@ LinearRegression::add_predictors  (FStatistic const& fstat)
 void
 LinearRegression::add_predictors  ()   // no shrinkage
 {
-  debugging::debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
+  debug("REGR",3) << "Adding " << mTempK << " previously tested predictors; forced addition." << std::endl;
   for (unsigned int j=0; j<mTempNames.size(); ++j)
     mLambda[mK+j] = (Scalar) 0;
   update_fit(mTempNames);
@@ -595,20 +639,19 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
   // number of columns of predictors
   int numX = min_int(mK-1,maxNumXCols);
   // prefix line with var names; intercept is name[0]
-  os << "Role\tFit\tResidual\t" << mYName;
+  os << "Role\tWeight\tFit\tResidual\t" << mYName;
   // skip the intercept in column 0
   for(int j=1; j<=numX; ++j)  
     os << "\t" << mXNames[j];
   os << std::endl;
   // put the data in external coordinate system
-  Vector y    (raw_y());
-  Vector res  (raw_residuals());
-  Vector fit  (y - res);
+  Vector y    (raw_y            ());
+  Vector res  (raw_residuals    ());
+  Vector fit  (raw_fitted_values());
   int limit = (includeValidation) ? mN + mTest : mN;
   for(int i=0; i<limit; ++i)
-  { os << "est\t" << fit[i] << "\t" << res[i] << "\t" ;
-    if (i<mN) os << y[i];
-    else      os << "NA";
+  { if (i<mN) os << "est\t" << mWeights[i] << '\t' << fit[i] << '\t' << res[i] << "\t" << y[i] ;
+    else      os << "val\t" <<    1        << '\t' << fit[i] << '\t' << "NA"   << "\t" << "NA" ;
     if(numX>0)
     { Vector row (x_row(i));
       for (int j=1; j<=numX; ++j)  // skip intercept
@@ -625,23 +668,27 @@ LinearRegression::write_data_to (std::ostream& os, int maxNumXCols, bool include
 void
 FastLinearRegression::allocate_projection_memory()
 {
-  mM      = Matrix::Zero(mN + mTest, mOmegaDim);
-  mTtT    = Matrix::Zero( mOmegaDim, mOmegaDim);
+  mA      = Matrix::Zero(mN + mTest, mOmegaDim);
+  mAtA    = Matrix::Zero( mOmegaDim, mOmegaDim);
 }
 
 void
 FastLinearRegression::apply_gradient_correction()
 {
+  debug("FREG",3) << "Apply gradient correction with mK=" << mK << std::endl;
   const int q = (mK < 11) ? mK : 10;
-  debug("FREG",1) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
-		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
+  debug("FREG",2) << "Prior to gradient, RSS= " << mResiduals.squaredNorm()
+		  << "  Tail  pre-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
   for (int j=1; j<mK; ++j)
   { Scalar dGamma = mQ.col(j).head(mN).dot(mResiduals);
-    mResiduals -= dGamma * mQ.col(j).head(mN);
     mGamma(j) += dGamma;
+    Vector delta = dGamma * mQ.col(j);
+    mFitted    += delta;
+    mResiduals -= delta.head(mN);
   }
-  debug("FREG",1) << "After    gradient, RSS= " << mResiduals.squaredNorm()
-		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,mK).transpose() << std::endl;
+  mResidualSS = mResiduals.squaredNorm();
+ debug("FREG",2) << "After    gradient, RSS= " << mResidualSS
+		  << "  Tail post-gamma = " << mGamma.segment(mK-q+1,q).transpose() << std::endl;
 }
 
 // suppress warnings regarding Eigen conversions
@@ -651,13 +698,14 @@ FastLinearRegression::apply_gradient_correction()
 LinearRegression::Scalar
 FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 {
+  debug("FREG",4) << "Sweep_Q_from_col (fast after omega cols); col= " << col << std::endl;
   if ((size_t)mK <= mOmegaDim)                                     // small models are handled classically
     return LinearRegression::sweep_Q_from_column_and_normalize(col);
   mQ.col(col).array() -= mQ.col(col).head(mN).sum() / (Scalar) mN; // subtract mean
   Scalar ss = mQ.col(col).head(mN).squaredNorm();                  // compare initial SS to post sweep SS to check for singularities
-  Vector b = mM.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = R^-1 R^-1' M'z
-  mTtT.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
-  mQ.col(col) -= mM * b;                                           // compute z = z - Mb
+  Vector b = mA.topRows(mN).transpose() * mQ.col(col).head(mN);    // compute b = (A'A)-1 A'z
+  mCholAtA.solveInPlace (b);                                       // mAtA.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(b);
+  mQ.col(col) -= mA * b;                                           // compute z = z - Ab
   Scalar ssz  (mQ.col(col).head(mN).squaredNorm());                // check that SS dropped and is not nan
   if (is_invalid_ss (ss, ssz)) return 0.0;
   Scalar norm = (Scalar) sqrt(ssz);
@@ -669,40 +717,27 @@ FastLinearRegression::sweep_Q_from_column_and_normalize(int col)      const
 void
 FastLinearRegression::update_fit(StringVec xNames)
 {
-  ++mGradientCounter;
-  debugging::debug("FREG",3) << "Updating fast regression, first of " << xNames.size() << " is " << xNames[0] << "\n";
-  if ((int)numberOfAllocatedColumns-5 < mK)                          // watch that we are getting near matrix size limit
-    std::cerr << "\n********************\n"
-	      << " WARNING: mK = " << mK << " is approaching upper dimension limit " << numberOfAllocatedColumns
-	      << "\n********************\n";
-  assert (mTempK == (int)xNames.size());
-  for(size_t j=0; j<xNames.size(); ++j)
-  { mXNames.push_back(xNames[j]);
-    mGamma[mK+j]  = (mQ.col(mK+j).head(mN).dot(mResiduals)/(1+mLambda[mK+j]));
-  }
+  update_names_and_gamma(xNames);
   Matrix w = Matrix::Random(mTempK,mOmegaDim);                        // update random projection, uni[-1,1]
-  mM += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // M <- M + z w'
-  Matrix Mtz = mM.topRows(mN).transpose() * mQ.block(0,mK,mN,mTempK); // M'z
+  mA += mQ.block(0,mK, mQ.rows(), mTempK) * w;                        // A <- A + z w'
+  Matrix Atz = mA.topRows(mN).transpose() * mQ.block(0,mK,mN,mTempK); // A'z
   if (1 == mTempK)
-  { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of T'T; z~ = mQ[mK]
+  { for(int j=0; j< (int) mOmegaDim; ++j)                             // update upper half of A'A; z~ = mQ[mK]
       for(int k=j; k< (int) mOmegaDim; ++k)
-	mTtT(j,k) +=  w(0,j)*w(0,k) + Mtz(j,0)*w(0,k) + w(0,j)*Mtz(k,0);
+	mAtA(j,k) +=  w(0,j)*w(0,k) + Atz(j,0)*w(0,k) + w(0,j)*Atz(k,0);
   }
   else
   { Matrix wtw = w.transpose() * w;
-    for(int j=0; j<(int)mOmegaDim; ++j)                               // update upper half of T'T; z~ = mQ[mK]
+    for(int j=0; j<(int)mOmegaDim; ++j)                               // update upper half of A'A; z~ = mQ[mK]
       for(int k=j; k<(int)mOmegaDim; ++k)
-	mTtT(j,k) +=    wtw(j,k)    + Mtz.row(j).dot(w.col(k)) + Mtz.row(k).dot(w.col(k));
+	mAtA(j,k) +=    wtw(j,k)    + Atz.row(j).dot(w.col(k)) + Atz.row(k).dot(w.col(k));
   }
-  //  std::cout << "TEST: MtM [M is " << mM.rows() << " by " << mM.cols() << "]" << std::endl << mM.leftCols(5).transpose() * mM.leftCols(5) << std::endl;
-  //  std::cout << "TEST: TtT " << mTtT.rows() << " by " << mTtT.cols() << std::endl << mTtT.block(0,0,5,5) << std::endl;
-  mResiduals -= mQ.block(0,mK,mN,mTempK) * mGamma.segment(mK,mTempK); 
-  mResidualSS = mResiduals.squaredNorm();
+  mCholAtA = Eigen::LDLT<Matrix,Eigen::Upper> (mAtA);
+  Vector delta = mQ.block(0,mK,mN+mTest,mTempK) * mGamma.segment(mK,mTempK); 
+  mFitted     += delta;
+  mResiduals  -= delta.head(mN);
+  mResidualSS  = mResiduals.squaredNorm();
   mK += mTempK;
-  if (mGradientPeriod == mGradientCounter)
-  { mGradientCounter = 0;
-    apply_gradient_correction();
-  }
 }
 
 #pragma GCC diagnostic push

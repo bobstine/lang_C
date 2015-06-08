@@ -107,8 +107,6 @@ main()
   }
   std::cout << "  -------------------------------------------------------\n\n";
 
-
-
   if (false)         // test cyclic streams
   { 
     std::cout << "\n\nTEST: making feature stream with cyclic iterator over finite collection\n";
@@ -118,7 +116,6 @@ main()
     drain_features(fs, 10);
   }
 
-  
   if (false)         // test dynamic stream
   {
     std::cout << "\n\nTEST: dynamic stream\n";

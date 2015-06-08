@@ -6,6 +6,9 @@
 #include <map>
 #include <string>
 
+/*
+  attributes are a comma delimited list of (left)=(right) assignments
+*/
 
 class Attributes
 {

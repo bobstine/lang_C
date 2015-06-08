@@ -105,6 +105,8 @@ template <class ModelClass>
 bool
 Auction<ModelClass>::auction_next_feature ()
 {
+  clock_t real_start = clock();
+  bool accepted;
   ++mRound;
   debug("AUCT",1) << "-------------  Begin auction round #" << mRound << "  -------------" << std::endl; 
   // reap empty custom experts 
@@ -122,6 +124,7 @@ Auction<ModelClass>::auction_next_feature ()
   Scalar  afterTaxBid = tax_bid(expert, bid);
   assert(afterTaxBid > 0);
   // extract chosen features, optionally print name of first
+  debug("AUCT",2) << "Getting feature from winning expert " << expert->name() << std::endl;
   FeatureVector features (expert->feature_vector());
   if (features.empty())
   { debug("AUCT",-1) << "*** ERROR **** Winning expert " << expert->name() << " did not provide features.\n";
@@ -138,14 +141,17 @@ Auction<ModelClass>::auction_next_feature ()
     debug("AUCT",3) << "Details of winning expert: " << expert << std::endl;
   }
   // build variables for testing, conversion adjusts for initial context rows
+  clock_t startAdd = clock();
   TestResult result (mModel.add_predictors_if_useful (expert->convert_to_model_iterators(features), afterTaxBid));
   Scalar pValue (result.second);
   debug("AUCT",3) << "Test results are  <" << result.first << "," << pValue << ">\n";
   if (mProgressStream)
     mProgressStream << "\t" << pValue << "\t" << remove_comma(features[0]->name());
+  debug("AUCT",4) << "Timing... mModel.add_predictors_if_useful took " << time_since(startAdd) << " sec.\n";
   // report bid result
+  clock_t startSummary = clock();
   Scalar amount;
-  bool accepted (pValue < afterTaxBid);
+  accepted = (pValue < afterTaxBid);
   for (unsigned int j=0; j<features.size(); ++j)
   { bool newFeature (!features[j]->was_tried_in_model());
     if (newFeature || accepted)
@@ -171,8 +177,64 @@ Auction<ModelClass>::auction_next_feature ()
     if (mProgressStream)  mProgressStream << "\t\t" << amount;
   }
   std::pair<Scalar,Scalar> rss (mModel.sums_of_squares());                  // resid ss, cv ss
-  if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second;
+  if (mProgressStream) mProgressStream << "\t" << rss.first << "\t" << rss.second; 
+  debug("AUCT",4) << "Timing... summary took " << time_since(startSummary) << " sec.\n";
+  // apply gradient adjustment as needed
+  clock_t startGrad = clock();
+  if (accepted)
+  { if (mProgressStream) mProgressStream << std::endl;
+    perform_gradient_adjustment_if_needed();
+  }
+  debug("AUCT",4) << "Timing... gradient took " << time_since(startGrad) << " sec.\n";
+  debug("AUCT",3) << "Timing... auction_next_feature took " << time_since(real_start) << " sec.\n";
   return accepted;
+}
+
+
+template <class Model>
+void
+Auction<Model>::perform_gradient_adjustment_if_needed () 
+{
+  // track changes in RSS
+  Scalar rss =  mModel.estimation_ss();
+  Scalar rssChange = mPriorRSS - rss;
+  mPriorRSS = rss;
+  mSmoothRSSChange = 0.90f * mSmoothRSSChange + 0.10f * rssChange;
+  if(mSmoothRSSChange <= 0.0)
+  { std::cerr << tag << " *** Mild error *** Smooth RSS change " << mSmoothRSSChange << " <=0 at round " << mRound << "; reset to sigma-hat." << std::endl;
+    mSmoothRSSChange = mModel.sigma_hat();
+  }
+  ++mGradientCounter;
+  debug("AUCT",4) << "Gradient: Counter = " << mGradientCounter << "  rss=" << rss << "  rssChange=" << rssChange << "  mSmoothRSSChange=" << mSmoothRSSChange << std::endl;
+  // take gradient step when reach period
+  if(mGradientCounter==mGradientPeriod)  
+  { mGradientCounter = 0;
+    int k = 0;
+    Scalar relImprove = 0;
+    std::pair<Scalar,Scalar> ss;
+    do
+    { mModel.regression().apply_gradient_correction();
+      ss = mModel.sums_of_squares();
+      relImprove = (mPriorRSS-ss.first)/mSmoothRSSChange;
+      debug("AUCT",4) << "Gradient: prior RSS = " << mPriorRSS << " ss.first=" << ss.first << "  relImprove=" << relImprove << "  k=" << k << std::endl;
+      mPriorRSS = ss.first;
+      ++k;
+    } while ((relImprove > 5.0) && (k < 4));
+    // adjust period for calling gradient
+    if(k > 2)
+    { mGradientPeriod = std::max(5, mGradientPeriod/2);
+      debugging::debug("AUCT",1) << "Gradient period reduced to " << mGradientPeriod << std::endl;
+    }
+    else if (relImprove < 1.1)
+    { mGradientPeriod = std::min(100, 2 * mGradientPeriod);
+      debugging::debug("AUCT",1) << "Gradient period increased to " << mGradientPeriod << std::endl;
+    }
+    // write gradient line to progress file
+    mProgressStream << mRound << "\t\t\t";
+    for (int b=0; b<mNumInitialExperts; ++b)
+      mProgressStream << "\t\t\t";
+    mProgressStream << "\t\t\t\tgradient_" << k << "\tGradient\t\t" << ss.first << "\t" << ss.second;
+  }
 }
 
 
@@ -436,7 +498,8 @@ template <class ModelClass>
 void
 Auction<ModelClass>::write_model_data_to(std::ostream& os, int numXCols)       const
 {
-  mModel.write_data_to(os, numXCols);
+  bool rawOrder = true;   // print in the order of data
+  mModel.write_data_to(os, numXCols, rawOrder);
 }
 
 

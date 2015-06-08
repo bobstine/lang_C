@@ -15,9 +15,9 @@ PROJECT_NAME = eigen
 
 USES = random utils
 
-# OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
 
-OPT = -O0
+# OPT = -O0
 
 EXTERNAL_USES = 
 

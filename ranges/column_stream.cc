@@ -77,10 +77,10 @@ insert_columns_from_stream (std::istream &input,
     std::getline(input, fieldName);
     read_utils::cleanup_name(fieldName);
     if (fieldName.empty()) break; // read blank line
-    debug(tag,3) << "Building column from field " << fieldName << std::endl;
+    debug(tag,1) << "Building column(s) from field " << fieldName << std::endl;
     if (0 < allFieldNames[fieldName])
     { ++allFieldNames[fieldName];
-      debug(tag,1) << "Input column has duplicate name `" << fieldName << "'.\n";
+      debug(tag,0) << "Input column has duplicate name `" << fieldName << "'.\n";
       fieldName += "_dup_" + std::to_string(allFieldNames[fieldName]);
     }
     ++allFieldNames[fieldName];
@@ -107,7 +107,7 @@ insert_columns_from_stream (std::istream &input,
     else
       nOutputColumns += insert_common_feature(fieldName, attributes, data, columnInserter);
   }
-  debug(tag,2) << "Inserted " << nOutputColumns << " columns, each of length " << nObs << " from input of "
+  debug(tag,0) << "Inserted " << nOutputColumns << " columns, each of length " << nObs << " from input of "
 	       << nInputFeatures << " features.\n";
   return std::make_pair(nInputFeatures,nOutputColumns);
 }

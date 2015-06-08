@@ -36,6 +36,11 @@ private:
   const Scalar        mBidTaxRate;        // percentage taken from winning bid
   const Scalar        mPayoffTaxRate;     //                       payoff
   const int           mBlockSize;
+  
+  int                 mGradientPeriod;    // how often to update model gradient (model features)
+  int                 mGradientCounter;   
+  Scalar              mPriorRSS, mSmoothRSSChange;   // smoothed RSS changes
+
   Scalar              mRecoveredAlpha;    // collected from experts that expired
   bool                mTerminating;
   bool                mCalibrateFit;      // use calibration
@@ -57,13 +62,14 @@ private:
     }
     
   Auction (Model& m, bool calibrate, std::string calSig, int blockSize, std::ostream& progressStream)
-    : mPayoff((Scalar)0.05), mBidTaxRate((Scalar)0.05), mPayoffTaxRate((Scalar)0.40), mBlockSize(blockSize), mRecoveredAlpha((Scalar)0),  mTerminating(false),
+    : mPayoff((Scalar)0.05), mBidTaxRate((Scalar)0.05), mPayoffTaxRate((Scalar)0.40), mBlockSize(blockSize),
+      mGradientPeriod(25), mGradientCounter(0), mPriorRSS(0.0), mSmoothRSSChange(0.0), mRecoveredAlpha((Scalar)0),  mTerminating(false),
       mCalibrateFit(calibrate), mCalibrationSignature(calSig), mRound(0), mPayoffHistory(), mExperts(), mPurgedExpertNames(), mModel(m),
       mModelFeatures(), mRejectedFeatures(), mProgressStream(progressStream) {  } 
   
   Scalar                 model_goodness_of_fit()    const { return mModel.goodness_of_fit(); }
 
-  int                    number_of_experts ()       const { return (int) mExperts.size(); }
+  int                    number_of_experts()        const { return (int) mExperts.size(); }
   int                    add_expert(Expert e)             { mExperts.push_back(e); return (int)mExperts.size(); }
   Scalar                 total_expert_alpha ()      const;
   Scalar                 recovered_alpha()          const { return mRecoveredAlpha; }
@@ -90,7 +96,7 @@ private:
 
  private:
   void                     write_header_to_progress_stream ()                            const;
-
+  void                     perform_gradient_adjustment_if_needed();
   int                      purge_empty_experts();
   bool                     have_available_bid();
   std::pair<Expert,Scalar> collect_bids();

@@ -1,4 +1,4 @@
-/*
+/* 
   18 Apr 15 ... Lots of changes while at Yahoo: map features, rand proj
   10 Mar 11 ... Lots of tweaks, including shrinkage parameter, calibration control.
   27 Nov 10 ... New stream types, with threads.
@@ -11,7 +11,7 @@
   23 Mar 04 ... Revised to use the anonymous ranges and other objects; logistic regression.
   13 Aug 03 ... Ready for trying with some real data; using alpha spending formulation.
    1 Aug 03 ... Created
-
+ 
 
      Read columns from a file. The source file is laid out with one column of values per row.
      Line 1: gives the number of cases
@@ -101,21 +101,21 @@ main(int argc, char** argv)
   using std::string;
 
   // Parse command line options
-  Scalar   totalAlphaToSpend    ((Scalar)0.1);
-  string   responseFileName     ("Y");
-  string   contextFileName      ("cv_indicator");
+  Scalar   totalAlphaToSpend    ((Scalar)2.0);
+  string   responseFileName     ("auction_data/Y_to");
+  string   contextFileName      ("auction_data/cv_indicator");
   string   vocabFileName        ("vocabulary.txt");
   string   dictFileName         ("eigenwords.txt");
-  int      dictDim              (10);
-  size_t   minCategorySize      (0);
-  string   xFileName            ("x.dat");
-  string   outputPath           ("/home/bob/C/auctions/test/log/"); 
+  int      dictDim              (200);
+  size_t   minCategorySize      (2000);
+  string   xFileName            ("auction_data/Xpipe_to");
+  string   outputPath           ("auction_temp/to"); 
   int      protection           (  3);
   bool     useShrinkage       (false);
   int      numberRounds         (200);
   int      maxNumOutputPredictors (0);
-  int      calibrationGap         (0);      // 0 means no calibration; otherwise gap between models offered calibration
-  int      debugLevel             (3);
+  int      calibrationGap         (25);      // 0 means no calibration; otherwise gap between models offered calibration
+  int      debugLevel             (1);
 
   // Lock these options
   const int  nPrefixCases = 0;
@@ -184,9 +184,17 @@ main(int argc, char** argv)
     debug("MAIN",1) << "Input files produced " << yColumns.size() << " Ys and " << cColumns.size() << " context columns.\n";
   } 
 
+  // build weighed model if weights detected in second column of yColumns (empty column implies no weights)
+  Column<SCALAR> weights("weights","none",0);
+  if ((yColumns.size() == 2) && (yColumns[1]->role()=="weights"))
+  { debug("MAIN",0) << "Y file includes weights; will fit weighted models.\n";
+    weights = yColumns[1];
+  }
+  else debug("MAIN",0) << "Y file does not include weights; will fit ols models.\n";
+  
   // build model and initialize auction with tab-delimited stream for tracking progress
   typedef Auction<Regression>  RegressionAuction;
-  Regression theRegr = build_regression_model (yColumns[0], cColumns[0], nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));
+  Regression theRegr = build_regression_model (yColumns[0], cColumns[0], weights, nPrefixCases, blockSize, useShrinkage, debug("MAIN",2));    
   const string calibrationSignature ("Y_hat_");
   RegressionAuction theAuction(theRegr, calibrationGap, calibrationSignature, blockSize, progressStream);
    
@@ -194,18 +202,17 @@ main(int argc, char** argv)
   ColumnVector xColumns;
   { 
     const bool downcase = false;
+    debug("MAIN",3) << "Building vocabularty and dictionary.\n";
     Text::SimpleVocabulary vocab = Text::make_simple_vocabulary(vocabFileName, downcase);
     Text::SimpleEigenwordDictionary dict = Text::make_simple_eigenword_dictionary(dictFileName, dictDim, vocab, downcase);
-    debug("MAIN",4) << "TESTING: have built vocab and dictionary.\n";
     std::pair<int,int> dim;
     dim = insert_columns_from_file (xFileName, minCategorySize, dict, std::back_insert_iterator<ColumnVector>(xColumns));
-    debug("MAIN",2) << "X file returns " << dim.second << " features from " << dim.second << " variables." << std::endl;
+    debug("MAIN",2) << "X column file produced " << dim.second << " features from " << dim.second << " variables." << std::endl;
     if ((dim.first==0) || (dim.second==0)) return -3;
-    debug("MAIN",1) << "Input files produced " << xColumns.size() << " Xs.\n";
   } 
 
   FeatureSource featureSource (xColumns, nPrefixCases);                            // holds *all* features constructed from input X
-  featureSource.print_summary(debug("MAIN",1));
+  featureSource.print_summary(debug("MAIN",0));
   std::vector<string> streamNames (featureSource.stream_names());
   {
     FeatureVector lockedFeatures;
@@ -282,7 +289,7 @@ main(int argc, char** argv)
   if(calibrationGap > 0)
   { bool yIsBinary  (yColumns[0]->is_dummy());
     if(yIsBinary) debug("AUCT",2) << "Response variable " << yColumns[0]->name() << " is binary; will truncate calibration estimates." << std::endl;
-    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                        // endow with lots of money
+    theAuction.add_expert(Expert("Calibrator", calibrate, !purgable, nContextCases, 100,                                // 100 implies lots of alpha
 				 FitBidder((SCALAR)0.000005, calibrationSignature),                  
 				 make_polynomial_calibration_stream("fitted_values", theRegr, calibrationGap, calibrationSignature,
 								    nContextCases, yIsBinary))); 
@@ -301,9 +308,11 @@ main(int argc, char** argv)
     bool      cvssCheck           = true;
     while(round<numberRounds && cvssCheck && !theAuction.is_terminating() && theAuction.model().residual_df()>minimum_residual_df)
     { ++round;
-      clock_t start;
-      start = clock();
-      if (theAuction.auction_next_feature())                     // true when adds predictor; show the current model
+      clock_t start = clock();
+      bool accepted = theAuction.auction_next_feature();
+      Scalar time = (Scalar)time_since(start);
+      totalTime += time;
+      if (accepted)                                             // true when adds predictor; show the current model
       { --fullOutputTimer;
 	if (fullOutputTimer == 0)
 	{ fullOutputTimer = fullOutputPeriod;
@@ -312,15 +321,13 @@ main(int argc, char** argv)
 	else
 	  theAuction.print_to(debug("AUCT",2), true); 
       }
-      Scalar time = (Scalar)time_since(start);
-      totalTime += time;
       progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
       std::pair<Scalar,Scalar> rss {theAuction.model().sums_of_squares()};
       if( 1.1*rss0.second < rss.second)
       { std::clog << "AUCT: *** Error *** CVSS grew by more than 10% in last round from " << rss0.second
 		  << " to " << rss.second << "; exiting after writing model and full set of Xs.\n";
 	cvssCheck = false;
-	maxNumOutputPredictors = 2000;
+	maxNumOutputPredictors = 20;
       }
       else rss0 = rss;
       debug("AUCT",0) << "Round " << round <<  " used " << time

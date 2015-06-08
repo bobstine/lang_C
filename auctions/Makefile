@@ -1,6 +1,6 @@
 include ../c_flags
 
-default: auction.test
+default: nlp_auction
 
 ../c_flags: 
 	ln -s ~/dot_files/c_flags.pb ../c_flags
@@ -52,7 +52,7 @@ data/%.dat: data/%.csv
 auction: build_auction.o $(above_8)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
-nlp_auction: nlp_auction.o $(above_8)
+nlp_auction: ../eigen/libeigen.a nlp_auction.o $(above_8)
 	$(GCC) $^ $(LDLIBS) -o  $@	
 
 logistic_test: auction.test
@@ -149,16 +149,11 @@ short_cv%.data:
 
 # ---  miscellaneous test applications  -------------------------------------------------------------
 
-
 anes_run: auction.test
 	./auction.test -d 3 -f data/anes/anes2008_data/data -o data/anes/ -r 1000 -a 0.05 -p 3 -c 0 -s 1
 
-
-
 diabetes: auction.test
 	 ./auction.test -f ~/C/boost/diab.out/data -o data/diab/ -r 1000 -a 0.25 -p 3 -k 50 -c 10 -d 0 -b 1 -s 1	
-
-
 
 crunch_test: auction.test data/crunch.dat
 	./auction.test -f data/crunch.dat -r 1000 -a 50 -p 0 -c 0
@@ -170,9 +165,6 @@ jason_dat: csv_parser data/jason_97.csv
 
 jason_test: auction.test data/jason.tar/index.sh
 	 ./auction.test -f data/jason.tar/jason.dat -o data/jason.tar/ -r 100 -a 2 -p 3 -c 5
-
-
-
 
 lag_test: auction.test
 	./auction.test -f data/lagtest.txt -o test/log/ -r 100 -a 0.5 -p 3 -b 5 -c 0 -x 50

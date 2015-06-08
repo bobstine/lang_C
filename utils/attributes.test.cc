@@ -12,7 +12,7 @@ main()
   std::cout << "TEST: attr[NA] = " << attr["na"] << std::endl;
   std::cout << "      attr[a]  = " << attr["a"]  << std::endl;
   
-  attr.add_attribute("new", "value");
+  attr.set_attribute("new", "value");
   std::cout << "TEST: after adding new=value, attr is " << attr << " with size " << attr.size() << std::endl;
 
   attr.erase_attribute("b");

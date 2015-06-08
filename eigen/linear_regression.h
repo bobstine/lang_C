@@ -33,6 +33,9 @@
     -- weighted with bennett
     -- logistic loss
     -- converting from data that is float to internal that is double *** conveniently ***.
+
+    ??? truncation for fitted values
+    
 */
 
 class LinearRegression
@@ -52,7 +55,7 @@ protected:
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
   std::string              mWeightStr;
   Vector                   mWeights;       // minimize sum w_i(y_i-y^_i)^2;  weight vec = 1 if not supplied (for ols, weight vector is a scalar)
-  Vector                   mSqrtWeights;   // weights are only used for estimation (length mN)
+  Vector                   mSqrtWeights;   // weights are only used for estimation (length mN), set to 1 in validation
   std::string              mYName; 
   StringVec                mXNames;
   Vector                   mY;             // original response, mN cases
@@ -60,11 +63,12 @@ protected:
   Vector                   mLambda;        // shrinkage parameter
   Vector                   mGamma;         // coefficients of the orthogonal regression
   Vector                   mResiduals;     // only for the mN estimation cases
+  Vector                   mFitted;        // for both mN estimated and validation cases
+  Scalar                   mResidualSS;
+  Scalar                   mTotalSS;
   Matrix    mutable        mQ, mR;         // Q holds mN+mTest cases; only changes are in the latter columns past Kth
   StringVec mutable        mTempNames;
   int       mutable        mTempK;         // number of predictors last tried, these are last mTempDim columns of Q
-  Scalar                   mResidualSS;
-  Scalar                   mTotalSS;
   
 public:
   ~LinearRegression () {  }
@@ -72,42 +76,45 @@ public:
   LinearRegression ()
     :  mN(0),mK(0),mBlockSize(0) { }
   
-  LinearRegression (std::string yName, Vector const& y, int nTest, int blockSize) 
+  LinearRegression (std::string yName, Vector y, int nTest, int blockSize) 
     : mN((int)y.size()), mTest(nTest), mK(0), mBlockSize(blockSize),
       mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
       mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
   
-  LinearRegression (std::string yName, Vector const& y, int nTest, std::vector<std::string> xNames, Matrix const& x, int blockSize)
+  LinearRegression (std::string yName, Vector y, int nTest, std::vector<std::string> xNames, Matrix const& x, int blockSize)
     :  mN((int)y.size()), mTest(nTest), mK(0),  mBlockSize(blockSize),
        mWeightStr(""), mWeights(Vector::Ones(mN)), mSqrtWeights(Vector::Ones(mN)),
        mYName(yName), mXNames(), mY(y), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); add_predictors(xNames, x); }
   
   // WLS: if weighted, all things held are weighted by square root of input weights in w
-  LinearRegression (std::string yName, Vector const& y, int nTest, Vector const& w, int blockSize)
-    :  mN((int)y.size()), mTest(nTest), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName),
+  LinearRegression (std::string yName, Vector y, int nTest, Vector w, int blockSize)
+    :  mN((int)y.size()), mTest(nTest), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w.head(mN)), mSqrtWeights(w.array().sqrt()), mYName(yName),
        mY(y.array()*w.array().sqrt()), mBinary(is_binary_vector(y)) { allocate_memory(); add_constant(); }
 
-  LinearRegression (std::string yName, Vector const& y, int nTest, std::vector<std::string> xNames, Matrix const& x, Vector const& w, int blockSize)
-    :  mN((int)y.size()), mTest(nTest), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
+  LinearRegression (std::string yName, Vector y, int nTest, std::vector<std::string> xNames, Matrix const& x, Vector w, int blockSize)
+    :  mN((int)y.size()), mTest(nTest), mK(0), mBlockSize(blockSize), mWeightStr("Weighted "), mWeights(w.head(mN)), mSqrtWeights(w.array().sqrt()), mYName(yName), mXNames(),
        mY(y), mBinary(is_binary_vector(y)) { assert(nTest+mN==x.rows()); allocate_memory(); add_constant(); add_predictors(xNames,x); }  
 
   inline bool      has_binary_response()  const   { return mBinary; }
   inline int       block_size()           const   { return mBlockSize; }
   inline int       n()                    const   { return mN; };
-  inline int       q()                    const   { return mK-1; }                                     // -1 for intercept 
+  inline int       q()                    const   { return mK-1; }                                             // -1 for intercept 
   inline Scalar    rmse()                 const   { return (Scalar) sqrt(mResidualSS/((Scalar)(mN-mK))); }  
   inline Scalar    residual_ss()          const   { return mResidualSS; }
   inline Scalar    aic_c()                const   { Scalar n((Scalar)mN), k((Scalar)mK); return (Scalar) n*(Scalar)log(mResidualSS/n) + (n+k)/(1-(k+2)/n); } // hurvich89,p300
   inline Scalar    r_squared()            const   { return (Scalar) 1.0 - mResidualSS/mTotalSS; }
   inline Scalar    adj_r_squared()        const   { return (Scalar) 1.0 - (mResidualSS/(Scalar)(mN-mK)) / (mTotalSS/(Scalar)(mN-1)); }
+
   inline Vector    y()                    const   { return mY; }
+         Scalar    y_bar()                const   { return mY.head(mN).dot(mWeights.head(mN))/mWeights.head(mN).sum(); }  // weighted mean as appropriate
+  inline Vector    raw_y()                const   { return mY.cwiseQuotient(mSqrtWeights); }                   // raw versions remove the internal weights
   inline Vector    residuals()            const   { return mResiduals; }
-  inline Vector    fitted_values()        const   { return mY - mResiduals; }
-  inline Vector    raw_y()                const   { return mY.cwiseQuotient(mSqrtWeights); }                // raw versions remove the internal weights
-  inline Vector    raw_residuals()        const   { return mResiduals.array()/mSqrtWeights.array(); }       //
-  Vector           raw_fitted_values(bool truncate=false) const;                                             // truncated to soft limits on [0,1]
+  inline Vector    raw_residuals()        const   { return mResiduals.array()/mSqrtWeights.array(); }          // only mN of these
+  inline Vector    fitted_values()        const   { return mFitted; }                                          // truncated to soft limits on [0,1] if binary
+         Vector    raw_fitted_values()    const;
+  inline Vector    weights()              const   { return mWeights;}
+  
   Vector           x_row(int i)           const;
-  Scalar           y_bar()                const   { if (mK>0) return (Scalar) sqrt(mN)*mGamma(0); else return 0.0; }
   Vector           gamma()                const   { return mGamma.head(mK); }
   Vector           se_gamma_ls()          const;
   Vector           se_gamma()             const;
@@ -121,16 +128,15 @@ public:
   template <class Iter>
   void          fill_with_beta (Iter begin) const;
   
-  StringVec predictor_names()                                               const   { return mXNames; }
-  Vector    test_predictions  (bool truncate=false)                         const;    // truncate to soft limits on [0,1] using internal training cases
-  Vector    predict           (Matrix const& matrix, bool truncate=false)   const;    // external matrix
+  StringVec predictor_names()                                           const   { return mXNames; }
+  Vector    predict           (Matrix const& matrix, bool truncate)     const;    // external matrix
 
   FStat     f_test_predictor  (std::string name, Vector const& z)       const;    // <f,pval>  f == 0 implies singular; uses Bennett if binary
   FStat     f_test_predictors (StringVec const& names, Matrix const& z) const;    //           blocksize > 0 implies blocked white.
-  
+                                                                                  // *all* of these add the features, only varying shrinkage
   void      add_predictors ();                                                    // no shrinkage
+  void      add_predictors (FStat const& fstat);                                  // adds with shrinkage derived from F
   void      add_predictors (StringVec const& names, Matrix const& x);             // adds with no testing
-  void      add_predictors (FStat const& fstat);
   
   void      print_to               (std::ostream& os, bool compact=false)         const;
   void      print_gamma_to         (std::ostream& os)                             const;
@@ -146,6 +152,7 @@ public:
   std::pair<Scalar,Scalar> bennett_evaluation ()   const;              // 0/1 response only; operates on column mK (one past those in use)
 
 protected:
+  void      update_names_and_gamma(StringVec xNames);
   StringVec name_vec(std::string name)             const;              // inits a vector with one string
   bool      is_invalid_ss (Scalar ss, Scalar ssz)  const;              // checks for singularity, nan, neg, inf
   Scalar    approximate_ss(Vector const& x)        const;              // one-pass estimate of the SS around mean 
@@ -180,28 +187,30 @@ void LinearRegression::fill_with_beta (Iter begin) const
 
 //     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     FastLinearRegression     
 
+#include <Eigen/Cholesky>
 
 class FastLinearRegression : public LinearRegression
 {
 private:
-  size_t    mOmegaDim;               // number of columns in random projection
-  Matrix    mM;                      // random projection of predictors
-  Matrix    mTtT;                    // 'square' of upper triangular portion of M = Q T
-  size_t    mGradientPeriod;         // resweep after adding this many predictors (0 means ignore correction)
-  size_t    mGradientCounter;
+  size_t    mOmegaDim;                          // number of columns in random projection
+  Matrix    mA;                                 // accumulates random projection of predictors
+  Matrix    mAtA;                               // upper triangular portion of A'A
+  Eigen::LDLT<Matrix,Eigen::Upper> (mCholAtA);  // cholesky decomp of A'A
 
 public:
   FastLinearRegression ()
     : LinearRegression() { }
   
-  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                                                            // match signature of linear_regression
-    : LinearRegression(yName, y, nTest, blockSize), mOmegaDim(10), mGradientPeriod(100), mGradientCounter(0) { allocate_projection_memory();  }    // 0 for no blocking; lock in omega dim
+  FastLinearRegression (std::string yName, Vector const& y, int nTest, int blockSize)                       // match signature of linear_regression
+    : LinearRegression(yName, y, nTest,      blockSize), mOmegaDim(10)  { allocate_projection_memory();  }  // 0 for no blocking; lock in omega dim
 
-  void set_gradient_period (size_t period)    { mGradientPeriod = period; }
+  FastLinearRegression (std::string yName, Vector const& y, Vector const& wts, int nTest, int blockSize)
+    : LinearRegression(yName, y, nTest, wts, blockSize), mOmegaDim(10)  { allocate_projection_memory();  }   
+
+  void apply_gradient_correction ();                                  // sweeps all past predictors from residuals, updating mGamma        
   
 private:
   void           allocate_projection_memory();
-  void           apply_gradient_correction();                         // sweeps all past predictors from residuals, updating mGamma        
   virtual string output_label()                             const   { return "Fast " + LinearRegression::output_label(); }
   virtual Scalar sweep_Q_from_column_and_normalize(int col) const;    // sweeps using M and T formed from random projection
   virtual   void update_fit(StringVec xNames);

@@ -28,8 +28,9 @@ public:
 typedef  ValidatedRegression<FastLinearRegression>  Regression;
 //  -------------------------------------------------------------------------------------
 
-Regression
-build_regression_model(Column<SCALAR> y, Column <SCALAR>inOut, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
+Regression                                                     // empty column of weights builds OLS regression
+build_regression_model(Column<SCALAR> y, Column<SCALAR> inOut, Column<SCALAR> wts, int prefixRows, int blockSize, bool useShrinkage, std::ostream& os);
+
 
 int
 parse_column_format(std::string const& dataFileName, std::ostream&);
