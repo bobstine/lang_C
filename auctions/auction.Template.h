@@ -182,9 +182,7 @@ Auction<ModelClass>::auction_next_feature ()
   // apply gradient adjustment as needed
   clock_t startGrad = clock();
   if (accepted)
-  { if (mProgressStream) mProgressStream << std::endl;
     perform_gradient_adjustment_if_needed();
-  }
   debug("AUCT",4) << "Timing... gradient took " << time_since(startGrad) << " sec.\n";
   debug("AUCT",3) << "Timing... auction_next_feature took " << time_since(real_start) << " sec.\n";
   return accepted;

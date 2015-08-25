@@ -284,7 +284,7 @@ main(int argc, char** argv)
 				 UniversalBoundedBidder<BeamStream>(),			       
 				 make_beam_stream("streams", theAuction, streamNames, gap)));
   }
-
+  
   //  Calibration expert
   if(calibrationGap > 0)
   { bool yIsBinary  (yColumns[0]->is_dummy());
@@ -321,7 +321,7 @@ main(int argc, char** argv)
 	else
 	  theAuction.print_to(debug("AUCT",2), true); 
       }
-      progressStream << std::endl;                               // ends lines in progress file in case abrupt exit
+      progressStream << std::endl;                               // ends lines in progress file
       std::pair<Scalar,Scalar> rss {theAuction.model().sums_of_squares()};
       if( 1.1*rss0.second < rss.second)
       { std::clog << "AUCT: *** Error *** CVSS grew by more than 10% in last round from " << rss0.second

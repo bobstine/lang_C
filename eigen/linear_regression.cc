@@ -79,7 +79,7 @@ LinearRegression::add_constant()
 {
   mK = 1;
   mXNames.push_back("Intercept");
-  mQ.col(0).head(mN) = mSqrtWeights;
+  mQ.col(0).head(mN)    = mSqrtWeights;
   mQ.col(0).tail(mTest) = Vector::Constant(mTest,(Scalar)1.0);
   mR(0,0)      = (Scalar) sqrt(mSqrtWeights.squaredNorm());
   mQ.col(0)   /= mR(0,0);
@@ -88,6 +88,9 @@ LinearRegression::add_constant()
   mFitted      = mGamma[0] * mQ.col(0);
   mResiduals   = mY -  mFitted.head(mN);
   mTotalSS = mResidualSS = mResiduals.squaredNorm();
+  debug("REGR",4) <<"Intercept gamma[0]=" << mGamma[0] << ", RSS=" << mResidualSS
+		  << "    Initial fit=" << mFitted.head(5).transpose()
+		  << " Initial res=" << mResiduals.head(5).transpose() << std::endl;
 }
 
 
@@ -320,8 +323,9 @@ LinearRegression::sweep_Q_from_column_and_normalize(int col) const
   if (is_invalid_ss (ss, ssz)) return 0.0;
   mQ.col(col) /= (Scalar) sqrt(ssz);
   mR(col,col)  = (Scalar) sqrt(ssz);
-  // std::cout << "TEST: R matrix after sweeping Q is " << std::endl << mR.topLeftCorner(col+1,col+1) << std::endl;
-  // std::cout << "TEST: Q matrix is " << std::endl << mQ.topLeftCorner(5,col+1) << " ...." << std::endl;
+  debug("REGR",4) << "Head of Z after sweep/norm   "              << mQ.col(col).head(8) << std::endl;
+  //  std::cout << "TESTING: R matrix after sweeping Q is " << std::endl << mR.topLeftCorner(col+1,col+1) << std::endl;
+  //  std::cout << "TESTING: Q matrix is "                  << std::endl << mQ.topLeftCorner(5,col+1) << " ...." << std::endl;
   return ssz;
 }
   
@@ -352,7 +356,8 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
   { Scalar regrss (qe * qe);
     return FStatistic(regrss, 1, mResidualSS-regrss, residualDF, Vector::Ones(1));
   }
-  if (has_binary_response() && (mBlockSize == 1))             // use Bennett and fake F stat from squaring bennett t stat
+  // turn off bennett
+  if (has_binary_response() && (is_ols_regression()) && (mBlockSize == 1))             // use Bennett and fake F stat from squaring bennett t stat
   { std::pair<Scalar,Scalar> test (bennett_evaluation());
     debug("REGR",2) << "Bennett evaluation returns t = " << test.first << " with p-value = " << test.second <<std::endl;
     return FStatistic(test.first*test.first, test.second, 1, mN-q(), Vector::Ones(1));
@@ -369,7 +374,7 @@ LinearRegression::f_test_predictor (std::string xName, Vector const& z) const
       qeeq += ezi * ezi;
     }
   }
-  debug("REGR",4) << "F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
+  debug("REGR",4) << "White F-stat components qe = " << qe << "  qeeq = " << qeeq << std::endl;
   return FStatistic(qe*qe/qeeq, 1, residualDF, Vector::Ones(1));
 }
 

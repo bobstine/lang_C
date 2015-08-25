@@ -53,7 +53,7 @@ protected:
   int                      mTest;          // cases of X's reserved for validation testing
   int                      mK;             // number of columns (including constant) in the model
   int                      mBlockSize;     // 0 = ols, 1 = heteroscedastic white, 2+ for dependence
-  std::string              mWeightStr;
+  std::string              mWeightStr;     // identifies as WLS
   Vector                   mWeights;       // minimize sum w_i(y_i-y^_i)^2;  weight vec = 1 if not supplied (for ols, weight vector is a scalar)
   Vector                   mSqrtWeights;   // weights are only used for estimation (length mN), set to 1 in validation
   std::string              mYName; 
@@ -96,6 +96,7 @@ public:
        mY(y), mBinary(is_binary_vector(y)) { assert(nTest+mN==x.rows()); allocate_memory(); add_constant(); add_predictors(xNames,x); }  
 
   inline bool      has_binary_response()  const   { return mBinary; }
+  inline bool      is_ols_regression()    const   { return mWeightStr.empty(); }
   inline int       block_size()           const   { return mBlockSize; }
   inline int       n()                    const   { return mN; };
   inline int       q()                    const   { return mK-1; }                                             // -1 for intercept 
