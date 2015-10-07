@@ -22,7 +22,7 @@
 
 // Enable special processing of messed up questions!
 //
-// #define FUBAR
+#define FUBAR_ROTATE
 //
 //
 
@@ -117,13 +117,13 @@ process (std::istream& input, std::ostream& output,
   // string used for all io
   std::string line;
   // get the answer key, store zero-based so a=0, b=1,...
-  std::vector<int> answerKey (nQuestions);
+  std::vector<int> answerKey ((size_t)nQuestions);
   std::getline(input, line);
   std::cout << "Answer line: '" <<  line << "'" << std::endl;
-  std::string keys (line.substr(answerColumn, nQuestions));
+  std::string keys (line.substr(answerColumn, (size_t)nQuestions));
   std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
   std::istringstream istrm(keys); 
-  for (int i=0; i<nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
+  for (size_t i=0; i<nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
   { char c;                                                      // and the answer key includes the leading 0 for exam key
     istrm >> c;
     if(c == '*')
@@ -131,14 +131,14 @@ process (std::istream& input, std::ostream& output,
     else
       answerKey[i] = read_utils::ctoi(c)-1;                        // shift all down to base 0 for easier modular arith
   }
-  const int firstQuestion( (multVersions) ? 1:0 );
+  const int firstQuestion( (multVersions) ? 1:0 );               // question numbers are zero based
   // space for results
   std::vector< std::vector<int> > answerFrequencies;
   for(int i=0; i<nQuestions; ++i)
     answerFrequencies.push_back(std::vector<int>(5));
   std::vector< std::vector<int> > correctArray;                  // 0 if wrong, 1 if correct
   std::vector< std::vector<int> > studentAnswers;                // aligns to common answer key
-  std::vector< int >              questionTotal (nQuestions);
+  std::vector< int >              questionTotal ((size_t)nQuestions);
   std::vector< int >              studentTotal;
   std::vector< std::string >      names;
   std::vector< std::string >      ids;
@@ -150,9 +150,9 @@ process (std::istream& input, std::ostream& output,
       ids.push_back(  line.substr(  idColumn,  8));
       std::cout << "Processing grades for " << names[student] /* ": " << line.substr(answerColumn,nQuestions) */ <<  std::endl;
       studentTotal.push_back(0);
-      correctArray.push_back(std::vector<int>(nQuestions,0));
-      studentAnswers.push_back(std::vector<int>(nQuestions,0));
-      std::istringstream is(line.substr(answerColumn,nQuestions));
+      correctArray.push_back(std::vector<int>((size_t)nQuestions,0));
+      studentAnswers.push_back(std::vector<int>((size_t)nQuestions,0));
+      std::istringstream is(line.substr(answerColumn,(size_t)nQuestions));
       char choice;
       int examKey (0);
       if(multVersions)
@@ -162,12 +162,23 @@ process (std::istream& input, std::ostream& output,
       for(int q=firstQuestion; q<nQuestions; ++q)
       { is >> choice;
 	if(('0' < choice) && choice < '6')         
-	{ int ans = read_utils::ctoi(choice)-1;
-	  ans = (5 + ans - examKey)%5;               // zero based simplifies this
+	{ int ans = read_utils::ctoi(choice)-1;            // zero-based answers 0..4 
+#ifndef FUBAR_ROTATE
+	  ans = (5 + ans - examKey)%5;                     // standard rotate
+#else
+	  if(q == 20)
+	  { if (examKey == 1)
+	      ans = (5 + ans - 0)% 5;                // dont rotate
+	    else
+	    { if (examKey == 2)
+		ans = (5 + ans - 1)% 5;                 //  rotate 1 place
+	    }
+	  }
+#endif
 	  studentAnswers[student][q] = ans;
 	  ++answerFrequencies[q][ans];
-#ifdef FUBAR
-	  if (27 == q)                                     // fubared questions
+#ifdef FUBAR_TWO
+	  if (21 == q)                                     // fubared questions
 	  { if((ans == 1) || (ans==4))
 	    { ++studentTotal[student];
 	      ++questionTotal[q];
@@ -241,7 +252,7 @@ process (std::istream& input, std::ostream& output,
   { output << names[i] << "\t" << ids[i] << "\t" << studentTotal[i] << "\t ";
     if (buildIndicators)
       for (int q=firstQuestion; q<nQuestions; ++q)
-      { std::vector<int> b = {0,0,0,0,0};
+      { std::vector<int> b(5); //  = {0,0,0,0,0};
 	b[studentAnswers[i][q]] = 1;
 	std::copy (b.begin(), b.end(), out_it);
       }
