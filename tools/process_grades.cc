@@ -26,7 +26,7 @@
 //
 //
 
-#include "/Users/bob/C/utils/read_utils.h"
+#include "read_utils.h"
 
 #include <iostream>
 #include <iomanip>
@@ -123,7 +123,7 @@ process (std::istream& input, std::ostream& output,
   std::string keys (line.substr(answerColumn, (size_t)nQuestions));
   std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
   std::istringstream istrm(keys); 
-  for (size_t i=0; i<nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
+  for (size_t i=0; i<(size_t)nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
   { char c;                                                      // and the answer key includes the leading 0 for exam key
     istrm >> c;
     if(c == '*')
@@ -166,9 +166,11 @@ process (std::istream& input, std::ostream& output,
 #ifndef FUBAR_ROTATE
 	  ans = (5 + ans - examKey)%5;                     // standard rotate
 #else
-	  if(q == 20)
+	  if(q != 20)                                      // standard rotate
+	    ans = (5 + ans - examKey)%5;                   
+	  else                                             // special rotate
 	  { if (examKey == 1)
-	      ans = (5 + ans - 0)% 5;                // dont rotate
+	      ans = (5 + ans - 0)% 5;                
 	    else
 	    { if (examKey == 2)
 		ans = (5 + ans - 1)% 5;                 //  rotate 1 place
@@ -205,17 +207,17 @@ process (std::istream& input, std::ostream& output,
     }
   }
   //  summary of results
-  unsigned int nStudents (names.size());
+  size_t nStudents (names.size());
   double mean (0);
-  for(unsigned int i=0; i<nStudents; ++i)
+  for(size_t i=0; i<nStudents; ++i)
     mean += studentTotal[i];
-  mean /= nStudents;
+  mean /= (double)nStudents;
   double ss (0);
   for(unsigned int i=0; i<nStudents; ++i)
   { double dev = (studentTotal[i]-mean);
     ss += dev * dev;
   }
-  double sd = sqrt(ss/nStudents);
+  double sd = sqrt(ss/(double)nStudents);
   double factor = 100.0/(nQuestions-firstQuestion);
   std::cout << "Average score " << std::setprecision(3) << mean*factor << " with standard deviation " << std::setprecision(2) << sd*factor << std::endl;
   // check
@@ -233,12 +235,12 @@ process (std::istream& input, std::ostream& output,
 	      << "    " << std::setw(4) << questionTotal[q]
 	      << "    " << answerFrequencies[q] << "     ";
     // Correlations with total number right
-    double pctCorrect (((double)questionTotal[q])/nStudents);
+    double pctCorrect (((double)questionTotal[q])/(double)nStudents);
     std::cout << std::setw(2) << floor(100.0*pctCorrect) << "%     ";
     double cov (0);
     for(unsigned int i=0; i<nStudents; ++i)
       cov += (correctArray[i][q]-pctCorrect)*(studentTotal[i]-mean);
-    std::cout << std::setprecision(2) << cov/((nStudents-1)*sd*sqrt(pctCorrect*(1-pctCorrect))) << std::endl;
+    std::cout << std::setprecision(2) << cov/(((double)nStudents-1)*sd*sqrt(pctCorrect*(1-pctCorrect))) << std::endl;
   }
   // write tab delimited line for each student with header line for column names
   std::ostream_iterator<int> out_it (output,"\t ");
