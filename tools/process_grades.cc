@@ -21,8 +21,10 @@
 
 
 // Enable special processing of messed up questions!
-//
-#define FUBAR_ROTATE
+//         FUBAR_ROTATE means forgot to rotate a question
+//         FUBAR_TWO means two possible answers for a question
+// #define FUBAR_ROTATE
+#define FUBAR_TWO
 //
 //
 
