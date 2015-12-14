@@ -165,6 +165,7 @@ process (std::istream& input, std::ostream& output,
   { int student (0);
     while(std::getline(input,line))
     {
+      if (line.size() < 2) break;
       names.push_back(line.substr(nameColumn, 20));              // 20 char for name
       ids.push_back(  line.substr(  idColumn,  8));
       std::cout << "Processing grades for " << names[student] <<  std::endl;

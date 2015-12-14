@@ -95,6 +95,9 @@ process_608: process_grades
 process_grades: process_grades.o
 	$(GCC) process_grades.o $(LDLIBS) -o $@
 
+#							-n name column -i penn id -a answer column -q questions -v for mult versions
+process_grades_test.out: process_grades  process_grades_test.txt
+	./process_grades -fprocess_grades_test.txt -o $@ -n0 -i6 -a15 -q10 -v
 
 
 # -------------------------------------------------------------------
