@@ -7,25 +7,29 @@
 	- easier to clean answer lines so line starts with name
 	- kill any residual special character last line in answer file
 	
-  First line of the file with the answers is assumed to have the
-  answer key. If the option multVersions is set to true, then the
-  first question is assumed to indicate a cyclic permutation of the
-  answers.  Otherwise all of them use the common key defined in the
-  first line of the answers file.
+  First TWO lines of the input file with the answers is assumed to
+  have two answer keys.  The second key is used to allow more than one
+  answer to a question.  Leave this line blank if there are no alternate
+  answers.  The first line is assumed to be the intended correct answers,
+  with the second line to allow some others.
 
-  Use * to denote any answer is correct.
+  If the option multVersions is set to true, then the first question
+  indicates a cyclic permutation of the answer key.  Otherwise all of
+  them use the common key defined in the first line of the answers
+  file.
+
+  Use * to denote any answer is correct.  If there's a permutation error,
+  then you need to kludge the precessing.  See the code for "FUBAR_ROTATE"
+  to see one way to handle this mistake.
 
   Output file is tab delimited with name, penn id, score (# correct).
 
 */
 
 
-// Enable special processing of messed up questions!
+// Enable special processing 
 //         FUBAR_ROTATE means forgot to rotate a question
-//         FUBAR_TWO means two possible answers for a question
 // #define FUBAR_ROTATE
-#define FUBAR_TWO
-//
 //
 
 #include "read_utils.h"
@@ -118,20 +122,32 @@ process (std::istream& input, std::ostream& output,
 
   // string used for all io
   std::string line;
-  // get the answer key, store zero-based so a=0, b=1,...
-  std::vector<int> answerKey ((size_t)nQuestions);
+  // read in the two lines with answer keys
   std::getline(input, line);
-  std::cout << "Answer line: '" <<  line << "'" << std::endl;
-  std::string keys (line.substr(answerColumn, (size_t)nQuestions));
-  std::cout << "       Keys: '" << keys << "' with length " << keys.size() << std::endl;
-  std::istringstream istrm(keys); 
-  for (size_t i=0; i<(size_t)nQuestions; ++i)                               // nQuestions *includes* the first question identifying key
-  { char c;                                                      // and the answer key includes the leading 0 for exam key
-    istrm >> c;
+  std::cout << "Answer key #1: '" <<  line << "'" << std::endl;
+  std::string key0 (line.substr(answerColumn, (size_t)nQuestions));
+  std::cout << "       keys  : '" << key0 << "' with length " << key0.size() << std::endl;
+  std::getline(input, line);
+  std::cout << "Answer key #2: '" <<  line << "'" << std::endl;
+  std::string key1 (line.substr(answerColumn, (size_t)nQuestions));
+  std::cout << "       keys  : '" << key1 << "' with length " << key1.size() << std::endl;
+  // build the answer key, store zero-based so a=0, b=1,...
+  //   Each key is a vector of length 2 ( second element is -2 which matches none by default )
+  std::vector<std::vector<int>> answerKeys(nQuestions);          // nQuestions x 2 
+  for (size_t q=0; q<(size_t)nQuestions; ++q)                    // nQuestions *includes* the first question identifying key
+  { char c = key0[q];                                            // and the answer key includes the leading 0 for exam key
+    std::vector<int> v = std::vector<int>(2);
     if(c == '*')
-      answerKey[i] = -1;
+      v[0] = -1;
     else
-      answerKey[i] = read_utils::ctoi(c)-1;                        // shift all down to base 0 for easier modular arith
+      v[0] = read_utils::ctoi(c)-1;                              // shift all down to base 0 for easier modular arith
+    if (key1[q]==' ')
+      v[1] = -2;
+    else
+    { std::cout << "NOTE: Multiple answers allowed for Question #" << q+1 << std::endl;
+      v[1] = read_utils::ctoi(key1[q])-1;
+    }
+    answerKeys[q] = v;
   }
   const int firstQuestion( (multVersions) ? 1:0 );               // question numbers are zero based
   // space for results
@@ -142,6 +158,7 @@ process (std::istream& input, std::ostream& output,
   std::vector< std::vector<int> > studentAnswers;                // aligns to common answer key
   std::vector< int >              questionTotal ((size_t)nQuestions);
   std::vector< int >              studentTotal;
+  std::vector< int >              examKeys;
   std::vector< std::string >      names;
   std::vector< std::string >      ids;
   // process each student record, first 'rotating' answers, then counting number correct
@@ -150,7 +167,7 @@ process (std::istream& input, std::ostream& output,
     {
       names.push_back(line.substr(nameColumn, 20));              // 20 char for name
       ids.push_back(  line.substr(  idColumn,  8));
-      std::cout << "Processing grades for " << names[student] /* ": " << line.substr(answerColumn,nQuestions) */ <<  std::endl;
+      std::cout << "Processing grades for " << names[student] <<  std::endl;
       studentTotal.push_back(0);
       correctArray.push_back(std::vector<int>((size_t)nQuestions,0));
       studentAnswers.push_back(std::vector<int>((size_t)nQuestions,0));
@@ -159,8 +176,9 @@ process (std::istream& input, std::ostream& output,
       int examKey (0);
       if(multVersions)
       { is >> choice;
-	examKey = read_utils::ctoi(choice)-1;          // 0 means no shift
+	examKey = read_utils::ctoi(choice)-1;              // 0 means no shift
       }
+      examKeys.push_back(examKey);
       for(int q=firstQuestion; q<nQuestions; ++q)
       { is >> choice;
 	if(('0' < choice) && choice < '6')         
@@ -181,28 +199,11 @@ process (std::istream& input, std::ostream& output,
 #endif
 	  studentAnswers[student][q] = ans;
 	  ++answerFrequencies[q][ans];
-#ifdef FUBAR_TWO
-	  if (21 == q)                                     // fubared questions
-	  { if((ans == 1) || (ans==4))
-	    { ++studentTotal[student];
-	      ++questionTotal[q];
-	      ++correctArray[student][q];
-	    }
+	  if ( (answerKeys[q][0]<0) || (ans == answerKeys[q][0])  || (ans == answerKeys[q][1]) )
+	  { ++studentTotal[student];
+	    ++questionTotal[q];
+	    ++correctArray[student][q];
 	  }
-	  else if (33 == q)  
-	  { if((ans == 2) || (ans==4))
-	    { ++studentTotal[student];
-	      ++questionTotal[q];
-	      ++correctArray[student][q];
-	    }
-	  }
-	  else
-#endif
-	    if ( (answerKey[q]<0) || (ans == answerKey[q]) )  // omit negative (skip question, give credit)
-	      { ++studentTotal[student];
-		++questionTotal[q];
-		++correctArray[student][q];
-	      }
 	}
       }
       ++student;
@@ -233,7 +234,7 @@ process (std::istream& input, std::ostream& output,
   std::cout << "Ques  Answer  #Correct           Choices                 Corr\n";
   for(int q=firstQuestion; q<nQuestions; ++q)
   { std::cout << "Q" << std::setw(2) << q+1;
-    std::cout << "      " << "*abcde"[1+answerKey[q]] << "  "
+    std::cout << "      " << "*abcde"[1+answerKeys[q][0]] << "  "
 	      << "    " << std::setw(4) << questionTotal[q]
 	      << "    " << answerFrequencies[q] << "     ";
     // Correlations with total number right
@@ -246,14 +247,14 @@ process (std::istream& input, std::ostream& output,
   }
   // write tab delimited line for each student with header line for column names
   std::ostream_iterator<int> out_it (output,"\t ");
-  output << "Name \t ID \t Total \t";
+  output << "Name \t ID \t ExamKey \t Total \t";
   if(buildIndicators) 
     for(int q=firstQuestion; q<nQuestions; ++q)
       for (int j=0; j<5; ++j)
 	output <<  "Q" << q+1 << "_" << "abcde"[j] << "\t ";
   output << std::endl;
   for (unsigned int i=0; i<names.size(); ++i)
-  { output << names[i] << "\t" << ids[i] << "\t" << studentTotal[i] << "\t ";
+  { output << names[i] << "\t" << ids[i] << "\t" << examKeys[i] << "\t" << studentTotal[i] << "\t ";
     if (buildIndicators)
       for (int q=firstQuestion; q<nQuestions; ++q)
       { std::vector<int> b(5); //  = {0,0,0,0,0};
