@@ -1,11 +1,12 @@
 /*
-  Process the SDF file that comes from scanning a multiple choice exam.
+  Process the text file that comes from scanning a multiple choice exam.
 
   Notes
         -  '<cntl x> ='   in emacs gives cursor position (zero based)
 	- convert file to unix format with <cntl x> <return> f
 	- easier to clean answer lines so line starts with name
 	- kill any residual special character last line in answer file
+
 	
   First TWO lines of the input file with the answers is assumed to
   have two answer keys.  The second key is used to allow more than one
@@ -27,8 +28,7 @@
 */
 
 
-// Enable special processing 
-//         FUBAR_ROTATE means forgot to rotate a question
+// Enable special processing if forgot to rotate answers for a question
 // #define FUBAR_ROTATE
 //
 
@@ -166,22 +166,27 @@ process (std::istream& input, std::ostream& output,
     while(std::getline(input,line))
     {
       if (line.size() < 2) break;
-      names.push_back(line.substr(nameColumn, 20));              // 20 char for name
-      ids.push_back(  line.substr(  idColumn,  8));
+      names.push_back(line.substr(nameColumn, 18));              // 18 char for name
+      ids.push_back(  line.substr(  idColumn,  8));              //  8 char for Penn id
       std::cout << "Processing grades for " << names[student] <<  std::endl;
       studentTotal.push_back(0);
       correctArray.push_back(std::vector<int>((size_t)nQuestions,0));
       studentAnswers.push_back(std::vector<int>((size_t)nQuestions,0));
-      std::istringstream is(line.substr(answerColumn,(size_t)nQuestions));
+      std::string is = line.substr(answerColumn,(size_t)nQuestions);
+      if(is.size() < (size_t)nQuestions)
+      { std::cout << "Note: padding answers for student " << names[student] << std::endl;
+	is.insert(is.end(),nQuestions-is.size(),' ');
+      }
       char choice;
       int examKey (0);
+      size_t q = 0;                                        // position in answer key
       if(multVersions)
-      { is >> choice;
+      { choice = is[q++];
 	examKey = read_utils::ctoi(choice)-1;              // 0 means no shift
       }
       examKeys.push_back(examKey);
-      for(int q=firstQuestion; q<nQuestions; ++q)
-      { is >> choice;
+      while (q < (size_t)nQuestions)
+      { choice = is[q];
 	if(('0' < choice) && choice < '6')         
 	{ int ans = read_utils::ctoi(choice)-1;            // zero-based answers 0..4 
 #ifndef FUBAR_ROTATE
@@ -194,7 +199,7 @@ process (std::istream& input, std::ostream& output,
 	      ans = (5 + ans - 0)% 5;                
 	    else
 	    { if (examKey == 2)
-		ans = (5 + ans - 1)% 5;                 //  rotate 1 place
+		ans = (5 + ans - 1)% 5;                    //  rotate 1 place
 	    }
 	  }
 #endif
@@ -206,6 +211,7 @@ process (std::istream& input, std::ostream& output,
 	    ++correctArray[student][q];
 	  }
 	}
+	++q;
       }
       ++student;
     }
