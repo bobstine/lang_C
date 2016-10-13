@@ -14,17 +14,20 @@
   answers.  The first line is assumed to be the intended correct answers,
   with the second line to allow some others.
 
-  If the option multVersions is set to true, then the first question
-  indicates a cyclic permutation of the answer key.  Otherwise all of
-  them use the common key defined in the first line of the answers
-  file.
-
   Use * to denote any answer is correct.  If there's a permutation error,
   then you need to kludge the precessing.  See the code for "FUBAR_ROTATE"
   to see one way to handle this mistake.
 
-  Output file is tab delimited with name, penn id, score (# correct).
+  If the option multVersions is set to true, then the first question
+  indicates a cyclic permutation of the answer key.  Otherwise all of
+  them use the common key defined in the first line of the answers
+  file.  
 
+  Output directed file is tab delimited with name, penn id, score (#
+  correct).  The tool also writes a tab-delimited file
+  'std_answers.txt' to the calling directory; this file has the
+  student answers as if all used key 'A' and writes the choices as A,
+  B, C, D, and E.
 */
 
 
