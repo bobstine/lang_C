@@ -252,6 +252,15 @@ process (std::istream& input, std::ostream& output,
       cov += (correctArray[i][q]-pctCorrect)*(studentTotal[i]-mean);
     std::cout << std::setprecision(2) << cov/(((double)nStudents-1)*sd*sqrt(pctCorrect*(1-pctCorrect))) << std::endl;
   }
+  // write student choices in standardized choice order (as if all had first key)
+  std::ofstream stdOutput ("std_answers.txt");
+  std::string choices = "ABCDE";
+  for (unsigned int i=0; i<names.size(); ++i)
+  {  stdOutput << names[i] << '\t' << ids[i] << '\t';
+     for (auto j : studentAnswers[i])
+       stdOutput << choices.at( (unsigned int) j);
+     stdOutput << std::endl;
+  }
   // write tab delimited line for each student with header line for column names
   std::ostream_iterator<int> out_it (output,"\t ");
   output << "Name \t ID \t ExamKey \t Total \t";
