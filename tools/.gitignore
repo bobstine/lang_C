@@ -15,4 +15,5 @@ test_data/arcene*
 distance_matrix
 stack_crsp
 project_crsp
+spread_crsp
 merge_movies

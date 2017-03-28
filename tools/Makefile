@@ -10,6 +10,8 @@ include ../c_flags
 # 
 ###########################################################################
 
+.PHONY: do_crsp
+
 
 PROJECT_NAME = tools
 
@@ -127,6 +129,18 @@ stack_crsp: stack_crsp.o
 project_crsp: project_crsp.o
 	$(GCC) $< $(LDLIBS) -o $@
 
+spread_crsp: spread_crsp.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
+#	map the WRDS output into a date x company table (full table is 2.44 million lines)
+$(crsp_path)stock_table.tsv: spread_crsp $(crsp_path)monthly_stock_90_16.tsv
+	rm -rf $@
+	head -n 100000 $(crsp_path)monthly_stock_90_16.tsv | cut -f 1-3,6 | ./spread_crsp > $@
+
+do_crsp: $(crsp_path)stock_table.tsv
+
+
 #	head of crsp data, filter, pull off complete lines
 $(crsp_path)crsp_out.txt: stack_crsp $(crsp_path)crsp_in.txt
 	rm -rf $@
@@ -139,8 +153,8 @@ $(crsp_path)crsp_proj_$(nProj): project_crsp $(crsp_path)crsp_out.txt
 	./$< -f $(word 2,$^) -o $@ -k $(nProj)  -p 4  -w
 	touch $@            # remove empty target to rebuild files
 
-do_crsp: $(crsp_path)crsp_proj_$(nProj)
-	echo Done
+# do_crsp: $(crsp_path)crsp_proj_$(nProj)
+#	echo Done
  
 
 # -------------------------------------------------------------------
