@@ -16,4 +16,5 @@ distance_matrix
 stack_crsp
 project_crsp
 spread_crsp
+spread_crsp_wprice
 merge_movies

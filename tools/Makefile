@@ -133,12 +133,20 @@ spread_crsp: spread_crsp.o
 	echo $(GCC)
 	$(GCC) $< -o $@
 
+spread_crsp_wprice: spread_crsp_wprice.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
 #	map the WRDS output into a date x company table (full table is 2.44 million lines)
+$(crsp_path)stock_table_wprice.tsv: spread_crsp_wprice $(crsp_path)monthly_stock_90_16_wprice.tsv
+	rm -rf $@
+	head -n 1000000 $(crsp_path)monthly_stock_90_16_wprice.tsv | cut -f 1-3,6-8 | ./$< > $@
+
 $(crsp_path)stock_table.tsv: spread_crsp $(crsp_path)monthly_stock_90_16.tsv
 	rm -rf $@
 	head -n 100000 $(crsp_path)monthly_stock_90_16.tsv | cut -f 1-3,6 | ./spread_crsp > $@
 
-do_crsp: $(crsp_path)stock_table.tsv
+do_crsp: $(crsp_path)stock_table_wprice.tsv
 
 
 #	head of crsp data, filter, pull off complete lines
