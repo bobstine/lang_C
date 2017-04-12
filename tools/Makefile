@@ -133,6 +133,10 @@ spread_crsp: spread_crsp.o
 	echo $(GCC)
 	$(GCC) $< -o $@
 
+spread_mutfunds: spread_mutfunds.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
 spread_crsp_wprice: spread_crsp_wprice.o
 	echo $(GCC)
 	$(GCC) $< -o $@
