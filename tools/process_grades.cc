@@ -272,7 +272,7 @@ process (std::istream& input, std::ostream& output,
   {  stdOutput << names[i] << '\t' << ids[i] << '\t';
      for (auto j : studentAnswers[i])
        stdOutput << choices.at( (unsigned int) j);
-     stdOutput << std::endl;
+     stdOutput << "  " << studentTotal[i] << std::endl;
      stdOutput << "                  " << '\t' << "        " << '\t'
 	       <<  studentCorrectAnswers[i] << std::endl;
   }
