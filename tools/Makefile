@@ -4,14 +4,9 @@ include ../c_flags
 #
 #        Options
 #
-#   Examples of depending on libaries
-#        LDLIBS =  -lthing -lregression 
-#        libs_used =  ../lib/libthing.a ../lib/libregression.a 
-# 
 ###########################################################################
 
 .PHONY: do_crsp
-
 
 PROJECT_NAME = tools
 
@@ -76,7 +71,7 @@ get_lines: get_lines.o
 # -------------------------------------------------------------------
 
 random_indicator: random_indicator.o
-	$(GCC) random_indicator.o $(LDLIBS) -o $@
+	$(GCC) -o $@  $(CFLAGS) $(LDFLAGS)  $^
 
 doit: random_indicator
 	./random_indicator --header -n 10 -c 0.8 
@@ -185,7 +180,7 @@ rows_to_cols: rows_to_columns.o
 	cp -f $@ ~/bin/rtoc
 
 cutt: cutt.o
-	$(GCC) cutt.o $(LDLIBS) -o $@
+	$(GCC) $(LDLIBS) cutt.o $(LDFLAGS) -o $@
 
 
 # -------------------------------------------------------------------

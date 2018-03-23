@@ -4,10 +4,6 @@ include ../c_flags
 #
 #        Options
 #
-#   Examples of depending on libaries
-#        LDLIBS =  -lthing -lregression 
-#        libs_used =  ../lib/libthing.a ../lib/libregression.a 
-# 
 ###########################################################################
 
 INSTALL_PATH = ../utils
@@ -15,6 +11,7 @@ INSTALL_PATH = ../utils
 PROJECT_NAME = utils
 
 OPT = -Ofast -mfpmath=sse -msse3 -m64 -march=native
+
 # OPT = -O0
 
 # USES = 
@@ -40,10 +37,6 @@ level_2   = tags.o attributes.o
 
 compiler_version:
 	$(GCC) --version
-
-cols_to_rows: columns_to_rows.o
-	$(GCC) columns_to_rows.o $(LDLIBS) -o $@
-	cp -f $@ ~/bin/ctor
 
 insert_columns: insert_columns.o
 	$(GCC) $(CFLAGS) $(INCLUDES) insert_columns.o $(LDLIBS) -o $@

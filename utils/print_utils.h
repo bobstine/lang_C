@@ -19,7 +19,6 @@
 // for distributions
 #include <boost/math/distributions/students_t.hpp>
 using boost::math::students_t;
-
 using boost::math::cdf;
 using boost::math::complement;
 
@@ -52,7 +51,7 @@ void
     { os << std::setw(10) <<    se[i]      << " ";
       // round z to 2 decimals
       double z (est[i]/se[i]);
-      int zInt (100 * z);
+      int zInt (100 * (int) z);
       os << std::setw(10) << double(zInt)/100.0  << " ";
       // output 2-sided z-values
       os << std::setiosflags(std::ios::left);
@@ -72,10 +71,10 @@ template <class SIter, class Iter>
 void
   print_stat_summary_table_in_html (int k, SIter name, Iter est, Iter se, int df, std::ostream &os)
 {
-  const unsigned int maxNameLength (50);
+  const size_t maxNameLength (50);
 
   // find the length of the longest name; use that length unless bigger than max
-  unsigned int maxLen = 0;
+  size_t maxLen = 0;
   for (int i=0; i<k; ++i)
   { if (name[i].size() > maxLen)
       maxLen = name[i].size();
@@ -110,7 +109,7 @@ void
     { os <<  "<TD>" << *se  << "</TD> ";
       // round z to 2 decimals
       double z (*est / *se);
-      int zInt (100 * z);
+      int zInt (100 * (int)z);
       os <<  "<TD>" << double(zInt)/100.  << "</TD> ";
       // output p-values
       if (z < 0) z = -z;
