@@ -53,9 +53,11 @@ $(level_9:.o=.test):  $(above_9)
 # vpath %.a $(patsubst %, ../%, $(USES))
 vpath %.a $(patsubst %, $(LIBPATH)%, $(USES))
 
+
 # INCLUDES = -I/usr/local/include -I/usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
 # This version includes LIBPATH
 INCLUDES = -I/usr/local/include -I/usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, $(LIBPATH)%, $(USES)))
+
 
 # names of libraries
 # osx with gcc LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
