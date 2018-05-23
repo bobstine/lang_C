@@ -130,10 +130,16 @@ process (std::istream& input, std::ostream& output,
   std::cout << "Answer key #1: '" <<  line << "'" << std::endl;
   std::string key0 (line.substr(answerColumn, (size_t)nQuestions));
   std::cout << "       keys  : '" << key0 << "' with length " << key0.size() << std::endl;
+  // check for and use second keys if present
+  std::string key1 (key0);
   std::getline(input, line);
-  std::cout << "Answer key #2: '" <<  line << "'" << std::endl;
-  std::string key1 (line.substr(answerColumn, (size_t)nQuestions));
-  std::cout << "       keys  : '" << key1 << "' with length " << key1.size() << std::endl;
+  if(line.size()>5)
+  { std::cout << "Answer key #2: '" <<  line << "'" << std::endl;
+    key1 = line.substr(answerColumn, (size_t)nQuestions);
+    std::cout << "       keys  : '" << key1 << "' with length " << key1.size() << std::endl;
+  }
+  else std::cout << "Answer key #2 is not used.\n";
+
   // build the answer key, store zero-based so a=0, b=1,...
   //   Each key is a vector of length 2 ( second element is -2 which matches none by default )
   std::vector<std::vector<int>> answerKeys(nQuestions);          // nQuestions x 2 
@@ -144,7 +150,7 @@ process (std::istream& input, std::ostream& output,
       v[0] = -1;
     else
       v[0] = read_utils::ctoi(c)-1;                              // shift all down to base 0 for easier modular arith
-    if (key1[q]==' ')
+    if (key1[q]==key0[q])
       v[1] = -2;
     else
     { std::cout << "NOTE: Multiple answers allowed for Question #" << q+1 << std::endl;
@@ -159,6 +165,7 @@ process (std::istream& input, std::ostream& output,
     answerFrequencies.push_back(std::vector<int>(5));
   std::vector< std::vector<int> > correctArray;                  // 0 if wrong, 1 if correct
   std::vector< std::vector<int> > studentAnswers;                // aligns to common answer key
+  std::vector< std::string>       studentCorrectAnswers;         // star wrong answers for output
   std::vector< int >              questionTotal ((size_t)nQuestions);
   std::vector< int >              studentTotal;
   std::vector< int >              examKeys;
@@ -166,15 +173,17 @@ process (std::istream& input, std::ostream& output,
   std::vector< std::string >      ids;
   // process each student record, first 'rotating' answers, then counting number correct
   { int student (0);
+    const int nameLength=18;
     while(std::getline(input,line))
     {
       if (line.size() < 2) break;
-      names.push_back(line.substr(nameColumn, 18));              // 18 char for name
+      names.push_back(line.substr(nameColumn, nameLength));      // 18 char for name
       ids.push_back(  line.substr(  idColumn,  8));              //  8 char for Penn id
       std::cout << "Processing grades for " << names[student] <<  std::endl;
       studentTotal.push_back(0);
       correctArray.push_back(std::vector<int>((size_t)nQuestions,0));
       studentAnswers.push_back(std::vector<int>((size_t)nQuestions,0));
+      studentCorrectAnswers.push_back(std::string((size_t)nQuestions,'-'));
       std::string is = line.substr(answerColumn,(size_t)nQuestions);
       if(is.size() < (size_t)nQuestions)
       { std::cout << "Note: padding answers for student " << names[student] << std::endl;
@@ -212,7 +221,8 @@ process (std::istream& input, std::ostream& output,
 	  { ++studentTotal[student];
 	    ++questionTotal[q];
 	    ++correctArray[student][q];
-	  }
+	  } else
+	    studentCorrectAnswers[student][q] = '*';
 	}
 	++q;
       }
@@ -262,7 +272,9 @@ process (std::istream& input, std::ostream& output,
   {  stdOutput << names[i] << '\t' << ids[i] << '\t';
      for (auto j : studentAnswers[i])
        stdOutput << choices.at( (unsigned int) j);
-     stdOutput << std::endl;
+     stdOutput << "  " << studentTotal[i] << std::endl;
+     stdOutput << "                  " << '\t' << "        " << '\t'
+	       <<  studentCorrectAnswers[i] << std::endl;
   }
   // write tab delimited line for each student with header line for column names
   std::ostream_iterator<int> out_it (output,"\t ");
