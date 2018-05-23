@@ -58,7 +58,8 @@ vpath %.a $(patsubst %, $(LIBPATH)%, $(USES))
 INCLUDES = -I/usr/local/include -I/usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, $(LIBPATH)%, $(USES)))
 
 # names of libraries
-LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
+# osx with gcc LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
+LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) 
 
 # file names of libraries
 LIBRARIES = $(patsubst %,lib%.a,$(USES))
@@ -121,21 +122,20 @@ speed.test: speed.test.o $(above_infinity)
 	$(GCC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
 
 %.test:  %.test.o %.o
-	@echo Includes are: $(INCLUDES)
+       @echo Includes are: $(INCLUDES)
 	@echo Load libs are: $(LDLIBS)
 	@echo Making executable test program. $@
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 %.o: %.cc %.h
-	$(GCC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@ 
 
-# naked version without a header
 %.o: %.cc
-	$(GCC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 
 %.test.o: %.test.cc  # does not require a .h file
-	$(GCC) $(CFLAGS) -c $< -o $@ 
+	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@ 
 
 
 

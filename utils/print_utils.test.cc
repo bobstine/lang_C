@@ -17,13 +17,13 @@
 int 
 main()
 {
-  const int n (5);
-  
+  const size_t n (5);
+  const int    df (10);
   std::vector<std::string> names(n);
   std::vector<double> est(n);
   std::vector<double> se(n);
   std::vector<double> pv(n);
-  for (int i=0; i<n; ++i)
+  for (size_t i=0; i<n; ++i)
   { names[i] = "test";
     est[i] = 2*i;
     se[i] = (i+2)/2;
@@ -33,9 +33,9 @@ main()
       pv[i] = pv[i-1] * pv[i];
     }
   }
-  print_stat_summary_table(se.size(), names.begin(), est.begin(), se.begin(), std::cout);
+  print_stat_summary_table((int)se.size(), names.begin(), est.begin(), se.begin(), df, std::cout);
 
-  print_stat_summary_table_in_html(se.size(), names.begin(), est.begin(), se.begin(), pv.begin(), std::cout);
+  print_stat_summary_table_in_html((int)se.size(), names.begin(), est.begin(), se.begin(), df, std::cout);
 
 }
 

@@ -14,7 +14,7 @@ int
 main()
 {
   // define input ranges using   1   based indexing
-  std::vector< std::pair<int,int> > ranges;
+  std::vector< std::pair<size_t,size_t> > ranges;
   ranges.push_back(std::make_pair( 28, 31));   
   ranges.push_back(std::make_pair(214,215));
   ranges.push_back(std::make_pair(216,217));
@@ -23,27 +23,27 @@ main()
   ranges.push_back(std::make_pair(222,223));
   ranges.push_back(std::make_pair(251,258));
   ranges.push_back(std::make_pair(259,266));
-  int numberOfRanges (ranges.size());
+  size_t numberOfRanges (ranges.size());
 
   // convert range positions to 0 based, find lengths
-  std::vector<int> len (numberOfRanges);
-  for (int i=0; i<numberOfRanges; ++i)
+  std::vector<size_t> len (numberOfRanges);
+  for (size_t i=0; i<numberOfRanges; ++i)
   { --ranges[i].first;
     --ranges[i].second;
     len[i] = ranges[i].second - ranges[i].first + 1;
   }
   
   // read and write to standard output
-  int lineCt (0);
-  int k      (numberOfRanges-1);
+  size_t lineCt (0);
+  size_t k      (numberOfRanges-1);
   while (std::cin)
   { ++lineCt;
     std::string inputLine;
     getline(std::cin, inputLine);
-    for (int i=0; i<numberOfRanges-1; ++i)
+    for (size_t i=0; i<numberOfRanges-1; ++i)
     {
       if (inputLine.length() > ranges[i].second)
-        std::cout << inputLine.substr(ranges[i].first, len[i]) << '\t';
+        std::cout << inputLine.substr((size_t)ranges[i].first, (size_t)len[i]) << '\t';
     }
     if (inputLine.length() >= ranges[k].second)
       std::cout << inputLine.substr(ranges[k].first, len[k]) << std::endl;

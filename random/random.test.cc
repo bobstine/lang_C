@@ -18,7 +18,7 @@ void test( T f )
 {
   vector<double> x(10000);
   generate(x.begin(), x.end(), f);
-  cout << "  mean and sd   " << mands(x) << endl << endl;
+  cout << "  mean and sd   " << Stat_Utils::mands(x) << endl << endl;
 }
 
 int
@@ -50,10 +50,10 @@ main (void)
   generate(y.begin(), y.end(), member_as_operator(rand, &RandomGenerator::normal));
   transform(y.begin(), y.end(), y.begin(), std::bind1st(std::plus<double>(), mu));
   std::cout << "Raw estimates: " << y << std::endl;
-  std::cout << "SD of raw: " << standard_deviation(y,mu) << std::endl;
+  std::cout << "SD of raw: " << Stat_Utils::standard_deviation(y,mu) << std::endl;
   polyshrink(y, yHat);
   std::cout << "Polyshrink estimates: " << yHat << std::endl;
-  std::cout << "SD of estimates: " << standard_deviation(yHat,mu) << std::endl;  
+  std::cout << "SD of estimates: " << Stat_Utils::standard_deviation(yHat,mu) << std::endl;  
   
   cout << "Final state of generator: " << rand << endl;
 

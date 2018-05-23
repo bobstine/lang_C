@@ -1,6 +1,5 @@
 // $Id$-*- c++ -*-
 
-
 #include "debug.h"
 
 // put other includes here

@@ -4,12 +4,9 @@ include ../c_flags
 #
 #        Options
 #
-#   Examples of depending on libaries
-#        LDLIBS =  -lthing -lregression 
-#        libs_used =  ../lib/libthing.a ../lib/libregression.a 
-# 
 ###########################################################################
 
+.PHONY: do_crsp
 
 PROJECT_NAME = tools
 
@@ -74,7 +71,7 @@ get_lines: get_lines.o
 # -------------------------------------------------------------------
 
 random_indicator: random_indicator.o
-	$(GCC) random_indicator.o $(LDLIBS) -o $@
+	$(GCC) -o $@  $(CFLAGS) $(LDFLAGS)  $^
 
 doit: random_indicator
 	./random_indicator --header -n 10 -c 0.8 
@@ -127,6 +124,30 @@ stack_crsp: stack_crsp.o
 project_crsp: project_crsp.o
 	$(GCC) $< $(LDLIBS) -o $@
 
+spread_crsp: spread_crsp.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
+spread_mutfunds: spread_mutfunds.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
+spread_crsp_wprice: spread_crsp_wprice.o
+	echo $(GCC)
+	$(GCC) $< -o $@
+
+#	map the WRDS output into a date x company table (full table is 2.44 million lines)
+$(crsp_path)stock_table_wprice.tsv: spread_crsp_wprice $(crsp_path)monthly_stock_90_16_wprice.tsv
+	rm -rf $@
+	head -n 1000000 $(crsp_path)monthly_stock_90_16_wprice.tsv | cut -f 1-3,6-8 | ./$< > $@
+
+$(crsp_path)stock_table.tsv: spread_crsp $(crsp_path)monthly_stock_90_16.tsv
+	rm -rf $@
+	head -n 100000 $(crsp_path)monthly_stock_90_16.tsv | cut -f 1-3,6 | ./spread_crsp > $@
+
+do_crsp: $(crsp_path)stock_table_wprice.tsv
+
+
 #	head of crsp data, filter, pull off complete lines
 $(crsp_path)crsp_out.txt: stack_crsp $(crsp_path)crsp_in.txt
 	rm -rf $@
@@ -139,8 +160,8 @@ $(crsp_path)crsp_proj_$(nProj): project_crsp $(crsp_path)crsp_out.txt
 	./$< -f $(word 2,$^) -o $@ -k $(nProj)  -p 4  -w
 	touch $@            # remove empty target to rebuild files
 
-do_crsp: $(crsp_path)crsp_proj_$(nProj)
-	echo Done
+# do_crsp: $(crsp_path)crsp_proj_$(nProj)
+#	echo Done
  
 
 # -------------------------------------------------------------------
@@ -159,7 +180,7 @@ rows_to_cols: rows_to_columns.o
 	cp -f $@ ~/bin/rtoc
 
 cutt: cutt.o
-	$(GCC) cutt.o $(LDLIBS) -o $@
+	$(GCC) $(LDLIBS) cutt.o $(LDFLAGS) -o $@
 
 
 # -------------------------------------------------------------------
