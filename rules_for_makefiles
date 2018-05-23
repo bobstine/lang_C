@@ -53,8 +53,8 @@ $(level_9:.o=.test):  $(above_9)
 # vpath %.a $(patsubst %, ../%, $(USES))
 vpath %.a $(patsubst %, $(LIBPATH)%, $(USES))
 
-# INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
-INCLUDES = -I /usr/local/include -I /usr/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, $(LIBPATH)%, $(USES)))
+INCLUDES   = -I /usr/local/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, ../%, $(USES)))
+# INCLUDES = -I /usr/local/include $(patsubst %,-I%,$(patsubst %, %, $(HEADERS)))  $(patsubst %,-I%,$(patsubst %, $(LIBPATH)%, $(USES)))
 
 # names of libraries
 # osx with gcc LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
@@ -127,11 +127,9 @@ speed.test: speed.test.o $(above_infinity)
 	$(GCC) $^ $(LDLIBS) -o  $@
 
 %.o: %.cc %.h
-	# add INCLUDES for clang
 	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@ 
 
 %.o: %.cc
-	# add INCLUDES for clang
 	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 
