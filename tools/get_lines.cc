@@ -77,7 +77,7 @@ parse_arguments(int argc, char** argv, std::string &lineFile, bool &appendNumber
       key = getopt_long (argc, argv, "l:n", long_options, &option_index);
       if (key == -1)
 	break;
-	switch (key)
+      switch (key)
 	  {
 	  case 'l' : { lineFile = optarg;                                                break; }
 	  case 'n' : { appendNumber = true;                                              break; }
