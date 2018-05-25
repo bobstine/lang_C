@@ -84,6 +84,7 @@ operator<<(std::ostream &output, const UniformGenerator& gen)
 class RandomGenerator {
   bool mNeedToFree;
   UniformGenerator* pUniformGenerator;
+
  public:
   ~RandomGenerator() { if(mNeedToFree) delete pUniformGenerator; }
   RandomGenerator (unsigned long seed=0)
@@ -100,15 +101,11 @@ class RandomGenerator {
   double cauchy(void);
   double gamma(double alpha);
 
-  double chi_square(int df)
-    { return 2.0 * gamma((double)df/2.0) ; }
-  double t(int df)
-    { return normal()/sqrt(chi_square(df)); }
-  double F(int nDF, int dDF)
-    { return (dDF * chi_square(nDF)) / (nDF * chi_square(dDF)); }
-  double beta(double alpha, double beta)
-    { double x(gamma(alpha)); return x/(x+gamma(beta)); }
-  
+  double chi_square(int df);
+  double t(int df);
+  double F(int nDF, int dDF);    
+  double beta(double alpha, double beta);
+
 };
 
 inline std::ostream&

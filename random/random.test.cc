@@ -42,7 +42,8 @@ main (void)
   test(member_as_operator1(rand, &RandomGenerator::gamma, 4.4));
   cout << "Chi-square(2):\n";
   test(member_as_operator1(rand, &RandomGenerator::chi_square, 2));
-  // Do a some estimation
+
+  // Do some estimation
   const int    n  (40);
   const double mu (2.2);
   std::vector<double> y    (n);

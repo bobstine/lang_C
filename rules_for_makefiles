@@ -60,8 +60,7 @@ INCLUDES = -I/usr/local/include -I/usr/include $(patsubst %,-I%,$(patsubst %, %,
 
 
 # names of libraries
-# osx with gcc LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
-LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) 
+LDLIBS = $(patsubst %,-l%,$(USES)) $(patsubst %,-l%,$(EXTERNAL_USES)) -lm -pthread
 
 # file names of libraries
 LIBRARIES = $(patsubst %,lib%.a,$(USES))
@@ -124,10 +123,10 @@ speed.test: speed.test.o $(above_infinity)
 	$(GCC) speed.test.o $(above_infinity) $(LDLIBS) -o $@
 
 %.test:  %.test.o %.o
-       @echo Includes are: $(INCLUDES)
-	@echo Load libs are: $(LDLIBS)
-	@echo Making executable test program. $@
-	$(GCC) $^ $(LDLIBS) -o  $@
+	 echo Includes are: $(INCLUDES)
+	 echo Load libs are: $(LDLIBS)
+	 echo Making executable test program. $@
+	 $(GCC) $^ $(LDLIBS) -o  $@
 
 %.o: %.cc %.h
 	$(GCC) $(CFLAGS) $(INCLUDES) -c $< -o $@ 

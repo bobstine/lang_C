@@ -42,8 +42,8 @@ template <class Container>
 void
 polyshrink (Container const& input, Container & output)
 {
-  const int n           (input.size());
-  const int k (1.0 + log2((double)n));
+  const int n ((int) (input.size()));
+  const int k ((int) (1.0 + log2((double)n)));
   typename Container::const_iterator z (input.begin());   // 3 passes
   typename Container::iterator       y (output.begin());
   
